@@ -9,6 +9,8 @@ last_edited: 2026-07-28
 tags: [infrastructure, security, configuration]
 related_code:
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/database_stack.py"
+  - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/database_bootstrap_stack.py"
+  - "../../../infra/deployment/aws/scripts/bootstrap-database.sh"
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/network_stack.py"
   - "../../../infra/deployment/aws/cdk/flowform_infra/config/environments.py"
   - "../../../infra/deployment/aws/cdk/tests/"
@@ -37,14 +39,15 @@ than the deployed VPC design.
 
 This note owns the RDS service configuration and its deployment gates.
 [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
-owns the PostgreSQL identities, object ownership, grants, and reuse of the
-existing initialization assets.
+owns the PostgreSQL identities, object ownership, grants, and the boundary
+between the AWS bootstrap package and the existing container initialization
+assets.
 
 ## Implementation checkpoint
 
-`DatabaseStack` now implements the recommended RDS infrastructure boundary. Its
-assertions cover staging and production lifecycle differences, and the complete
-CDK suite passes. Staging synth succeeds, and a read-only AWS diff adds:
+`DatabaseStack` now implements the recommended persistent RDS infrastructure
+boundary. Its assertions cover staging and production lifecycle differences.
+The stack creates:
 
 - one explicit DB subnet group;
 - one PostgreSQL 17 parameter group;
@@ -53,9 +56,24 @@ CDK suite passes. Staging synth succeeds, and a read-only AWS diff adds:
 - only the Network stack exports required to consume its existing RDS subnets
   and security group.
 
-This is source and diff evidence only. `FlowForm-Staging-Database` is not yet
-deployed, and no logical databases, PostgreSQL roles, extensions, schemas, or
-application data exist in it.
+It deliberately contains no Lambda, custom resource, Step Functions state
+machine, or interface endpoint. The first deployment attempt reached an
+available RDS instance but failed in the former custom-resource bootstrap and
+rolled back. The encrypted final snapshot completed successfully. The failed
+stack record was removed, so the current source is ready for a fresh deployment
+but is not yet live.
+
+The optional `DatabaseBootstrapStack` is a separate operator tool. It owns one
+idempotent private Lambda and dedicated security groups. The deployment script
+creates a tagged Secrets Manager interface endpoint only for the invocation,
+deletes it afterward, and never makes bootstrap success a condition of the
+persistent database stack.
+
+The RDS console's automatic Lambda connection wizard is not part of this
+design. It automates security-group wiring only, is console-driven, and does not
+authenticate the privileged PostgreSQL session. CDK keeps the same
+Lambda-to-RDS path explicit, while the bootstrap Lambda reads the RDS-managed
+master credential through the temporary endpoint.
 
 ## Recommended staging shape
 
@@ -63,6 +81,7 @@ application data exist in it.
 | --- | --- |
 | Service | Amazon RDS for PostgreSQL |
 | Engine version | PostgreSQL 17.9, explicitly pinned |
+| RDS Extended Support | Enrollment disabled |
 | Instance class | `db.t4g.small` |
 | Availability | Single-AZ |
 | Placement | `ap-southeast-2a` |
@@ -79,10 +98,11 @@ application data exist in it.
 | Stack deletion | Final snapshot |
 | Deletion protection | Disabled for staging |
 | Transport | `rds.force_ssl = 1` |
-| Password verifier | SCRAM-SHA-256 |
+| Password verifier | `password_encryption = scram-sha-256`; `rds.accepted_password_auth_method = scram` |
+| Runtime authentication | IAM tokens; no stored password for the app roles |
 | Log exports | PostgreSQL and upgrade logs |
-| Database monitoring | Database Insights Standard-compatible, seven-day history |
-| Enhanced Monitoring | Omit initially |
+| Database monitoring | Database Insights Standard with no-additional-cost seven-day Performance Insights history |
+| Enhanced Monitoring | Disabled (`MonitoringInterval: 0`) |
 | RDS Proxy | None |
 | Multi-AZ | Disabled |
 | Automatic major upgrades | Disabled |
@@ -327,8 +347,13 @@ Use a PostgreSQL 17 parameter group with:
 ```text
 rds.force_ssl = 1
 password_encryption = scram-sha-256
-rds.accepted_password_auth_method = scram-sha-256
+rds.accepted_password_auth_method = scram
 ```
+
+The two settings do not share a value vocabulary. `password_encryption` is the
+PostgreSQL parameter and takes `md5` or `scram-sha-256`. The RDS-specific
+`rds.accepted_password_auth_method` accepts only `scram` or `md5+scram`; use
+`md5+scram` only while older clients still need MD5 compatibility.
 
 Apply the SCRAM transition in a safe order:
 
@@ -360,7 +385,12 @@ Enable initially:
 - PostgreSQL log export;
 - upgrade log export;
 - explicit CloudWatch log-group retention;
-- Database Insights Standard-compatible monitoring with seven-day history.
+- Database Insights Standard with the no-additional-cost seven-day Performance
+  Insights history.
+
+RDS Extended Support enrollment is explicitly disabled. FlowForm must upgrade
+PostgreSQL before standard support ends; creating or restoring an unsupported
+major version should fail rather than silently incur Extended Support charges.
 
 As of 2026-07-28, AWS has announced that the Performance Insights console
 experience reaches end of life on 2026-07-31 and redirects to CloudWatch
@@ -368,7 +398,7 @@ Database Insights afterward. Configure the stack for the Standard experience
 and verify the exact CDK properties during implementation rather than embedding
 an obsolete console assumption.
 
-Omit initially:
+Keep disabled initially:
 
 - Enhanced Monitoring;
 - Database Insights Advanced;
@@ -474,14 +504,16 @@ CDK owns:
 - security-group association;
 - non-secret endpoint/configuration contracts.
 
-The controlled bootstrap/migration operation owns:
+The controlled bootstrap operation owns:
 
 - both logical databases;
 - owner, migrator, and runtime roles;
 - extensions;
-- schemas and application objects;
+- application schemas and the authoritative baseline table snapshots;
 - grants and default privileges;
-- permission and connection-isolation verification.
+- bootstrap-version, table, ownership, privilege, and catalog verification.
+
+The later migration operation owns every schema change after the baseline.
 
 Do not run schema changes from a CloudFormation custom resource. A failed
 migration should not cause opaque CloudFormation retries or couple schema
@@ -503,9 +535,10 @@ one-off migration container
   +--> verify ownership, grants, and denied access
 ```
 
-This path does not require Lambda networking, VPC-enabled CodeBuild, a NAT
-Gateway, or paid interface endpoints. It is not required before provisioning
-and verifying the empty RDS instance.
+This normal migration path does not require Lambda networking, VPC-enabled
+CodeBuild, a NAT Gateway, or paid interface endpoints. The initial control-plane
+bootstrap is separate: it uses the optional helper Lambda and one temporary
+Secrets Manager endpoint, then removes the endpoint.
 
 ## Delivery gates
 
@@ -519,19 +552,22 @@ Gate A: implement and test DatabaseStack
 Gate B: deploy and verify private RDS infrastructure
   |
   v
-Gate C: bootstrap databases, roles, extensions, and schemas
+Gate C: deploy/update the optional bootstrap helper stack
   |
   v
-Gate D: verify ownership, grants, TLS, and denied connections
+Gate D: invoke bootstrap through a temporary Secrets Manager endpoint
   |
   v
-Gate E: deploy the Application stack
+Gate E: verify baseline tables, ownership, grants, TLS, and denied connections
+  |
+  v
+Gate F: deploy the Application stack
 ```
 
-The current execution slice ends after Gate B unless a safe private migration
-runner is deliberately brought into scope. The Application stack remains
-blocked until connection pools, security-scope configuration, client-side TLS
-verification, and bootstrap convergence are ready.
+The helper stack is selected only with the explicit
+`databaseBootstrap=true` CDK context. Ordinary `cdk list`, `cdk synth`, and
+database deployment exclude it. Bootstrap failure leaves RDS and the helper
+available for diagnosis and retry; it cannot trigger database rollback.
 
 ## DatabaseStack assertions
 
@@ -552,12 +588,15 @@ CDK tests should establish at least:
 - PostgreSQL and upgrade log exports;
 - the selected Standard-compatible database monitoring configuration;
 - no Enhanced Monitoring, RDS Proxy, or automatic major upgrade;
+- RDS Extended Support enrollment disabled;
 - environment-specific staging and production lifecycle differences;
+- no Lambda, custom resource, Step Functions state machine, or interface
+  endpoint in `DatabaseStack`;
 - no secret values in outputs or SSM parameters.
 
 ## Post-deployment verification
 
-Before database bootstrap, verify:
+After `DatabaseStack` reaches `CREATE_COMPLETE`, verify:
 
 - the instance is available, private, single-AZ, and in Availability Zone A;
 - the subnet group covers Availability Zones A and B;
@@ -570,9 +609,20 @@ Before database bootstrap, verify:
 - TCP 5432 is not reachable from the public internet;
 - CloudFormation drift and CDK diff are clean.
 
-After controlled bootstrap, additionally verify the identity, ownership, grant,
-extension, allowed-connection, and denied-connection contracts in
+Then run `infra/deployment/aws/scripts/bootstrap-database.sh --env staging
+--apply`. The script deploys or updates `FlowForm-Staging-DatabaseBootstrap`,
+creates one tagged Secrets Manager endpoint, invokes the Lambda with the
+version and checksum emitted by that stack, validates the sanitized result, and
+requests endpoint deletion in its exit path. Also verify the identity,
+ownership, grant, extension, allowed-connection, and denied-connection
+contracts in
 [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]].
+
+The operator identity, rather than the Lambda role, owns the bounded
+`CreateVpcEndpoint`, `CreateTags`, `DescribeVpcEndpoints`,
+`DeleteVpcEndpoints`, and `InvokeFunction` permissions. The Lambda role can
+read only the managed database secret, decrypt it with the environment KMS key,
+write its log group, manage its VPC attachment, and connect to RDS.
 
 ## Implemented decisions and remaining gates
 
@@ -584,18 +634,21 @@ The infrastructure source now implements:
 4. Retain seven days of backups.
 5. Start at 20 GiB gp3 and cap autoscaling at 40 GiB.
 6. Use Database Insights Standard-compatible seven-day history.
-7. Omit Enhanced Monitoring initially.
-8. Expose the managed secret and non-secret endpoint as CDK construct
+7. Disable Enhanced Monitoring explicitly.
+8. Disable RDS Extended Support enrollment.
+9. Expose the managed secret and non-secret endpoint as CDK construct
    properties without publishing secret values to outputs or SSM.
+10. Keep bootstrap outside `DatabaseStack`; invoke a separate private helper
+    Lambda through an operator-managed temporary Secrets Manager endpoint.
 
 The remaining application and database-content gates are:
 
 1. Separate `staging` runtime configuration from the `nonprod` security scope.
-2. Build the one-off migration container and private SSM execution path.
-3. Keep schema bootstrap after live RDS infrastructure verification.
-4. Start with an application connection ceiling around 40 and measure it.
-5. Add `sslmode=verify-full` before application staging readiness.
-6. Defer application-password automation until in-place change, reload, test,
+2. Build the normal schema-migration execution path for every change after the
+   baseline loaded by control-plane bootstrap.
+3. Start with an application connection ceiling around 40 and measure it.
+4. Add `sslmode=verify-full` before application staging readiness.
+5. Defer application-password automation until in-place change, reload, test,
    and rollback behavior are proven.
 
 ## AWS references

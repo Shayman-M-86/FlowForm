@@ -32,6 +32,7 @@ CADDY_DOCKERFILE="${REPO_ROOT}/infra/containers/strategies/aws/services/caddy/ca
 AWS_IMAGE_MANIFEST="${REPO_ROOT}/infra/containers/strategies/aws/image-sources.json"
 AWS_IMAGE_PUBLISHER="${REPO_ROOT}/infra/deployment/aws/scripts/publish-staging-images.sh"
 APP_COMPOSE="${REPO_ROOT}/infra/containers/runtime/compose/app.yml"
+APP_REHEARSAL_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/app.override.yml"
 TEST_COMPOSE="${REPO_ROOT}/infra/containers/strategies/dev/compose/compose.test.yml"
 DB_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/db.yml"
 DEV_COMPOSE="${REPO_ROOT}/infra/containers/strategies/dev/compose/compose.yml"
@@ -95,18 +96,24 @@ grep -Fq 'level = "info",' "${REPO_ROOT}/infra/containers/runtime/services/alloy
 grep -Fq "su -s /bin/sh -c 'exec tail -n 0 -F /var/log/squid/access.log' proxy &" "${PROXY_COMPOSE}" \
   || note "squid access logs are no longer exposed to Docker/Alloy"
 
-# (c) runtime keeps its four file-backed secrets; tests share only the DB/app
-# files and use a direct, throwaway Auth0 value with live validation disabled.
-shared_secret_lines() {  # the three shared *_FILE assignments, sorted
-  grep -oE '(FLOWFORM_APP_SECRET_KEY|DATABASE_CORE_APP_PASSWORD|DATABASE_RESPONSE_APP_PASSWORD)_FILE: */run/secrets/[A-Z_]+' "$1" \
+# (c) the AWS runtime base is passwordless, while the rehearsal overlay adds the
+# same two DB password-file assignments used by local tests. The common app
+# secret remains in the base; tests use a direct throwaway Auth0 value.
+db_secret_lines() {
+  grep -oE 'DATABASE_(CORE|RESPONSE)_APP_PASSWORD_FILE: */run/secrets/[A-Z_]+' "$1" \
     | tr -d ' ' | sort -u
 }
-ref="$(shared_secret_lines "${APP_COMPOSE}")"
-[[ "$(printf '%s\n' "${ref}" | sed '/^$/d' | wc -l)" -eq 3 ]] \
-  || note "runtime compose no longer has the three shared DB/app secret files"
-[[ "$(shared_secret_lines "${TEST_COMPOSE}")" == "${ref}" ]] \
-  || note "shared DB/app secret _FILE env vars in test compose diverge from runtime"
+if [[ -n "$(db_secret_lines "${APP_COMPOSE}")" ]]; then
+  note "AWS runtime base still mounts database password files"
+fi
+rehearsal_db_secrets="$(db_secret_lines "${APP_REHEARSAL_OVERRIDE}")"
+[[ "$(printf '%s\n' "${rehearsal_db_secrets}" | sed '/^$/d' | wc -l)" -eq 2 ]] \
+  || note "rehearsal app override does not mount both database password files"
+[[ "$(db_secret_lines "${TEST_COMPOSE}")" == "${rehearsal_db_secrets}" ]] \
+  || note "rehearsal and test DB password-file env vars diverge"
 
+grep -Fq 'FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY' "${APP_COMPOSE}" \
+  || note "runtime compose no longer requires its file-backed application secret"
 grep -Fq 'FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET' "${APP_COMPOSE}" \
   || note "runtime compose no longer requires its file-backed Auth0 management secret"
 grep -Fq 'FLOWFORM_AUTH0_MGMT_SECRET: ${FLOWFORM_TEST_AUTH0_MGMT_SECRET:-flowform-local-test-auth0-secret}' "${TEST_COMPOSE}" \

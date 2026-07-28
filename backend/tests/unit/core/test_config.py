@@ -1,4 +1,5 @@
 import logging
+import os
 import tomllib
 from pathlib import Path
 from typing import Any, cast
@@ -147,6 +148,125 @@ def test_database_settings_loads_password_from_secret_file(tmp_path: Path) -> No
     assert settings.password is not None
     assert settings.password.get_secret_value() == "secret-from-file"
     assert settings.url == "postgresql+psycopg://flowform_core_app:secret-from-file@postgres-core:5432/flowform_core"
+
+
+def test_database_settings_iam_auth_builds_url_without_password() -> None:
+    """IAM auth omits the password; the token is injected per connection."""
+    settings = DatabaseSettings(
+        auth_mode="iam",
+        app_user="flowform_core_app",
+        host="core.rds.example.test",
+        port=5432,
+        name="flowform_core",
+    )
+
+    assert settings.uses_iam_auth is True
+    assert settings.password is None
+    assert settings.url == "postgresql+psycopg://flowform_core_app@core.rds.example.test:5432/flowform_core"
+
+
+def test_database_settings_iam_auth_rejects_static_password() -> None:
+    """A static credential alongside IAM auth is a configuration error."""
+    with pytest.raises(ValidationError, match="must not be set when database auth_mode is 'iam'"):
+        DatabaseSettings(
+            auth_mode="iam",
+            app_user="flowform_core_app",
+            host="core.rds.example.test",
+            name="flowform_core",
+            password=SecretStr("top-secret"),
+        )
+
+
+def test_database_settings_iam_auth_rejects_embedded_url() -> None:
+    """An embedded URL would bypass the IAM token path entirely."""
+    with pytest.raises(ValidationError, match="url must not be set when database auth_mode is 'iam'"):
+        DatabaseSettings.model_validate(
+            {
+                "auth_mode": "iam",
+                "url": "postgresql+psycopg://flowform_core_app:pw@core.rds.example.test:5432/flowform_core",
+            }
+        )
+
+
+def test_database_settings_password_mode_still_requires_password() -> None:
+    """Password mode keeps its existing requirement so dev/rehearsal are unchanged."""
+    with pytest.raises(ValidationError, match="Missing: password"):
+        DatabaseSettings(
+            app_user="flowform_core_app",
+            host="postgres-core",
+            name="flowform_core",
+        )
+
+
+def _iam_database_parts() -> dict[str, Any]:
+    return {
+        "core": {
+            "auth_mode": "iam",
+            "app_user": "flowform_core_app",
+            "host": "core.rds.example.test",
+            "name": "flowform_core",
+        },
+        "response": {
+            "auth_mode": "iam",
+            "app_user": "flowform_response_app",
+            "host": "response.rds.example.test",
+            "name": "flowform_response",
+        },
+    }
+
+
+@pytest.fixture
+def _no_ambient_database_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Drop DATABASE_* vars the test container sets.
+
+    Settings is a BaseSettings, so model_validate still merges the process
+    environment. The dev/test compose files export DATABASE_*_APP_PASSWORD_FILE,
+    which would otherwise leak a static credential into these IAM cases.
+    """
+    for key in list(os.environ):
+        if key.startswith("DATABASE_"):
+            monkeypatch.delenv(key, raising=False)
+
+
+@pytest.mark.usefixtures("_no_ambient_database_env")
+def test_prod_allows_static_database_passwords(tmp_path: Path) -> None:
+    """Prod may use password auth; the auth mode is chosen per deployment."""
+    password_file = tmp_path / "core-password.txt"
+    password_file.write_text("secret\n", encoding="utf-8")
+
+    database = _iam_database_parts()
+    database["core"] = {
+        "app_user": "flowform_core_app",
+        "host": "core.rds.example.test",
+        "name": "flowform_core",
+        "app_password_file": str(password_file),
+    }
+
+    settings = Settings.model_validate(
+        {
+            "flowform": _production_flowform(tmp_path, ["https://studio.example.test"]),
+            "database": database,
+        }
+    )
+
+    assert settings.database.core.uses_iam_auth is False
+    assert settings.database.core.password is not None
+    assert settings.database.core.password.get_secret_value() == "secret"
+    assert settings.database.response.uses_iam_auth is True
+
+
+@pytest.mark.usefixtures("_no_ambient_database_env")
+def test_prod_accepts_iam_database_auth(tmp_path: Path) -> None:
+    """A fully IAM-authenticated prod configuration validates."""
+    settings = Settings.model_validate(
+        {
+            "flowform": _production_flowform(tmp_path, ["https://studio.example.test"]),
+            "database": _iam_database_parts(),
+        }
+    )
+
+    assert settings.database.core.uses_iam_auth is True
+    assert settings.database.response.uses_iam_auth is True
 
 
 def test_database_settings_rejects_missing_password_file(tmp_path: Path) -> None:

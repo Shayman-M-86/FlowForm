@@ -4,8 +4,8 @@ aliases: ["Configuration catalogue"]
 document_type: reference
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:8ce1e3b841ded4982d9b521ce8f0f3fe47d81c09925b42c96abc266d8d2d7b40
-last_edited: 2026-07-27
+verified_evidence_digest: sha256:2273687d6f2fc4202bbda646c88fadd823c28644125a556fe60b033c2067603a
+last_edited: 2026-07-28
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../backend/gunicorn.conf.py", "../../../frontend/", "../../../infra/", "../../../.github/workflows/", "../../../.vscode/"]
 related_docs: ["Environment variables", "Configuration implementation", "Secrets and configuration", "Configuration index"]

@@ -28,6 +28,19 @@ class Auth0PublicConfig:
 
 
 @dataclass(frozen=True)
+class RuntimePublicConfig:
+    """Non-secret backend and observability values loaded per environment."""
+
+    auth0_management_domain: str
+    auth0_management_id: str
+    email_from_address: str
+    grafana_cloud_loki_url: str
+    grafana_cloud_loki_user: str
+    grafana_cloud_tempo_endpoint: str
+    grafana_cloud_tempo_user: str
+
+
+@dataclass(frozen=True)
 class EnvConfig:
     """Per-environment deployment settings consumed by app.py and the stacks."""
 
@@ -55,6 +68,10 @@ class EnvConfig:
     # AUTH0_AUDIENCE) — see get_env_config(); the frontend stack fails synth
     # if it's still None.
     auth0_public: Auth0PublicConfig | None = None
+    # Non-secret runtime identifiers that still vary by environment and should
+    # not be guessed by a stack. Loaded from the same gitignored .env.<env>
+    # file as the public Auth0 SPA values.
+    runtime_public: RuntimePublicConfig | None = None
     # Custom domains for the CloudFront distributions (frontend_stack.py).
     public_site_domain: str | None = None
     # Extra subdomain prefixes on public_site_domain beyond the root
@@ -280,6 +297,28 @@ def _load_auth0_public(env_name: str, env_dir: Path) -> Auth0PublicConfig | None
         return None
 
 
+def _load_runtime_public(env_name: str, env_dir: Path) -> RuntimePublicConfig | None:
+    env_file = env_dir / f".env.{env_name}"
+    if not env_file.is_file():
+        return None
+    values = _parse_env_file(env_file)
+    try:
+        runtime = RuntimePublicConfig(
+            auth0_management_domain=values["AUTH0_MGMT_DOMAIN"],
+            auth0_management_id=values["AUTH0_MGMT_ID"],
+            email_from_address=values["EMAIL_FROM_ADDRESS"],
+            grafana_cloud_loki_url=values["GRAFANA_CLOUD_LOKI_URL"],
+            grafana_cloud_loki_user=values["GRAFANA_CLOUD_LOKI_USER"],
+            grafana_cloud_tempo_endpoint=values["GRAFANA_CLOUD_TEMPO_ENDPOINT"],
+            grafana_cloud_tempo_user=values["GRAFANA_CLOUD_TEMPO_USER"],
+        )
+    except KeyError:
+        return None
+    if not all(dataclasses.astuple(runtime)):
+        return None
+    return runtime
+
+
 def get_env_config(env_name: str, env_dir: Path = _CDK_ROOT) -> EnvConfig:
     if env_name not in _ENVIRONMENTS:
         valid = ", ".join(sorted(_ENVIRONMENTS))
@@ -291,4 +330,8 @@ def get_env_config(env_name: str, env_dir: Path = _CDK_ROOT) -> EnvConfig:
         auth0_public = _load_auth0_public(env_name, env_dir)
         if auth0_public is not None:
             config = dataclasses.replace(config, auth0_public=auth0_public)
+    if config.runtime_public is None:
+        runtime_public = _load_runtime_public(env_name, env_dir)
+        if runtime_public is not None:
+            config = dataclasses.replace(config, runtime_public=runtime_public)
     return config

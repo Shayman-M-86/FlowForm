@@ -49,15 +49,12 @@ def test_creates_one_kms_key_with_rotation_enabled():
 def test_creates_expected_secrets_under_nonprod_namespace():
     template = _synth_security_stack("dev")
     # app-secrets (app_secret_key, auth0_mgmt_secret), db-secrets
-    # (db_core_app_password, db_response_app_password), and the standalone
-    # versioned linkage secret
-    template.resource_count_is("AWS::SecretsManager::Secret", 3)
-    template.has_resource_properties(
-        "AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/app-secrets"}
-    )
-    template.has_resource_properties(
-        "AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/linkage-secret"}
-    )
+    # (db_core_app_password, db_response_app_password), observability-secrets
+    # (grafana_cloud_token), and the standalone versioned linkage secret
+    template.resource_count_is("AWS::SecretsManager::Secret", 4)
+    template.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/app-secrets"})
+    template.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/linkage-secret"})
+    template.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/observability-secrets"})
 
 
 def test_nonprod_app_role_assumable_by_ec2_and_account():
@@ -96,12 +93,8 @@ def test_nonprod_creates_staging_named_ci_roles():
     # Role names keep the env name (not the scope name) so the GitHub
     # workflows reference stable ARNs.
     template = _synth_security_stack("dev")
-    template.has_resource_properties(
-        "AWS::IAM::Role", {"RoleName": "flowform-staging-frontend-deploy"}
-    )
-    template.has_resource_properties(
-        "AWS::IAM::Role", {"RoleName": "flowform-staging-ci-preview"}
-    )
+    template.has_resource_properties("AWS::IAM::Role", {"RoleName": "flowform-staging-frontend-deploy"})
+    template.has_resource_properties("AWS::IAM::Role", {"RoleName": "flowform-staging-ci-preview"})
 
 
 def test_ci_roles_trust_only_their_required_github_oidc_subjects():
@@ -172,9 +165,7 @@ def test_ssm_parameters_created():
     # kms-key-arn, aws-region, hosted-zone-id, app-role-arn,
     # linkage-secret-arn
     template.resource_count_is("AWS::SSM::Parameter", 5)
-    template.has_resource_properties(
-        "AWS::SSM::Parameter", {"Name": "/flowform/nonprod/kms-key-arn"}
-    )
+    template.has_resource_properties("AWS::SSM::Parameter", {"Name": "/flowform/nonprod/kms-key-arn"})
 
 
 def test_app_role_has_scoped_bootstrap_reads_without_repository_wildcards():
@@ -198,9 +189,7 @@ def test_app_role_has_scoped_bootstrap_reads_without_repository_wildcards():
                                             "Fn::Join": [
                                                 "",
                                                 Match.array_with(
-                                                    [
-                                                        ":ssm:ap-southeast-2:908123139858:parameter/flowform/nonprod/*"
-                                                    ]
+                                                    [":ssm:ap-southeast-2:908123139858:parameter/flowform/nonprod/*"]
                                                 ),
                                             ]
                                         },
@@ -208,9 +197,7 @@ def test_app_role_has_scoped_bootstrap_reads_without_repository_wildcards():
                                             "Fn::Join": [
                                                 "",
                                                 Match.array_with(
-                                                    [
-                                                        ":ssm:ap-southeast-2:908123139858:parameter/flowform/staging/*"
-                                                    ]
+                                                    [":ssm:ap-southeast-2:908123139858:parameter/flowform/staging/*"]
                                                 ),
                                             ]
                                         },

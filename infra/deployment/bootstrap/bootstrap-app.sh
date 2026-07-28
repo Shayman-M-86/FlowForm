@@ -11,18 +11,23 @@ set -Eeuo pipefail
 # What it does, in order:
 #   1. Establish forced-proxy egress for this script's own AWS calls and for
 #      the Docker daemon (HTTP(S)_PROXY -> Squid on the proxy box).
-#   2. Materialise Secrets Manager values into tmpfs secret files (0600).
-#   3. Render /opt/flowform/backend.env from SSM /flowform/<scope>/backend/*.
+#   2. Render /opt/flowform/backend.env from SSM /flowform/<scope>/backend/*.
+#   3. Materialise common Secrets Manager values into tmpfs secret files
+#      (0600), plus database passwords only for the rehearsal password strategy.
 #   4. Pull the backend image (with backoff), then docker compose up the stack.
 #      The pull retries so a not-yet-published image is a wait, not a failure:
 #      in prod the image is already in ECR (first attempt succeeds); in the
 #      rehearsal the registry starts empty until the operator's push lands.
 #
-# The ONLY prod-vs-rehearsal seam is BOOTSTRAP_ENDPOINT_URL: unset -> real
-# AWS; set (rehearsal) -> LocalStack reached through the same proxy. Every
-# other line is identical between rehearsal and production.
+# FLOWFORM_DEPLOYMENT_TARGET selects the narrow credential strategy while the
+# orchestration remains shared:
+#   aws       -> both databases must use IAM; no DB password is fetched/mounted.
+#   rehearsal -> both databases must use passwords from LocalStack db-secrets.
+# Endpoint and Compose overrides remain transport/runtime seams, not implicit
+# environment detection.
 #
 # Required environment (from user-data / deploy caller):
+#   FLOWFORM_DEPLOYMENT_TARGET "aws" | "rehearsal"
 #   FLOWFORM_SCOPE          security scope namespace, e.g. "nonprod" | "prod"
 #   PROXY_PRIVATE_IP        private IP of the proxy box running Squid :3128
 #   APP_PRIVATE_IP          this host's private IP (compose binds backend here)
@@ -34,6 +39,8 @@ set -Eeuo pipefail
 #   BOOTSTRAP_ENDPOINT_URL  AWS endpoint override (rehearsal: LocalStack)
 #   COMPOSE_FILE            defaults to the repo's docker-compose.app.yml
 #   FLOWFORM_SECRET_DIR     defaults to /run/flowform/secrets (tmpfs)
+#   BOOTSTRAP_SSM_AGENT_OVERRIDE
+#                           test seam for the AWS SSM Agent systemd drop-in
 #   BOOTSTRAP_DRY_RUN=1     print intended actions + file perms, change nothing
 #   BOOTSTRAP_IMAGE_PULL_MAX_ATTEMPTS         image-pull retries (default 60)
 #   BOOTSTRAP_IMAGE_PULL_RETRY_DELAY_SECONDS  delay between them (default 5)
@@ -69,28 +76,35 @@ install_err_trap
 # 0. Inputs
 # ---------------------------------------------------------------------------
 : "${FLOWFORM_SCOPE:?set FLOWFORM_SCOPE (e.g. nonprod)}"
+: "${FLOWFORM_DEPLOYMENT_TARGET:?set FLOWFORM_DEPLOYMENT_TARGET (aws or rehearsal)}"
 : "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP (Squid host)}"
 : "${APP_PRIVATE_IP:?set APP_PRIVATE_IP}"
 : "${AWS_REGION:?set AWS_REGION}"
 
+case "${FLOWFORM_DEPLOYMENT_TARGET}" in
+  aws|rehearsal) ;;
+  *) die "FLOWFORM_DEPLOYMENT_TARGET must be 'aws' or 'rehearsal'" ;;
+esac
+
 SECRET_DIR="${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}"
-BACKEND_ENV="/opt/flowform/backend.env"
+BACKEND_ENV="${BOOTSTRAP_BACKEND_ENV:-/opt/flowform/backend.env}"
+DATABASE_AUTH_STRATEGY=""
 
 COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/runtime/compose/app.yml}"
 # Optional override compose file (rehearsal). Layered on with a second -f below.
-# Empty in prod, so behaviour is exactly the single-file case. Prod-safe seam,
-# like BOOTSTRAP_ENDPOINT_URL.
+# Empty for AWS, so behaviour is exactly the single-file case.
 COMPOSE_OVERRIDE_FILE="${COMPOSE_OVERRIDE_FILE:-}"
 COMPOSE_FORCE_RECREATE="${COMPOSE_FORCE_RECREATE:-0}"
 [[ "${COMPOSE_FORCE_RECREATE}" == "0" || "${COMPOSE_FORCE_RECREATE}" == "1" ]] \
   || die "COMPOSE_FORCE_RECREATE must be 0 or 1"
 
-# AWS CLI endpoint override is the sole rehearsal seam. AWS_ARGS is consumed by
-# aws_cli_retry (from the common library, already sourced above).
+# AWS_ARGS is consumed by aws_cli_retry (from the common library, already
+# sourced above). Rehearsal normally supplies per-service endpoint variables;
+# the global override remains available for callers such as the DB bootstrap.
 AWS_ARGS=(--region "${AWS_REGION}")
 if [[ -n "${BOOTSTRAP_ENDPOINT_URL:-}" ]]; then
   AWS_ARGS+=(--endpoint-url "${BOOTSTRAP_ENDPOINT_URL}")
-  log "using AWS endpoint override: ${BOOTSTRAP_ENDPOINT_URL} (rehearsal mode)"
+  log "using AWS endpoint override: ${BOOTSTRAP_ENDPOINT_URL}"
 fi
 
 # ---------------------------------------------------------------------------
@@ -105,6 +119,47 @@ export HTTPS_PROXY="http://${PROXY_PRIVATE_IP}:3128"
 export NO_PROXY="localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com"
 # Some tools read the lowercase spellings only.
 export http_proxy="${HTTP_PROXY}" https_proxy="${HTTPS_PROXY}" no_proxy="${NO_PROXY}"
+
+configure_ssm_agent_proxy() {
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" != "aws" ]]; then
+    log "SSM Agent proxy configuration is not required for ${FLOWFORM_DEPLOYMENT_TARGET}"
+    return
+  fi
+
+  local drop_in="${BOOTSTRAP_SSM_AGENT_OVERRIDE:-/etc/systemd/system/amazon-ssm-agent.service.d/override.conf}"
+  local drop_in_dir
+  drop_in_dir="$(dirname "${drop_in}")"
+  local content
+  content="$(cat <<EOF
+[Service]
+Environment="http_proxy=http://${PROXY_PRIVATE_IP}:3128"
+Environment="https_proxy=http://${PROXY_PRIVATE_IP}:3128"
+Environment="no_proxy=169.254.169.254"
+EOF
+)"
+
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    log "DRY_RUN: would write ${drop_in} (0644 root) and restart amazon-ssm-agent only if required:"
+    printf '%s\n' "${content}" | sed 's/^/    /'
+    return
+  fi
+
+  install -d -m 0755 "${drop_in_dir}"
+  if write_file_if_changed "${drop_in}" 0644 "${content}"; then
+    systemctl daemon-reload
+    systemctl restart amazon-ssm-agent
+    systemctl is-active --quiet amazon-ssm-agent \
+      || fatal "amazon-ssm-agent did not return to an active state after proxy configuration"
+    log "SSM Agent proxy drop-in changed; agent restarted"
+  elif systemctl is-active --quiet amazon-ssm-agent; then
+    log "SSM Agent proxy drop-in unchanged; agent already active"
+  else
+    systemctl restart amazon-ssm-agent
+    systemctl is-active --quiet amazon-ssm-agent \
+      || fatal "amazon-ssm-agent did not return to an active state"
+    log "SSM Agent proxy drop-in unchanged; inactive agent restarted"
+  fi
+}
 
 configure_docker_daemon_proxy() {
   local drop_in_dir="/etc/systemd/system/docker.service.d"
@@ -143,78 +198,7 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
-# 2. tmpfs secrets  (reuses the JSON-key + umask pattern from
-#    scripts/secrets/fetch-dev-secrets.sh)
-# ---------------------------------------------------------------------------
-# secret file name  <-  (secret id suffix, json key)
-#   FLOWFORM_APP_SECRET_KEY        <- app-secrets / app_secret_key
-#   FLOWFORM_AUTH0_MGMT_SECRET     <- app-secrets / auth0_mgmt_secret
-#   DATABASE_CORE_APP_PASSWORD     <- db-secrets  / db_core_app_password
-#   DATABASE_RESPONSE_APP_PASSWORD <- db-secrets  / db_response_app_password
-fetch_secret_string() { # $1 = secret id suffix (e.g. app-secrets)
-  local secret_id="flowform/${FLOWFORM_SCOPE}/$1" output
-  output="$(aws_cli_retry "Secrets Manager secret ${secret_id}" \
-    secretsmanager get-secret-value \
-    --secret-id "${secret_id}" \
-    --query SecretString --output text)" \
-    || die "could not read required secret ${secret_id}. $(secret_recovery_guidance)"
-  [[ -n "${output}" && "${output}" != None ]] \
-    || die "required secret ${secret_id} returned an empty SecretString. $(secret_recovery_guidance)"
-  printf '%s' "${output}"
-}
-
-# Extract one key from a secret JSON object WITHOUT ever placing the secret on
-# argv: the JSON blob is fed on stdin, and only the (non-secret) key name is an
-# argument. This keeps secret material out of the process table and any
-# argv-logging shim. Callers feed the blob in on stdin (see write_secret_key).
-extract_key() { # $1 = json key ; JSON object on stdin
-  # jq is provisioned into every image by install-base.sh (python3 is not on
-  # minimal AL2023). The empty-value guard makes a missing/blank key fail the
-  # boot instead of writing an empty secret file. -j: no trailing newline.
-  jq -je --arg k "$1" '.[$k] // "" | select(length > 0)' \
-    || die "secret JSON is missing or has an empty value for key: $1. $(secret_recovery_guidance)"
-}
-
-# Feed the JSON blob to extract_key via a builtin printf into a pipe: printf is a
-# bash builtin, so the blob never forks a process and never lands on any argv or
-# in a here-string temp file. The extracted value is written to the given file.
-write_secret_key() { # $1 = json blob  $2 = json key  $3 = out file
-  printf '%s' "$1" | extract_key "$2" > "$3"
-}
-
-materialise_secrets() {
-  if [[ "${DRY_RUN}" == "1" ]]; then
-    log "DRY_RUN: would mount tmpfs at ${SECRET_DIR} (0700) and write 4 secret files (0600):"
-    log "    FLOWFORM_APP_SECRET_KEY, FLOWFORM_AUTH0_MGMT_SECRET, DATABASE_CORE_APP_PASSWORD, DATABASE_RESPONSE_APP_PASSWORD"
-    return
-  fi
-
-  # Mount a dedicated tmpfs so secret material is memory-backed and never
-  # rests on EBS. Idempotent: skip if already tmpfs.
-  install -d -m 0700 "${SECRET_DIR}"
-  if ! findmnt -t tmpfs --target "${SECRET_DIR}" >/dev/null 2>&1; then
-    mount -t tmpfs -o size=8m,mode=0700 tmpfs "${SECRET_DIR}"
-  fi
-  chmod 0700 "${SECRET_DIR}"
-
-  local app_json db_json
-  app_json="$(fetch_secret_string app-secrets)"
-  db_json="$(fetch_secret_string db-secrets)"
-
-  # JSON blobs reach jq on stdin via write_secret_key's builtin-printf pipe —
-  # never on argv, never in a here-string temp file — so no secret touches the
-  # process table or disk outside the tmpfs target.
-  umask 177  # -> files 0600
-  write_secret_key "${app_json}" app_secret_key           "${SECRET_DIR}/FLOWFORM_APP_SECRET_KEY.secret.txt"
-  write_secret_key "${app_json}" auth0_mgmt_secret        "${SECRET_DIR}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt"
-  write_secret_key "${db_json}"  db_core_app_password     "${SECRET_DIR}/DATABASE_CORE_APP_PASSWORD.secret.txt"
-  write_secret_key "${db_json}"  db_response_app_password "${SECRET_DIR}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt"
-  umask 022
-  log "materialised 4 secret files under ${SECRET_DIR} (0600)"
-}
-
-# ---------------------------------------------------------------------------
-# 3. backend.env from SSM  (validate-to-tmp-then-mv, like
+# 2. backend.env from SSM  (validate-to-tmp-then-mv, like
 #    scripts/secrets/generate-env-files.sh)
 # ---------------------------------------------------------------------------
 render_backend_env() {
@@ -261,15 +245,152 @@ render_backend_env() {
     [[ -n "${ALLOY_IMAGE:-}" ]] && printf 'ALLOY_IMAGE=%s\n' "${ALLOY_IMAGE}"
   } >> "${tmp}"
 
-  # Validate both image inputs before Compose interpolation. The .+ guards
-  # against present-but-empty values.
+  # Validate image and database-auth inputs before any secret is fetched or
+  # Compose interpolation begins. The .+ guards against present-but-empty values.
   grep -Eq '^BACKEND_IMAGE=.+$' "${tmp}" || die "backend.env has no non-empty BACKEND_IMAGE (not in SSM and no override)"
   grep -Eq '^ALLOY_IMAGE=.+$' "${tmp}" || die "backend.env has no non-empty ALLOY_IMAGE (not in SSM and no override)"
+  grep -Eq '^DATABASE_CORE_AUTH_MODE=(password|iam)$' "${tmp}" \
+    || die "backend.env must set DATABASE_CORE_AUTH_MODE to password or iam"
+  grep -Eq '^DATABASE_RESPONSE_AUTH_MODE=(password|iam)$' "${tmp}" \
+    || die "backend.env must set DATABASE_RESPONSE_AUTH_MODE to password or iam"
 
   mv "${tmp}" "${BACKEND_ENV}"
   chmod 0600 "${BACKEND_ENV}"
   trap - RETURN
   log "rendered ${BACKEND_ENV} (0600) from ${param_path}"
+}
+
+backend_env_value() { # $1 = exact environment key
+  local key="$1" value
+  value="$(awk -v key="${key}" '
+    index($0, key "=") == 1 {
+      count += 1
+      value = substr($0, length(key) + 2)
+    }
+    END {
+      if (count != 1) exit 1
+      printf "%s", value
+    }
+  ' "${BACKEND_ENV}")" \
+    || die "${BACKEND_ENV} must contain exactly one ${key} assignment"
+  printf '%s' "${value}"
+}
+
+validate_database_auth_strategy() {
+  local expected core_mode response_mode
+  case "${FLOWFORM_DEPLOYMENT_TARGET}" in
+    aws) expected="iam" ;;
+    rehearsal) expected="password" ;;
+  esac
+
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    DATABASE_AUTH_STRATEGY="${expected}"
+    log "DRY_RUN: ${FLOWFORM_DEPLOYMENT_TARGET} target requires both database auth modes to be ${expected}"
+    return
+  fi
+
+  core_mode="$(backend_env_value DATABASE_CORE_AUTH_MODE)"
+  response_mode="$(backend_env_value DATABASE_RESPONSE_AUTH_MODE)"
+  [[ "${core_mode}" == "${expected}" ]] \
+    || die "DATABASE_CORE_AUTH_MODE must be '${expected}' for deployment target '${FLOWFORM_DEPLOYMENT_TARGET}'"
+  [[ "${response_mode}" == "${expected}" ]] \
+    || die "DATABASE_RESPONSE_AUTH_MODE must be '${expected}' for deployment target '${FLOWFORM_DEPLOYMENT_TARGET}'"
+
+  DATABASE_AUTH_STRATEGY="${expected}"
+  log "database credential strategy validated: target=${FLOWFORM_DEPLOYMENT_TARGET} auth=${DATABASE_AUTH_STRATEGY}"
+}
+
+# ---------------------------------------------------------------------------
+# 3. tmpfs secrets  (reuses the JSON-key + umask pattern from
+#    scripts/secrets/fetch-dev-secrets.sh)
+# ---------------------------------------------------------------------------
+# secret file name  <-  (secret id suffix, json key)
+#   FLOWFORM_APP_SECRET_KEY        <- app-secrets / app_secret_key
+#   FLOWFORM_AUTH0_MGMT_SECRET     <- app-secrets / auth0_mgmt_secret
+#   DATABASE_CORE_APP_PASSWORD     <- db-secrets  / db_core_app_password
+#   DATABASE_RESPONSE_APP_PASSWORD <- db-secrets  / db_response_app_password
+fetch_secret_string() { # $1 = secret id suffix (e.g. app-secrets)
+  local secret_id="flowform/${FLOWFORM_SCOPE}/$1" output
+  output="$(aws_cli_retry "Secrets Manager secret ${secret_id}" \
+    secretsmanager get-secret-value \
+    --secret-id "${secret_id}" \
+    --query SecretString --output text)" \
+    || die "could not read required secret ${secret_id}. $(secret_recovery_guidance)"
+  [[ -n "${output}" && "${output}" != None ]] \
+    || die "required secret ${secret_id} returned an empty SecretString. $(secret_recovery_guidance)"
+  printf '%s' "${output}"
+}
+
+# Extract one key from a secret JSON object WITHOUT ever placing the secret on
+# argv: the JSON blob is fed on stdin, and only the (non-secret) key name is an
+# argument. This keeps secret material out of the process table and any
+# argv-logging shim. Callers feed the blob in on stdin (see write_secret_key).
+extract_key() { # $1 = json key ; JSON object on stdin
+  # jq is provisioned into every image by install-base.sh (python3 is not on
+  # minimal AL2023). The empty-value guard makes a missing/blank key fail the
+  # boot instead of writing an empty secret file. -j: no trailing newline.
+  jq -je --arg k "$1" '.[$k] // "" | select(length > 0)' \
+    || die "secret JSON is missing or has an empty value for key: $1. $(secret_recovery_guidance)"
+}
+
+# Feed the JSON blob to extract_key via a builtin printf into a pipe: printf is a
+# bash builtin, so the blob never forks a process and never lands on any argv or
+# in a here-string temp file. The extracted value is written to the given file.
+write_secret_key() { # $1 = json blob  $2 = json key  $3 = out file
+  printf '%s' "$1" | extract_key "$2" > "$3"
+}
+
+materialise_secrets() {
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
+      log "DRY_RUN: would mount tmpfs at ${SECRET_DIR} (0700) and write 4 secret files (0600):"
+      log "    FLOWFORM_APP_SECRET_KEY, FLOWFORM_AUTH0_MGMT_SECRET, DATABASE_CORE_APP_PASSWORD, DATABASE_RESPONSE_APP_PASSWORD"
+    else
+      log "DRY_RUN: would mount tmpfs at ${SECRET_DIR} (0700), write 2 common secret files (0600), and remove stale DB password files"
+      log "    FLOWFORM_APP_SECRET_KEY, FLOWFORM_AUTH0_MGMT_SECRET"
+    fi
+    return
+  fi
+
+  # Mount a dedicated tmpfs so secret material is memory-backed and never
+  # rests on EBS. Idempotent: skip if already tmpfs.
+  install -d -m 0700 "${SECRET_DIR}"
+  if ! findmnt -t tmpfs --target "${SECRET_DIR}" >/dev/null 2>&1; then
+    mount -t tmpfs -o size=8m,mode=0700 tmpfs "${SECRET_DIR}"
+  fi
+  chmod 0700 "${SECRET_DIR}"
+
+  local app_json db_json=""
+  app_json="$(fetch_secret_string app-secrets)"
+  if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
+    db_json="$(fetch_secret_string db-secrets)"
+  fi
+
+  # JSON blobs reach jq on stdin via write_secret_key's builtin-printf pipe —
+  # never on argv, never in a here-string temp file — so no secret touches the
+  # process table or disk outside the tmpfs target.
+  umask 177  # -> files 0600
+  write_secret_key "${app_json}" app_secret_key           "${SECRET_DIR}/FLOWFORM_APP_SECRET_KEY.secret.txt"
+  write_secret_key "${app_json}" auth0_mgmt_secret        "${SECRET_DIR}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt"
+  if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
+    write_secret_key "${db_json}" db_core_app_password \
+      "${SECRET_DIR}/DATABASE_CORE_APP_PASSWORD.secret.txt"
+    write_secret_key "${db_json}" db_response_app_password \
+      "${SECRET_DIR}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt"
+  else
+    # A target can be reconverged on an already-running host. Remove only the two
+    # exact obsolete credential files so IAM mode cannot silently inherit a
+    # password left by an earlier configuration.
+    rm -f -- \
+      "${SECRET_DIR}/DATABASE_CORE_APP_PASSWORD.secret.txt" \
+      "${SECRET_DIR}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt"
+  fi
+  umask 022
+  if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
+    log "materialised 4 secret files under ${SECRET_DIR} (0600)"
+  else
+    log "materialised 2 common secret files under ${SECRET_DIR} (0600); database passwords absent for IAM"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -329,7 +450,15 @@ compose_up() {
 }
 
 main() {
-  log "scope=${FLOWFORM_SCOPE} app=${APP_PRIVATE_IP} proxy=${PROXY_PRIVATE_IP} dry_run=${DRY_RUN}"
+  log "target=${FLOWFORM_DEPLOYMENT_TARGET} scope=${FLOWFORM_SCOPE} app=${APP_PRIVATE_IP} proxy=${PROXY_PRIVATE_IP} dry_run=${DRY_RUN}"
+
+  begin_step "Waiting for proxy egress"
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    log "DRY_RUN: would wait for Squid at ${PROXY_PRIVATE_IP}:3128 before external AWS calls"
+  else
+    wait_for_tcp "Squid proxy ${PROXY_PRIVATE_IP}:3128" "${PROXY_PRIVATE_IP}" 3128
+  fi
+  end_step
 
   begin_step "Validating configuration"
   check_common_requirements
@@ -342,6 +471,10 @@ main() {
   fi
   end_step
 
+  begin_step "Configuring SSM Agent proxy egress"
+  configure_ssm_agent_proxy
+  end_step
+
   begin_step "Configuring Docker proxy egress"
   configure_docker_daemon_proxy
   end_step
@@ -351,12 +484,20 @@ main() {
     return 0
   fi
 
+  begin_step "Rendering backend.env from SSM"
+  render_backend_env
+  end_step
+
+  begin_step "Selecting database credential strategy"
+  validate_database_auth_strategy
+  end_step
+
   begin_step "Materialising secrets"
   materialise_secrets
   end_step
 
-  begin_step "Rendering backend.env from SSM"
-  render_backend_env
+  begin_step "Authenticating private image registries"
+  login_ecr_for_images "${BACKEND_ENV}" BACKEND_IMAGE ALLOY_IMAGE
   end_step
 
   begin_step "Starting application containers"
@@ -366,4 +507,6 @@ main() {
   info "bootstrap completed successfully"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

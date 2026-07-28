@@ -41,10 +41,11 @@ a retained-data cutover, or that a source-complete stack has been deployed.
 | --- | --- | --- |
 | Target decision | Recorded in ADR 0001 | Not applicable |
 | Security and registry | Implemented | Last recorded as deployed on 2026-07-24 |
-| Image publication | Implemented and exercised through GitHub OIDC | Four-image digest manifest recorded by the earlier execution slice |
+| Image publication | Implemented and exercised through GitHub OIDC; digest-target promotion bug fixed locally | Four images published and five digest-pinned runtime parameters promoted |
 | Network | Four-subnet design implemented and covered by CDK assertions | Deployed and verified on 2026-07-27 |
-| Database | RDS infrastructure implemented, asserted, synthesized, and diff-reviewed | Not deployed |
-| Application compute | EC2 resource skeleton exists; convergence/bootstrap is incomplete | Not ready to deploy |
+| Database | RDS infrastructure and IAM authentication implemented and asserted | Deployed to staging |
+| Database contents | Remote RDS bootstrap runner implemented with authoritative baseline schema verification | Bootstrap and repeat verification completed against staging RDS |
+| Application compute | Initial self-convergence path implemented locally: user data, runtime parameters, ECR login, proxy readiness, API DNS, and secret access | Not deployed; requires merge and a fresh published AMI |
 | Frontend | Substantial CDK and deployment support exists | Outside the immediate infrastructure slice |
 | Observability | Placeholder CDK stack | Not deployed |
 
@@ -72,8 +73,10 @@ responsibility boundaries rather than copying its shims:
   RDS subnet in Availability Zone A.
 - A second isolated RDS subnet in Availability Zone B only because an RDS DB
   subnet group must span two Availability Zones.
-- No NAT Gateway, Application Load Balancer, orchestrator, RDS Proxy, or paid
-  VPC interface endpoints in the initial staging environment.
+- No NAT Gateway, Application Load Balancer, orchestrator, RDS Proxy, or
+  continuously deployed paid VPC interface endpoints in the initial staging
+  environment. The explicit database-bootstrap operation may create one
+  temporary, tagged Secrets Manager endpoint and must remove it afterward.
 - One S3 gateway endpoint for ECR layer traffic.
 - AWS service API traffic from the private app host travels through the Squid
   allowlist and the proxy host's Internet Gateway path.
@@ -105,11 +108,25 @@ App EC2 in isolated subnet A ----> RDS in isolated subnet A
 
 ## Immediate next execution slice
 
-The Network portion of Phase 3 is complete, and `DatabaseStack` is implemented
-and covered by CDK assertions. The next slice is to review the change through
-the staging branch, deploy it, and prove the live RDS infrastructure. Do not
-begin application-host deployment merely because the EC2 resources synthesize:
-their bootstrap and convergence path is incomplete.
+Phase 3 is complete: the Network and Database stacks are deployed, the
+database bootstrap has created and verified the baseline databases, roles, and
+tables, and the five runtime image parameters now select digest-pinned ECR
+artifacts.
+
+The immediate slice is Phase 4. Land the current application-readiness source
+through the feature-to-staging PR workflow, build and publish a fresh AMI from
+that exact merged commit, add and seed the observability secret, deploy
+`FlowForm-Staging-Application`, then prove host convergence and a real
+IAM-token database connection. The exact operator order is recorded in
+[[aws-staging-bring-up|AWS staging bring-up]]. Outstanding database follow-up is tracked in
+[[aws-iam-database-auth-loose-threads|AWS IAM database authentication loose
+threads]].
+
+For the first Application deployment, use CDK's `--exclusively` flag. The
+retained DatabaseBootstrap helper still imports automatic outputs from Network
+and Database, while the default context omits that helper and would otherwise
+propose removing its live exports. A later stack-contract migration should
+remove this operator constraint.
 
 ### 1. Land the source through the staging workflow
 
@@ -167,7 +184,10 @@ The source now declares:
   key;
 - seven-day backups, retained automated backups, and a final snapshot on
   replacement or deletion;
-- TLS and SCRAM requirements in a PostgreSQL 17 parameter group;
+- TLS and SCRAM requirements in a PostgreSQL 17 parameter group, using the
+  RDS-specific `scram` value rather than PostgreSQL's `scram-sha-256` spelling;
+- IAM database authentication, with `rds-db:connect` granted to the app role
+  for exactly the two runtime database users;
 - PostgreSQL and upgrade log exports with seven-day log retention;
 - Standard database insights with seven-day performance history;
 - explicit backup and maintenance windows, automatic minor updates, and no
@@ -179,10 +199,11 @@ stack outputs required for its existing subnets and security group. Review and
 merge this source through the staging workflow, then deploy and verify the live
 stack before marking the data portion of Phase 3 complete.
 
-The database host is not the schema. A later controlled migration/bootstrap
-step must create the two logical databases, separate core and response users,
-their grants, and `pgcrypto`, then prove that neither application user can
-access the other database.
+The database host is not the schema. The separate controlled bootstrap step now
+creates the two logical databases, separate core and response users, baseline
+application tables, grants, and `pgcrypto`, then verifies ownership,
+privileges, and cross-database isolation. Later schema evolution remains an
+explicit migration operation.
 
 ## Completed phases
 
@@ -299,8 +320,9 @@ Staging is ready for application use only when:
 - Required AWS and external service access from the app works through Squid,
   while ECR S3 layers use the S3 gateway endpoint.
 - Squid rejects an unapproved destination and IMDS bypasses Squid.
-- RDS requires TLS; the two application identities are isolated; `pgcrypto`
-  works; migrations succeed.
+- RDS requires TLS; the two application identities authenticate with IAM tokens
+  and hold no stored password; they are isolated from each other's database;
+  `pgcrypto` works; migrations succeed.
 - Auth0, explicit staging CORS, legitimate SES sending, and public survey flows
   pass end to end.
 - The removed test-email route returns `404`.

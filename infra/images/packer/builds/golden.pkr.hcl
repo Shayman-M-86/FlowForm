@@ -10,6 +10,33 @@ build {
     destination = "/tmp/flowform-image-lib.sh"
   }
 
+  # Host convergence assets, staged for install-runtime-assets.sh. The trailing
+  # "/." on each source copies the directory's contents into the matching
+  # subdirectory, preserving the repository layout the bootstrap scripts
+  # resolve their own paths against.
+  provisioner "shell" {
+    inline = [
+      "mkdir -p /tmp/flowform-runtime-assets/infra/deployment",
+      "mkdir -p /tmp/flowform-runtime-assets/infra/containers/runtime",
+      "mkdir -p /tmp/flowform-runtime-assets/infra/containers/strategies",
+    ]
+  }
+
+  provisioner "file" {
+    source      = "${var.repo_root}/infra/deployment/bootstrap"
+    destination = "/tmp/flowform-runtime-assets/infra/deployment/"
+  }
+
+  provisioner "file" {
+    source      = "${var.repo_root}/infra/containers/runtime/compose"
+    destination = "/tmp/flowform-runtime-assets/infra/containers/runtime/"
+  }
+
+  provisioner "file" {
+    source      = "${var.repo_root}/infra/containers/strategies/aws"
+    destination = "/tmp/flowform-runtime-assets/infra/containers/strategies/"
+  }
+
   provisioner "shell" {
     execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E {{ .Path }}"
     scripts         = local.common_scripts

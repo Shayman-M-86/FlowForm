@@ -161,7 +161,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "boto3-stubs", extra = ["kms", "secretsmanager"] },
+    { name = "boto3-stubs", extra = ["kms", "rds", "secretsmanager"] },
     { name = "coverage" },
     { name = "mypy-boto3-sesv2" },
     { name = "pygments" },
@@ -183,7 +183,7 @@ requires-dist = [
     { name = "auth0-api-python", specifier = ">=1.0.0b7" },
     { name = "authlib", specifier = ">=1.7.1" },
     { name = "boto3", extras = ["crt"], specifier = ">=1.38.0" },
-    { name = "boto3-stubs", extras = ["kms", "secretsmanager"], marker = "extra == 'dev'", specifier = ">=1.43.36" },
+    { name = "boto3-stubs", extras = ["kms", "rds", "secretsmanager"], marker = "extra == 'dev'", specifier = ">=1.43.36" },
     { name = "cachetools", specifier = ">=5.5,<6" },
     { name = "click", specifier = ">=8.3.3" },
     { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=7.10.0" },
@@ -267,6 +267,9 @@ wheels = [
 [package.optional-dependencies]
 kms = [
     { name = "mypy-boto3-kms" },
+]
+rds = [
+    { name = "mypy-boto3-rds" },
 ]
 secretsmanager = [
     { name = "mypy-boto3-secretsmanager" },
@@ -800,6 +803,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/56/a5/a63234e7787019443c52f720afea57cf1a1d22a6e8e077b3c6a3916fdd98/mypy_boto3_kms-1.43.12.tar.gz", hash = "sha256:a4d23f018422a79bc4a886676f63eba548a98b06f5dcd0395e424d7c472eb340", size = 30688, upload-time = "2026-05-20T20:01:23.801Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/36/17/9d36757acee0987ef78220d1868f1ceb0cf458928444f5a81e98a4de3b44/mypy_boto3_kms-1.43.12-py3-none-any.whl", hash = "sha256:4a74f7b4aa9fcce9a1021ad2586059f2374a4b89baa251e57e6acc16282fd782", size = 39009, upload-time = "2026-05-20T20:01:20.104Z" },
+]
+
+[[package]]
+name = "mypy-boto3-rds"
+version = "1.43.51"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/33/1a4b31059a71e09a9bce589b4bdf71ab431a37d762f15247be98371291ad/mypy_boto3_rds-1.43.51.tar.gz", hash = "sha256:60509ece3439b4893425d78e6a3c778e0e7d0fd2a207ba298e86813a898daba7", size = 87487, upload-time = "2026-07-17T20:29:39.059Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/e3/c7a37e1ae68ecfa461e9e78a2c711f50079588a62eed7c14c42450a0c216/mypy_boto3_rds-1.43.51-py3-none-any.whl", hash = "sha256:7b2385e5c13a215e1800d235c0bc2e0ed140bf2313ec63eb4f0ad920fc0a886e", size = 94345, upload-time = "2026-07-17T20:29:37.105Z" },
 ]
 
 [[package]]

@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 #
-# Validate or publish the four immutable linux/amd64 staging runtime images.
+# Validate, publish, or promote the four immutable linux/amd64 staging runtime
+# images.
+#
 # Publication only writes ECR images and a local release manifest. It does not
 # select runtime SSM parameters, bootstrap hosts, or deploy infrastructure.
+#
+# Promotion is the separate, deliberate act of pointing an environment at an
+# already-published release: it reads a release manifest and writes the five
+# image-reference parameters the runtime groups declare. Keeping the two apart
+# means republishing an image never moves a running environment, and promoting
+# never rebuilds anything.
 
 set -euo pipefail
 
@@ -304,6 +312,81 @@ publish_images() {
   printf 'Published four immutable staging images.\nRelease manifest: %s\n' "${RELEASE_MANIFEST_PATH}"
 }
 
+# Map each published image to the runtime-group parameters that reference it.
+# Alloy runs on both hosts, so it is promoted into both groups.
+image_parameter_targets() { # $1 image name -> "<group>/<ENV_NAME>" lines
+  case "$1" in
+    backend) printf 'backend/BACKEND_IMAGE\n' ;;
+    alloy)   printf 'backend/ALLOY_IMAGE\nproxy/ALLOY_IMAGE\n' ;;
+    caddy)   printf 'proxy/CADDY_IMAGE\n' ;;
+    squid)   printf 'proxy/SQUID_IMAGE\n' ;;
+    *)       die "no runtime parameter mapping for image: $1" ;;
+  esac
+}
+
+promote_images() {
+  require_command jq
+  require_command aws
+
+  local scope="${FLOWFORM_SCOPE:-nonprod}"
+  local manifest="${RELEASE_MANIFEST_PATH}"
+  [[ -f "${manifest}" ]] \
+    || die "release manifest not found: ${manifest} (publish first, or set RELEASE_MANIFEST_PATH)"
+
+  jq -e '.schema_version == 1' "${manifest}" >/dev/null \
+    || die "unsupported release manifest schema: ${manifest}"
+
+  local commit_sha
+  commit_sha="$(jq -er '.commit_sha' "${manifest}")" \
+    || die "release manifest has no commit_sha"
+
+  printf 'Promoting release %s into /flowform/%s/\n' "${commit_sha}" "${scope}"
+
+  local image_name target digest target_digest repository reference entry parameter group env_name
+  while IFS= read -r entry; do
+    image_name="$(jq -er '.name' <<<"${entry}")"
+    target="$(jq -er '.target' <<<"${entry}")"
+    digest="$(jq -er '.digest' <<<"${entry}")"
+
+    [[ "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]] \
+      || die "${image_name} has an invalid digest in the release manifest"
+
+    # Publication records a digest-qualified target. Accept the older
+    # tag-qualified form as well, but always normalize to one repository
+    # followed by exactly one verified digest.
+    if [[ "${target}" == *@sha256:* ]]; then
+      repository="${target%@sha256:*}"
+      target_digest="sha256:${target##*@sha256:}"
+      [[ "${target_digest}" == "${digest}" ]] \
+        || die "${image_name} target digest does not match its digest field"
+    else
+      repository="${target%:*}"
+    fi
+    [[ -n "${repository}" && "${repository}" != "${target}" ]] \
+      || die "${image_name} target is not tag- or digest-qualified"
+    reference="${repository}@${digest}"
+
+    while IFS= read -r parameter; do
+      group="${parameter%%/*}"
+      env_name="${parameter##*/}"
+      if [[ "${DRY_RUN:-0}" == "1" ]]; then
+        printf 'DRY_RUN: would set /flowform/%s/%s/%s=%s\n' \
+          "${scope}" "${group}" "${env_name}" "${reference}"
+        continue
+      fi
+      aws ssm put-parameter \
+        --name "/flowform/${scope}/${group}/${env_name}" \
+        --value "${reference}" \
+        --type String \
+        --overwrite >/dev/null \
+        || die "failed to write /flowform/${scope}/${group}/${env_name}"
+      printf 'set /flowform/%s/%s/%s\n' "${scope}" "${group}" "${env_name}"
+    done < <(image_parameter_targets "${image_name}")
+  done < <(jq -c '.images[]' "${manifest}")
+
+  printf 'Promotion complete. Hosts pick this up on their next bootstrap.\n'
+}
+
 case "${1:-}" in
   validate)
     validate_manifest
@@ -311,7 +394,10 @@ case "${1:-}" in
   publish)
     publish_images
     ;;
+  promote)
+    promote_images
+    ;;
   *)
-    die "usage: $0 {validate|publish}"
+    die "usage: $0 {validate|publish|promote}"
     ;;
 esac

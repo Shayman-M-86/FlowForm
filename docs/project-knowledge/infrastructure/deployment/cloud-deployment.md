@@ -4,8 +4,8 @@ aliases: ["Cloud deployment"]
 document_type: workflow
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:0b98483f153f03ab4e5a7e4ff4c68d8d45e06c91fcf44257c78bbfe312feb540
-last_edited: 2026-07-27
+verified_evidence_digest: sha256:ebc60406febfa3b8eebd0c9a93140dff2dc7da00455383daead260fd14977a82
+last_edited: 2026-07-28
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../.github/workflows/deploy.yml"
@@ -58,3 +58,10 @@ This workflow produces ECR images and a retained release manifest, but does
 not promote those digests to a runtime host. Repeating an already-published
 commit is governed by the publication script and immutable ECR repository
 contract rather than a host rollout step.
+
+Promotion is a separate `promote` subcommand of the same script, invoked by an
+operator rather than the workflow. It reads a release manifest and writes the
+digest-pinned image references into the runtime parameter groups, so hosts pick
+them up at their next bootstrap. Keeping publication and promotion apart means
+republishing an image never moves a running environment, and promoting never
+rebuilds one.

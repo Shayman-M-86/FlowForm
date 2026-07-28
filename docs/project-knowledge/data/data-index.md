@@ -2,10 +2,10 @@
 title: Data knowledge
 aliases: ["Data knowledge"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:06603db0c0e6d44c8d644fd81431509c4792086f9f918f0072114fd02424883e
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [backend, security]
 related_code:
   - "../../../backend/app/db/"
@@ -42,9 +42,10 @@ the separate schemas do not make a backend compromise harmless.
 ```
 
 The branch also records how schema changes are handled. The checked-in database
-assets initialize empty disposable databases, while an incremental migration and
-rollback process for retained environments is not established here. Detailed
-pages own the cryptographic response boundary and the schema-change workflow.
+assets initialize disposable databases and provide the baseline loaded into
+empty application schemas on AWS RDS. An incremental migration and rollback
+process for later retained-data changes is not established here. Detailed pages
+own the cryptographic response boundary and the schema-change workflow.
 
 ## Related documents
 

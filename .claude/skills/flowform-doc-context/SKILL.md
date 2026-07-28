@@ -1,12 +1,15 @@
 ---
 name: flowform-doc-context
-description: Load focused FlowForm documentation with Docsys for implementation, planning, architecture, repository questions, or documentation updates where existing behaviour and project boundaries matter.
+description: Load focused FlowForm documentation with Docsys at task start when session guidance suggests it, or when the user explicitly asks to consult or verify repository documentation.
 ---
 
 # FlowForm documentation context
 
-Use Docsys to load only the documentation needed for the task. Skip this for
-spelling, formatting, and isolated mechanical changes.
+Use Docsys to load only the documentation needed for the task. Normally run
+this workflow once near task start. Do not rerun it for later prompts in the
+same task unless the scope materially changes or the user asks for another
+documentation check. Skip it for spelling, formatting, and isolated mechanical
+changes.
 
 ## Workflow
 

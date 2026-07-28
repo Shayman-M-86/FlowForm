@@ -5,6 +5,7 @@ locals {
     "${var.image_root}/packer/provisioners/common/install-docker.sh",
     "${var.image_root}/packer/provisioners/common/install-aws-cli.sh",
     "${var.image_root}/packer/provisioners/common/configure-host.sh",
+    "${var.image_root}/packer/provisioners/common/install-runtime-assets.sh",
     "${var.image_root}/packer/provisioners/common/verify-image.sh",
   ]
   common_tags = {

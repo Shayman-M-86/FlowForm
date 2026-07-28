@@ -226,6 +226,64 @@ aws_cli_retry() {
     "$@"
 }
 
+# Log Docker into every private ECR registry referenced by the selected runtime
+# images. AWS CLI login sessions and instance-role credentials never reach the
+# image reference or env file; the short-lived ECR token travels only through
+# stdin to `docker login`.
+runtime_env_value() { # $1 = env file, $2 = exact key
+  local env_file="$1" key="$2"
+  awk -v key="${key}" '
+    index($0, key "=") == 1 {
+      count += 1
+      value = substr($0, length(key) + 2)
+    }
+    END {
+      if (count != 1 || value == "") exit 1
+      printf "%s", value
+    }
+  ' "${env_file}"
+}
+
+login_ecr_for_images() { # $1 = env file, rest = image env keys
+  local env_file="$1"
+  shift
+  local key image registry token
+  local -a registries=()
+
+  for key in "$@"; do
+    image="$(runtime_env_value "${env_file}" "${key}")" \
+      || fatal "${env_file} must contain exactly one non-empty ${key} assignment"
+    registry="${image%%/*}"
+    if [[ "${registry}" =~ ^[0-9]{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com$ ]]; then
+      if [[ ! " ${registries[*]} " =~ [[:space:]]${registry}[[:space:]] ]]; then
+        registries+=("${registry}")
+      fi
+    elif [[ "${registry}" == *".amazonaws.com" ]]; then
+      fatal "${key} uses an unsupported AWS registry host: ${registry}"
+    fi
+  done
+
+  if [[ "${DRY_RUN:-0}" == "1" ]]; then
+    if ((${#registries[@]})); then
+      info "DRY_RUN: would authenticate Docker to ${#registries[@]} private ECR registry"
+    else
+      info "DRY_RUN: selected images do not require ECR authentication"
+    fi
+    return
+  fi
+
+  for registry in "${registries[@]}"; do
+    token="$(aws_cli_retry "ECR authorization token for ${registry}" ecr get-login-password)" \
+      || fatal "could not obtain an ECR authorization token for ${registry}"
+    [[ -n "${token}" ]] || fatal "ECR returned an empty authorization token for ${registry}"
+    printf '%s' "${token}" \
+      | docker login --username AWS --password-stdin "${registry}" >/dev/null \
+      || fatal "Docker login failed for ${registry}"
+    unset token
+    info "authenticated Docker to ${registry}"
+  done
+}
+
 # ---------------------------------------------------------------------------
 # Atomic, change-detecting file write
 # ---------------------------------------------------------------------------
@@ -305,6 +363,21 @@ wait_for_http() {
     sleep "${delay}"
   done
   fatal "${label} did not become healthy at ${url} after ${attempts} attempts"
+}
+
+wait_for_tcp() {
+  local description="$1"
+  local host="$2"
+  local port="$3"
+  local attempts="${4:-60}"
+  local delay="${5:-5}"
+  local timeout_seconds="${6:-5}"
+
+  [[ "${port}" =~ ^[1-9][0-9]{0,4}$ ]] || fatal "invalid TCP port: ${port}"
+  ((port <= 65535)) || fatal "invalid TCP port: ${port}"
+
+  retry_with_backoff "${description}" "${attempts}" "${delay}" "${timeout_seconds}" \
+    bash -c 'exec 3<>"/dev/tcp/$1/$2"' _ "${host}" "${port}"
 }
 
 # ---------------------------------------------------------------------------

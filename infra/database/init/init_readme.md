@@ -1,14 +1,23 @@
 # Postgres Init Bootstrap
 
-This folder contains the database bootstrap logic that runs automatically on first container startup.
+This folder contains the shared database schemas and the environment-specific
+SQL used to establish them.
 
 ## Template Layout
 
-The SQL templates are organized by responsibility:
+The SQL is organized by responsibility:
 
+- `schema` contains the authoritative core and response baseline table schemas
+- `aws` contains RDS-specific role, grant, and verification SQL packaged by
+  `DatabaseBootstrapStack`
 - `templates/shared` contains SQL used only when bootstrapping both databases in one cluster
 - `templates/core` contains SQL specific to the core database container
 - `templates/response` contains SQL specific to the response database container
+
+The AWS Lambda orchestration remains under
+`infra/deployment/aws/cdk/flowform_infra/database_bootstrap/`. It packages the
+`aws` and `schema` inputs; it does not maintain duplicate SQL beside the Python
+handler.
 
 ## What it does
 

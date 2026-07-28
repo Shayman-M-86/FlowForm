@@ -1,3 +1,4 @@
+import dataclasses
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -6,8 +7,16 @@ from aws_cdk import aws_kms as kms
 from aws_cdk import aws_route53 as route53
 from aws_cdk.assertions import Match, Template
 
-from flowform_infra.config import DOMAIN_NAME, get_env_config
+from flowform_infra.config import (
+    DOMAIN_NAME,
+    Auth0PublicConfig,
+    RuntimePublicConfig,
+    get_env_config,
+    runtime_group_logical_names,
+    runtime_parameter_name,
+)
 from flowform_infra.stacks.application_stack import ApplicationStack
+from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.registry_stack import RegistryStack
 
@@ -15,7 +24,23 @@ _EMPTY_ENV_DIR = Path(__file__).parent
 
 
 def _staging_config():
-    return get_env_config("staging", env_dir=_EMPTY_ENV_DIR)
+    return dataclasses.replace(
+        get_env_config("staging", env_dir=_EMPTY_ENV_DIR),
+        auth0_public=Auth0PublicConfig(
+            domain="auth.example.test",
+            client_id="staging-client",
+            audience="https://api.example.test",
+        ),
+        runtime_public=RuntimePublicConfig(
+            auth0_management_domain="tenant.example.test",
+            auth0_management_id="management-client",
+            email_from_address="no-reply@example.test",
+            grafana_cloud_loki_url="https://logs.example.test/loki/api/v1/push",
+            grafana_cloud_loki_user="loki-user",
+            grafana_cloud_tempo_endpoint="tempo.example.test:443",
+            grafana_cloud_tempo_user="tempo-user",
+        ),
+    )
 
 
 def _synth_network_stack() -> Template:
@@ -63,6 +88,14 @@ def _synth_application_stack() -> Template:
         publisher_role=image_publisher_role,
         env=cdk_env,
     )
+    database = DatabaseStack(
+        app,
+        "Database",
+        env_config=env_config,
+        network_stack=network,
+        kms_key=kms_key,
+        env=cdk_env,
+    )
     application = ApplicationStack(
         app,
         "Application",
@@ -71,10 +104,26 @@ def _synth_application_stack() -> Template:
         registry_stack=registry,
         task_role=task_role,
         kms_key=kms_key,
+        database_stack=database,
+        linkage_secret_arn="arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/linkage",
+        observability_secret_arn=(
+            "arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/observability"
+        ),
         hosted_zone=hosted_zone,
         env=cdk_env,
     )
     return Template.from_stack(application)
+
+
+def _backend_parameters() -> dict[str, object]:
+    """Return the published backend runtime group keyed by env-var name."""
+    resources = _synth_application_stack().find_resources("AWS::SSM::Parameter")
+    published: dict[str, object] = {}
+    for resource in resources.values():
+        name = resource["Properties"]["Name"]
+        if isinstance(name, str) and "/backend/" in name:
+            published[name.rsplit("/", 1)[-1]] = resource["Properties"]["Value"]
+    return published
 
 
 def test_network_has_no_nat_gateway_and_app_s3_gateway_endpoint():
@@ -181,7 +230,7 @@ def test_network_private_dns_zone_and_application_records_track_instance_address
         if resource["Type"] == "AWS::Route53::RecordSet"
     }
 
-    assert set(records) == {
+    assert {name for name in records if name.endswith(".internal.staging.flow-form.com.au.")} == {
         "app.internal.staging.flow-form.com.au.",
         "proxy.internal.staging.flow-form.com.au.",
     }
@@ -193,6 +242,10 @@ def test_network_private_dns_zone_and_application_records_track_instance_address
     assert proxy_target[1] == "PrivateIp"
     assert {record["TTL"] for record in records.values()} == {"60"}
     assert {record["Type"] for record in records.values()} == {"A"}
+
+    public_api = records["api.staging.flow-form.com.au."]
+    assert public_api["HostedZoneId"] == "Z1234567890ABC"
+    assert public_api["ResourceRecords"][0]["Ref"].startswith("ProxyElasticIp")
 
 
 def test_proxy_security_group_public_http_https_only_and_squid_from_app_only():
@@ -381,6 +434,47 @@ def test_proxy_role_has_hosted_zone_scoped_route53_change_access():
     )
 
 
+def test_proxy_role_can_read_only_the_observability_secret():
+    template = _synth_application_stack()
+    rendered = str(template.to_json())
+    assert "flowform/nonprod/observability" in rendered
+    assert "secretsmanager:GetSecretValue" in rendered
+    assert "secretsmanager:DescribeSecret" in rendered
+    assert "secret:flowform/nonprod/app-secrets" not in rendered
+
+
+def test_proxy_role_can_read_only_its_runtime_parameter_path():
+    template = _synth_application_stack()
+    template.has_resource_properties(
+        "AWS::IAM::Policy",
+        {
+            "PolicyDocument": {
+                "Statement": Match.array_with(
+                    [
+                        {
+                            "Action": "ssm:GetParametersByPath",
+                            "Effect": "Allow",
+                            "Resource": Match.any_value(),
+                        }
+                    ]
+                )
+            }
+        },
+    )
+
+    statements = [
+        statement
+        for resource in template.to_json()["Resources"].values()
+        if resource["Type"] == "AWS::IAM::Policy"
+        for statement in resource["Properties"]["PolicyDocument"]["Statement"]
+        if statement["Action"] == "ssm:GetParametersByPath"
+    ]
+    assert len(statements) == 1
+    rendered_resource = str(statements[0]["Resource"])
+    assert "parameter/flowform/nonprod/proxy/*" in rendered_resource
+    assert "parameter/flowform/nonprod/*" not in rendered_resource
+
+
 def test_application_ecr_pulls_are_scoped_to_exact_host_repositories():
     template = _synth_application_stack()
     rendered = template.to_json()
@@ -452,3 +546,138 @@ def test_application_instances_use_ten_gib_gp3_encrypted_root_volumes():
         },
         2,
     )
+
+
+def test_backend_parameters_are_published_under_the_contract_path():
+    """Bootstrap reads /flowform/<scope>/backend/ and renders KEY=value lines."""
+    template = _synth_application_stack()
+    template.has_resource_properties(
+        "AWS::SSM::Parameter",
+        {
+            "Name": "/flowform/nonprod/backend/DATABASE_CORE_AUTH_MODE",
+            "Value": "iam",
+        },
+    )
+    template.has_resource_properties(
+        "AWS::SSM::Parameter",
+        {
+            "Name": "/flowform/nonprod/backend/DATABASE_RESPONSE_AUTH_MODE",
+            "Value": "iam",
+        },
+    )
+
+
+def test_proxy_runtime_parameters_include_domain_and_observability_routes():
+    template = _synth_application_stack()
+    expected = {
+        "API_DOMAIN": "api.staging.flow-form.com.au",
+        "FLOWFORM_ENV": "prod",
+        "GRAFANA_CLOUD_LOKI_URL": "https://logs.example.test/loki/api/v1/push",
+        "GRAFANA_CLOUD_LOKI_USER": "loki-user",
+        "GRAFANA_CLOUD_TEMPO_ENDPOINT": "tempo.example.test:443",
+        "GRAFANA_CLOUD_TEMPO_USER": "tempo-user",
+    }
+    resources = template.find_resources("AWS::SSM::Parameter")
+    actual = {
+        resource["Properties"]["Name"].rsplit("/", 1)[-1]: resource["Properties"]["Value"]
+        for resource in resources.values()
+        if "/proxy/" in resource["Properties"]["Name"]
+    }
+    assert actual == expected
+
+
+def test_published_backend_parameters_are_all_declared_in_the_contract():
+    """A parameter name outside the contract would never reach backend.env."""
+    contract_env_names = {
+        name.rsplit("/", 1)[-1]
+        for logical in runtime_group_logical_names("backend")
+        for name in [runtime_parameter_name("nonprod", "backend", logical)]
+    }
+    assert set(_backend_parameters()) <= contract_env_names
+
+
+def test_staging_backend_runs_as_prod_with_iam_database_auth():
+    """Staging is production-shaped, so FLOWFORM_ENV is prod."""
+    published = _backend_parameters()
+    assert published["FLOWFORM_ENV"] == "prod"
+    assert published["DATABASE_CORE_APP_USER"] == "flowform_core_app"
+    assert published["DATABASE_RESPONSE_APP_USER"] == "flowform_response_app"
+    assert published["DATABASE_CORE_NAME"] == "flowform_core"
+    assert published["DATABASE_RESPONSE_NAME"] == "flowform_response"
+
+
+def test_no_database_password_parameter_is_published():
+    """Under IAM auth no database credential exists to publish."""
+    published = _backend_parameters()
+    assert not any("PASSWORD" in name for name in published)
+
+
+def test_cors_origins_are_explicit_json_for_staging():
+    """The backend parses this as a JSON list; wildcards are rejected in prod."""
+    origins = _backend_parameters()["FLOWFORM_CORS_ORIGINS"]
+    assert isinstance(origins, str)
+    assert "*" not in origins
+    assert "https://studio.staging." in origins
+
+
+def _user_data(instance_logical_prefix: str) -> str:
+    """Return one instance's user data as a flattened string."""
+    resources = _synth_application_stack().find_resources("AWS::EC2::Instance")
+    for logical_id, resource in resources.items():
+        if not logical_id.startswith(instance_logical_prefix):
+            continue
+        encoded = resource["Properties"]["UserData"]["Fn::Base64"]
+        # A script with no CloudFormation references renders as a plain
+        # string; one with references renders as an Fn::Join of fragments.
+        if isinstance(encoded, str):
+            return encoded
+        parts = encoded["Fn::Join"][1]
+        return "".join(part for part in parts if isinstance(part, str))
+    raise AssertionError(f"no instance matching {instance_logical_prefix}")
+
+
+def test_app_user_data_selects_the_aws_deployment_target():
+    """Bootstrap branches its credential strategy on this value."""
+    assert "FLOWFORM_DEPLOYMENT_TARGET=aws" in _user_data("AppInstance")
+
+
+def test_proxy_user_data_does_not_set_a_deployment_target():
+    """Only the app bootstrap consumes the deployment target."""
+    assert "FLOWFORM_DEPLOYMENT_TARGET" not in _user_data("ProxyInstance")
+
+
+def test_user_data_execs_the_baked_bootstrap_without_fetching_anything():
+    """The scripts are baked into the AMI, so nothing is downloaded at boot."""
+    for prefix, host in (("AppInstance", "app"), ("ProxyInstance", "proxy")):
+        script = _user_data(prefix)
+        assert f"{ApplicationStack.RUNTIME_ASSET_ROOT}/infra/deployment/bootstrap/bootstrap-{host}.sh" in script
+        assert "set -euo pipefail" in script
+        assert "aws s3 cp" not in script
+        assert "tar -xzf" not in script
+
+
+def test_user_data_passes_both_static_private_ips():
+    """Each host needs the other's address; static IPs avoid a CFN cycle."""
+    for prefix in ("AppInstance", "ProxyInstance"):
+        script = _user_data(prefix)
+        assert f"PROXY_PRIVATE_IP={ApplicationStack.PROXY_PRIVATE_IP}" in script
+        assert f"APP_PRIVATE_IP={ApplicationStack.APP_PRIVATE_IP}" in script
+
+
+def test_instances_use_the_static_private_addresses():
+    """The two hosts must hold exactly the addresses user data hardcodes."""
+    resources = _synth_application_stack().find_resources("AWS::EC2::Instance")
+    assigned = set()
+    for resource in resources.values():
+        properties = resource["Properties"]
+        if "PrivateIpAddress" in properties:
+            assigned.add(properties["PrivateIpAddress"])
+        else:
+            # Suppressing a public IP forces the address onto an explicit
+            # network interface instead of the top-level property.
+            assigned.add(properties["NetworkInterfaces"][0]["PrivateIpAddress"])
+
+    assert assigned == {
+        ApplicationStack.PROXY_PRIVATE_IP,
+        ApplicationStack.APP_PRIVATE_IP,
+    }

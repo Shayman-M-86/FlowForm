@@ -2,10 +2,10 @@
 title: Documentation authoring guide
 aliases: ["Documentation authoring guide"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:d377102676bbe51ae869d0d41694cde7bbf88944aeef06876ba823c5f7eb22ed
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-29
 tags: [meta]
 related_code:
   - "../../../../tools/docs/"
@@ -56,11 +56,16 @@ implementation evidence ------> write/update claims
 ## Agent context workflow
 
 Codex and Claude share the `flowform-doc-context` skill and the
-`flowform-docs` MCP server. Before non-trivial work, agents call
-`get_task_context`, read only the primary documents it returns, and use the
-returned implementation locations to target evidence inspection. After
-behavioural or architectural changes, they call `get_impacted_docs` and review
-the results rather than updating documentation mechanically.
+`flowform-docs` MCP server. At the first session start, a non-blocking hook
+suggests loading focused documentation for non-trivial work where existing
+behaviour or project boundaries matter. When relevant, agents call
+`get_task_context` once near task start, read only the primary documents it
+returns, and use the returned implementation locations to target evidence
+inspection. They do not reload that context on every later prompt unless the
+task scope materially changes or the user asks for another documentation
+check. After behavioural or architectural changes, they call
+`get_impacted_docs` and review the results rather than updating documentation
+mechanically.
 
 `docs/` is the active context root. Every Docsys MCP tool accepts `docs_root`;
 when it is omitted, Docsys selects that active tree. The matching Codex and

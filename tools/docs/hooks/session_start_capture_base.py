@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Shared SessionStart hook: capture the task's base commit for the Stop hook.
+"""Shared SessionStart hook: initialize documentation support for the task.
 
 Records the repository HEAD at the start of the session so the Stop hook can
 diff against a stable starting point when deciding whether implementation
-changes may have affected canonical documentation. Writes lightweight per-
-session state and never blocks or alters the session.
+changes may have affected canonical documentation. On the first start for a
+session, it also gives the agent one non-blocking suggestion to load focused
+documentation when relevant. Writes lightweight per-session state and never
+blocks or alters the session.
 
-Input (stdin JSON) includes ``session_id`` and ``source``. Output is empty; the
-hook succeeds silently (exit 0) even on error, so it can never disrupt a
-session.
+Input (stdin JSON) includes ``session_id`` and ``source``. Plain text output is
+added as agent context by Codex and Claude. The hook succeeds (exit 0) even on
+error, so it can never disrupt a session.
 """
 from __future__ import annotations
 
@@ -25,6 +27,14 @@ from docsys_hook_lib import (  # noqa: E402
     save_state,
 )
 
+DOC_CONTEXT_SUGGESTION = (
+    "FlowForm has focused repository documentation available through the "
+    "flowform-doc-context skill and flowform-docs tools. For non-trivial work "
+    "where existing behaviour or project boundaries matter, consider loading "
+    "that context once now. Do not reload it on later prompts unless the task "
+    "scope materially changes or the user asks for another documentation check."
+)
+
 
 def main() -> int:
     data = read_hook_input()
@@ -33,6 +43,7 @@ def main() -> int:
         return 0
 
     state = load_state(session_id)
+    should_suggest = not state.get("doc_context_suggested")
     # Only capture the baseline once per session; a resumed/compacted session
     # must keep its original starting point so impact is measured across the
     # whole task, not just since the last resume.
@@ -46,7 +57,11 @@ def main() -> int:
         # repository that was already dirty.
         pre_impl, _ = changed_files_since(head)
         state["preexisting_impl_files"] = pre_impl
-        save_state(session_id, state)
+    if should_suggest:
+        state["doc_context_suggested"] = True
+    save_state(session_id, state)
+    if should_suggest:
+        print(DOC_CONTEXT_SUGGESTION)
     return 0
 
 

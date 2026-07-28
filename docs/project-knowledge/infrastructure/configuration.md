@@ -2,13 +2,15 @@
 title: Configuration implementation
 aliases: ["Configuration implementation"]
 document_type: implementation
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:c4e18e6f60c3cf2eaa16332ef93756aa8da9eb3a0546d83ea87c1bebb7684256
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [configuration, infrastructure]
 related_code:
   - "../../../backend/app/core/config.py"
+  - "../../../backend/app/db/iam_auth.py"
+  - "../../../backend/app/db/manager.py"
   - "../../../backend/app/aws/startup_validation.py"
   - "../../../infra/deployment/config/runtime-parameter-contract.json"
   - "../../../infra/deployment/bootstrap/"
@@ -42,12 +44,20 @@ environment variables + secret files
 
 ## Settings and secret files
 
-The model accepts a complete database URL or the required database parts. A
-database password file is loaded when a direct password is absent. Application
-and Auth0 management settings likewise load configured secret files. In dev
+The model accepts a complete database URL or the required database parts.
+Application and Auth0 management settings load configured secret files. In dev
 and prod the Auth0 management secret file is mandatory and validation must be
 enabled; production also rejects empty CORS origins and wildcard origins when
 credentials are enabled.
+
+Each database target selects its own authentication mode. `password` is the
+default and loads a database password file when a direct password is absent.
+`iam` carries no stored credential: the required parts exclude a password, and
+the assembled URL omits it. The two databases are configured independently, and
+the mode is not derived from `FLOWFORM_ENV`, so a deployment chooses it
+explicitly. Supplying a password, a password file, or a complete URL alongside
+`iam` is rejected, because either would otherwise silently take precedence over
+the token path.
 
 `backend/app/aws/client_extension.py` creates KMS, Secrets Manager, and SES
 clients before registering them with Flask. Startup validation is skipped in
@@ -59,9 +69,12 @@ failure.
 
 `runtime-parameter-contract.json` defines scope parameters, named backend and
 proxy runtime groups, and the app, database, linkage, and observability secret
-resource categories. It supplies names for deployment consumers rather than
-storing their confidential values. Bootstrap scripts and Compose assets map the
-resulting parameters and secret files to runtime processes.
+resource categories. The backend runtime group includes the core and response
+database auth modes. It supplies names for deployment consumers rather than
+storing their confidential values. App bootstrap validates those modes against
+its explicit AWS or rehearsal deployment target. AWS delivers passwordless IAM
+database configuration; the rehearsal Compose overlay supplies database
+password files.
 
 Local ignored environment files, secret files, Packer variable files, and
 Terraform state are runtime or generated inputs, not the canonical model. Some

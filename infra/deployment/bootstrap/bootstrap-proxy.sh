@@ -229,6 +229,10 @@ main() {
   render_proxy_env
   end_step
 
+  begin_step "Authenticating private image registries"
+  login_ecr_for_images "${PROXY_ENV}" CADDY_IMAGE SQUID_IMAGE ALLOY_IMAGE
+  end_step
+
   begin_step "Starting proxy containers"
   compose_up
   end_step

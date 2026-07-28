@@ -130,6 +130,20 @@ class SecurityStack(Stack):
             keys=["db_core_app_password", "db_response_app_password"],
         ).secret
 
+        # The proxy host's Alloy gateway needs one Grafana Cloud access token.
+        # The generated value is only a placeholder; the real token is seeded
+        # out of band and is never placed in CloudFormation or SSM.
+        self.observability_secret = AppMultiSecret(
+            self,
+            "ObservabilitySecrets",
+            namespace=scope_name,
+            removal_policy=scope_config.removal_policy,
+            secret_name_suffix="observability-secrets",
+            description="Grafana Cloud token for the proxy observability gateway",
+            encryption_key=self.kms_key,
+            keys=["grafana_cloud_token"],
+        ).secret
+
         # Non-secret config, readable without Secrets Manager decrypt perms.
         ssm.StringParameter(
             self,
@@ -227,8 +241,7 @@ class SecurityStack(Stack):
                 "StringEquals": {
                     "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
                     "token.actions.githubusercontent.com:sub": (
-                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:"
-                        f"environment:{scope_config.ci_env_name}"
+                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:environment:{scope_config.ci_env_name}"
                     ),
                 },
             },
@@ -240,8 +253,7 @@ class SecurityStack(Stack):
                 "StringEquals": {
                     "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
                     "token.actions.githubusercontent.com:sub": (
-                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:"
-                        f"ref:refs/heads/{scope_config.ci_deploy_branch}"
+                        f"repo:{GITHUB_OWNER}/{GITHUB_REPOSITORY}:ref:refs/heads/{scope_config.ci_deploy_branch}"
                     ),
                 },
             },

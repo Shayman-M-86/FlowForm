@@ -2,10 +2,10 @@
 title: Database migrations
 aliases: ["Database migrations"]
 document_type: workflow
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:63b8d3bc46b00e79ae76a1852e09a47b4ffd74de7cbfe8099febeb066269bb5f
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [backend]
 related_code:
   - "../../../infra/database/init/"
@@ -22,10 +22,11 @@ related_docs:
 # Database migrations
 
 This page describes the repository's current schema-change path. The checked-in
-database assets create empty PostgreSQL databases from maintained SQL schemas
-and initialization templates. They are suitable for disposable development and
-test environments; they do not establish an incremental upgrade, downgrade, or
-rollback procedure for a database that contains retained data.
+database assets create a baseline PostgreSQL structure from maintained SQL
+schemas. Development and test load it through initialization templates; the AWS
+bootstrap loads the same baseline into empty application schemas on retained
+RDS. Neither path establishes an incremental upgrade, downgrade, or rollback
+procedure for a database that already contains application objects or data.
 
 ## Change boundary
 
@@ -72,6 +73,12 @@ Editing an initialization schema and restarting an existing PostgreSQL volume
 does not apply the change: the official entrypoint initializes only an empty
 data directory. A retained environment therefore needs a separately designed,
 tested, and authorized operational migration plan before its schema changes.
+
+The AWS bootstrap is also a baseline-only path. It loads the authoritative
+schema snapshots only when the target application schema is empty, rejects a
+partial or unexpected table set, and verifies the completed baseline. Every
+schema change after that point belongs to the future retained-data migration
+path.
 
 ## Related documents
 

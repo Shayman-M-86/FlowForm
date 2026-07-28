@@ -13,7 +13,7 @@ related_code:
   - "../../../infra/deployment/aws/cdk/flowform_infra/constructs/"
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/"
   - "../../../infra/deployment/aws/cdk/tests/"
-  - "../../../infra/deployment/bootstrap/"
+  - "../../../infra/deployment/aws/scripts/"
   - "../../../.github/workflows/"
 related_docs:
   - "Engineering planning"
@@ -91,8 +91,9 @@ fails closed when any of those values is absent.
 | Security | `FlowForm-Nonprod-Security` | Same shared nonproduction stack | `FlowForm-Prod-Security` | Nonproduction recorded deployed on 2026-07-24; production source only |
 | Registry | Not created | `FlowForm-Staging-Registry` | `FlowForm-Prod-Registry` | Staging recorded deployed on 2026-07-24; production source only |
 | Network | Not created | `FlowForm-Staging-Network` | `FlowForm-Prod-Network` | Staging deployed and live verified on 2026-07-27; production source only |
-| Database | Not created | `FlowForm-Staging-Database` | `FlowForm-Prod-Database` | Source implemented and asserted; neither environment recorded deployed |
-| Application | Not created | `FlowForm-Staging-Application` | `FlowForm-Prod-Application` | Resource skeleton only; bootstrap is incomplete and deployment is not ready |
+| Database | Not created | `FlowForm-Staging-Database` | `FlowForm-Prod-Database` | Staging deployed and bootstrapped; production source only |
+| Database bootstrap helper | Not created | `FlowForm-Staging-DatabaseBootstrap` | `FlowForm-Prod-DatabaseBootstrap` | Optional context-gated source; not part of ordinary synthesis or deployment |
+| Application | Not created | `FlowForm-Staging-Application` | `FlowForm-Prod-Application` | Initial convergence source implemented locally; neither environment deployed |
 | Frontend certificate | Not created | `FlowForm-Staging-FrontendCert` | `FlowForm-Prod-FrontendCert` | Source implemented; live state is not established by the active plan |
 | Frontend | Not created | `FlowForm-Staging-Frontend` | `FlowForm-Prod-Frontend` | Source implemented; live CDK state is not established by the active plan |
 | Observability | Not created | `FlowForm-Staging-Observability` | `FlowForm-Prod-Observability` | Placeholder only |
@@ -112,13 +113,14 @@ Security
   `-- frontend deploy role ---> Frontend
 
 Network
-  |-- VPC/subnets/SGs --------> Database
+  |-- VPC/subnets/SGs --------> Database, optional bootstrap helper
   `-- VPC/subnets/SGs/zone ---> Application
 
 Registry
   `-- repository references --> Application
 
 Database
+  |-- endpoint/secret --------> optional bootstrap helper
   `-- deployment dependency --> Application
 
 Frontend certificate
@@ -163,13 +165,15 @@ template.
 
 - One customer-managed KMS key with automatic rotation.
 - One stable KMS alias.
-- Three KMS-encrypted Secrets Manager secrets:
+- Four KMS-encrypted Secrets Manager secrets:
   - `flowform/<scope>/app-secrets`, containing `app_secret_key` and
     `auth0_mgmt_secret`;
   - `flowform/<scope>/db-secrets`, containing
     `db_core_app_password` and `db_response_app_password`;
   - `flowform/<scope>/linkage-secret`, containing the versioned linkage HMAC
-    material.
+    material;
+  - `flowform/<scope>/observability-secrets`, containing the proxy Alloy
+    Grafana Cloud token.
 - Five non-secret SSM parameters:
   - `/flowform/<scope>/kms-key-arn`;
   - `/flowform/<scope>/aws-region`;
@@ -212,8 +216,8 @@ frontend-parameter permissions are attached by their owning consumer stacks.
   change registrar nameservers.
 - The SES identity is imported and remains manual for now.
 - No general-purpose GitHub CDK deployment role is implemented.
-- No observability secret is created despite the runtime parameter contract
-  reserving an `observability-secrets` name.
+- The observability secret is created with a generated placeholder and must be
+  seeded out of band before the proxy host is deployed.
 - Secret rotation automation is not implemented here.
 
 ## Registry stack
@@ -319,7 +323,9 @@ security groups only establish reachability.
 ### Exclusions
 
 - No NAT Gateway.
-- No paid VPC interface endpoints.
+- No continuously deployed paid VPC interface endpoints. The database
+  bootstrap operation may create one temporary, tagged Secrets Manager
+  endpoint and must request its deletion before returning.
 - No Application Load Balancer.
 - No public application or RDS route.
 - No duplicate proxy or application subnets for high availability.
@@ -331,6 +337,8 @@ security groups only establish reachability.
 
 - One private RDS PostgreSQL instance.
 - PostgreSQL `17.9`, explicitly pinned.
+- RDS Extended Support enrollment explicitly disabled; deployment must fail
+  rather than silently enter paid Extended Support after standard support ends.
 - PostgreSQL parameter family `postgres17`.
 - `db.t4g.small`.
 - Single-AZ placement in `ap-southeast-2a`.
@@ -344,9 +352,15 @@ security groups only establish reachability.
 - RDS-managed master password, with its secret encrypted by the FlowForm KMS
   key.
 - `rds.force_ssl = 1`.
-- SCRAM-SHA-256 password encryption and accepted authentication.
+- SCRAM password encryption (`password_encryption = scram-sha-256`) and
+  accepted authentication (`rds.accepted_password_auth_method = scram`; the RDS
+  parameter does not accept PostgreSQL's `scram-sha-256` spelling).
+- IAM database authentication enabled; the two runtime identities authenticate
+  with short-lived tokens and hold no stored password.
 - PostgreSQL and upgrade log exports.
-- Database Insights Standard and Performance Insights with seven-day history.
+- Database Insights Standard and Performance Insights with the no-additional-
+  cost seven-day history.
+- Enhanced Monitoring explicitly disabled (`MonitoringInterval: 0`).
 - Tag copying to snapshots.
 - Automatic minor-version upgrades during maintenance.
 - No automatic major-version upgrade and no immediate application of changes.
@@ -371,26 +385,30 @@ Staging retains automated backups and takes a final snapshot on deletion or
 replacement. Production retains the DB resource and enables deletion
 protection. Neither environment is designed for Multi-AZ.
 
-### Exclusions and later bootstrap
+### Bootstrap boundary and remaining exclusions
 
-The stack does not create:
+`DatabaseStack` contains no Lambda, custom resource, Step Functions state
+machine, or interface endpoint. Its success depends only on persistent RDS
+infrastructure. It exposes the managed administrative secret and non-secret
+endpoint as constructs but does not publish secret values.
 
-- the `flowform_core` and `flowform_response` logical databases;
-- migration, owner, or application PostgreSQL roles;
-- grants, schemas, tables, or extensions;
-- application connection-pool settings;
-- IAM database authentication;
-- RDS Proxy;
-- Enhanced Monitoring;
-- a dedicated Performance Insights KMS key.
+The optional, context-gated `DatabaseBootstrapStack` contains one idempotent
+private Lambda and dedicated Lambda/endpoint security groups. It does not own
+RDS and does not invoke the Lambda through CloudFormation. The operator script
+deploys or updates the helper, creates one tagged Secrets Manager interface
+endpoint, invokes and verifies bootstrap, then requests endpoint deletion in
+its exit path. Bootstrap failure therefore cannot roll back the database.
 
-Those database-content responsibilities remain a controlled migration/bootstrap
-operation. The CDK stack exposes the managed administrative secret and
-non-secret endpoint as constructs but does not publish secret values.
+Bootstrap creates the two logical databases, owner/migration/runtime roles,
+IAM grants, extensions, application schemas, the authoritative core and
+response baseline tables, default privileges, and its version record. It does
+not perform later schema migrations. RDS Proxy, Enhanced Monitoring,
+application connection-pool settings, and a dedicated Performance Insights KMS
+key remain excluded.
 
 ## Application stack
 
-### Currently implemented resource skeleton
+### Implemented initial deployment source
 
 The application stack creates two EC2 instances in Availability Zone A:
 
@@ -437,21 +455,30 @@ The proxy role:
 The application instance uses the SecurityStack application role and can pull
 only the backend and Alloy repositories. Both host policies use the
 account-wide ECR authorization action and repository-specific layer and image
-reads.
+reads. The proxy can read only the observability secret and decrypt it only
+through the regional Secrets Manager service.
 
-### Incomplete behavior
+The stack also:
 
-The stack is not ready to deploy because it does not yet:
+- attaches baked bootstrap user data to both hosts;
+- publishes complete backend and proxy non-secret runtime groups;
+- creates `api.<public-site-domain>` pointing at the proxy Elastic IP;
+- makes host creation depend on its runtime parameters and ECR policies;
+- orders the app instance after proxy-instance creation;
+- relies on the app bootstrap's bounded Squid readiness wait before external
+  AWS calls;
+- authenticates Docker to the distinct private ECR registries selected by
+  digest before Compose pulls.
 
-- attach user data or invoke the shared host bootstrap;
-- configure the Docker daemon, AWS CLI, SSM Agent, or containers to use Squid;
-- render proxy or backend environment files;
-- materialize file-backed secrets into tmpfs;
-- select and promote active image digests;
-- start or health-check either Compose project;
-- enforce proxy-before-application convergence;
-- consume the database endpoint or application database credentials;
-- create the public `api.<domain>` Route 53 record;
+### Remaining live and readiness gaps
+
+The source still needs to be merged, baked into a fresh AMI, deployed, and
+verified. It does not yet:
+
+- prove that the proxy and app Compose projects converge on real EC2 hosts;
+- prove a live IAM-token connection to either RDS database;
+- prove Caddy's DNS-01 certificate path or the public API route;
+- prove Grafana logs and traces;
 - prove reboot or replacement convergence;
 - apply an explicit production retention policy to the EC2 instances or EIP.
 
@@ -569,7 +596,7 @@ The current target deliberately excludes:
 - horizontal application scaling;
 - RDS Proxy;
 - Multi-AZ RDS;
-- paid VPC interface endpoints;
+- continuously deployed paid VPC interface endpoints;
 - public application or database instances;
 - static GitHub AWS credentials;
 - automatic schema creation through CloudFormation custom resources.
