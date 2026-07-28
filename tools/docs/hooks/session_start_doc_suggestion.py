@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""Shared SessionStart hook: initialize documentation support for the task.
+"""Shared SessionStart hook: suggest focused documentation context once.
 
-Records the repository HEAD at the start of the session so the Stop hook can
-diff against a stable starting point when deciding whether implementation
-changes may have affected canonical documentation. On the first start for a
-session, it also gives the agent one non-blocking suggestion to load focused
-documentation when relevant. Writes lightweight per-session state and never
-blocks or alters the session.
+On the first start for a session, give the agent one non-blocking suggestion
+to load focused documentation when relevant. Writes lightweight per-session
+state and never blocks or alters the session.
 
 Input (stdin JSON) includes ``session_id`` and ``source``. Plain text output is
 added as agent context by Codex and Claude. The hook succeeds (exit 0) even on
@@ -19,8 +16,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from docsys_hook_lib import (  # noqa: E402
-    changed_files_since,
-    current_head,
     load_state,
     read_hook_input,
     resolve_session_id,
@@ -44,19 +39,6 @@ def main() -> int:
 
     state = load_state(session_id)
     should_suggest = not state.get("doc_context_suggested")
-    # Only capture the baseline once per session; a resumed/compacted session
-    # must keep its original starting point so impact is measured across the
-    # whole task, not just since the last resume.
-    if not state.get("base_commit"):
-        head = current_head()
-        if head:
-            state["base_commit"] = head
-        # Snapshot files already dirty before the task starts (e.g. an
-        # in-progress refactor). The Stop hook subtracts these so it only
-        # reviews changes made DURING the task, avoiding false positives in a
-        # repository that was already dirty.
-        pre_impl, _ = changed_files_since(head)
-        state["preexisting_impl_files"] = pre_impl
     if should_suggest:
         state["doc_context_suggested"] = True
     save_state(session_id, state)

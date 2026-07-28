@@ -45,6 +45,9 @@ for required in \
   "infra/deployment/bootstrap/bootstrap-common.sh" \
   "infra/containers/runtime/compose/app.yml" \
   "infra/containers/runtime/compose/proxy.yml" \
+  "infra/containers/runtime/services/alloy/config.alloy" \
+  "infra/containers/runtime/services/alloy-app/config.alloy" \
+  "infra/containers/runtime/services/squid/squid.conf" \
   "infra/containers/strategies/aws/compose/proxy.override.yml"
 do
   test -e "${TARGET}/${required}" || die "runtime assets are missing ${required}"

@@ -10,7 +10,7 @@ from unittest.mock import patch
 HOOKS_DIR = Path(__file__).resolve().parents[1] / "hooks"
 sys.path.insert(0, str(HOOKS_DIR))
 
-import session_start_capture_base as session_start  # noqa: E402
+import session_start_doc_suggestion as session_start  # noqa: E402
 
 
 class SessionStartHookTests(unittest.TestCase):
@@ -32,12 +32,6 @@ class SessionStartHookTests(unittest.TestCase):
             ),
             patch.object(session_start, "load_state", side_effect=load_state),
             patch.object(session_start, "save_state", side_effect=save_state),
-            patch.object(session_start, "current_head", return_value="abc123"),
-            patch.object(
-                session_start,
-                "changed_files_since",
-                return_value=(["backend/app/example.py"], []),
-            ),
         ):
             first_output = io.StringIO()
             with redirect_stdout(first_output):
@@ -50,10 +44,6 @@ class SessionStartHookTests(unittest.TestCase):
         self.assertIn("consider loading that context once now", first_output.getvalue())
         self.assertEqual(second_output.getvalue(), "")
         self.assertTrue(state["doc_context_suggested"])
-        self.assertEqual(state["base_commit"], "abc123")
-        self.assertEqual(
-            state["preexisting_impl_files"], ["backend/app/example.py"]
-        )
 
 
 if __name__ == "__main__":

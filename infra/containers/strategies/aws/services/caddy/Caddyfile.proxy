@@ -34,6 +34,12 @@
 
 	tls {
 		dns route53
+		# The proxy security group deliberately limits public egress to HTTPS.
+		# Route 53 publishes the challenge record through its HTTPS API, but
+		# Caddy's default local propagation check queries authoritative DNS
+		# servers directly on port 53. Disable only that local pre-check; the
+		# ACME authority still validates the public TXT record normally.
+		propagation_timeout -1
 	}
 
 	header {

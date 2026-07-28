@@ -68,6 +68,9 @@ python3 -m docsys freshness
 # After semantic review, record the exact staged implementation evidence.
 python3 -m docsys evidence promote --staged docs/path.md
 
+# Agent verification workflow: also stage the promoted documentation path.
+python3 -m docsys evidence promote --staged --stage docs/path.md
+
 # Repair dates in the working tree after a read-only pre-commit failure.
 python3 -m docsys evidence sync-last-edited
 

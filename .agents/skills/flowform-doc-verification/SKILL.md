@@ -1,6 +1,6 @@
 ---
 name: flowform-doc-verification
-description: Quickly promote FlowForm Project Knowledge documentation with Docsys. Use when the user asks to verify, approve, promote, or bulk-verify documentation before a commit; the request itself authorizes promotion.
+description: Quickly promote and stage FlowForm Project Knowledge documentation with Docsys. Use when the user asks to verify, approve, promote, or bulk-verify documentation before a commit; the request itself authorizes promotion and staging of the selected documentation paths.
 ---
 
 # Verify FlowForm documentation
@@ -16,15 +16,15 @@ Run the promotion workflow promptly. Do not turn it into a review project.
 3. Run the command immediately with all selected paths:
 
    ```sh
-   PYTHONPATH=tools/docs python3 -m docsys evidence promote --staged \
+   PYTHONPATH=tools/docs python3 -m docsys evidence promote --staged --stage \
      docs/project-knowledge/path.md
    ```
 
-4. Report the updated paths and the `git add` command printed by Docsys. Do not
-   stage them unless the user explicitly asks.
+4. Report the paths that Docsys updated and staged.
 5. Report any command error without starting a broader audit. Let pre-commit
    perform the remaining read-only validation.
 
 Do not inspect implementation, run tests, present an approval packet, or review
-every claim unless the user explicitly asks. Do not stage, commit, or push
+every claim unless the user explicitly asks. Stage only the selected
+documentation paths through Docsys. Do not commit, push, or stage other paths
 unless asked.

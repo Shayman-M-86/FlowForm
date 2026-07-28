@@ -56,6 +56,8 @@ if ! diff <(strip_caddy "${CADDY_AWS}") <(strip_caddy "${CADDY_REH}") >/dev/null
 fi
 grep -Fq $'\t\tdns route53' "${CADDY_AWS}" \
   || note "AWS Caddyfile no longer uses the Route 53 DNS provider"
+grep -Fq $'\t\tpropagation_timeout -1' "${CADDY_AWS}" \
+  || note "AWS Caddyfile again requires direct public DNS for its local propagation check"
 grep -Fq $'\ttls /etc/caddy/certs/api.crt /etc/caddy/certs/api.key' "${CADDY_REH}" \
   || note "rehearsal Caddyfile no longer uses the committed certificate paths"
 for caddy_file in "${CADDY_AWS}" "${CADDY_REH}"; do

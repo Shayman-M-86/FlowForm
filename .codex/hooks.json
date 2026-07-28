@@ -17,19 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/session_start_capture_base.py",
-            "statusMessage": "docsys: capture base commit"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/stop_doc_impact_review.py",
-            "statusMessage": "docsys: documentation impact review"
+            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/session_start_doc_suggestion.py",
+            "statusMessage": "docsys: suggest focused context"
           }
         ]
       }

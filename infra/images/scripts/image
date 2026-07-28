@@ -11,7 +11,7 @@ FlowForm machine-image operator entry point.
 
   image doctor <aws|proxmox|all>
   image prepare proxmox [--apply] [--replace] [--env-file PATH]
-  image build aws [--validate-only] [--syntax-only]
+  image build aws [--validate-only] [--syntax-only] [--diagnose-ssh]
   image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]
   image verify <aws|proxmox|all> [options]
   image artifact aws [--manifest PATH]

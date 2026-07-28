@@ -5,7 +5,7 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-29
 tags: [infrastructure, configuration, security, ci-cd]
 related_code:
   - "../../../infra/deployment/aws/cdk/app.py"
@@ -93,7 +93,7 @@ fails closed when any of those values is absent.
 | Network | Not created | `FlowForm-Staging-Network` | `FlowForm-Prod-Network` | Staging deployed and live verified on 2026-07-27; production source only |
 | Database | Not created | `FlowForm-Staging-Database` | `FlowForm-Prod-Database` | Staging deployed and bootstrapped; production source only |
 | Database bootstrap helper | Not created | `FlowForm-Staging-DatabaseBootstrap` | `FlowForm-Prod-DatabaseBootstrap` | Optional context-gated source; not part of ordinary synthesis or deployment |
-| Application | Not created | `FlowForm-Staging-Application` | `FlowForm-Prod-Application` | Initial convergence source implemented locally; neither environment deployed |
+| Application | Not created | `FlowForm-Staging-Application` | `FlowForm-Prod-Application` | Staging infrastructure deployed; proxy containers run, but backend, app-host management, and public TLS are not yet healthy |
 | Frontend certificate | Not created | `FlowForm-Staging-FrontendCert` | `FlowForm-Prod-FrontendCert` | Source implemented; live state is not established by the active plan |
 | Frontend | Not created | `FlowForm-Staging-Frontend` | `FlowForm-Prod-Frontend` | Source implemented; live CDK state is not established by the active plan |
 | Observability | Not created | `FlowForm-Staging-Observability` | `FlowForm-Prod-Observability` | Placeholder only |
@@ -358,8 +358,9 @@ security groups only establish reachability.
 - IAM database authentication enabled; the two runtime identities authenticate
   with short-lived tokens and hold no stored password.
 - PostgreSQL and upgrade log exports.
-- Database Insights Standard and Performance Insights with the no-additional-
-  cost seven-day history.
+- Database Insights Standard and Performance Insights with seven-day
+  retention. This source setting must be revisited if its AWS pricing tier
+  changes.
 - Enhanced Monitoring explicitly disabled (`MonitoringInterval: 0`).
 - Tag copying to snapshots.
 - Automatic minor-version upgrades during maintenance.
@@ -472,15 +473,20 @@ The stack also:
 
 ### Remaining live and readiness gaps
 
-The source still needs to be merged, baked into a fresh AMI, deployed, and
-verified. It does not yet:
+The staging stack and EC2 hosts have been deployed. The proxy Compose project
+starts, but the deployment does not yet:
 
-- prove that the proxy and app Compose projects converge on real EC2 hosts;
+- keep the app host online in Systems Manager;
+- converge the backend container to a healthy state;
 - prove a live IAM-token connection to either RDS database;
-- prove Caddy's DNS-01 certificate path or the public API route;
+- complete Caddy's DNS-01 certificate path or the public API route;
 - prove Grafana logs and traces;
-- prove reboot or replacement convergence;
+- provide a verified EC2 Instance Connect recovery path;
+- prove reboot or fixed-address replacement convergence;
 - apply an explicit production retention policy to the EC2 instances or EIP.
+
+These are tracked in
+[[aws-staging-runtime-convergence|AWS staging runtime convergence]].
 
 The `kms_key` input is stored on the stack object but is not directly consumed
 by an ApplicationStack resource. KMS access instead arrives through the shared

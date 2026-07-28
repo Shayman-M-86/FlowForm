@@ -13,6 +13,7 @@ from docsys.evidence import (
     EvidenceSource,
     check_last_edited_staged,
     check_staged,
+    promote_staged,
 )
 from docsys.impact import detect_impact
 from docsys.freshness import CURRENT, Freshness
@@ -256,6 +257,44 @@ class CollectionModelTests(unittest.TestCase):
             self.assertEqual(first.digest, unrelated_changed.digest)
             self.assertNotEqual(first.digest, evidence_changed.digest)
             self.assertEqual(first.files, (code_rel,))
+
+    def test_promote_can_stage_only_the_selected_document(self) -> None:
+        project_knowledge = ROOT / "docs" / "project-knowledge"
+        with tempfile.TemporaryDirectory(dir=project_knowledge) as temporary:
+            doc_path = Path(temporary) / "promote.md"
+            doc_path.write_text(
+                _document("Promote", body="Reviewed claim.").replace(
+                    "related_code: []",
+                    'related_code: ["../../../AGENTS.md"]',
+                )
+            )
+            rel = doc_path.relative_to(ROOT).as_posix()
+            source = EvidenceSource(
+                {"AGENTS.md": EvidenceEntry("AGENTS.md", "100644", "a" * 40)},
+                "staged",
+            )
+
+            with patch(
+                "docsys.evidence.EvidenceSource.from_index",
+                return_value=source,
+            ), patch(
+                "docsys.evidence._git_bytes",
+                return_value=b"",
+            ) as git_bytes, patch(
+                "docsys.evidence._today",
+                return_value="2026-07-29",
+            ):
+                result = promote_staged([rel], stage=True)
+
+            self.assertEqual(result, 0)
+            git_bytes.assert_called_once_with(["add", "--", rel])
+            promoted = doc_path.read_text()
+            self.assertIn("status: verified", promoted)
+            self.assertIn("last_edited: 2026-07-29", promoted)
+            self.assertRegex(
+                promoted,
+                r"verified_evidence_digest: sha256:[0-9a-f]{64}",
+            )
 
     def test_active_docs_root_is_canonical_tree(self) -> None:
         self.assertEqual(resolve_docs_root(), (ROOT / "docs").resolve())

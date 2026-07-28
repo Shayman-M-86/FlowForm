@@ -63,9 +63,13 @@ behaviour or project boundaries matter. When relevant, agents call
 returns, and use the returned implementation locations to target evidence
 inspection. They do not reload that context on every later prompt unless the
 task scope materially changes or the user asks for another documentation
-check. After behavioural or architectural changes, they call
-`get_impacted_docs` and review the results rather than updating documentation
-mechanically.
+check. Agents also avoid calling `get_impacted_docs` during ordinary follow-up
+turns. After behavioural or architectural changes have settled, they review
+impact once near task completion through `get_impacted_docs` only when they
+are actively updating affected pages, the scope changes after review, or the
+user asks for the report. They update documentation from that single review
+rather than mechanically after each prompt. Pre-commit remains the automatic
+evidence-drift gate.
 
 `docs/` is the active context root. Every Docsys MCP tool accepts `docs_root`;
 when it is omitted, Docsys selects that active tree. The matching Codex and
@@ -127,16 +131,17 @@ For reviewed Project Knowledge, stage the implementation and documentation
 changes, then run:
 
 ```sh
-PYTHONPATH=tools/docs python3 -m docsys evidence promote --staged \
+PYTHONPATH=tools/docs python3 -m docsys evidence promote --staged --stage \
   docs/path-to-reviewed-document.md
 ```
 
 Docsys sets `status: verified` and calculates `verified_evidence_digest` from
-the staged blobs selected by the document's evidence metadata. It updates only
-the working tree and prints the `git add` command; it does not stage the
-document. Do not paste a digest manually. Leave the field `null` for an
-unreviewed draft or scaffold. The pre-commit hook checks affected verified pages
-against the same staged snapshot and fails without changing files.
+the staged blobs selected by the document's evidence metadata. With `--stage`,
+it stages only the selected documentation paths after updating them; without
+that option, it updates only the working tree and prints the corresponding
+`git add` command. Do not paste a digest manually. Leave the field `null` for
+an unreviewed draft or scaffold. The pre-commit hook checks affected verified
+pages against the same staged snapshot and fails without changing files.
 
 Do not promote Development Workspace pages. They are intentionally working
 material and do not use evidence verification. The pre-commit hook checks

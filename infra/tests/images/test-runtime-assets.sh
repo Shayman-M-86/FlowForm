@@ -30,6 +30,7 @@ grep -q 'install-runtime-assets.sh' "${LOCALS}" \
 for tree in \
   "infra/deployment/bootstrap" \
   "infra/containers/runtime/compose" \
+  "infra/containers/runtime/services" \
   "infra/containers/strategies/aws"
 do
   grep -q "${tree}" "${GOLDEN}" \
@@ -57,6 +58,7 @@ mkdir -p "${TEST_DIR}/repo/infra/deployment" \
          "${TEST_DIR}/repo/infra/containers/strategies"
 cp -a "${REPO_ROOT}/infra/deployment/bootstrap" "${TEST_DIR}/repo/infra/deployment/"
 cp -a "${REPO_ROOT}/infra/containers/runtime/compose" "${TEST_DIR}/repo/infra/containers/runtime/"
+cp -a "${REPO_ROOT}/infra/containers/runtime/services" "${TEST_DIR}/repo/infra/containers/runtime/"
 cp -a "${REPO_ROOT}/infra/containers/strategies/aws" "${TEST_DIR}/repo/infra/containers/strategies/"
 
 resolved="$(cd "${TEST_DIR}/repo/infra/deployment/bootstrap" && cd ../../.. && pwd)"
@@ -66,10 +68,15 @@ resolved="$(cd "${TEST_DIR}/repo/infra/deployment/bootstrap" && cd ../../.. && p
 for path in \
   "infra/containers/runtime/compose/app.yml" \
   "infra/containers/runtime/compose/proxy.yml" \
+  "infra/containers/runtime/services/alloy/config.alloy" \
+  "infra/containers/runtime/services/alloy-app/config.alloy" \
+  "infra/containers/runtime/services/squid/squid.conf" \
   "infra/containers/strategies/aws/compose/proxy.override.yml"
 do
   [[ -f "${TEST_DIR}/repo/${path}" ]] \
-    || fail "baked layout is missing a Compose default: ${path}"
+    || fail "baked layout is missing a runtime asset: ${path}"
+  grep -q "test -f ${ASSET_ROOT}/${path}" "${VERIFY}" \
+    || fail "verify-image.sh does not check runtime asset: ${path}"
 done
 
 # The image carries no application source or secrets.

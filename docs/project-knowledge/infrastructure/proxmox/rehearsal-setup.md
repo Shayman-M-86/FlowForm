@@ -4,8 +4,8 @@ aliases: ["Proxmox rehearsal setup"]
 document_type: workflow
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:3cc1f93cc619710125a2dd68e116f36c9b7a7fc5622b8764d6a576b0f8cd6771
-last_edited: 2026-07-27
+verified_evidence_digest: sha256:a94fc3bfa0859dd768177eb7bde5a459e5a01c736bceb9ebb8340043cfc95d06
+last_edited: 2026-07-29
 tags: [infrastructure, tooling]
 related_code:
   - "../../../../infra/images/scripts/image"

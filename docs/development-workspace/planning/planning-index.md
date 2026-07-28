@@ -5,7 +5,7 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-29
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]
@@ -48,20 +48,25 @@ objective --> scope --> sequence --> validation --> implementation
 
 ## Active plans
 
+- [[aws-staging-runtime-convergence|AWS staging runtime convergence]] is the
+  current execution plan. It tracks app-host access, backend startup, public
+  TLS, recovery access, host replacement, and final runtime proof after the
+  first Application deployment.
 - [[aws-stack-specifications|AWS stack specifications]] consolidates the
   implemented settings, environment differences, dependencies, deployment
   status, and remaining gaps for every AWS CDK stack.
-- [[aws-cdk-staging-plan|AWS CDK staging plan]] sequences proposed staging
-  delivery work.
-- [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
-  records the PostgreSQL identity model, the shared/AWS reuse boundary, the
-  constraints the RDS bootstrap had to satisfy, and the decisions still open.
-- [[aws-database-stack-configuration|AWS DatabaseStack staging configuration]]
-  records the proposed RDS service settings, lifecycle, monitoring, and delivery
-  gates.
 - [[aws-iam-database-auth-loose-threads|AWS IAM database authentication loose
-  threads]] tracks the CDK, IAM, RDS, SSM, and SQL work still required for RDS
-  IAM database authentication to function end to end.
+  threads]] tracks the remaining runtime proof and deferred database cleanup.
+
+## Completed design checkpoints
+
+- [[aws-cdk-staging-plan|AWS CDK staging plan]] summarizes the infrastructure
+  foundation already delivered and the later phases that remain.
+- [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
+  records the implemented PostgreSQL identity and bootstrap boundaries.
+- [[aws-database-stack-configuration|AWS DatabaseStack staging configuration]]
+  records the deployed staging database decisions and intended production
+  differences.
 
 ## Related documents
 

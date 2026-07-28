@@ -229,6 +229,24 @@ before continuing host convergence.
 Database outputs. A normal dependency-inclusive deployment would propose
 removing exports that the helper still uses.
 
+### Replacing the fixed-address hosts
+
+The proxy and app instances have fixed private IPv4 addresses. An update that
+replaces either instance cannot use CloudFormation's normal
+create-before-delete sequence because the old instance still owns the address.
+For an intentional AMI replacement:
+
+1. Confirm the new AMI is published in
+   `/flowform/staging/ec2/baseAmiId` and the desired image digests are promoted.
+2. Record the existing instance IDs and verify that an interruption is
+   acceptable.
+3. Terminate the proxy and app instances.
+4. Wait until both instances reach `terminated`.
+5. Run the exclusive Application diff and deploy shown above.
+6. Complete every verification item below.
+
+Do not terminate healthy hosts for a Security-only or other in-place update.
+
 ## 9. Verify the backend path
 
 Before publishing the frontend, verify:

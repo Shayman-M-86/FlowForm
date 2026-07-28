@@ -42,7 +42,8 @@ run_packer_build() (
   local only_target="$2"
   local vars_file="$3"
   local project_dir original_aws_config original_aws_profile packer_aws_config
-  local credential_helper aws_region source_commit
+  local credential_helper aws_region source_commit diagnostic_report=""
+  local diagnostics_pid="" packer_log_path=""
   local -a validate_args
 
   require_command packer
@@ -56,7 +57,21 @@ run_packer_build() (
     || die "could not resolve a full source commit for the machine image"
 
   project_dir="$(mktemp -d)"
-  trap 'rm -rf "${project_dir}"' EXIT
+  cleanup_packer_project() {
+    local status=$?
+    trap - EXIT
+    if [[ -n "${diagnostics_pid}" ]]; then
+      kill "${diagnostics_pid}" >/dev/null 2>&1 || true
+      wait "${diagnostics_pid}" >/dev/null 2>&1 || true
+    fi
+    if [[ -n "${diagnostic_report}" ]]; then
+      log "AWS SSH diagnostic report: ${diagnostic_report}"
+      log "Packer internal log: ${packer_log_path}"
+    fi
+    rm -rf "${project_dir}"
+    exit "${status}"
+  }
+  trap cleanup_packer_project EXIT
 
   # AWS CLI login sessions are understood by the CLI but not yet by the AWS
   # SDK bundled with Packer's Amazon plugin. Bridge that supported CLI session
@@ -118,8 +133,34 @@ run_packer_build() (
     exit 0
   fi
 
+  if [[ "${PACKER_DIAGNOSE_SSH:-0}" == "1" ]]; then
+    require_command aws
+    require_command curl
+    require_command nc
+    require_command ssh-keyscan
+    aws_region="$(
+      awk -F'"' '$1 ~ /^[[:space:]]*aws_region[[:space:]]*=/ { print $2; exit }' \
+        "${vars_file}"
+    )"
+    [[ -n "${aws_region}" ]] || die "could not resolve aws_region for SSH diagnostics"
+    diagnostic_report="$(
+      mktemp "${TMPDIR:-/tmp}/flowform-packer-ssh-${source_commit:0:12}-XXXXXX.log"
+    )"
+    packer_log_path="${diagnostic_report%.log}.packer.log"
+    chmod 0600 "${diagnostic_report}"
+    : >"${packer_log_path}"
+    chmod 0600 "${packer_log_path}"
+    export PACKER_LOG=1
+    export PACKER_LOG_PATH="${packer_log_path}"
+    log "SSH diagnostics enabled; live report: ${diagnostic_report}"
+    bash "${IMAGE_SCRIPT_DIR}/lib/actions/aws-packer-ssh-diagnostics.sh" \
+      "${aws_region}" "${source_commit}" "${diagnostic_report}" &
+    diagnostics_pid=$!
+  fi
+
   log "building Packer target ${only_target}"
   packer build \
+    -timestamp-ui \
     -only="${only_target}" \
     -var "image_root=${IMAGE_ROOT}" \
     -var "repo_root=${REPO_ROOT}" \

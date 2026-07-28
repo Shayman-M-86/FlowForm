@@ -15,4 +15,7 @@ test -x /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-app.sh
 test -x /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
 test -f /opt/flowform/repo/infra/containers/runtime/compose/app.yml
 test -f /opt/flowform/repo/infra/containers/runtime/compose/proxy.yml
+test -f /opt/flowform/repo/infra/containers/runtime/services/alloy/config.alloy
+test -f /opt/flowform/repo/infra/containers/runtime/services/alloy-app/config.alloy
+test -f /opt/flowform/repo/infra/containers/runtime/services/squid/squid.conf
 test -f /opt/flowform/repo/infra/containers/strategies/aws/compose/proxy.override.yml

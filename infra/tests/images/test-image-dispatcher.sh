@@ -12,6 +12,8 @@ for command in --help 'build --help' 'prepare --help' 'verify --help' \
   "${image}" ${command} >"${tmp}/help.out" 2>"${tmp}/help.err"
   grep -Fq 'Usage:' "${tmp}/help.out"
 done
+infra_build_help="$("${image}" build aws --help)"
+grep -Fq -- '--diagnose-ssh' <<<"${infra_build_help}"
 
 cat >"${tmp}/manifest.json" <<'JSON'
 {"builds":[{"builder_type":"amazon-ebs","artifact_id":"ap-southeast-2:ami-abc123"}]}

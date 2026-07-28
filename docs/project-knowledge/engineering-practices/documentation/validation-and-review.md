@@ -102,11 +102,12 @@ the same user-approval verification skill, a `docs-maintainer`, and the same
 `flowform-docs` MCP server. It does not depend on PyYAML or a preconfigured
 Python environment.
 
-Codex and Claude also use the same three hook events and the same implementations
-under `tools/docs/hooks/`: session baseline capture with a one-time focused
-documentation suggestion, lightweight Python post-edit quality checks, and
-non-blocking documentation-impact review at task completion. Agent configuration
-contains only pointers to those shared scripts.
+Codex and Claude use the same two hook events and shared implementations under
+`tools/docs/hooks/`: a one-time focused documentation suggestion at session
+start and lightweight Python post-edit quality checks. Documentation impact is
+not checked by a turn-ending hook; agents review it once when relevant, while
+pre-commit remains the automatic evidence-drift gate. Agent configuration
+contains only pointers to the shared scripts.
 
 These checks validate structure and resolution, not factual correctness. Review
 against implementation evidence remains required.
@@ -142,8 +143,8 @@ When repository evidence contradicts a material Project Knowledge claim:
 2. correct the page when documentation editing is in scope;
 3. set `status: draft` and clear `verified_evidence_digest`;
 4. stage the implementation and documentation changes;
-5. after semantic review, run `docsys evidence promote --staged` for the revised
-   page before committing it as `verified`.
+5. after semantic review, run `docsys evidence promote --staged --stage` for
+   the revised page before committing it as `verified`.
 
 Read-only investigations report the required metadata change without modifying
 the repository. Draft status alone is not a contradiction, and an agent must
@@ -161,8 +162,8 @@ commit is always checked.
 The check is read-only: it never changes status, refreshes a digest, edits a
 date, or stages a file. It reports the affected paths and repair commands. An
 agent or author then corrects the page or runs
-`docsys evidence promote --staged`, reviews the working-tree change, stages it,
-and retries the commit.
+`docsys evidence promote --staged --stage`, reviews the staged change, and
+retries the commit. Omitting `--stage` retains the manual-staging workflow.
 
 This keeps the workflow to one final commit. The digest is stable because it
 excludes documentation content, avoiding a self-reference to the commit being

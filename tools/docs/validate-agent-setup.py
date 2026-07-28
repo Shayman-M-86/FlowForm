@@ -258,8 +258,8 @@ def validate() -> list[str]:
         for hook in group.get("hooks", [])
     ]
     _require(
-        len(hook_commands) == 3,
-        "Codex and Claude must share exactly three configured hooks",
+        len(hook_commands) == 2,
+        "Codex and Claude must share exactly two configured hooks",
         errors,
     )
     _require(

@@ -1,7 +1,7 @@
 interface:
   display_name: "Verify FlowForm Documentation"
-  short_description: "Review and approve Project Knowledge claims"
-  default_prompt: "Use $flowform-doc-verification to review selected Project Knowledge documents and prepare them for verification."
+  short_description: "Verify and stage Project Knowledge docs"
+  default_prompt: "Use $flowform-doc-verification to verify and stage the selected Project Knowledge documents."
 dependencies:
   tools:
     - type: "mcp"

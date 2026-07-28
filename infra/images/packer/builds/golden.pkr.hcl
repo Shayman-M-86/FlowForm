@@ -33,6 +33,11 @@ build {
   }
 
   provisioner "file" {
+    source      = "${var.repo_root}/infra/containers/runtime/services"
+    destination = "/tmp/flowform-runtime-assets/infra/containers/runtime/"
+  }
+
+  provisioner "file" {
     source      = "${var.repo_root}/infra/containers/strategies/aws"
     destination = "/tmp/flowform-runtime-assets/infra/containers/strategies/"
   }
