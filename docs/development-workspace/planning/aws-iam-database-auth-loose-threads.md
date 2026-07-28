@@ -12,6 +12,8 @@ related_code:
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/security_stack.py"
   - "../../../infra/deployment/aws/cdk/flowform_infra/stacks/application_stack.py"
   - "../../../infra/deployment/aws/scripts/bootstrap-database.sh"
+  - "../../../infra/deployment/aws/scripts/publish-staging-images.sh"
+  - "../../../infra/images/packer/provisioners/common/install-runtime-assets.sh"
   - "../../../infra/database/init/aws/"
   - "../../../infra/database/init/templates/"
   - "../../../backend/app/db/iam_auth.py"
@@ -29,10 +31,10 @@ related_docs:
 > authentication function end to end. It records outstanding items and what has
 > been implemented in source; nothing here has been deployed to AWS.
 
-The backend, the application bootstrap, the CDK database resources, and the
-RDS bootstrap runner now implement the IAM path. What remains is the
-application-host wiring, an intentional secret migration, and the shared
-container-path cleanups.
+The source work is done: the backend, the application bootstrap, the CDK
+resources, the golden image, and the RDS bootstrap runner all implement the IAM
+path. What remains is deploying it in the right order, an intentional secret
+migration, and the shared container-path cleanups.
 
 ## Done
 
@@ -64,6 +66,16 @@ Implemented in source and locally validated. None of it is deployed.
   `iam`, the RDS endpoint, and explicit CORS origins. Parameter names come from
   the shared contract, and synth fails if a published value is not declared
   there.
+- **Image reference promotion.** `publish-staging-images.sh promote` reads a
+  release manifest and writes the five digest-pinned image parameters the
+  runtime groups declare. Promotion is a separate subcommand from publication,
+  so republishing an image never moves a running environment.
+- **Host convergence assets and user data.** The golden image installs the
+  bootstrap scripts and Compose files to `/opt/flowform/repo`; both instances
+  carry user data that writes the bootstrap inputs and execs the host's script,
+  with the app host passing `FLOWFORM_DEPLOYMENT_TARGET=aws`. Both hosts hold
+  static private addresses, because deriving each from the other's instance
+  forms a CloudFormation cycle.
 
 The runner also resolves the boundary question the roles design left open: the
 SQL is AWS-specific and lives beside the shared assets, while the deployment
@@ -74,23 +86,36 @@ the AWS deployment scripts. The shared schema snapshots are reused verbatim.
 
 These stop a live IAM-authenticated connection.
 
-### 1. Publish the image references
+### 0. Bring-up ordering
 
-App bootstrap requires non-empty `BACKEND_IMAGE` and `ALLOY_IMAGE` in
-`backend.env` and stops without them. Nothing publishes either today.
+Not a gap in the source, but an ordering the tools do not enforce and nobody
+has executed end to end. Each step depends on the previous one having produced
+something the next reads.
 
-CDK deliberately does not: images are published independently of release
-promotion and deployed by complete ECR digest, so baking a digest into
-CloudFormation would turn every image update into a stack deployment. This
-belongs to the release/promotion step, which does not yet exist.
+```text
+1. image build && image publish        -> AMI id in /flowform/<env>/ec2/baseAmiId
+2. cdk deploy Network, Database        -> VPC and RDS exist
+3. bootstrap-database.sh --apply       -> databases, roles, rds_iam grants
+4. publish-staging-images.sh publish
+   publish-staging-images.sh promote   -> BACKEND_IMAGE / ALLOY_IMAGE in SSM
+5. cdk deploy Application              -> hosts boot and converge
+```
 
-### 2. Wire application user data and bootstrap
+Packer runs *before* CDK, not after: `ApplicationStack` resolves the base AMI
+from SSM at deployment time, so that parameter must already hold a real AMI id.
 
-`ApplicationStack` has no user-data or bootstrap wiring, so
-`FLOWFORM_DEPLOYMENT_TARGET=aws` is never passed and the validated bootstrap
-path is never invoked.
+Step 4 must precede step 5. App bootstrap requires non-empty `BACKEND_IMAGE`
+and `ALLOY_IMAGE` and stops without them, so an instance launched before
+promotion fails in user data. That is fail-closed rather than silently broken,
+but it means promotion is a prerequisite of the first application deployment,
+not a later release step.
 
-### 3. Deploy and run the bootstrap against real RDS
+Do not automate this sequence before running it manually. Wrapping an
+unexecuted ordering in a script fixes assumptions that have never been tested;
+the release pipeline in Phase 8 of the staging plan is where it belongs once
+proven.
+
+### 1. Deploy and run the bootstrap against real RDS
 
 `DatabaseStack` has never deployed successfully; the earlier attempt rolled
 back on the parameter-group value and the stack was deleted. The runner has
@@ -102,21 +127,21 @@ unexercised.
 
 Required for a defensible end state, but they do not stop a connection.
 
-### 4. Retire the AWS `db-secrets` resource
+### 2. Retire the AWS `db-secrets` resource
 
 `security_stack.py` still provisions `db-secrets` and still grants the
 application role access to it, although AWS bootstrap no longer consumes it.
 The rehearsal path still needs its LocalStack equivalent, so this is an
 intentional migration with an ordering constraint, not a deletion.
 
-### 5. Remove password interpolation from the shared templates
+### 3. Remove password interpolation from the shared templates
 
 Four `PASSWORD '${...}'` substitutions remain across
 `infra/database/init/templates/`. IAM removes the AWS runtime passwords but not
 the development or rehearsal ones, so the rendered-SQL mechanism still needs
 replacing on the container path.
 
-### 6. Backport the ownership fix to the container path
+### 4. Backport the ownership fix to the container path
 
 The container templates still set `search_path`, load the schema, then reassert
 ownership of the schema only, leaving objects owned by the initialization
@@ -124,7 +149,7 @@ administrator. The AWS runner proves the correct ordering — create objects
 under `SET ROLE flowform_owner`. Development and rehearsal remain affected until
 this is carried across.
 
-### 7. Decide whether `flowform_migrator` is still wanted
+### 5. Decide whether `flowform_migrator` is still wanted
 
 The roles design proposes a dedicated migration identity. The AWS runner does
 not create one: it provisions empty databases as `flowform_admin` and is not a
@@ -133,7 +158,7 @@ new stored credential, but only if migrations run from something holding an AWS
 identity. That is a constraint on where migrations execute, not just how they
 authenticate, and it should be settled before the role is added.
 
-### 8. Add `REVOKE CONNECT ... FROM PUBLIC` to the container path
+### 6. Add `REVOKE CONNECT ... FROM PUBLIC` to the container path
 
 The AWS runner revokes it; the shared templates do not. Local development hides
 the issue because its two databases live in separate clusters, but rehearsal
@@ -141,14 +166,14 @@ runs both in one cluster and is exposed.
 
 ## Verification threads
 
-### 9. Prove a token-authenticated connection from the application host
+### 7. Prove a token-authenticated connection from the application host
 
 The runner's live checks prove the database accepts IAM tokens. They do not
 prove the backend's `do_connect` path works against real RDS from the app
 instance. That remains the final integration check and cannot be done in
 LocalStack Community.
 
-### 10. Correct the SCRAM acceptance-gate wording
+### 8. Correct the SCRAM acceptance-gate wording
 
 The staging acceptance gate requires that "all login identities use
 SCRAM-SHA-256". Roles granted `rds_iam` do not use SCRAM, so the gate as
@@ -159,21 +184,20 @@ the verification checks that assert SCRAM for every login role.
 ## Sequencing
 
 ```text
-1 image references -------> 2 user data/bootstrap -----+
-                                                       |
-3 deploy DatabaseStack + run bootstrap ----------------+--> 9 app-host connection
-                                                       |
-                                                       +--> 10 gate wording
+0 bring-up ordering ---> 1 deploy + run bootstrap ---+--> 7 app-host connection
+                                                     |
+                                                     +--> 8 gate wording
 
-4 db-secrets retirement  \
-5 template passwords      \
-6 ownership backport       >  independent of the connection path
-7 migrator decision       /
-8 template REVOKE CONNECT/
+2 db-secrets retirement  \
+3 template passwords      \
+4 ownership backport       >  independent of the connection path
+5 migrator decision       /
+6 template REVOKE CONNECT/
 ```
 
-Threads 1 through 3 are the critical path; thread 9 is only meaningful once
-they are complete. Threads 4 through 8 can proceed in parallel, and 6 and 8 are
+Thread 1 is the whole critical path now that the source work is done, and
+thread 0 is the order it has to happen in. Thread 7 is only meaningful once
+both are complete. Threads 2 through 6 can proceed in parallel; 4 and 6 are
 correctness fixes for development and rehearsal rather than AWS work.
 
 ## Related documents

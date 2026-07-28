@@ -532,3 +532,66 @@ def test_cors_origins_are_explicit_json_for_staging():
     assert isinstance(origins, str)
     assert "*" not in origins
     assert "https://studio.staging." in origins
+
+
+def _user_data(instance_logical_prefix: str) -> str:
+    """Return one instance's user data as a flattened string."""
+    resources = _synth_application_stack().find_resources("AWS::EC2::Instance")
+    for logical_id, resource in resources.items():
+        if not logical_id.startswith(instance_logical_prefix):
+            continue
+        encoded = resource["Properties"]["UserData"]["Fn::Base64"]
+        # A script with no CloudFormation references renders as a plain
+        # string; one with references renders as an Fn::Join of fragments.
+        if isinstance(encoded, str):
+            return encoded
+        parts = encoded["Fn::Join"][1]
+        return "".join(part for part in parts if isinstance(part, str))
+    raise AssertionError(f"no instance matching {instance_logical_prefix}")
+
+
+def test_app_user_data_selects_the_aws_deployment_target():
+    """Bootstrap branches its credential strategy on this value."""
+    assert "FLOWFORM_DEPLOYMENT_TARGET=aws" in _user_data("AppInstance")
+
+
+def test_proxy_user_data_does_not_set_a_deployment_target():
+    """Only the app bootstrap consumes the deployment target."""
+    assert "FLOWFORM_DEPLOYMENT_TARGET" not in _user_data("ProxyInstance")
+
+
+def test_user_data_execs_the_baked_bootstrap_without_fetching_anything():
+    """The scripts are baked into the AMI, so nothing is downloaded at boot."""
+    for prefix, host in (("AppInstance", "app"), ("ProxyInstance", "proxy")):
+        script = _user_data(prefix)
+        assert f"{ApplicationStack.RUNTIME_ASSET_ROOT}/infra/deployment/bootstrap/bootstrap-{host}.sh" in script
+        assert "set -euo pipefail" in script
+        assert "aws s3 cp" not in script
+        assert "tar -xzf" not in script
+
+
+def test_user_data_passes_both_static_private_ips():
+    """Each host needs the other's address; static IPs avoid a CFN cycle."""
+    for prefix in ("AppInstance", "ProxyInstance"):
+        script = _user_data(prefix)
+        assert f"PROXY_PRIVATE_IP={ApplicationStack.PROXY_PRIVATE_IP}" in script
+        assert f"APP_PRIVATE_IP={ApplicationStack.APP_PRIVATE_IP}" in script
+
+
+def test_instances_use_the_static_private_addresses():
+    """The two hosts must hold exactly the addresses user data hardcodes."""
+    resources = _synth_application_stack().find_resources("AWS::EC2::Instance")
+    assigned = set()
+    for resource in resources.values():
+        properties = resource["Properties"]
+        if "PrivateIpAddress" in properties:
+            assigned.add(properties["PrivateIpAddress"])
+        else:
+            # Suppressing a public IP forces the address onto an explicit
+            # network interface instead of the top-level property.
+            assigned.add(properties["NetworkInterfaces"][0]["PrivateIpAddress"])
+
+    assert assigned == {
+        ApplicationStack.PROXY_PRIVATE_IP,
+        ApplicationStack.APP_PRIVATE_IP,
+    }

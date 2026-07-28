@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 SCRIPT_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_ROOT="$(cd -- "${SCRIPT_LIB_DIR}/../.." && pwd)"
+# Source of the host convergence assets baked into the golden image.
+REPO_ROOT="$(cd -- "${IMAGE_ROOT}/../.." && pwd)"
 PACKER_DIR="${IMAGE_ROOT}/packer"
 
 # The dispatcher provides structured versions. Keep small fallbacks so the
@@ -67,6 +69,7 @@ run_packer_build() (
   validate_args=(
     -only="${only_target}"
     -var "image_root=${IMAGE_ROOT}"
+    -var "repo_root=${REPO_ROOT}"
     -var-file="${vars_file}"
   )
   if [[ "${PACKER_SYNTAX_ONLY:-0}" == "1" ]]; then
@@ -83,6 +86,7 @@ run_packer_build() (
   packer build \
     -only="${only_target}" \
     -var "image_root=${IMAGE_ROOT}" \
+    -var "repo_root=${REPO_ROOT}" \
     -var-file="${vars_file}" \
     "${project_dir}"
 )

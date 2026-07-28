@@ -95,6 +95,18 @@ def _pascal_case(logical_name: str) -> str:
 class ApplicationStack(Stack):
     """Public proxy EC2 (Caddy+Squid) + private app EC2 (Flask/Gunicorn)."""
 
+    # Static private addresses. Each host's bootstrap needs the other's IP, so
+    # deriving them from the instances would make the two user-data blocks
+    # reference each other and form a circular CloudFormation dependency.
+    # AWS reserves the first four addresses in a subnet, so .4 is the first
+    # assignable one.
+    PROXY_PRIVATE_IP = "10.42.0.4"
+    APP_PRIVATE_IP = "10.42.1.4"
+
+    # Where the golden image installs the bootstrap scripts and Compose files.
+    # Must match install-runtime-assets.sh in the Packer provisioners.
+    RUNTIME_ASSET_ROOT = "/opt/flowform/repo"
+
     def __init__(
         self,
         scope: Construct,
@@ -201,6 +213,7 @@ class ApplicationStack(Stack):
             )
         ]
 
+
         self.proxy_instance = ec2.Instance(
             self,
             "ProxyInstance",
@@ -211,9 +224,19 @@ class ApplicationStack(Stack):
             machine_image=machine_image,
             role=cast(iam.IRole, self.proxy_role),
             security_group=network_stack.proxy_security_group,
+            private_ip_address=self.PROXY_PRIVATE_IP,
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
             block_devices=root_block_devices,
+            user_data=self._build_user_data(
+                "proxy",
+                {
+                    "FLOWFORM_SCOPE": env_config.security_scope,
+                    "AWS_REGION": env_config.region,
+                    "PROXY_PRIVATE_IP": self.PROXY_PRIVATE_IP,
+                    "APP_PRIVATE_IP": self.APP_PRIVATE_IP,
+                },
+            ),
         )
 
         self.proxy_elastic_ip = ec2.CfnEIP(
@@ -234,9 +257,22 @@ class ApplicationStack(Stack):
             role=task_role,
             security_group=network_stack.app_security_group,
             associate_public_ip_address=False,
+            private_ip_address=self.APP_PRIVATE_IP,
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
             block_devices=root_block_devices,
+            user_data=self._build_user_data(
+                "app",
+                {
+                    # Selects the credential strategy: IAM database auth, no
+                    # database passwords fetched or written.
+                    "FLOWFORM_DEPLOYMENT_TARGET": "aws",
+                    "FLOWFORM_SCOPE": env_config.security_scope,
+                    "AWS_REGION": env_config.region,
+                    "PROXY_PRIVATE_IP": self.PROXY_PRIVATE_IP,
+                    "APP_PRIVATE_IP": self.APP_PRIVATE_IP,
+                },
+            ),
         )
 
         self.proxy_private_dns_record = route53.ARecord(
@@ -262,6 +298,37 @@ class ApplicationStack(Stack):
         # write /opt/flowform/proxy.env and start docker-compose.proxy.yml;
         # the app host must configure Docker's proxy, mount tmpfs secrets,
         # write /opt/flowform/backend.env, and start docker-compose.app.yml.
+
+    def _build_user_data(self, host: str, bootstrap_env: dict[str, str]) -> ec2.UserData:
+        """Write the host's bootstrap inputs, then run its bootstrap script.
+
+        The bootstrap scripts and Compose files are baked into the golden AMI,
+        so user data only supplies the values the image cannot know: the
+        deployment target, scope, region, and the two private addresses. There
+        is no artifact fetch, so a host needs no network path to begin
+        converging.
+
+        Fails closed: `set -euo pipefail` means a host that cannot converge
+        stops rather than idling in a half-booted state that looks healthy.
+        """
+        env_file = f"/etc/flowform/bootstrap-{host}.env"
+        bootstrap = f"{self.RUNTIME_ASSET_ROOT}/infra/deployment/bootstrap/bootstrap-{host}.sh"
+
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(
+            "set -euo pipefail",
+            "install -d -m 0755 /etc/flowform",
+            f"cat > {env_file} <<'FLOWFORM_ENV'",
+            *(f"{key}={value}" for key, value in bootstrap_env.items()),
+            "FLOWFORM_ENV",
+            f"chmod 0644 {env_file}",
+            # Fail with a clear cause if the AMI predates the baked assets,
+            # rather than a bare "no such file" from the exec below.
+            f"test -x {bootstrap} || {{ echo 'golden AMI has no {host} bootstrap' >&2; exit 1; }}",
+            f"set -a; . {env_file}; set +a",
+            f"exec {bootstrap}",
+        )
+        return user_data
 
     def _publish_backend_runtime_parameters(self) -> None:
         """Publish the backend runtime group to SSM.

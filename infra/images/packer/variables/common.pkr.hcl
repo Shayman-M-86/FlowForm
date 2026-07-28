@@ -22,3 +22,8 @@ variable "image_root" {
   type        = string
   description = "Absolute path to infra/images, supplied by the build scripts"
 }
+
+variable "repo_root" {
+  type        = string
+  description = "Absolute path to the repository root, supplied by the build scripts. Source of the host convergence assets baked into the image."
+}
