@@ -1,8 +1,10 @@
-from aws_cdk import Stack
+from aws_cdk import ArnFormat, Stack
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_kms as kms
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_rds as rds
 from aws_cdk import aws_secretsmanager as secretsmanager
+from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
 from flowform_infra.config import EnvConfig
@@ -22,6 +24,13 @@ class DatabaseStack(Stack):
     BACKUP_WINDOW = "16:00-16:30"
     MAINTENANCE_WINDOW = "sun:17:00-sun:18:00"
 
+    # The two low-privilege runtime identities the backend authenticates as.
+    # These must match the PostgreSQL roles granted `rds_iam` by the database
+    # bootstrap; an rds-db:connect grant naming a role that lacks `rds_iam`
+    # silently fails at connection time.
+    CORE_APP_USER = "flowform_core_app"
+    RESPONSE_APP_USER = "flowform_response_app"
+
     def __init__(
         self,
         scope: Construct,
@@ -30,6 +39,7 @@ class DatabaseStack(Stack):
         env_config: EnvConfig,
         network_stack: NetworkStack,
         kms_key: kms.Key,
+        task_role: iam.IRole | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -59,7 +69,9 @@ class DatabaseStack(Stack):
             parameters={
                 "rds.force_ssl": "1",
                 "password_encryption": "scram-sha-256",
-                "rds.accepted_password_auth_method": "scram-sha-256",
+                # RDS-specific parameter; accepts only "scram" or "md5+scram",
+                # not PostgreSQL's "scram-sha-256" spelling used above.
+                "rds.accepted_password_auth_method": "scram",
             },
         )
 
@@ -96,6 +108,10 @@ class DatabaseStack(Stack):
             db_parameter_group_name=self.parameter_group.ref,
             master_username="flowform_admin",
             manage_master_user_password=True,
+            # The application authenticates with short-lived IAM tokens rather
+            # than a stored password. Without this, RDS rejects every token
+            # regardless of the rds-db:connect grant below.
+            enable_iam_database_authentication=True,
             master_user_secret=rds.CfnDBInstance.MasterUserSecretProperty(
                 kms_key_id=kms_key.key_arn,
             ),
@@ -126,6 +142,52 @@ class DatabaseStack(Stack):
         )
         self.endpoint_address = self.instance.attr_endpoint_address
         self.endpoint_port = self.instance.attr_endpoint_port
+
+        # rds-db:connect ARNs are scoped by the DB resource ID (dbu-XXXX), not
+        # the instance identifier, and the resource ID is only known after the
+        # instance exists.
+        self.db_resource_id = self.instance.get_att("DbiResourceId").to_string()
+
+        ssm.StringParameter(
+            self,
+            "DatabaseResourceIdParam",
+            parameter_name=f"/flowform/{env_config.env_name}/database/db_resource_id",
+            string_value=self.db_resource_id,
+        )
+
+        if task_role is not None:
+            self.grant_iam_connect(task_role)
+
+    def grant_iam_connect(self, role: iam.IRole) -> None:
+        """Allow a role to open IAM-authenticated sessions as the app users.
+
+        The grant is scoped to exactly the two runtime database users; it does
+        not permit connecting as `flowform_admin` or any future role.
+
+        The policy is created here rather than added to the role's own stack.
+        This stack already depends on the stack owning the role, so mutating
+        that role with a reference to this instance's resource ID would form a
+        stack dependency cycle.
+        """
+        iam.Policy(
+            self,
+            "DatabaseIamConnectPolicy",
+            roles=[role],
+            statements=[
+                iam.PolicyStatement(
+                    actions=["rds-db:connect"],
+                    resources=[
+                        self.format_arn(
+                            service="rds-db",
+                            resource="dbuser",
+                            resource_name=f"{self.db_resource_id}/{app_user}",
+                            arn_format=ArnFormat.COLON_RESOURCE_NAME,
+                        )
+                        for app_user in (self.CORE_APP_USER, self.RESPONSE_APP_USER)
+                    ],
+                )
+            ],
+        )
 
     def _create_database_log_group(
         self,

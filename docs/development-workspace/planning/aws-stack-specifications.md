@@ -344,7 +344,11 @@ security groups only establish reachability.
 - RDS-managed master password, with its secret encrypted by the FlowForm KMS
   key.
 - `rds.force_ssl = 1`.
-- SCRAM-SHA-256 password encryption and accepted authentication.
+- SCRAM password encryption (`password_encryption = scram-sha-256`) and
+  accepted authentication (`rds.accepted_password_auth_method = scram`; the RDS
+  parameter does not accept PostgreSQL's `scram-sha-256` spelling).
+- IAM database authentication enabled; the two runtime identities authenticate
+  with short-lived tokens and hold no stored password.
 - PostgreSQL and upgrade log exports.
 - Database Insights Standard and Performance Insights with seven-day history.
 - Tag copying to snapshots.

@@ -1,9 +1,9 @@
 # FlowForm private app EC2 stack.
 #
-# Bootstrap writes /opt/flowform/backend.env from SSM and materialises secret
-# files under FLOWFORM_SECRET_DIR (default /run/flowform/secrets) from Secrets
-# Manager. Staging and prod use this same Compose file; all environment
-# differences come from that bootstrap-written env file.
+# Bootstrap writes /opt/flowform/backend.env from SSM and materialises common
+# secret files under FLOWFORM_SECRET_DIR (default /run/flowform/secrets) from
+# Secrets Manager. AWS database connections use IAM and carry no password
+# secret. The rehearsal overlay adds its local-Postgres password files.
 #
 # Expected invocation on the app instance:
 #
@@ -41,13 +41,9 @@ services:
       # hostnames or suffixes here; the Docker daemon's no-proxy can still use
       # VPC CIDRs in its host-level proxy config.
       NO_PROXY: "localhost,127.0.0.1,alloy,169.254.169.254,.rds.amazonaws.com"
-      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
-      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
       FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
     secrets:
-      - DATABASE_CORE_APP_PASSWORD
-      - DATABASE_RESPONSE_APP_PASSWORD
       - FLOWFORM_APP_SECRET_KEY
       - FLOWFORM_AUTH0_MGMT_SECRET
     read_only: true
@@ -117,10 +113,6 @@ volumes:
   alloy_data:
 
 secrets:
-  DATABASE_CORE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
-  DATABASE_RESPONSE_APP_PASSWORD:
-    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
   FLOWFORM_APP_SECRET_KEY:
     file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_APP_SECRET_KEY.secret.txt
   FLOWFORM_AUTH0_MGMT_SECRET:

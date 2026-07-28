@@ -4,8 +4,9 @@ from flask import Flask
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.config import Settings
+from app.core.config import AwsSettings, DatabaseSettings, Settings
 from app.core.errors import InitializationError
+from app.db.iam_auth import attach_iam_auth
 
 
 class DatabaseManager:
@@ -33,21 +34,13 @@ class DatabaseManager:
                 "Settings must be loaded and attached to the Flask app before initializing the database manager."
             ) from err
 
-        self.core_engine = create_engine(  # Todo - Add ability to configure settings via the config settings object.
-            settings.database.core.url,
-            pool_size=10,
-            max_overflow=20,
-            pool_timeout=30,
-            pool_pre_ping=True,
-            pool_recycle=1800,
+        self.core_engine = self._create_engine(
+            settings.database.core,
+            aws=settings.flowform.aws,
         )
-        self.response_engine = create_engine(
-            settings.database.response.url,
-            pool_size=10,
-            max_overflow=20,
-            pool_timeout=30,
-            pool_pre_ping=True,
-            pool_recycle=1800,
+        self.response_engine = self._create_engine(
+            settings.database.response,
+            aws=settings.flowform.aws,
         )
 
         self._core_sessionmaker = sessionmaker(
@@ -64,6 +57,28 @@ class DatabaseManager:
             expire_on_commit=False,
             class_=Session,
         )
+
+    @staticmethod
+    def _create_engine(database: DatabaseSettings, *, aws: AwsSettings) -> Engine:
+        """Build an engine for one database target.
+
+        Under IAM auth the URL carries no password; a short-lived token is
+        injected per physical connection instead, so pooling behaviour is
+        identical in both authentication modes.
+        """
+        engine = create_engine(  # Todo - Add ability to configure settings via the config settings object.
+            database.url,
+            pool_size=10,
+            max_overflow=20,
+            pool_timeout=30,
+            pool_pre_ping=True,
+            pool_recycle=1800,
+        )
+
+        if database.uses_iam_auth:
+            attach_iam_auth(engine, database=database, aws=aws)
+
+        return engine
 
     def create_core_session(self) -> Session:
         if self._core_sessionmaker is None:

@@ -54,11 +54,14 @@ objective --> scope --> sequence --> validation --> implementation
 - [[aws-cdk-staging-plan|AWS CDK staging plan]] sequences proposed staging
   delivery work.
 - [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
-  records how the existing PostgreSQL identity and initialization assets can be
-  adapted for retained RDS.
+  records the PostgreSQL identity model, the shared/AWS reuse boundary, the
+  constraints the RDS bootstrap had to satisfy, and the decisions still open.
 - [[aws-database-stack-configuration|AWS DatabaseStack staging configuration]]
   records the proposed RDS service settings, lifecycle, monitoring, and delivery
   gates.
+- [[aws-iam-database-auth-loose-threads|AWS IAM database authentication loose
+  threads]] tracks the CDK, IAM, RDS, SSM, and SQL work still required for RDS
+  IAM database authentication to function end to end.
 
 ## Related documents
 

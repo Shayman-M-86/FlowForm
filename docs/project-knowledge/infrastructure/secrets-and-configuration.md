@@ -2,14 +2,15 @@
 title: Secrets and configuration
 aliases: ["Secrets and configuration"]
 document_type: workflow
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:2cfb51ed43b55b203122afc9a88117ae12034b33e7bfdda40bdc832b6153d8c4
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [configuration, security, infrastructure]
 related_code:
   - "../../../scripts/secrets/"
   - "../../../backend/app/core/config.py"
+  - "../../../backend/app/db/iam_auth.py"
   - "../../../infra/containers/strategies/dev/compose/"
   - "../../../infra/deployment/bootstrap/"
 related_docs:
@@ -71,10 +72,22 @@ file.
 
 `infra/deployment/config/runtime-parameter-contract.json` names non-secret
 runtime groups and secret-resource categories. Bootstrap scripts are the
-runtime consumers of parameters and secret material; backend settings load
-database, application, and Auth0 management values from configured secret
-files. The repository contract is not proof that a particular cloud deployment
-has been provisioned or that its values are current.
+runtime consumers of parameters and secret material. App bootstrap requires an
+explicit deployment target and checks its database auth modes before writing
+secrets: AWS IAM mode omits database password files, while rehearsal password
+mode writes and mounts them through its Compose overlay. Application and Auth0
+management values remain file-backed in both strategies. The repository
+contract is not proof that a particular cloud deployment has been provisioned
+or that its values are current.
+
+Under IAM mode no database credential is delivered or stored, so the backend
+supplies one per connection instead. `backend/app/db/iam_auth.py` signs a
+short-lived RDS authentication token locally from the instance's AWS
+credentials and injects it as the connection password through SQLAlchemy's
+`do_connect` hook. Because tokens expire well within an engine's lifetime, the
+token is generated for each physical connection rather than embedded in the
+engine URL, which leaves pooling and recycling behaviour identical across both
+modes. IAM connections are made over TLS.
 
 ## Related documents
 

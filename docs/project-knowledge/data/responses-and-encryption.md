@@ -4,7 +4,7 @@ aliases: ["Responses and encryption"]
 document_type: domain
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:3a8b17c7d5c94b2d762c16c3d78787766f3b6d462f749cebb0eaf23a9bb0cce2
+verified_evidence_digest: sha256:a71c5c5bf01977b1fa927a9c3c522c1fb1eb6d2942ac6810fc87cab431e424e5
 last_edited: 2026-07-28
 tags: [security]
 related_code:

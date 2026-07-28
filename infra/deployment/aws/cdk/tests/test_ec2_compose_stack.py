@@ -6,8 +6,14 @@ from aws_cdk import aws_kms as kms
 from aws_cdk import aws_route53 as route53
 from aws_cdk.assertions import Match, Template
 
-from flowform_infra.config import DOMAIN_NAME, get_env_config
+from flowform_infra.config import (
+    DOMAIN_NAME,
+    get_env_config,
+    runtime_group_logical_names,
+    runtime_parameter_name,
+)
 from flowform_infra.stacks.application_stack import ApplicationStack
+from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.registry_stack import RegistryStack
 
@@ -63,6 +69,14 @@ def _synth_application_stack() -> Template:
         publisher_role=image_publisher_role,
         env=cdk_env,
     )
+    database = DatabaseStack(
+        app,
+        "Database",
+        env_config=env_config,
+        network_stack=network,
+        kms_key=kms_key,
+        env=cdk_env,
+    )
     application = ApplicationStack(
         app,
         "Application",
@@ -71,10 +85,23 @@ def _synth_application_stack() -> Template:
         registry_stack=registry,
         task_role=task_role,
         kms_key=kms_key,
+        database_stack=database,
+        linkage_secret_arn="arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/linkage",
         hosted_zone=hosted_zone,
         env=cdk_env,
     )
     return Template.from_stack(application)
+
+
+def _backend_parameters() -> dict[str, object]:
+    """Return the published backend runtime group keyed by env-var name."""
+    resources = _synth_application_stack().find_resources("AWS::SSM::Parameter")
+    published: dict[str, object] = {}
+    for resource in resources.values():
+        name = resource["Properties"]["Name"]
+        if isinstance(name, str) and "/backend/" in name:
+            published[name.rsplit("/", 1)[-1]] = resource["Properties"]["Value"]
+    return published
 
 
 def test_network_has_no_nat_gateway_and_app_s3_gateway_endpoint():
@@ -452,3 +479,56 @@ def test_application_instances_use_ten_gib_gp3_encrypted_root_volumes():
         },
         2,
     )
+
+
+def test_backend_parameters_are_published_under_the_contract_path():
+    """Bootstrap reads /flowform/<scope>/backend/ and renders KEY=value lines."""
+    template = _synth_application_stack()
+    template.has_resource_properties(
+        "AWS::SSM::Parameter",
+        {
+            "Name": "/flowform/nonprod/backend/DATABASE_CORE_AUTH_MODE",
+            "Value": "iam",
+        },
+    )
+    template.has_resource_properties(
+        "AWS::SSM::Parameter",
+        {
+            "Name": "/flowform/nonprod/backend/DATABASE_RESPONSE_AUTH_MODE",
+            "Value": "iam",
+        },
+    )
+
+
+def test_published_backend_parameters_are_all_declared_in_the_contract():
+    """A parameter name outside the contract would never reach backend.env."""
+    contract_env_names = {
+        name.rsplit("/", 1)[-1]
+        for logical in runtime_group_logical_names("backend")
+        for name in [runtime_parameter_name("nonprod", "backend", logical)]
+    }
+    assert set(_backend_parameters()) <= contract_env_names
+
+
+def test_staging_backend_runs_as_prod_with_iam_database_auth():
+    """Staging is production-shaped, so FLOWFORM_ENV is prod."""
+    published = _backend_parameters()
+    assert published["FLOWFORM_ENV"] == "prod"
+    assert published["DATABASE_CORE_APP_USER"] == "flowform_core_app"
+    assert published["DATABASE_RESPONSE_APP_USER"] == "flowform_response_app"
+    assert published["DATABASE_CORE_NAME"] == "flowform_core"
+    assert published["DATABASE_RESPONSE_NAME"] == "flowform_response"
+
+
+def test_no_database_password_parameter_is_published():
+    """Under IAM auth no database credential exists to publish."""
+    published = _backend_parameters()
+    assert not any("PASSWORD" in name for name in published)
+
+
+def test_cors_origins_are_explicit_json_for_staging():
+    """The backend parses this as a JSON list; wildcards are rejected in prod."""
+    origins = _backend_parameters()["FLOWFORM_CORS_ORIGINS"]
+    assert isinstance(origins, str)
+    assert "*" not in origins
+    assert "https://studio.staging." in origins

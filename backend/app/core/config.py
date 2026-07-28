@@ -54,9 +54,19 @@ def _load_secret_from_file(secret_file: str, *, label: str) -> SecretStr:
 
 
 class DatabaseSettings(BaseModel):
-    """Database connection settings for the application."""
+    """Database connection settings for the application.
+
+    Two authentication modes are supported. ``password`` mode carries a static
+    credential and is used by local development, tests, and the Proxmox
+    rehearsal. ``iam`` mode carries no credential at all: RDS IAM database
+    authentication mints a short-lived token per physical connection, so the
+    password is supplied by the database layer at connect time rather than
+    being baked into the URL here.
+    """
 
     url_value: PostgresDsn | None = Field(default=None, validation_alias="url")
+
+    auth_mode: Literal["password", "iam"] = "password"
 
     app_user: str | None = None
     host: str | None = None
@@ -65,6 +75,11 @@ class DatabaseSettings(BaseModel):
     password: SecretStr | None = None
     app_password_file: str | None = None
     scheme: str = "postgresql+psycopg"
+
+    @property
+    def uses_iam_auth(self) -> bool:
+        """Whether connections must be authenticated with a generated IAM token."""
+        return self.auth_mode == "iam"
 
     @model_validator(mode="after")
     def load_password_from_file(self) -> DatabaseSettings:
@@ -79,17 +94,38 @@ class DatabaseSettings(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def reject_static_credentials_under_iam_auth(self) -> DatabaseSettings:
+        """Fail closed if a static credential is supplied alongside IAM auth.
+
+        A leftover password or an embedded URL would silently take precedence
+        over the IAM token path, so treat the combination as a configuration
+        error instead of quietly preferring one.
+        """
+        if not self.uses_iam_auth:
+            return self
+
+        if self.password is not None or self.app_password_file is not None:
+            raise ValueError("Database password must not be set when database auth_mode is 'iam'")
+        if self.url_value is not None:
+            raise ValueError("Database url must not be set when database auth_mode is 'iam'; provide the parts instead")
+
+        return self
+
+    @model_validator(mode="after")
     def validate_database_config(self) -> DatabaseSettings:
         """Require either a full URL or all URL parts."""
         if self.url_value is not None:
             return self
 
-        required_parts = {
+        required_parts: dict[str, object | None] = {
             "app_user": self.app_user,
-            "password": self.password,
             "host": self.host,
             "name": self.name,
         }
+        # IAM auth deliberately has no password to validate; the token is
+        # generated per connection by the database layer.
+        if not self.uses_iam_auth:
+            required_parts["password"] = self.password
 
         missing = [key for key, value in required_parts.items() if value is None]
         if missing:
@@ -100,9 +136,16 @@ class DatabaseSettings(BaseModel):
     @computed_field
     @property
     def dsn_url(self) -> PostgresDsn:
-        """Return the final validated database URL."""
+        """Return the final validated database URL.
+
+        Under IAM auth the URL intentionally carries no password; the database
+        layer injects a freshly generated token on each physical connection.
+        """
         if self.url_value is not None:
             return self.url_value
+
+        if self.uses_iam_auth:
+            return PostgresDsn(f"{self.scheme}://{self.app_user}@{self.host}:{self.port}/{self.name}")
 
         return PostgresDsn(
             f"{self.scheme}://"

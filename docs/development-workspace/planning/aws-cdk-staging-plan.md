@@ -43,8 +43,9 @@ a retained-data cutover, or that a source-complete stack has been deployed.
 | Security and registry | Implemented | Last recorded as deployed on 2026-07-24 |
 | Image publication | Implemented and exercised through GitHub OIDC | Four-image digest manifest recorded by the earlier execution slice |
 | Network | Four-subnet design implemented and covered by CDK assertions | Deployed and verified on 2026-07-27 |
-| Database | RDS infrastructure implemented, asserted, synthesized, and diff-reviewed | Not deployed |
-| Application compute | EC2 resource skeleton exists; convergence/bootstrap is incomplete | Not ready to deploy |
+| Database | RDS infrastructure and IAM authentication implemented, asserted, synthesized, and diff-reviewed | Not deployed; first attempt rolled back |
+| Database contents | Remote RDS bootstrap runner implemented and validated against PostgreSQL 17 | Never run against RDS |
+| Application compute | EC2 resources and backend SSM parameters exist; user data and image references are missing | Not ready to deploy |
 | Frontend | Substantial CDK and deployment support exists | Outside the immediate infrastructure slice |
 | Observability | Placeholder CDK stack | Not deployed |
 
@@ -105,11 +106,21 @@ App EC2 in isolated subnet A ----> RDS in isolated subnet A
 
 ## Immediate next execution slice
 
-The Network portion of Phase 3 is complete, and `DatabaseStack` is implemented
-and covered by CDK assertions. The next slice is to review the change through
-the staging branch, deploy it, and prove the live RDS infrastructure. Do not
-begin application-host deployment merely because the EC2 resources synthesize:
-their bootstrap and convergence path is incomplete.
+The Network portion of Phase 3 is complete. `DatabaseStack` now also carries
+RDS IAM database authentication, the `rds-db:connect` grant, and a remote
+bootstrap runner for the database contents; the backend and app bootstrap
+implement the matching IAM path.
+
+The next slice is still to deploy `DatabaseStack` and prove the live RDS
+infrastructure, then run the bootstrap runner against it. A first deployment
+attempt failed and rolled back on an invalid parameter-group value, which has
+since been corrected; the stack was deleted, so this is a fresh create.
+
+Do not begin application-host deployment merely because the EC2 resources
+synthesize: user data, convergence, and image references are still missing.
+Outstanding work is tracked in
+[[aws-iam-database-auth-loose-threads|AWS IAM database authentication loose
+threads]].
 
 ### 1. Land the source through the staging workflow
 
@@ -167,7 +178,10 @@ The source now declares:
   key;
 - seven-day backups, retained automated backups, and a final snapshot on
   replacement or deletion;
-- TLS and SCRAM requirements in a PostgreSQL 17 parameter group;
+- TLS and SCRAM requirements in a PostgreSQL 17 parameter group, using the
+  RDS-specific `scram` value rather than PostgreSQL's `scram-sha-256` spelling;
+- IAM database authentication, with `rds-db:connect` granted to the app role
+  for exactly the two runtime database users;
 - PostgreSQL and upgrade log exports with seven-day log retention;
 - Standard database insights with seven-day performance history;
 - explicit backup and maintenance windows, automatic minor updates, and no
@@ -299,8 +313,9 @@ Staging is ready for application use only when:
 - Required AWS and external service access from the app works through Squid,
   while ECR S3 layers use the S3 gateway endpoint.
 - Squid rejects an unapproved destination and IMDS bypasses Squid.
-- RDS requires TLS; the two application identities are isolated; `pgcrypto`
-  works; migrations succeed.
+- RDS requires TLS; the two application identities authenticate with IAM tokens
+  and hold no stored password; they are isolated from each other's database;
+  `pgcrypto` works; migrations succeed.
 - Auth0, explicit staging CORS, legitimate SES sending, and public survey flows
   pass end to end.
 - The removed test-email route returns `404`.

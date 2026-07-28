@@ -1,3 +1,4 @@
+import json
 from collections.abc import Sequence
 from typing import cast
 
@@ -7,9 +8,15 @@ from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_kms as kms
 from aws_cdk import aws_route53 as route53
+from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
-from flowform_infra.config import EnvConfig
+from flowform_infra.config import (
+    EnvConfig,
+    runtime_group_logical_names,
+    runtime_parameter_name,
+)
+from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.registry_stack import RegistryStack
 
@@ -59,14 +66,15 @@ from flowform_infra.stacks.registry_stack import RegistryStack
 # role, with the AWS calls riding the egress proxy — the app containers
 # never call Secrets Manager/SSM for config themselves:
 #   1. Secrets Manager -> /run/flowform/secrets/<NAME>.secret.txt
-#      (DB app passwords, Flask secret key, Auth0 Management API client
-#      secret; tmpfs mount, root-owned 0600 — memory-backed, nothing rests
-#      on EBS, gone on reboot until bootstrap re-runs). Compose mounts
-#      these as file secrets at /run/secrets/..., identical to dev.
+#      (Flask secret key and Auth0 Management API client secret; tmpfs mount,
+#      root-owned 0600 — memory-backed, nothing rests on EBS, gone on reboot
+#      until bootstrap re-runs). AWS database connections use IAM auth and do
+#      not mount password files.
 #   2. SSM get-parameters-by-path /flowform/<scope>/backend/ ->
 #      /opt/flowform/backend.env (non-secret FLOWFORM_* config: Auth0
 #      IDs, KMS key ARN, linkage secret ARN, SES from-address, logging,
-#      DB hosts/names/users, image refs, private IPs, HTTP(S)_PROXY/NO_PROXY).
+#      DB hosts/names/users/auth modes, image refs, private IPs,
+#      HTTP(S)_PROXY/NO_PROXY).
 #      Compose is invoked with `--env-file /opt/flowform/backend.env`
 #      (interpolation) and the backend service also loads it via `env_file:`
 #      (container env).
@@ -77,6 +85,11 @@ from flowform_infra.stacks.registry_stack import RegistryStack
 # Backend AWS calls (boto3 SESv2/KMS/Secrets Manager) use the instance
 # role via IMDS and honor HTTPS_PROXY from the environment — AwsSettings'
 # static keys are already optional (dev-only).
+
+
+def _pascal_case(logical_name: str) -> str:
+    """Turn a contract logical name into a stable CDK construct id."""
+    return "".join(part.capitalize() for part in logical_name.split("_"))
 
 
 class ApplicationStack(Stack):
@@ -92,6 +105,8 @@ class ApplicationStack(Stack):
         registry_stack: RegistryStack,
         task_role: iam.IRole,
         kms_key: kms.Key,
+        database_stack: DatabaseStack | None = None,
+        linkage_secret_arn: str | None = None,
         hosted_zone: route53.IHostedZone | None = None,
         **kwargs,
     ) -> None:
@@ -102,6 +117,8 @@ class ApplicationStack(Stack):
         self.registry_stack = registry_stack
         self.task_role = task_role
         self.kms_key = kms_key
+        self.database_stack = database_stack
+        self.linkage_secret_arn = linkage_secret_arn
         self.hosted_zone = hosted_zone
 
         # aws-cdk-lib's generated concrete principal methods use parameter
@@ -239,10 +256,72 @@ class ApplicationStack(Stack):
             ttl=Duration.minutes(1),
         )
 
+        self._publish_backend_runtime_parameters()
+
         # Runtime user-data/bootstrap wiring is intentionally separate from the image. The proxy host must
         # write /opt/flowform/proxy.env and start docker-compose.proxy.yml;
         # the app host must configure Docker's proxy, mount tmpfs secrets,
         # write /opt/flowform/backend.env, and start docker-compose.app.yml.
+
+    def _publish_backend_runtime_parameters(self) -> None:
+        """Publish the backend runtime group to SSM.
+
+        App bootstrap reads every parameter under this path and renders each
+        one into a `KEY=value` line of backend.env, so the last path segment is
+        the environment-variable name and the values here must be exactly what
+        the backend expects.
+
+        Only non-secret configuration belongs here. Secrets stay in Secrets
+        Manager and are materialised into tmpfs files by bootstrap.
+        """
+        env_config = self.env_config
+        scope_name = env_config.security_scope
+
+        values: dict[str, str] = {
+            "runtime_environment": "prod",
+            "aws_region": env_config.region,
+            "kms_key_arn": self.kms_key.key_arn,
+            # Database connection parts. Both databases live on one RDS
+            # instance, so they share a host and differ only by name and user.
+            "database_core_name": "flowform_core",
+            "database_core_app_user": DatabaseStack.CORE_APP_USER,
+            "database_response_name": "flowform_response",
+            "database_response_app_user": DatabaseStack.RESPONSE_APP_USER,
+            # No database password exists on AWS; the backend authenticates
+            # with short-lived RDS IAM tokens. App bootstrap refuses to deploy
+            # if these disagree with its deployment target.
+            "database_core_auth_mode": "iam",
+            "database_response_auth_mode": "iam",
+        }
+
+        if self.database_stack is not None:
+            values["database_core_host"] = self.database_stack.endpoint_address
+            values["database_response_host"] = self.database_stack.endpoint_address
+
+        if self.linkage_secret_arn is not None:
+            values["linkage_secret_arn"] = self.linkage_secret_arn
+
+        if env_config.auth0_public is not None:
+            values["auth0_domain"] = env_config.auth0_public.domain
+            values["auth0_audience"] = env_config.auth0_public.audience
+            values["auth0_client_id"] = env_config.auth0_public.client_id
+
+        if env_config.studio_domain is not None and env_config.public_site_domain is not None:
+            values["cors_origins"] = json.dumps(
+                [f"https://{env_config.studio_domain}", f"https://{env_config.public_site_domain}"]
+            )
+
+        unknown = set(values) - runtime_group_logical_names("backend")
+        if unknown:
+            raise ValueError(f"backend runtime parameters not in the contract: {sorted(unknown)}")
+
+        for logical_name, value in values.items():
+            ssm.StringParameter(
+                self,
+                f"BackendParam{_pascal_case(logical_name)}",
+                parameter_name=runtime_parameter_name(scope_name, "backend", logical_name),
+                string_value=value,
+            )
 
     def _attach_ecr_pull_policy(
         self,

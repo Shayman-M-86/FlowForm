@@ -23,6 +23,11 @@ name: flowform-app
 services:
   backend:
     environment:
+      # The rehearsal database is a standalone PostgreSQL fixture, not RDS.
+      # Keep its two password files entirely in this strategy overlay so the
+      # shared AWS base remains structurally passwordless.
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
       # Per-service fake-AWS endpoints. botocore honours AWS_ENDPOINT_URL_<SERVICE>
       # natively, so each backend AWS call dials its OWN SNI hostname — riding
       # Squid + the SNI allow-list independently, matching prod's distinct
@@ -45,8 +50,17 @@ services:
       # app cloud-init), so the TLS shim's *.localstack.test cert validates. Prod
       # leaves this UNSET — real AWS TLS validates against public CAs.
       AWS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
     volumes:
       # Mount the host system CA bundle (rehearsal CA already extracted into it)
       # read-only so the container's AWS_CA_BUNDLE path resolves. Path is relative
       # to the project dir (the shared base compose dir); see the footgun note.
       - /etc/pki/tls/certs/ca-bundle.crt:/etc/pki/tls/certs/ca-bundle.crt:ro
+
+secrets:
+  DATABASE_CORE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt

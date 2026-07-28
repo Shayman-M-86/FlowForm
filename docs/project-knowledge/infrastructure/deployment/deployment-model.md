@@ -2,9 +2,9 @@
 title: Deployment model
 aliases: ["Deployment model"]
 document_type: architecture
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:d5ba2a89dc9db5b7754bc2e6ade0bdae7125ae3ec69f654ea208e3a2f9f84547
+verified_evidence_digest: null
 last_edited: 2026-07-28
 tags: [infrastructure, configuration]
 related_code:
@@ -68,8 +68,20 @@ but it does not prove that a matching image has been built or published.
 
 The shared app and proxy bootstrap scripts render runtime configuration from
 AWS SSM, materialise required secrets, validate the selected Compose files, and
-start them with `docker compose ... up --wait`. The scripts support an endpoint
-override and a strategy-specific Compose override for the rehearsal path.
+start them with `docker compose ... up --wait`. App bootstrap requires an
+explicit `FLOWFORM_DEPLOYMENT_TARGET`: `aws` requires both rendered database
+auth modes to be `iam` and does not materialise database passwords, while
+`rehearsal` requires both modes to be `password` and uses its Compose overlay
+for the password files. The scripts also support an endpoint override for the
+rehearsal path.
+
+CDK provisions the database service; the database contents are a separate
+remote operation. `infra/deployment/aws/scripts/bootstrap-database.sh` creates
+the logical databases, roles, schemas, and grants by connecting to the RDS
+endpoint, using the SQL in `infra/database/init/aws/` alongside the shared
+schema snapshots. It provisions empty databases and is not a migration path.
+The container entrypoint under `infra/database/init/templates/` remains the
+development and rehearsal path.
 
 The CDK application stack does not provide an implementation-backed, complete
 release workflow in this document: applying CDK, choosing a published image,

@@ -2,10 +2,10 @@
 title: Runtime containers
 aliases: ["Runtime containers"]
 document_type: architecture
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:91b6754c7fa5ba494dc8bf963bdbbf7ba13662d4a4cfca74a2539a47fe40c737
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [infrastructure, backend]
 related_code:
   - "../../../../infra/containers/runtime/compose/"
@@ -42,11 +42,13 @@ configured private proxy address. The app project runs the Gunicorn backend
 and Alloy; the backend binds port 5000 to its configured private app address.
 Neither shared Compose file creates a PostgreSQL service.
 
-The backend is configured to use the proxy host for HTTP and HTTPS egress and
-gets database, application, and Auth0-management values through file-backed
-Docker secrets. The proxy Alloy service receives its Grafana token as a
-file-backed Docker secret. The Compose files use read-only filesystems or
-bounded writable volumes as applicable, drop capabilities, set
+The backend is configured to use the proxy host for HTTP and HTTPS egress.
+Application and Auth0-management values use file-backed Docker secrets in both
+deployment strategies. The shared AWS app definition is passwordless for its
+databases; the rehearsal app overlay adds the two local database password
+files. The proxy Alloy service receives its Grafana token as a file-backed
+Docker secret. The Compose files use read-only filesystems or bounded writable
+volumes as applicable, drop capabilities, set
 `no-new-privileges`, and configure bounded JSON-file log rotation. Alloy has
 the narrowly restored capabilities and host mounts required to read the Docker
 socket and system journal.
@@ -56,13 +58,17 @@ socket and system journal.
 The AWS proxy overlay supplies the Route 53 Caddy configuration and AWS Squid
 allow-list. The rehearsal overlays replace those with local TLS, LocalStack,
 and test-network inputs while retaining the shared base services. The rehearsal
-app overlay supplies per-service AWS endpoint overrides and disables EC2
-metadata lookup; those settings are absent from the shared app file.
+app overlay supplies database password files, per-service AWS endpoint
+overrides, and disabled EC2 metadata lookup; those settings are absent from the
+shared app file.
 
-Host bootstrap writes the environment files consumed by Compose, materialises
-secrets under a runtime secret directory, validates the merged configuration,
-and waits for Compose startup. Therefore image references and other required
-runtime values must be available before a host can converge. See
+App bootstrap requires `FLOWFORM_DEPLOYMENT_TARGET` to select `aws` or
+`rehearsal`. It validates that the rendered database auth modes are respectively
+`iam` or `password`, then materialises only the secrets required by that
+strategy. The AWS path removes stale database password files instead of
+retrieving them. Host bootstrap then validates the merged configuration and
+waits for Compose startup. Therefore image references and other required runtime
+values must be available before a host can converge. See
 [[deployment-model|Deployment model]] for the CDK and host-lifecycle boundary.
 
 ## Local variants

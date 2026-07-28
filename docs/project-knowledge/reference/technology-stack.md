@@ -2,9 +2,9 @@
 title: Technology stack
 aliases: ["Technology stack", "Tech stack"]
 document_type: reference
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:24cc50dd86c0ae6a18c8e55c2d76e34185e0cddeaad21992dc8f6c7890d3c503
+verified_evidence_digest: null
 last_edited: 2026-07-28
 tags: [backend, frontend, infrastructure, tooling]
 related_code:
@@ -87,7 +87,7 @@ manifests listed under `related_code` remain the source of truth.
 | --- | --- | --- |
 | boto3 (with `[crt]`) | `>=1.38.0` | AWS SDK |
 | botocore CRT auth | — | `aws login` profile credentials in dev |
-| boto3-stubs (`kms`, `secretsmanager`) | `>=1.43.36` | Typed AWS clients |
+| boto3-stubs (`kms`, `rds`, `secretsmanager`) | `>=1.43.36` | Typed AWS clients |
 | mypy-boto3-sesv2 | `>=1.43.18` | Typed SES v2 client |
 
 ### Observability

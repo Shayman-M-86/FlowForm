@@ -66,6 +66,7 @@ if env_config.full_deployment:
         env_config=env_config,
         network_stack=network_stack,
         kms_key=security_stack.kms_key,
+        task_role=security_stack.task_role,
         env=cdk_env,
     )
     database_stack.add_dependency(network_stack)
@@ -79,6 +80,8 @@ if env_config.full_deployment:
         registry_stack=registry_stack,
         task_role=security_stack.task_role,
         kms_key=security_stack.kms_key,
+        database_stack=database_stack,
+        linkage_secret_arn=security_stack.linkage_secret.secret_arn,
         hosted_zone=security_stack.email_identity.hosted_zone,
         env=cdk_env,
     )

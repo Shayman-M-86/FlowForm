@@ -4,7 +4,7 @@ aliases: ["Security model"]
 document_type: architecture
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:e57be9349fda451c912d3e14910cf141351529d9b6855a72f279e549a2030aae
+verified_evidence_digest: sha256:b25ca5f68f06bf2dc62581e894dfc801404d668fd3ebc750cb4424f416155d83
 last_edited: 2026-07-28
 tags: [backend, infrastructure, security]
 related_code:

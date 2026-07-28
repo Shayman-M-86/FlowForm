@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import aws_cdk as cdk
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_kms as kms
 from aws_cdk.assertions import Match, Template
 
@@ -22,6 +23,7 @@ def _synth_database_stack(env_name: str = "staging") -> Template:
 
     support = cdk.Stack(app, "Support", env=cdk_env)
     database_key = kms.Key(support, "DatabaseKey")
+    task_role = iam.Role(support, "AppTaskRole", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"))
     network = NetworkStack(app, "Network", env_config=env_config, env=cdk_env)
     database = DatabaseStack(
         app,
@@ -29,6 +31,7 @@ def _synth_database_stack(env_name: str = "staging") -> Template:
         env_config=env_config,
         network_stack=network,
         kms_key=database_key,
+        task_role=task_role,
         env=cdk_env,
     )
     return Template.from_stack(database)
@@ -109,6 +112,51 @@ def test_rds_manages_the_master_password_with_the_flowform_key():
     assert "MasterUserPassword" not in _database_resource()["Properties"]
 
 
+def test_instance_enables_iam_database_authentication():
+    """Without this property RDS rejects every IAM token."""
+    template = _synth_database_stack()
+    template.has_resource_properties(
+        "AWS::RDS::DBInstance",
+        {"EnableIAMDatabaseAuthentication": True},
+    )
+
+
+def test_db_resource_id_is_published_for_policy_scoping():
+    """rds-db:connect is scoped by resource ID, so consumers need it."""
+    template = _synth_database_stack()
+    template.has_resource_properties(
+        "AWS::SSM::Parameter",
+        {
+            "Name": "/flowform/staging/database/db_resource_id",
+            "Value": {"Fn::GetAtt": ["Database", "DbiResourceId"]},
+        },
+    )
+
+
+def test_iam_connect_is_granted_only_for_the_two_app_users():
+    """The grant must not permit connecting as flowform_admin."""
+    template = _synth_database_stack()
+    policies = template.find_resources("AWS::IAM::Policy")
+    assert len(policies) == 1
+
+    statements = next(iter(policies.values()))["Properties"]["PolicyDocument"]["Statement"]
+    assert len(statements) == 1
+    assert statements[0]["Action"] == "rds-db:connect"
+    assert statements[0]["Effect"] == "Allow"
+
+    resources = statements[0]["Resource"]
+    assert len(resources) == 2
+
+    granted_users = []
+    for resource in resources:
+        parts = resource["Fn::Join"][1]
+        assert {"Fn::GetAtt": ["Database", "DbiResourceId"]} in parts
+        granted_users.append(parts[-1])
+
+    assert granted_users == ["/flowform_core_app", "/flowform_response_app"]
+    assert not any("flowform_admin" in user for user in granted_users)
+
+
 def test_parameter_group_requires_tls_and_scram():
     template = _synth_database_stack()
     template.resource_count_is("AWS::RDS::DBParameterGroup", 1)
@@ -119,7 +167,7 @@ def test_parameter_group_requires_tls_and_scram():
             "Parameters": {
                 "rds.force_ssl": "1",
                 "password_encryption": "scram-sha-256",
-                "rds.accepted_password_auth_method": "scram-sha-256",
+                "rds.accepted_password_auth_method": "scram",
             },
         },
     )

@@ -150,9 +150,11 @@ main() {
   put_runtime_parameter backend database_core_host "${DATABASE_CORE_HOST}"
   put_runtime_parameter backend database_core_name "${DATABASE_CORE_NAME}"
   put_runtime_parameter backend database_core_app_user "${DATABASE_CORE_APP_USER}"
+  put_runtime_parameter backend database_core_auth_mode "${DATABASE_CORE_AUTH_MODE}"
   put_runtime_parameter backend database_response_host "${DATABASE_RESPONSE_HOST}"
   put_runtime_parameter backend database_response_name "${DATABASE_RESPONSE_NAME}"
   put_runtime_parameter backend database_response_app_user "${DATABASE_RESPONSE_APP_USER}"
+  put_runtime_parameter backend database_response_auth_mode "${DATABASE_RESPONSE_AUTH_MODE}"
 
   put_runtime_parameter proxy caddy_image "${CADDY_IMAGE}"
   put_runtime_parameter proxy squid_image "${SQUID_IMAGE}"

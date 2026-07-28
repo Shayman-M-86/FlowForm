@@ -79,7 +79,8 @@ application data exist in it.
 | Stack deletion | Final snapshot |
 | Deletion protection | Disabled for staging |
 | Transport | `rds.force_ssl = 1` |
-| Password verifier | SCRAM-SHA-256 |
+| Password verifier | `password_encryption = scram-sha-256`; `rds.accepted_password_auth_method = scram` |
+| Runtime authentication | IAM tokens; no stored password for the app roles |
 | Log exports | PostgreSQL and upgrade logs |
 | Database monitoring | Database Insights Standard-compatible, seven-day history |
 | Enhanced Monitoring | Omit initially |
@@ -327,8 +328,13 @@ Use a PostgreSQL 17 parameter group with:
 ```text
 rds.force_ssl = 1
 password_encryption = scram-sha-256
-rds.accepted_password_auth_method = scram-sha-256
+rds.accepted_password_auth_method = scram
 ```
+
+The two settings do not share a value vocabulary. `password_encryption` is the
+PostgreSQL parameter and takes `md5` or `scram-sha-256`. The RDS-specific
+`rds.accepted_password_auth_method` accepts only `scram` or `md5+scram`; use
+`md5+scram` only while older clients still need MD5 compatibility.
 
 Apply the SCRAM transition in a safe order:
 

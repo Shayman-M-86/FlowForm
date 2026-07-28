@@ -8,6 +8,8 @@ SYNC_SCRIPT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/localst
 TLS_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.tls-shim.yml"
 PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/proxy.override.yml"
 APP_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl"
+APP_REHEARSAL_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/app.override.yml"
+APP_COMPOSE="${REPO_ROOT}/infra/containers/runtime/compose/app.yml"
 PROXMOX_VARIABLES="${REPO_ROOT}/infra/deployment/proxmox/terraform/variables.tf"
 PROXY_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl"
 LOCALSTACK_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl"
@@ -125,6 +127,19 @@ for cloud_init in "${APP_CLOUD_INIT}" "${PROXY_CLOUD_INIT}" "${DB_CLOUD_INIT}"; 
   grep -F 'BOOTSTRAP_AWS_MAX_ATTEMPTS=120' "${cloud_init}" >/dev/null
 done
 grep -F 'COMPOSE_FORCE_RECREATE=1' "${APP_CLOUD_INIT}" >/dev/null
+grep -F 'FLOWFORM_DEPLOYMENT_TARGET=rehearsal' "${APP_CLOUD_INIT}" >/dev/null
+grep -E 'DATABASE_CORE_AUTH_MODE += "password"' "${PROXMOX_VARIABLES}" >/dev/null
+grep -E 'DATABASE_RESPONSE_AUTH_MODE += "password"' "${PROXMOX_VARIABLES}" >/dev/null
+if grep -F 'DATABASE_CORE_APP_PASSWORD_FILE' "${APP_COMPOSE}" >/dev/null \
+  || grep -F 'DATABASE_RESPONSE_APP_PASSWORD_FILE' "${APP_COMPOSE}" >/dev/null; then
+  printf 'shared AWS app compose still carries database password files\n' >&2; exit 1
+fi
+grep -F 'DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD' \
+  "${APP_REHEARSAL_OVERRIDE}" >/dev/null
+grep -F 'DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD' \
+  "${APP_REHEARSAL_OVERRIDE}" >/dev/null
+grep -F 'validate_database_auth_strategy' "${APP_BOOTSTRAP}" >/dev/null
+grep -F 'DATABASE_AUTH_STRATEGY' "${APP_BOOTSTRAP}" >/dev/null
 # Cross-host traces require the isolated app clock to use the synchronized proxy.
 grep -F 'bindaddress 10.10.10.10' "${PROXY_CLOUD_INIT}" >/dev/null
 grep -F 'bindaddress ::1' "${PROXY_CLOUD_INIT}" >/dev/null
