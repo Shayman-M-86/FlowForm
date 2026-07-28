@@ -4,7 +4,7 @@ aliases: ["AWS network topology"]
 document_type: architecture
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:9b87707ceb3a0e81736545688b21f12cd7b21e4ec246dde89494a7bfa21cfc5a
+verified_evidence_digest: sha256:a5e15a1959ac3a8b2e0162c68e3ced730e0991153a099681329d169cf5d2ef12
 last_edited: 2026-07-28
 tags: [infrastructure, security]
 related_code:

@@ -36,10 +36,13 @@ related_docs:
 > migration execution remain outstanding.
 
 The source work is largely done: the backend, application bootstrap, CDK
-resources, golden image, and RDS bootstrap runner implement the IAM path. The
-database bootstrap has run against staging. What remains is the application
-host connection, later migration execution, an intentional secret migration,
-and shared container-path cleanup.
+resources, golden-image definition, and RDS bootstrap runner implement the IAM
+path. The database bootstrap has run against staging, and the digest-pinned
+runtime images are promoted in SSM. What remains on the critical path is
+landing the application work, building and publishing a fresh AMI from that
+merged commit, deploying the hosts, and proving the live IAM connection.
+Later migration execution, an intentional secret migration, and shared
+container-path cleanup remain separate work.
 
 ## Done
 
@@ -106,19 +109,33 @@ has executed end to end. Each step depends on the previous one having produced
 something the next reads.
 
 ```text
-1. image build && image publish        -> AMI id in /flowform/<env>/ec2/baseAmiId
-2. cdk deploy Network, Database        -> VPC and persistent RDS exist
-3. bootstrap-database.sh --apply       -> helper, temporary endpoint,
-                                          databases, roles, rds_iam grants
-4. publish-staging-images.sh publish
-   publish-staging-images.sh promote   -> BACKEND_IMAGE / ALLOY_IMAGE in SSM
-5. cdk deploy Application              -> hosts boot and converge
+1. [done] cdk deploy Network, Database -> VPC and persistent RDS exist
+2. [done] bootstrap-database.sh --apply
+                                       -> databases, roles, rds_iam grants
+3. [done] publish + promote images     -> digest references in SSM
+4. [next] merge the application slice into staging
+5. [next] image build && image publish -> fresh AMI id in
+                                          /flowform/staging/ec2/baseAmiId
+6. [next] deploy Security addition     -> observability secret placeholder
+7. [next] seed observability secret    -> real Grafana token version
+8. [next] cdk deploy Application       -> hosts boot and converge
+9. [next] verify IAM DB connection     -> live end-to-end evidence
 ```
 
-Packer runs *before* CDK, not after: `ApplicationStack` resolves the base AMI
-from SSM at deployment time, so that parameter must already hold a real AMI id.
+Deploy the Application stack with `--exclusively` while the retained,
+context-gated DatabaseBootstrap stack still imports automatic Network and
+Database exports. A dependency-inclusive deployment currently proposes
+removing those live imports because the helper is absent from the default CDK
+assembly. Migrating the helper to stable explicit stack contracts is follow-up
+work; deleting it merely to bypass the constraint is not part of this slice.
 
-Step 4 must precede step 5. App bootstrap requires non-empty `BACKEND_IMAGE`
+Packer runs *before the Application deployment*, not after:
+`ApplicationStack` resolves the base AMI from SSM at deployment time, so that
+parameter must already hold a real AMI ID. The AMI must be built after the
+application slice is merged because it bakes the bootstrap and runtime assets
+from the checked-out repository.
+
+Image promotion must precede application deployment. App bootstrap requires non-empty `BACKEND_IMAGE`
 and `ALLOY_IMAGE` and stops without them, so an instance launched before
 promotion fails in user data. That is fail-closed rather than silently broken,
 but it means promotion is a prerequisite of the first application deployment,
@@ -208,10 +225,11 @@ the verification checks that assert SCRAM for every login role.
 6 template REVOKE CONNECT/
 ```
 
-Thread 1 is the whole critical path now that the source work is done, and
-thread 0 is the order it has to happen in. Thread 7 is only meaningful once
-both are complete. Threads 2 through 6 can proceed in parallel; 4 and 6 are
-correctness fixes for development and rehearsal rather than AWS work.
+Thread 0 now records the critical-path order. Thread 1 is complete, and thread
+7 is the next live acceptance check after the reviewed application source,
+fresh AMI, security addition, and application hosts are deployed. Threads 2
+through 6 can proceed independently; 4 and 6 are correctness fixes for
+development and rehearsal rather than blockers for the first AWS connection.
 
 ## Related documents
 

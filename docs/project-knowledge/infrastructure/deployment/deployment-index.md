@@ -2,15 +2,15 @@
 title: Deployment documentation
 aliases: ["Deployment documentation"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:3fa28fe2deb019773dc99b66520ca7d4aedd7f33c51d27d5bdd9c8a54a2cfad2
+verified_evidence_digest: null
 last_edited: 2026-07-28
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../infra/deployment/"
   - "../../../../.github/workflows/"
-related_docs: ["Infrastructure knowledge", "Deployment model", "AWS network topology", "Cloud deployment"]
+related_docs: ["Infrastructure knowledge", "Deployment model", "AWS network topology", "AWS staging bring-up", "Cloud deployment"]
 ---
 
 # Deployment documentation
@@ -72,12 +72,16 @@ topology. [[aws-network-topology|AWS network topology]] provides the VPC,
 subnet, routing, endpoint, and security-group contract. [[cloud-deployment|Cloud
 deployment]] provides the exact triggers, credentials, actions, and limits of
 the checked-in AWS publication workflows.
+[[aws-staging-bring-up|AWS staging bring-up]] provides the ordered operator
+boundary from a reviewed staging commit through AMI publication, secret
+seeding, application deployment, and live verification.
 
 ## Related documents
 
 - [[infrastructure-index|Infrastructure knowledge]]
 - [[deployment-model|Deployment model]]
 - [[aws-network-topology|AWS network topology]]
+- [[aws-staging-bring-up|AWS staging bring-up]]
 - [[cloud-deployment|Cloud deployment]]
 - [[images-index|Machine images]]
 - [[containers-index|Container runtime documentation]]

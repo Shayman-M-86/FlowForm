@@ -41,11 +41,11 @@ a retained-data cutover, or that a source-complete stack has been deployed.
 | --- | --- | --- |
 | Target decision | Recorded in ADR 0001 | Not applicable |
 | Security and registry | Implemented | Last recorded as deployed on 2026-07-24 |
-| Image publication | Implemented and exercised through GitHub OIDC | Four-image digest manifest recorded by the earlier execution slice |
+| Image publication | Implemented and exercised through GitHub OIDC; digest-target promotion bug fixed locally | Four images published and five digest-pinned runtime parameters promoted |
 | Network | Four-subnet design implemented and covered by CDK assertions | Deployed and verified on 2026-07-27 |
-| Database | RDS infrastructure and IAM authentication implemented, asserted, synthesized, and diff-reviewed | Not deployed; first attempt rolled back |
-| Database contents | Remote RDS bootstrap runner implemented and validated against PostgreSQL 17 | Never run against RDS |
-| Application compute | EC2 resources and backend SSM parameters exist; user data and image references are missing | Not ready to deploy |
+| Database | RDS infrastructure and IAM authentication implemented and asserted | Deployed to staging |
+| Database contents | Remote RDS bootstrap runner implemented with authoritative baseline schema verification | Bootstrap and repeat verification completed against staging RDS |
+| Application compute | Initial self-convergence path implemented locally: user data, runtime parameters, ECR login, proxy readiness, API DNS, and secret access | Not deployed; requires merge and a fresh published AMI |
 | Frontend | Substantial CDK and deployment support exists | Outside the immediate infrastructure slice |
 | Observability | Placeholder CDK stack | Not deployed |
 
@@ -108,21 +108,25 @@ App EC2 in isolated subnet A ----> RDS in isolated subnet A
 
 ## Immediate next execution slice
 
-The Network portion of Phase 3 is complete. `DatabaseStack` now also carries
-RDS IAM database authentication, the `rds-db:connect` grant, and a remote
-bootstrap runner for the database contents; the backend and app bootstrap
-implement the matching IAM path.
+Phase 3 is complete: the Network and Database stacks are deployed, the
+database bootstrap has created and verified the baseline databases, roles, and
+tables, and the five runtime image parameters now select digest-pinned ECR
+artifacts.
 
-The next slice is still to deploy `DatabaseStack` and prove the live RDS
-infrastructure, then run the bootstrap runner against it. A first deployment
-attempt failed and rolled back on an invalid parameter-group value, which has
-since been corrected; the stack was deleted, so this is a fresh create.
-
-Do not begin application-host deployment merely because the EC2 resources
-synthesize: user data, convergence, and image references are still missing.
-Outstanding work is tracked in
+The immediate slice is Phase 4. Land the current application-readiness source
+through the feature-to-staging PR workflow, build and publish a fresh AMI from
+that exact merged commit, add and seed the observability secret, deploy
+`FlowForm-Staging-Application`, then prove host convergence and a real
+IAM-token database connection. The exact operator order is recorded in
+[[aws-staging-bring-up|AWS staging bring-up]]. Outstanding database follow-up is tracked in
 [[aws-iam-database-auth-loose-threads|AWS IAM database authentication loose
 threads]].
+
+For the first Application deployment, use CDK's `--exclusively` flag. The
+retained DatabaseBootstrap helper still imports automatic outputs from Network
+and Database, while the default context omits that helper and would otherwise
+propose removing its live exports. A later stack-contract migration should
+remove this operator constraint.
 
 ### 1. Land the source through the staging workflow
 

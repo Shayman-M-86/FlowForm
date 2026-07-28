@@ -91,9 +91,9 @@ fails closed when any of those values is absent.
 | Security | `FlowForm-Nonprod-Security` | Same shared nonproduction stack | `FlowForm-Prod-Security` | Nonproduction recorded deployed on 2026-07-24; production source only |
 | Registry | Not created | `FlowForm-Staging-Registry` | `FlowForm-Prod-Registry` | Staging recorded deployed on 2026-07-24; production source only |
 | Network | Not created | `FlowForm-Staging-Network` | `FlowForm-Prod-Network` | Staging deployed and live verified on 2026-07-27; production source only |
-| Database | Not created | `FlowForm-Staging-Database` | `FlowForm-Prod-Database` | Source implemented and asserted; neither environment recorded deployed |
+| Database | Not created | `FlowForm-Staging-Database` | `FlowForm-Prod-Database` | Staging deployed and bootstrapped; production source only |
 | Database bootstrap helper | Not created | `FlowForm-Staging-DatabaseBootstrap` | `FlowForm-Prod-DatabaseBootstrap` | Optional context-gated source; not part of ordinary synthesis or deployment |
-| Application | Not created | `FlowForm-Staging-Application` | `FlowForm-Prod-Application` | Resource skeleton only; bootstrap is incomplete and deployment is not ready |
+| Application | Not created | `FlowForm-Staging-Application` | `FlowForm-Prod-Application` | Initial convergence source implemented locally; neither environment deployed |
 | Frontend certificate | Not created | `FlowForm-Staging-FrontendCert` | `FlowForm-Prod-FrontendCert` | Source implemented; live state is not established by the active plan |
 | Frontend | Not created | `FlowForm-Staging-Frontend` | `FlowForm-Prod-Frontend` | Source implemented; live CDK state is not established by the active plan |
 | Observability | Not created | `FlowForm-Staging-Observability` | `FlowForm-Prod-Observability` | Placeholder only |
@@ -165,13 +165,15 @@ template.
 
 - One customer-managed KMS key with automatic rotation.
 - One stable KMS alias.
-- Three KMS-encrypted Secrets Manager secrets:
+- Four KMS-encrypted Secrets Manager secrets:
   - `flowform/<scope>/app-secrets`, containing `app_secret_key` and
     `auth0_mgmt_secret`;
   - `flowform/<scope>/db-secrets`, containing
     `db_core_app_password` and `db_response_app_password`;
   - `flowform/<scope>/linkage-secret`, containing the versioned linkage HMAC
-    material.
+    material;
+  - `flowform/<scope>/observability-secrets`, containing the proxy Alloy
+    Grafana Cloud token.
 - Five non-secret SSM parameters:
   - `/flowform/<scope>/kms-key-arn`;
   - `/flowform/<scope>/aws-region`;
@@ -214,8 +216,8 @@ frontend-parameter permissions are attached by their owning consumer stacks.
   change registrar nameservers.
 - The SES identity is imported and remains manual for now.
 - No general-purpose GitHub CDK deployment role is implemented.
-- No observability secret is created despite the runtime parameter contract
-  reserving an `observability-secrets` name.
+- The observability secret is created with a generated placeholder and must be
+  seeded out of band before the proxy host is deployed.
 - Secret rotation automation is not implemented here.
 
 ## Registry stack
@@ -406,7 +408,7 @@ key remain excluded.
 
 ## Application stack
 
-### Currently implemented resource skeleton
+### Implemented initial deployment source
 
 The application stack creates two EC2 instances in Availability Zone A:
 
@@ -453,21 +455,30 @@ The proxy role:
 The application instance uses the SecurityStack application role and can pull
 only the backend and Alloy repositories. Both host policies use the
 account-wide ECR authorization action and repository-specific layer and image
-reads.
+reads. The proxy can read only the observability secret and decrypt it only
+through the regional Secrets Manager service.
 
-### Incomplete behavior
+The stack also:
 
-The stack is not ready to deploy because it does not yet:
+- attaches baked bootstrap user data to both hosts;
+- publishes complete backend and proxy non-secret runtime groups;
+- creates `api.<public-site-domain>` pointing at the proxy Elastic IP;
+- makes host creation depend on its runtime parameters and ECR policies;
+- orders the app instance after proxy-instance creation;
+- relies on the app bootstrap's bounded Squid readiness wait before external
+  AWS calls;
+- authenticates Docker to the distinct private ECR registries selected by
+  digest before Compose pulls.
 
-- attach user data or invoke the shared host bootstrap;
-- configure the Docker daemon, AWS CLI, SSM Agent, or containers to use Squid;
-- render proxy or backend environment files;
-- materialize file-backed secrets into tmpfs;
-- select and promote active image digests;
-- start or health-check either Compose project;
-- enforce proxy-before-application convergence;
-- consume the database endpoint or application database credentials;
-- create the public `api.<domain>` Route 53 record;
+### Remaining live and readiness gaps
+
+The source still needs to be merged, baked into a fresh AMI, deployed, and
+verified. It does not yet:
+
+- prove that the proxy and app Compose projects converge on real EC2 hosts;
+- prove a live IAM-token connection to either RDS database;
+- prove Caddy's DNS-01 certificate path or the public API route;
+- prove Grafana logs and traces;
 - prove reboot or replacement convergence;
 - apply an explicit production retention policy to the EC2 instances or EIP.
 

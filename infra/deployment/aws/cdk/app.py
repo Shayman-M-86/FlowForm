@@ -98,6 +98,7 @@ if env_config.full_deployment:
         kms_key=security_stack.kms_key,
         database_stack=database_stack,
         linkage_secret_arn=security_stack.linkage_secret.secret_arn,
+        observability_secret_arn=security_stack.observability_secret.secret_arn,
         hosted_zone=security_stack.email_identity.hosted_zone,
         env=cdk_env,
     )

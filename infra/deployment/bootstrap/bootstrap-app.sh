@@ -409,6 +409,14 @@ compose_up() {
 main() {
   log "target=${FLOWFORM_DEPLOYMENT_TARGET} scope=${FLOWFORM_SCOPE} app=${APP_PRIVATE_IP} proxy=${PROXY_PRIVATE_IP} dry_run=${DRY_RUN}"
 
+  begin_step "Waiting for proxy egress"
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    log "DRY_RUN: would wait for Squid at ${PROXY_PRIVATE_IP}:3128 before external AWS calls"
+  else
+    wait_for_tcp "Squid proxy ${PROXY_PRIVATE_IP}:3128" "${PROXY_PRIVATE_IP}" 3128
+  fi
+  end_step
+
   begin_step "Validating configuration"
   check_common_requirements
   check_aws_requirements
@@ -439,6 +447,10 @@ main() {
 
   begin_step "Materialising secrets"
   materialise_secrets
+  end_step
+
+  begin_step "Authenticating private image registries"
+  login_ecr_for_images "${BACKEND_ENV}" BACKEND_IMAGE ALLOY_IMAGE
   end_step
 
   begin_step "Starting application containers"

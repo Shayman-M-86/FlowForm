@@ -2,10 +2,10 @@
 title: Machine image building
 aliases: ["Machine image building"]
 document_type: workflow
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:fd147e99a1c4dc18268ac4134b761f1896ac02519be6f2b9e7aed16b29af360b
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-28
 tags: [infrastructure]
 related_code:
   - "../../../../infra/images/scripts/"
@@ -66,11 +66,15 @@ infra/images/scripts/image build aws
 infra/images/scripts/image publish aws --environment staging --dry-run
 ```
 
-An AWS build verifies its AMI and snapshot before it completes. Publication
-accepts only `dev`, `staging`, or `prod`, checks that the caller account matches
-the CDK configuration, verifies the AMI again, and writes the AMI ID to the
-environment's configured SSM parameter. `--dry-run` performs the prechecks
-without the SSM write. Publication does not run CDK deployment.
+An AWS build restricts Packer's temporary SSH security group to the build
+workstation's detected public address, derives the `source_commit` tag from
+Git, and verifies its AMI and snapshot before it completes. When the selected
+AWS CLI profile uses a login session, the dispatcher supplies Packer with a
+refreshable credential-process bridge without persisting credentials.
+Publication accepts only `dev`, `staging`, or `prod`, checks that the caller
+account matches the CDK configuration, verifies the AMI again, and writes the
+AMI ID to the environment's configured SSM parameter. `--dry-run` performs the
+prechecks without the SSM write. Publication does not run CDK deployment.
 
 ## Validation boundary
 

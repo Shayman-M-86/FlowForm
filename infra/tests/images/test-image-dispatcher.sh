@@ -33,6 +33,18 @@ IMAGE_SUBCOMMAND='image test' source "${repo_root}/images/scripts/image-common.s
 [[ "$(image_cdk_region)" == ap-southeast-2 ]]
 [[ "$(image_cdk_account)" == 908123139858 ]]
 
+unset AWS_PROFILE AWS_DEFAULT_PROFILE
+mkdir -p "${tmp}/default-profile-bin"
+cat >"${tmp}/default-profile-bin/aws" <<'FAKE_AWS'
+#!/usr/bin/env bash
+[[ "$*" == *"--profile default"* ]] || exit 1
+printf '{"Account":"908123139858"}\n'
+FAKE_AWS
+chmod +x "${tmp}/default-profile-bin/aws"
+PATH="${tmp}/default-profile-bin:${PATH}" IMAGE_SUBCOMMAND='image test' \
+  bash -c 'source "$1"; image_aws_session_preflight; [[ "$AWS_PROFILE" == default ]]' _ \
+  "${repo_root}/images/scripts/image-common.sh"
+
 mkdir -p "${tmp}/bin"
 cat >"${tmp}/bin/aws" <<'FAKE_AWS'
 #!/usr/bin/env bash

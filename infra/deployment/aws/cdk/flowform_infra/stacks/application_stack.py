@@ -119,6 +119,7 @@ class ApplicationStack(Stack):
         kms_key: kms.Key,
         database_stack: DatabaseStack | None = None,
         linkage_secret_arn: str | None = None,
+        observability_secret_arn: str | None = None,
         hosted_zone: route53.IHostedZone | None = None,
         **kwargs,
     ) -> None:
@@ -131,7 +132,19 @@ class ApplicationStack(Stack):
         self.kms_key = kms_key
         self.database_stack = database_stack
         self.linkage_secret_arn = linkage_secret_arn
+        self.observability_secret_arn = observability_secret_arn
         self.hosted_zone = hosted_zone
+
+        if env_config.public_site_domain is None:
+            raise ValueError("ApplicationStack requires public_site_domain")
+        if env_config.auth0_public is None:
+            raise ValueError(f"ApplicationStack requires Auth0 public configuration for {env_config.env_name}")
+        if env_config.runtime_public is None:
+            raise ValueError(f"ApplicationStack requires runtime public configuration for {env_config.env_name}")
+        if hosted_zone is None:
+            raise ValueError("ApplicationStack requires the public Route 53 hosted zone")
+        if observability_secret_arn is None:
+            raise ValueError("ApplicationStack requires the observability secret ARN")
 
         # aws-cdk-lib's generated concrete principal methods use parameter
         # names that do not structurally match the IPrincipal protocol. The
@@ -169,7 +182,7 @@ class ApplicationStack(Stack):
                 )
             )
 
-        self._attach_ecr_pull_policy(
+        app_ecr_policy = self._attach_ecr_pull_policy(
             "AppEcrPullPolicy",
             task_role,
             [
@@ -177,7 +190,24 @@ class ApplicationStack(Stack):
                 registry_stack.alloy_repository,
             ],
         )
-        self._attach_ecr_pull_policy(
+        self.proxy_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["secretsmanager:DescribeSecret", "secretsmanager:GetSecretValue"],
+                resources=[observability_secret_arn],
+            )
+        )
+        self.proxy_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["kms:Decrypt"],
+                resources=[kms_key.key_arn],
+                conditions={
+                    "StringEquals": {
+                        "kms:ViaService": f"secretsmanager.{env_config.region}.amazonaws.com",
+                    }
+                },
+            )
+        )
+        proxy_ecr_policy = self._attach_ecr_pull_policy(
             "ProxyEcrPullPolicy",
             cast(iam.IRole, self.proxy_role),
             [
@@ -213,7 +243,6 @@ class ApplicationStack(Stack):
             )
         ]
 
-
         self.proxy_instance = ec2.Instance(
             self,
             "ProxyInstance",
@@ -245,6 +274,14 @@ class ApplicationStack(Stack):
             domain="vpc",
             instance_id=self.proxy_instance.instance_id,
         )
+        self.api_dns_record = route53.ARecord(
+            self,
+            "ApiDnsRecord",
+            zone=hosted_zone,
+            record_name=f"api.{env_config.public_site_domain}",
+            target=route53.RecordTarget.from_ip_addresses(self.proxy_elastic_ip.ref),
+            ttl=Duration.minutes(1),
+        )
 
         self.app_instance = ec2.Instance(
             self,
@@ -274,6 +311,12 @@ class ApplicationStack(Stack):
                 },
             ),
         )
+        self.app_instance.node.add_dependency(self.proxy_instance)
+        self.app_instance.node.add_dependency(app_ecr_policy)
+        self.proxy_instance.node.add_dependency(proxy_ecr_policy)
+        proxy_default_policy = self.proxy_role.node.try_find_child("DefaultPolicy")
+        if proxy_default_policy is not None:
+            self.proxy_instance.node.add_dependency(proxy_default_policy)
 
         self.proxy_private_dns_record = route53.ARecord(
             self,
@@ -292,12 +335,7 @@ class ApplicationStack(Stack):
             ttl=Duration.minutes(1),
         )
 
-        self._publish_backend_runtime_parameters()
-
-        # Runtime user-data/bootstrap wiring is intentionally separate from the image. The proxy host must
-        # write /opt/flowform/proxy.env and start docker-compose.proxy.yml;
-        # the app host must configure Docker's proxy, mount tmpfs secrets,
-        # write /opt/flowform/backend.env, and start docker-compose.app.yml.
+        self._publish_runtime_parameters()
 
     def _build_user_data(self, host: str, bootstrap_env: dict[str, str]) -> ec2.UserData:
         """Write the host's bootstrap inputs, then run its bootstrap script.
@@ -330,7 +368,7 @@ class ApplicationStack(Stack):
         )
         return user_data
 
-    def _publish_backend_runtime_parameters(self) -> None:
+    def _publish_runtime_parameters(self) -> None:
         """Publish the backend runtime group to SSM.
 
         App bootstrap reads every parameter under this path and renders each
@@ -343,11 +381,30 @@ class ApplicationStack(Stack):
         """
         env_config = self.env_config
         scope_name = env_config.security_scope
+        auth0_public = env_config.auth0_public
+        runtime_public = env_config.runtime_public
+        assert auth0_public is not None
+        assert runtime_public is not None
+        assert env_config.public_site_domain is not None
 
         values: dict[str, str] = {
             "runtime_environment": "prod",
+            "logging_json": "true",
+            "logging_level": "INFO",
+            "tracing_enabled": "true",
+            "tracing_otlp_endpoint": "http://alloy:4317",
+            "tracing_sample_ratio": "1.0",
+            "tracing_service_name": "backend",
             "aws_region": env_config.region,
             "kms_key_arn": self.kms_key.key_arn,
+            "cors_supports_credentials": "true",
+            "auth0_domain": auth0_public.domain,
+            "auth0_audience": auth0_public.audience,
+            "auth0_client_id": auth0_public.client_id,
+            "auth0_management_domain": runtime_public.auth0_management_domain,
+            "auth0_management_id": runtime_public.auth0_management_id,
+            "auth0_management_validate_on_startup": "true",
+            "email_from_address": runtime_public.email_from_address,
             # Database connection parts. Both databases live on one RDS
             # instance, so they share a host and differ only by name and user.
             "database_core_name": "flowform_core",
@@ -368,11 +425,6 @@ class ApplicationStack(Stack):
         if self.linkage_secret_arn is not None:
             values["linkage_secret_arn"] = self.linkage_secret_arn
 
-        if env_config.auth0_public is not None:
-            values["auth0_domain"] = env_config.auth0_public.domain
-            values["auth0_audience"] = env_config.auth0_public.audience
-            values["auth0_client_id"] = env_config.auth0_public.client_id
-
         if env_config.studio_domain is not None and env_config.public_site_domain is not None:
             values["cors_origins"] = json.dumps(
                 [f"https://{env_config.studio_domain}", f"https://{env_config.public_site_domain}"]
@@ -383,19 +435,40 @@ class ApplicationStack(Stack):
             raise ValueError(f"backend runtime parameters not in the contract: {sorted(unknown)}")
 
         for logical_name, value in values.items():
-            ssm.StringParameter(
+            parameter = ssm.StringParameter(
                 self,
                 f"BackendParam{_pascal_case(logical_name)}",
                 parameter_name=runtime_parameter_name(scope_name, "backend", logical_name),
                 string_value=value,
             )
+            self.app_instance.node.add_dependency(parameter)
+
+        proxy_values = {
+            "runtime_environment": "prod",
+            "api_domain": f"api.{env_config.public_site_domain}",
+            "grafana_cloud_loki_url": runtime_public.grafana_cloud_loki_url,
+            "grafana_cloud_loki_user": runtime_public.grafana_cloud_loki_user,
+            "grafana_cloud_tempo_endpoint": runtime_public.grafana_cloud_tempo_endpoint,
+            "grafana_cloud_tempo_user": runtime_public.grafana_cloud_tempo_user,
+        }
+        unknown = set(proxy_values) - runtime_group_logical_names("proxy")
+        if unknown:
+            raise ValueError(f"proxy runtime parameters not in the contract: {sorted(unknown)}")
+        for logical_name, value in proxy_values.items():
+            parameter = ssm.StringParameter(
+                self,
+                f"ProxyParam{_pascal_case(logical_name)}",
+                parameter_name=runtime_parameter_name(scope_name, "proxy", logical_name),
+                string_value=value,
+            )
+            self.proxy_instance.node.add_dependency(parameter)
 
     def _attach_ecr_pull_policy(
         self,
         construct_id: str,
         role: iam.IRole,
         repositories: Sequence[ecr.IRepository],
-    ) -> None:
+    ) -> iam.Policy:
         """Attach exact ECR pull permissions without mutating another stack."""
         policy = iam.Policy(
             self,
@@ -416,3 +489,4 @@ class ApplicationStack(Stack):
             ],
         )
         policy.attach_to_role(role)
+        return policy

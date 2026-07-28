@@ -342,7 +342,7 @@ promote_images() {
 
   printf 'Promoting release %s into /flowform/%s/\n' "${commit_sha}" "${scope}"
 
-  local image_name target digest reference entry parameter group env_name
+  local image_name target digest target_digest repository reference entry parameter group env_name
   while IFS= read -r entry; do
     image_name="$(jq -er '.name' <<<"${entry}")"
     target="$(jq -er '.target' <<<"${entry}")"
@@ -351,8 +351,20 @@ promote_images() {
     [[ "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]] \
       || die "${image_name} has an invalid digest in the release manifest"
 
-    # Deploy by digest, never by tag: strip the tag and pin the exact manifest.
-    reference="${target%:*}@${digest}"
+    # Publication records a digest-qualified target. Accept the older
+    # tag-qualified form as well, but always normalize to one repository
+    # followed by exactly one verified digest.
+    if [[ "${target}" == *@sha256:* ]]; then
+      repository="${target%@sha256:*}"
+      target_digest="sha256:${target##*@sha256:}"
+      [[ "${target_digest}" == "${digest}" ]] \
+        || die "${image_name} target digest does not match its digest field"
+    else
+      repository="${target%:*}"
+    fi
+    [[ -n "${repository}" && "${repository}" != "${target}" ]] \
+      || die "${image_name} target is not tag- or digest-qualified"
+    reference="${repository}@${digest}"
 
     while IFS= read -r parameter; do
       group="${parameter%%/*}"

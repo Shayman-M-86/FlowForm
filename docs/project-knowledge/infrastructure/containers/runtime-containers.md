@@ -66,9 +66,13 @@ App bootstrap requires `FLOWFORM_DEPLOYMENT_TARGET` to select `aws` or
 `rehearsal`. It validates that the rendered database auth modes are respectively
 `iam` or `password`, then materialises only the secrets required by that
 strategy. The AWS path removes stale database password files instead of
-retrieving them. Host bootstrap then validates the merged configuration and
-waits for Compose startup. Therefore image references and other required runtime
-values must be available before a host can converge. See
+retrieving them. Before Compose starts, each AWS host obtains an ECR
+authorization token and logs Docker into every distinct private registry named
+by its configured image references. The token is piped through standard input
+and is not written into runtime configuration. Host bootstrap then validates
+the merged configuration and waits for Compose startup. Therefore image
+references and other required runtime values must be available before a host
+can converge. See
 [[deployment-model|Deployment model]] for the CDK and host-lifecycle boundary.
 
 ## Local variants

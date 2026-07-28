@@ -41,17 +41,52 @@ run_packer_build() (
   local build_file="$1"
   local only_target="$2"
   local vars_file="$3"
-  local project_dir
+  local project_dir original_aws_config original_aws_profile packer_aws_config
+  local credential_helper aws_region source_commit
   local -a validate_args
 
   require_command packer
+  require_command git
   [[ -f "${build_file}" ]] || die "Packer build file not found: ${build_file}"
   [[ -f "${vars_file}" ]] || die "Packer variable file not found: ${vars_file}"
   build_file="$(realpath -- "${build_file}")"
   vars_file="$(realpath -- "${vars_file}")"
+  source_commit="$(git -C "${REPO_ROOT}" rev-parse HEAD)"
+  [[ "${source_commit}" =~ ^[0-9a-f]{40}$ ]] \
+    || die "could not resolve a full source commit for the machine image"
 
   project_dir="$(mktemp -d)"
   trap 'rm -rf "${project_dir}"' EXIT
+
+  # AWS CLI login sessions are understood by the CLI but not yet by the AWS
+  # SDK bundled with Packer's Amazon plugin. Bridge that supported CLI session
+  # through the SDK's credential_process provider. The helper emits credentials
+  # only to Packer on demand, can refresh them during a longer AMI build, and
+  # stores no credential material on disk.
+  if [[ "${only_target}" == *.amazon-ebs.* ]] \
+      && [[ -n "${AWS_PROFILE:-}" ]] \
+      && [[ -n "$(aws configure get login_session --profile "${AWS_PROFILE}" 2>/dev/null || true)" ]]; then
+    original_aws_profile="${AWS_PROFILE}"
+    original_aws_config="${AWS_CONFIG_FILE:-${HOME}/.aws/config}"
+    credential_helper="${project_dir}/aws-credential-process.sh"
+    packer_aws_config="${project_dir}/aws-config"
+    aws_region="$(aws configure get region --profile "${original_aws_profile}")"
+
+    printf '%s\n' \
+      '#!/usr/bin/env bash' \
+      'set -Eeuo pipefail' \
+      "exec env AWS_CONFIG_FILE=$(printf '%q' "${original_aws_config}") aws configure export-credentials --profile $(printf '%q' "${original_aws_profile}") --format process" \
+      >"${credential_helper}"
+    chmod 0700 "${credential_helper}"
+    printf '[profile flowform-packer]\ncredential_process = %s\nregion = %s\n' \
+      "${credential_helper}" "${aws_region}" >"${packer_aws_config}"
+    chmod 0600 "${packer_aws_config}"
+
+    export AWS_CONFIG_FILE="${packer_aws_config}"
+    export AWS_PROFILE="flowform-packer"
+    export AWS_SDK_LOAD_CONFIG=1
+    log "configured Packer credential_process bridge for AWS CLI login profile ${original_aws_profile}"
+  fi
 
   ln -s "${PACKER_DIR}/plugins.pkr.hcl" "${project_dir}/plugins.pkr.hcl"
   ln -s "${PACKER_DIR}/locals.pkr.hcl" "${project_dir}/locals.pkr.hcl"
@@ -71,6 +106,7 @@ run_packer_build() (
     -var "image_root=${IMAGE_ROOT}"
     -var "repo_root=${REPO_ROOT}"
     -var-file="${vars_file}"
+    -var "source_commit=${source_commit}"
   )
   if [[ "${PACKER_SYNTAX_ONLY:-0}" == "1" ]]; then
     validate_args=(-syntax-only "${validate_args[@]}")
@@ -88,5 +124,6 @@ run_packer_build() (
     -var "image_root=${IMAGE_ROOT}" \
     -var "repo_root=${REPO_ROOT}" \
     -var-file="${vars_file}" \
+    -var "source_commit=${source_commit}" \
     "${project_dir}"
 )

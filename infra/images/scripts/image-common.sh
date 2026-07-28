@@ -72,7 +72,10 @@ image_proxmox_config_file() {
 
 image_aws_session_preflight() {
   require_command aws
-  export AWS_PROFILE="${AWS_PROFILE:-flowform-dev}"
+  # Use the caller's selected profile, falling back to the AWS CLI's normal
+  # default profile. The `flowform-dev` profile is the application task role on
+  # developer machines and deliberately cannot build or publish infrastructure.
+  export AWS_PROFILE="${AWS_PROFILE:-${AWS_DEFAULT_PROFILE:-default}}"
   local output login_profile source_profile depth=0
   if output="$(aws sts get-caller-identity --profile "${AWS_PROFILE}" --output json --no-cli-pager 2>&1)"; then
     log "AWS session valid for profile ${AWS_PROFILE}"

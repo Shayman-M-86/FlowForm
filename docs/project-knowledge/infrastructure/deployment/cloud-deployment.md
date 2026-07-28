@@ -4,7 +4,7 @@ aliases: ["Cloud deployment"]
 document_type: workflow
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:53840efe2a91d399c7e34841e460fd63235f3fa6aa135b4a0c3515e1a1df9db4
+verified_evidence_digest: sha256:ebc60406febfa3b8eebd0c9a93140dff2dc7da00455383daead260fd14977a82
 last_edited: 2026-07-28
 tags: [infrastructure, ci-cd]
 related_code:

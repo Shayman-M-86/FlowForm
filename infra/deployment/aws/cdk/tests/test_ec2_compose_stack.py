@@ -1,3 +1,4 @@
+import dataclasses
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -8,6 +9,8 @@ from aws_cdk.assertions import Match, Template
 
 from flowform_infra.config import (
     DOMAIN_NAME,
+    Auth0PublicConfig,
+    RuntimePublicConfig,
     get_env_config,
     runtime_group_logical_names,
     runtime_parameter_name,
@@ -21,7 +24,23 @@ _EMPTY_ENV_DIR = Path(__file__).parent
 
 
 def _staging_config():
-    return get_env_config("staging", env_dir=_EMPTY_ENV_DIR)
+    return dataclasses.replace(
+        get_env_config("staging", env_dir=_EMPTY_ENV_DIR),
+        auth0_public=Auth0PublicConfig(
+            domain="auth.example.test",
+            client_id="staging-client",
+            audience="https://api.example.test",
+        ),
+        runtime_public=RuntimePublicConfig(
+            auth0_management_domain="tenant.example.test",
+            auth0_management_id="management-client",
+            email_from_address="no-reply@example.test",
+            grafana_cloud_loki_url="https://logs.example.test/loki/api/v1/push",
+            grafana_cloud_loki_user="loki-user",
+            grafana_cloud_tempo_endpoint="tempo.example.test:443",
+            grafana_cloud_tempo_user="tempo-user",
+        ),
+    )
 
 
 def _synth_network_stack() -> Template:
@@ -87,6 +106,9 @@ def _synth_application_stack() -> Template:
         kms_key=kms_key,
         database_stack=database,
         linkage_secret_arn="arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/linkage",
+        observability_secret_arn=(
+            "arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/observability"
+        ),
         hosted_zone=hosted_zone,
         env=cdk_env,
     )
@@ -208,7 +230,7 @@ def test_network_private_dns_zone_and_application_records_track_instance_address
         if resource["Type"] == "AWS::Route53::RecordSet"
     }
 
-    assert set(records) == {
+    assert {name for name in records if name.endswith(".internal.staging.flow-form.com.au.")} == {
         "app.internal.staging.flow-form.com.au.",
         "proxy.internal.staging.flow-form.com.au.",
     }
@@ -220,6 +242,10 @@ def test_network_private_dns_zone_and_application_records_track_instance_address
     assert proxy_target[1] == "PrivateIp"
     assert {record["TTL"] for record in records.values()} == {"60"}
     assert {record["Type"] for record in records.values()} == {"A"}
+
+    public_api = records["api.staging.flow-form.com.au."]
+    assert public_api["HostedZoneId"] == "Z1234567890ABC"
+    assert public_api["ResourceRecords"][0]["Ref"].startswith("ProxyElasticIp")
 
 
 def test_proxy_security_group_public_http_https_only_and_squid_from_app_only():
@@ -408,6 +434,15 @@ def test_proxy_role_has_hosted_zone_scoped_route53_change_access():
     )
 
 
+def test_proxy_role_can_read_only_the_observability_secret():
+    template = _synth_application_stack()
+    rendered = str(template.to_json())
+    assert "flowform/nonprod/observability" in rendered
+    assert "secretsmanager:GetSecretValue" in rendered
+    assert "secretsmanager:DescribeSecret" in rendered
+    assert "secret:flowform/nonprod/app-secrets" not in rendered
+
+
 def test_application_ecr_pulls_are_scoped_to_exact_host_repositories():
     template = _synth_application_stack()
     rendered = template.to_json()
@@ -498,6 +533,25 @@ def test_backend_parameters_are_published_under_the_contract_path():
             "Value": "iam",
         },
     )
+
+
+def test_proxy_runtime_parameters_include_domain_and_observability_routes():
+    template = _synth_application_stack()
+    expected = {
+        "API_DOMAIN": "api.staging.flow-form.com.au",
+        "FLOWFORM_ENV": "prod",
+        "GRAFANA_CLOUD_LOKI_URL": "https://logs.example.test/loki/api/v1/push",
+        "GRAFANA_CLOUD_LOKI_USER": "loki-user",
+        "GRAFANA_CLOUD_TEMPO_ENDPOINT": "tempo.example.test:443",
+        "GRAFANA_CLOUD_TEMPO_USER": "tempo-user",
+    }
+    resources = template.find_resources("AWS::SSM::Parameter")
+    actual = {
+        resource["Properties"]["Name"].rsplit("/", 1)[-1]: resource["Properties"]["Value"]
+        for resource in resources.values()
+        if "/proxy/" in resource["Properties"]["Name"]
+    }
+    assert actual == expected
 
 
 def test_published_backend_parameters_are_all_declared_in_the_contract():

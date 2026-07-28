@@ -14,12 +14,13 @@ source "amazon-ebs" "amazon_linux_2023" {
     most_recent = true
   }
 
-  subnet_id                   = var.aws_subnet_id != "" ? var.aws_subnet_id : null
-  security_group_id           = var.aws_security_group_id != "" ? var.aws_security_group_id : null
-  iam_instance_profile        = var.aws_iam_instance_profile != "" ? var.aws_iam_instance_profile : null
-  associate_public_ip_address = var.aws_subnet_id == "" ? true : null
-  ami_name                    = "${var.aws_ami_name_prefix}-${local.build_timestamp}"
-  ami_description             = "FlowForm ${var.image_role} ${var.os_name} image built by Packer"
+  subnet_id                                 = var.aws_subnet_id != "" ? var.aws_subnet_id : null
+  security_group_id                         = var.aws_security_group_id != "" ? var.aws_security_group_id : null
+  temporary_security_group_source_public_ip = true
+  iam_instance_profile                      = var.aws_iam_instance_profile != "" ? var.aws_iam_instance_profile : null
+  associate_public_ip_address               = var.aws_subnet_id == "" ? true : null
+  ami_name                                  = "${var.aws_ami_name_prefix}-${local.build_timestamp}"
+  ami_description                           = "FlowForm ${var.image_role} ${var.os_name} image built by Packer"
 
   launch_block_device_mappings {
     device_name           = "/dev/xvda"

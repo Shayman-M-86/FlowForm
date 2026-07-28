@@ -71,6 +71,33 @@ run_invalid_case aws password password
 run_invalid_case rehearsal iam iam
 run_invalid_case aws iam password
 
+cat > "${TEST_DIR}/images.env" <<'EOF'
+BACKEND_IMAGE=908123139858.dkr.ecr.ap-southeast-2.amazonaws.com/flowform-staging-backend@sha256:1111111111111111111111111111111111111111111111111111111111111111
+ALLOY_IMAGE=908123139858.dkr.ecr.ap-southeast-2.amazonaws.com/flowform-staging-alloy@sha256:2222222222222222222222222222222222222222222222222222222222222222
+EOF
+ecr_dry_run="$(
+  export FLOWFORM_DEPLOYMENT_TARGET=aws
+  export FLOWFORM_SCOPE=nonprod
+  export PROXY_PRIVATE_IP=10.10.10.10
+  export APP_PRIVATE_IP=10.10.10.20
+  export AWS_REGION=ap-southeast-2
+  export BOOTSTRAP_DRY_RUN=1
+  source "${BOOTSTRAP}"
+  login_ecr_for_images "${TEST_DIR}/images.env" BACKEND_IMAGE ALLOY_IMAGE
+)"
+grep -F 'would authenticate Docker to 1 private ECR registry' <<<"${ecr_dry_run}" >/dev/null
+
+(
+  # shellcheck source=../../deployment/bootstrap/bootstrap-common.sh
+  source "${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-common.sh"
+  wait_call=""
+  retry_with_backoff() {
+    wait_call="$*"
+  }
+  wait_for_tcp "Squid readiness" 10.10.10.10 3128 7 3 2
+  [[ "${wait_call}" == "Squid readiness 7 3 2 bash -c exec 3<>\"/dev/tcp/\$1/\$2\" _ 10.10.10.10 3128" ]]
+)
+
 run_materialise_case() {
   local target="$1" core_mode="$2" response_mode="$3" case_dir
   case_dir="${TEST_DIR}/materialise-${target}"
