@@ -2,10 +2,10 @@
 title: Documentation validation and review
 aliases: ["Documentation validation and review"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:fe404bc8ea7e3cd4eb175e4c95296da2e6caae1a2986a6066fc13427902fa0ec
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-29
 tags: [meta]
 related_code:
   - "../../../../tools/docs/docsys/"
@@ -103,9 +103,10 @@ the same user-approval verification skill, a `docs-maintainer`, and the same
 Python environment.
 
 Codex and Claude also use the same three hook events and the same implementations
-under `tools/docs/hooks/`: session baseline capture, lightweight Python
-post-edit quality checks, and non-blocking documentation-impact review at task
-completion. Agent configuration contains only pointers to those shared scripts.
+under `tools/docs/hooks/`: session baseline capture with a one-time focused
+documentation suggestion, lightweight Python post-edit quality checks, and
+non-blocking documentation-impact review at task completion. Agent configuration
+contains only pointers to those shared scripts.
 
 These checks validate structure and resolution, not factual correctness. Review
 against implementation evidence remains required.

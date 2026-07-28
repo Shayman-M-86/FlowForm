@@ -37,14 +37,17 @@ More specific `AGENTS.md` files override this guide within their directories.
 
 ## Documentation
 
-For non-trivial work where existing behaviour or project boundaries matter,
-use the `flowform-doc-context` skill and the `flowform-docs` MCP server to load
-focused context from `docs/`. For explanation-only questions, verified and
-current documents are sufficient when they directly cover the answer; do not
-inspect implementation merely to reconfirm them. Treat reliability per document
-used, so unrelated draft candidates do not weaken verified sources. Inspect the
-repository when implementing, diagnosing, explicitly verifying, or resolving a
-material gap or contradiction.
+At the start of a task, the session hook suggests the
+`flowform-doc-context` skill when focused context from `docs/` would help with
+non-trivial work involving existing behaviour or project boundaries. Use it
+once when relevant; do not reload documentation on later prompts unless the
+task's scope materially changes or the user asks for another documentation
+check. For explanation-only questions, verified and current documents are
+sufficient when they directly cover the answer; do not inspect implementation
+merely to reconfirm them. Treat reliability per document used, so unrelated
+draft candidates do not weaken verified sources. Inspect the repository when
+implementing, diagnosing, explicitly verifying, or resolving a material gap or
+contradiction.
 
 After behavioural or architectural changes, review the impacted documentation.
 Update only pages whose meaning changed, and regenerate generated documentation

@@ -39,6 +39,8 @@ set -Eeuo pipefail
 #   BOOTSTRAP_ENDPOINT_URL  AWS endpoint override (rehearsal: LocalStack)
 #   COMPOSE_FILE            defaults to the repo's docker-compose.app.yml
 #   FLOWFORM_SECRET_DIR     defaults to /run/flowform/secrets (tmpfs)
+#   BOOTSTRAP_SSM_AGENT_OVERRIDE
+#                           test seam for the AWS SSM Agent systemd drop-in
 #   BOOTSTRAP_DRY_RUN=1     print intended actions + file perms, change nothing
 #   BOOTSTRAP_IMAGE_PULL_MAX_ATTEMPTS         image-pull retries (default 60)
 #   BOOTSTRAP_IMAGE_PULL_RETRY_DELAY_SECONDS  delay between them (default 5)
@@ -117,6 +119,47 @@ export HTTPS_PROXY="http://${PROXY_PRIVATE_IP}:3128"
 export NO_PROXY="localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com"
 # Some tools read the lowercase spellings only.
 export http_proxy="${HTTP_PROXY}" https_proxy="${HTTPS_PROXY}" no_proxy="${NO_PROXY}"
+
+configure_ssm_agent_proxy() {
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" != "aws" ]]; then
+    log "SSM Agent proxy configuration is not required for ${FLOWFORM_DEPLOYMENT_TARGET}"
+    return
+  fi
+
+  local drop_in="${BOOTSTRAP_SSM_AGENT_OVERRIDE:-/etc/systemd/system/amazon-ssm-agent.service.d/override.conf}"
+  local drop_in_dir
+  drop_in_dir="$(dirname "${drop_in}")"
+  local content
+  content="$(cat <<EOF
+[Service]
+Environment="http_proxy=http://${PROXY_PRIVATE_IP}:3128"
+Environment="https_proxy=http://${PROXY_PRIVATE_IP}:3128"
+Environment="no_proxy=169.254.169.254"
+EOF
+)"
+
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    log "DRY_RUN: would write ${drop_in} (0644 root) and restart amazon-ssm-agent only if required:"
+    printf '%s\n' "${content}" | sed 's/^/    /'
+    return
+  fi
+
+  install -d -m 0755 "${drop_in_dir}"
+  if write_file_if_changed "${drop_in}" 0644 "${content}"; then
+    systemctl daemon-reload
+    systemctl restart amazon-ssm-agent
+    systemctl is-active --quiet amazon-ssm-agent \
+      || fatal "amazon-ssm-agent did not return to an active state after proxy configuration"
+    log "SSM Agent proxy drop-in changed; agent restarted"
+  elif systemctl is-active --quiet amazon-ssm-agent; then
+    log "SSM Agent proxy drop-in unchanged; agent already active"
+  else
+    systemctl restart amazon-ssm-agent
+    systemctl is-active --quiet amazon-ssm-agent \
+      || fatal "amazon-ssm-agent did not return to an active state"
+    log "SSM Agent proxy drop-in unchanged; inactive agent restarted"
+  fi
+}
 
 configure_docker_daemon_proxy() {
   local drop_in_dir="/etc/systemd/system/docker.service.d"
@@ -426,6 +469,10 @@ main() {
     check_docker_requirements
     acquire_lock "${BOOTSTRAP_NAME}"
   fi
+  end_step
+
+  begin_step "Configuring SSM Agent proxy egress"
+  configure_ssm_agent_proxy
   end_step
 
   begin_step "Configuring Docker proxy egress"

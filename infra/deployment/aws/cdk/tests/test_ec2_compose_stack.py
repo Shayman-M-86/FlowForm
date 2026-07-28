@@ -443,6 +443,38 @@ def test_proxy_role_can_read_only_the_observability_secret():
     assert "secret:flowform/nonprod/app-secrets" not in rendered
 
 
+def test_proxy_role_can_read_only_its_runtime_parameter_path():
+    template = _synth_application_stack()
+    template.has_resource_properties(
+        "AWS::IAM::Policy",
+        {
+            "PolicyDocument": {
+                "Statement": Match.array_with(
+                    [
+                        {
+                            "Action": "ssm:GetParametersByPath",
+                            "Effect": "Allow",
+                            "Resource": Match.any_value(),
+                        }
+                    ]
+                )
+            }
+        },
+    )
+
+    statements = [
+        statement
+        for resource in template.to_json()["Resources"].values()
+        if resource["Type"] == "AWS::IAM::Policy"
+        for statement in resource["Properties"]["PolicyDocument"]["Statement"]
+        if statement["Action"] == "ssm:GetParametersByPath"
+    ]
+    assert len(statements) == 1
+    rendered_resource = str(statements[0]["Resource"])
+    assert "parameter/flowform/nonprod/proxy/*" in rendered_resource
+    assert "parameter/flowform/nonprod/*" not in rendered_resource
+
+
 def test_application_ecr_pulls_are_scoped_to_exact_host_repositories():
     template = _synth_application_stack()
     rendered = template.to_json()

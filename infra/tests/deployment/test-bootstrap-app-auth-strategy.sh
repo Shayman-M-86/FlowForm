@@ -87,6 +87,34 @@ ecr_dry_run="$(
 )"
 grep -F 'would authenticate Docker to 1 private ECR registry' <<<"${ecr_dry_run}" >/dev/null
 
+ssm_agent_dir="${TEST_DIR}/amazon-ssm-agent.service.d"
+ssm_agent_systemctl_log="${TEST_DIR}/ssm-agent-systemctl.log"
+(
+  export FLOWFORM_DEPLOYMENT_TARGET=aws
+  export FLOWFORM_SCOPE=nonprod
+  export PROXY_PRIVATE_IP=10.42.0.4
+  export APP_PRIVATE_IP=10.42.1.4
+  export AWS_REGION=ap-southeast-2
+  export BOOTSTRAP_DRY_RUN=0
+  export BOOTSTRAP_SSM_AGENT_OVERRIDE="${ssm_agent_dir}/override.conf"
+  source "${BOOTSTRAP}"
+  systemctl() {
+    printf '%s\n' "$*" >> "${ssm_agent_systemctl_log}"
+    return 0
+  }
+  configure_ssm_agent_proxy
+  configure_ssm_agent_proxy
+)
+grep -Fx 'Environment="http_proxy=http://10.42.0.4:3128"' \
+  "${ssm_agent_dir}/override.conf" >/dev/null
+grep -Fx 'Environment="https_proxy=http://10.42.0.4:3128"' \
+  "${ssm_agent_dir}/override.conf" >/dev/null
+grep -Fx 'Environment="no_proxy=169.254.169.254"' \
+  "${ssm_agent_dir}/override.conf" >/dev/null
+[[ "$(stat -c '%a' "${ssm_agent_dir}/override.conf")" == "644" ]]
+[[ "$(grep -c '^daemon-reload$' "${ssm_agent_systemctl_log}")" == "1" ]]
+[[ "$(grep -c '^restart amazon-ssm-agent$' "${ssm_agent_systemctl_log}")" == "1" ]]
+
 (
   # shellcheck source=../../deployment/bootstrap/bootstrap-common.sh
   source "${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-common.sh"

@@ -5,7 +5,7 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-29
 tags: [infrastructure, configuration]
 related_code:
   - "../../../../infra/images/scripts/image"
@@ -21,43 +21,149 @@ related_docs:
 
 # AWS staging bring-up
 
-This is the operator sequence for introducing the FlowForm application hosts
-into the existing AWS staging environment. It separates artifact publication,
-secret seeding, infrastructure deployment, and live verification so a failure
-in one concern does not disguise the state of another.
+This is the ordered run sheet for creating FlowForm staging in an AWS account
+that already has the manually managed public Route 53 zone, SES identity,
+external Auth0/Grafana configuration, and operator AWS access.
 
-The current delivery boundary is:
+Use the exact reviewed `staging` commit with a clean worktree. Runtime
+containers and the Packer AMI both contain commit-specific application assets.
 
-```text
-feature branch -> reviewed PR -> staging branch
-                                  |
-                                  +-> build and publish AMI
-                                  +-> deploy shared security addition
-                                  +-> seed observability token
-                                  +-> deploy application hosts
-                                  +-> verify convergence and IAM DB auth
+## Build order
+
+| Order | Output | Why it is here |
+| --- | --- | --- |
+| 1 | CDK bootstrap | CloudFormation needs the CDK asset roles and bucket. |
+| 2 | Security and Registry | Later stacks need the KMS key, IAM roles, secrets, and ECR repositories. |
+| 3 | Runtime container images | Hosts fail closed unless their digest-pinned images are promoted in SSM. |
+| 4 | Network | RDS and hosts need their subnets, routes, DNS, and security groups. |
+| 5 | RDS and database bootstrap | The backend must start against prepared databases and IAM roles. |
+| 6 | Packer AMI | The Application stack resolves a published AMI ID and the AMI must bake the reviewed bootstrap assets. |
+| 7 | Runtime secret seeding | The proxy must receive a real Grafana token rather than the generated placeholder. |
+| 8 | Application | Only now do the proxy and app hosts have every dependency required to converge. |
+| 9 | Frontend | Publish the browser applications after the API path is healthy. |
+| 10 | Verification | CloudFormation success alone does not prove service readiness. |
+
+## 0. Prepare the reviewed checkout
+
+```sh
+git switch staging
+git pull --ff-only
+git status --short
+aws sts get-caller-identity
 ```
 
-Do not run the deployment from an unmerged feature checkout. The AMI bakes
-repository bootstrap and container assets, and the CDK deployment must consume
-the same reviewed source lineage.
+This establishes the source and AWS identity used by every later command.
+`git status --short` should be empty.
 
-## Preconditions
+Prepare the CDK environment file and ignored Packer variables before
+continuing:
 
-Before starting this slice:
+```sh
+cd infra/deployment/aws/cdk
+uv sync
+cd ../../../..
 
-- `FlowForm-Staging-Network`, `FlowForm-Staging-Database`, and the database
-  bootstrap are complete.
-- The five nonproduction runtime image parameters contain digest-pinned ECR
-  references.
-- The feature work is merged into `staging`, the local checkout is clean, and
-  AWS authentication targets account `908123139858` in `ap-southeast-2`.
-- A Grafana Cloud token is available through a protected local file. It must
-  not be committed or placed in a CDK environment file.
+cp infra/images/packer/variables/aws.auto.pkrvars.hcl.example \
+  infra/images/packer/variables/aws.auto.pkrvars.hcl
+```
 
-## 1. Build and publish the base AMI
+Fill the ignored files with the approved non-secret environment identifiers
+and AWS builder settings. Never commit them or place secret values in them.
 
-From the repository root on the exact merged staging commit:
+## 1. Bootstrap CDK
+
+Run once per account and region:
+
+```sh
+cd infra/deployment/aws/cdk
+npx cdk bootstrap aws://908123139858/ap-southeast-2
+cd ../../../..
+```
+
+This creates the shared CDK staging bucket and deployment roles. Every CDK
+deployment below depends on them.
+
+## 2. Deploy Security and Registry
+
+```sh
+cd infra/deployment/aws/cdk
+npx cdk diff -c env=staging \
+  FlowForm-Nonprod-Security FlowForm-Staging-Registry
+npx cdk deploy -c env=staging \
+  FlowForm-Nonprod-Security FlowForm-Staging-Registry
+cd ../../../..
+```
+
+Security creates the shared nonproduction KMS key, IAM roles, and secret
+containers. Registry creates the four ECR repositories. Images cannot be
+published before their repositories and publisher role exist.
+
+Seed the required application and linkage secrets through the approved
+out-of-band secret procedure before launching a host. Generated values are
+placeholders, not staging credentials.
+
+## 3. Publish and promote runtime container images
+
+Run the manual **Publish staging images** GitHub workflow against `staging`.
+It builds or mirrors Backend, Caddy, Squid, and Alloy into ECR and produces
+`staging-image-release.json`.
+
+Download that workflow artifact, then review and promote it:
+
+```sh
+RELEASE_MANIFEST_PATH=/path/to/staging-image-release.json \
+  DRY_RUN=1 \
+  infra/deployment/aws/scripts/publish-staging-images.sh promote
+
+RELEASE_MANIFEST_PATH=/path/to/staging-image-release.json \
+  FLOWFORM_SCOPE=nonprod \
+  infra/deployment/aws/scripts/publish-staging-images.sh promote
+```
+
+Promotion writes five digest-pinned image references under
+`/flowform/nonprod/backend/` and `/flowform/nonprod/proxy/`. Publication creates
+artifacts; promotion selects what new hosts will run.
+
+## 4. Deploy Network
+
+```sh
+cd infra/deployment/aws/cdk
+npx cdk diff -c env=staging --exclusively FlowForm-Staging-Network
+npx cdk deploy -c env=staging --exclusively FlowForm-Staging-Network
+cd ../../../..
+```
+
+This creates the VPC, four-subnet layout, Internet/S3 routing, private DNS,
+Instance Connect Endpoint, flow logs, and security groups. RDS must consume
+these network contracts.
+
+## 5. Deploy and bootstrap the database
+
+```sh
+cd infra/deployment/aws/cdk
+npx cdk diff -c env=staging --exclusively FlowForm-Staging-Database
+npx cdk deploy -c env=staging --exclusively FlowForm-Staging-Database
+cd ../../../..
+```
+
+This creates persistent encrypted RDS infrastructure only. It deliberately
+does not make schema failure part of the RDS lifecycle.
+
+Run the separate idempotent bootstrap:
+
+```sh
+infra/deployment/aws/scripts/bootstrap-database.sh --env staging
+infra/deployment/aws/scripts/bootstrap-database.sh --env staging --apply
+```
+
+The apply step deploys the helper Lambda, temporarily creates a Secrets Manager
+interface endpoint, creates and verifies the databases, roles, tables, and IAM
+grants, then removes the paid endpoint. It must finish before the backend
+attempts its first connection.
+
+## 6. Build and publish the Packer AMI
+
+Run from the repository root on the exact reviewed commit:
 
 ```sh
 infra/images/scripts/image doctor aws
@@ -66,30 +172,29 @@ infra/images/scripts/image publish aws --environment staging --dry-run
 infra/images/scripts/image publish aws --environment staging
 ```
 
-The dispatcher derives the AMI `source_commit` tag from Git. Publication
-verifies the artifact and writes its identifier to
-`/flowform/staging/ec2/baseAmiId`. It does not deploy EC2 instances.
+- `doctor` checks Packer, AWS, `jq`, the ignored variables, AWS authentication,
+  and the CDK AMI-parameter contract.
+- `build` launches a temporary EC2 builder, installs the host dependencies,
+  bakes the bootstrap/Compose/AWS strategy assets, creates an encrypted AMI and
+  snapshot, cleans the builder resources, and verifies the AMI contract.
+- `publish --dry-run` verifies the artifact and destination without changing
+  SSM.
+- `publish` writes the verified AMI ID to
+  `/flowform/staging/ec2/baseAmiId`.
 
-## 2. Deploy the security addition
+The AMI is built after the runtime and database contracts have settled so it
+bakes the final reviewed host-convergence assets. It must be published before
+Application deployment because CDK resolves this SSM parameter while creating
+the EC2 instances.
 
-The proxy needs a KMS-encrypted observability secret before it is created:
+## 7. Seed the observability token
 
-```sh
-cd infra/deployment/aws/cdk
-npx cdk diff -c env=staging FlowForm-Nonprod-Security
-npx cdk deploy -c env=staging FlowForm-Nonprod-Security
-cd ../../../..
-```
-
-This creates `flowform/nonprod/observability-secrets` with a generated
-placeholder. The placeholder is not a usable Grafana credential.
-
-## 3. Seed the Grafana token
-
-Prefer a mode-restricted file and run the script's dry-run first:
+Security created `flowform/nonprod/observability-secrets` with a placeholder.
+Replace it before launching the proxy:
 
 ```sh
 chmod 600 /path/to/grafana-cloud-token
+
 GRAFANA_CLOUD_TOKEN_FILE=/path/to/grafana-cloud-token \
   infra/deployment/aws/scripts/seed-observability-secret.sh
 
@@ -97,56 +202,64 @@ GRAFANA_CLOUD_TOKEN_FILE=/path/to/grafana-cloud-token \
   infra/deployment/aws/scripts/seed-observability-secret.sh --apply
 ```
 
-The script verifies the AWS account and secret, writes a new secret version
-through a temporary mode-0600 JSON file, and does not place the token in CLI
-arguments or output.
+The first command is a dry run. The apply command adds the real token as a new
+Secrets Manager version without placing it in CDK, SSM, or CLI arguments.
 
-## 4. Deploy the application stack
-
-Review the complete change before applying it:
+## 8. Deploy Application
 
 ```sh
 cd infra/deployment/aws/cdk
-npx cdk diff -c env=staging --exclusively FlowForm-Staging-Application
-npx cdk deploy -c env=staging --exclusively FlowForm-Staging-Application
+npx cdk diff -c env=staging \
+  --exclusively FlowForm-Staging-Application
+npx cdk deploy -c env=staging \
+  --exclusively FlowForm-Staging-Application
 ```
 
-The deployment creates the proxy and application instances, proxy Elastic IP,
-public API record, private service records, runtime parameters, and exact host
-permissions. Each host authenticates Docker to the required ECR registries and
-then runs its baked bootstrap. The private app reaches public service APIs
-through Squid and reaches RDS directly.
+This creates the proxy and application instances, proxy Elastic IP, public API
+record, private host records, runtime parameters, and host permissions. The
+hosts boot from the published AMI, authenticate to ECR, materialise their
+runtime configuration, and start the Compose projects. The proxy role can read
+only its `/flowform/nonprod/proxy/*` runtime parameter path. After Squid is
+reachable, app bootstrap writes the SSM Agent systemd proxy configuration for
+`http://10.42.0.4:3128`, keeps instance metadata direct, and restarts the agent
+before continuing host convergence.
 
-`--exclusively` is required for this slice because the retained
-`FlowForm-Staging-DatabaseBootstrap` helper still imports automatic outputs
-from the deployed Network and Database stacks. The default CDK assembly omits
-that context-gated helper and would otherwise propose removing those still-used
-exports from its dependency templates. The exclusive deployment leaves the
-already-deployed dependencies untouched. Replace this operator constraint with
-stable explicit stack contracts in a later bootstrap-stack migration.
+`--exclusively` is currently required because the retained
+`FlowForm-Staging-DatabaseBootstrap` stack imports automatic Network and
+Database outputs. A normal dependency-inclusive deployment would propose
+removing exports that the helper still uses.
 
-## 5. Verify the live path
+## 9. Verify the backend path
 
-CloudFormation success proves resource creation, not application readiness.
-Verify:
+Before publishing the frontend, verify:
 
-1. Both instances are running and managed by Systems Manager.
-2. Proxy and app bootstrap logs completed without missing parameters, secrets,
-   image authentication, or Compose health failures.
-3. `proxy.internal.staging.flow-form.com.au` and
-   `app.internal.staging.flow-form.com.au` resolve inside the VPC.
-4. `api.staging.flow-form.com.au` resolves to the proxy Elastic IP and presents
-   a valid certificate.
-5. Caddy readiness reaches the backend.
-6. The backend opens both PostgreSQL connections with IAM tokens and no stored
-   database password.
-7. Logs and traces arrive in the intended Grafana destinations.
-8. A reboot or explicit reconvergence succeeds without workstation help.
-9. A post-deployment CDK diff and CloudFormation drift check are clean.
+1. Both EC2 instances are running and managed by Systems Manager.
+2. Proxy bootstrap read `/flowform/nonprod/proxy/*`, and app bootstrap
+   configured SSM Agent through `10.42.0.4:3128`.
+3. Proxy and app bootstrap logs completed successfully.
+4. Both Compose projects are healthy.
+5. Private host records resolve inside the VPC.
+6. `api.staging.flow-form.com.au` resolves and presents a valid certificate.
+7. Caddy reaches backend readiness.
+8. The backend opens both RDS connections with IAM tokens.
+9. Logs and traces reach Grafana.
 
-Do not deploy the frontend or describe staging as ready until these checks have
-evidence. RDS server-certificate identity verification and the remaining
-database loose threads are separate readiness gates.
+## 10. Deploy and publish the frontend
+
+```sh
+cd infra/deployment/aws/cdk
+npx cdk diff -c env=staging \
+  FlowForm-Staging-FrontendCert FlowForm-Staging-Frontend
+npx cdk deploy -c env=staging \
+  FlowForm-Staging-FrontendCert FlowForm-Staging-Frontend
+```
+
+This creates the certificate, private buckets, CloudFront distributions, DNS,
+and frontend deployment parameters. Then run the checked-in frontend
+publication workflow against the exact staging commit.
+
+Finish with a post-deployment CDK diff, CloudFormation drift checks, public
+browser/API checks, and a reboot or explicit reconvergence test.
 
 ## Related documents
 

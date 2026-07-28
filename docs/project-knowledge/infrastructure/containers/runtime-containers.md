@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-29
 tags: [infrastructure, backend]
 related_code:
   - "../../../../infra/containers/runtime/compose/"
@@ -69,10 +69,12 @@ strategy. The AWS path removes stale database password files instead of
 retrieving them. Before Compose starts, each AWS host obtains an ECR
 authorization token and logs Docker into every distinct private registry named
 by its configured image references. The token is piped through standard input
-and is not written into runtime configuration. Host bootstrap then validates
-the merged configuration and waits for Compose startup. Therefore image
-references and other required runtime values must be available before a host
-can converge. See
+and is not written into runtime configuration. On the private AWS app host,
+bootstrap also writes an idempotent SSM Agent systemd proxy drop-in after Squid
+becomes reachable; AWS service traffic uses the private Squid address while
+instance metadata remains direct. Host bootstrap then validates the merged
+configuration and waits for Compose startup. Therefore image references and
+other required runtime values must be available before a host can converge. See
 [[deployment-model|Deployment model]] for the CDK and host-lifecycle boundary.
 
 ## Local variants

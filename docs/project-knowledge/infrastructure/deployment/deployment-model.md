@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-29
 tags: [infrastructure, configuration]
 related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"
@@ -84,7 +84,14 @@ parameters, creates the public `api.<domain>` record and private host records,
 and makes each instance depend on the parameters and ECR permissions its user
 data consumes. The proxy alone can read the KMS-encrypted observability secret;
 its real Grafana token is seeded out of band after the Security stack creates
-the placeholder.
+the placeholder. Its Parameter Store permission is limited to
+`/flowform/<security-scope>/proxy/*`.
+
+On AWS, app bootstrap waits for Squid and then installs an Amazon SSM Agent
+systemd drop-in with `http_proxy` and `https_proxy` set to the private proxy on
+port 3128. The instance metadata address remains in `no_proxy` so the agent can
+obtain role credentials directly. This gives the isolated app host a Systems
+Manager control channel without a NAT gateway or paid interface endpoint.
 
 The persistent `DatabaseStack` provisions only RDS and its direct supporting
 resources. Database bootstrap is an explicit operation outside that stack, so a

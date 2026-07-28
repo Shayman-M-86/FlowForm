@@ -2,7 +2,7 @@ import json
 from collections.abc import Sequence
 from typing import cast
 
-from aws_cdk import Duration, Stack
+from aws_cdk import ArnFormat, Duration, Stack
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_iam as iam
@@ -51,10 +51,9 @@ from flowform_infra.stacks.registry_stack import RegistryStack
 #     Docker daemon and the backend container; NO_PROXY must include
 #     localhost,127.0.0.1,169.254.169.254 (IMDS), the VPC CIDR (RDS +
 #     S3 endpoint must not hairpin), and Docker service names
-#   - management path: proxy box via SSM; app box via a FREE EC2
-#     Instance Connect Endpoint (Session Manager cannot traverse an
-#     HTTPS proxy) — deploys run through that path or an SSM document
-#     on the proxy relaying compose commands
+#   - management path: both hosts via SSM; the private app host's SSM Agent
+#     uses the HTTP Squid proxy. The FREE EC2 Instance Connect Endpoint remains
+#     a direct emergency-management path that requires no public ingress.
 #   - Route 53 A record api.<public_site_domain> -> proxy Elastic IP
 #   - backend deploy job in .github/workflows/deploy.yml: build/push
 #     image to ECR, run migrations, then restart compose on the app
@@ -156,6 +155,19 @@ class ApplicationStack(Stack):
             assumed_by=cast(iam.IPrincipal, iam.ServicePrincipal("ec2.amazonaws.com")),
             description=f"Proxy EC2 role for FlowForm {env_config.env_name}",
             managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")],
+        )
+        self.proxy_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["ssm:GetParametersByPath"],
+                resources=[
+                    self.format_arn(
+                        service="ssm",
+                        resource="parameter",
+                        resource_name=f"flowform/{env_config.security_scope}/proxy/*",
+                        arn_format=ArnFormat.SLASH_RESOURCE_NAME,
+                    )
+                ],
+            )
         )
 
         if hosted_zone is not None:

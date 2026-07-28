@@ -4,8 +4,8 @@ aliases: ["AWS network topology"]
 document_type: architecture
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:a5e15a1959ac3a8b2e0162c68e3ced730e0991153a099681329d169cf5d2ef12
-last_edited: 2026-07-28
+verified_evidence_digest: sha256:df4d6b4f5534f52e145be6fc5e79d3ef62b0024652f33138c34494f1b6d96895
+last_edited: 2026-07-29
 tags: [infrastructure, security]
 related_code:
   - "../../../../infra/deployment/aws/cdk/flowform_infra/stacks/network_stack.py"

@@ -12,6 +12,7 @@ SessionStart
 session_start_capture_base.py
   - capture HEAD once for the session
   - remember implementation files already dirty
+  - suggest focused documentation context once
        |
        v
 agent reads, reasons, and uses tools
@@ -59,7 +60,7 @@ identical:
 
 | Event | Matcher | Shared command |
 | --- | --- | --- |
-| `SessionStart` | all sessions | `session_start_capture_base.py` |
+| `SessionStart` | all starts; suggestion emitted once per session | `session_start_capture_base.py` |
 | `PostToolUse` | `Edit\|Write` | `post_tool_python_quality.py` |
 | `Stop` | every finish attempt | `stop_doc_impact_review.py` |
 
