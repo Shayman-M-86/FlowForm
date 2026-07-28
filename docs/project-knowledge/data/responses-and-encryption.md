@@ -5,7 +5,7 @@ document_type: domain
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:3a8b17c7d5c94b2d762c16c3d78787766f3b6d462f749cebb0eaf23a9bb0cce2
-last_edited: 2026-07-27
+last_edited: 2026-07-28
 tags: [security]
 related_code:
   - "../../../backend/app/crypto/"
@@ -28,6 +28,8 @@ related_docs:
 ---
 
 # Responses and encryption
+
+![Response encryption and storage boundary](../../assets/architecture/response-encryption.svg)
 
 FlowForm keeps identity-bearing and survey metadata in a core store while the
 response store contains encrypted answer material addressed through derived
@@ -73,6 +75,8 @@ version needed to reproduce their locators after the active key changes.
 
 Locator derivation is separate from answer encryption:
 
+![Derived opaque response locators](../../assets/architecture/response-locators.svg)
+
 ```text
 core session ID -- versioned linkage key --> response envelope locator
 
@@ -110,6 +114,8 @@ bound to the project, survey, session, and session locator.
 ## Session and envelope lifecycle
 
 Session start coordinates two databases without a distributed transaction:
+
+![Session and envelope lifecycle](../../assets/architecture/session-envelope-lifecycle.svg)
 
 1. access and the final project subject are resolved;
 2. the core session, subject effects, recognition-token effects, and any
@@ -154,6 +160,8 @@ question again performs an upsert that replaces the previous ciphertext,
 nonce, mutation identifier, and update time. There is no encrypted answer
 revision history, revision counter, or latest-revision pointer.
 
+![Current encrypted answer upsert](../../assets/architecture/current-answer-upsert.svg)
+
 Before writing, the backend checks that the question belongs to the session's
 frozen survey version and validates a non-cleared value against that question's
 schema. A cleared answer is represented as an encrypted cleared state rather
@@ -185,6 +193,8 @@ Studio results routes require the relevant survey permission before calling the
 results service. Result assembly starts with core subjects, sessions, frozen
 questions, and answer slots. It derives response locators, fetches matching
 ciphertext, and decrypts only when the request asks for answer values.
+
+![Authorized results read](../../assets/architecture/authorized-results-read.svg)
 
 ```text
 survey permission + Core metadata

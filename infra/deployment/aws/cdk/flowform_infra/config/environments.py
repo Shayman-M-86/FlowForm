@@ -43,6 +43,11 @@ class EnvConfig:
     full_deployment: bool
     vpc_flow_log_retention: logs.RetentionDays
     db_instance_class: str
+    db_allocated_storage_gib: int
+    db_max_allocated_storage_gib: int
+    db_backup_retention_days: int
+    db_log_retention: logs.RetentionDays
+    database_removal_policy: RemovalPolicy
     # Build-time env vars for the studio-app SPA, published as SSM params by
     # the frontend stack for CI builds. None for dev (local frontend env
     # files own these). For staging/prod this is filled at lookup time from
@@ -148,6 +153,11 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         full_deployment=False,
         vpc_flow_log_retention=logs.RetentionDays.ONE_WEEK,  # unused while full_deployment=False
         db_instance_class="db.t4g.micro",  # unused while full_deployment=False
+        db_allocated_storage_gib=20,
+        db_max_allocated_storage_gib=100,
+        db_backup_retention_days=1,
+        db_log_retention=logs.RetentionDays.ONE_WEEK,
+        database_removal_policy=RemovalPolicy.DESTROY,
         tags={"flowform:env": "dev"},
         security_scope="nonprod",
         ec2_base_ami_ssm_parameter="/flowform/dev/ec2/baseAmiId",
@@ -165,6 +175,11 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         full_deployment=True,
         vpc_flow_log_retention=logs.RetentionDays.ONE_WEEK,
         db_instance_class="db.t4g.small",
+        db_allocated_storage_gib=20,
+        db_max_allocated_storage_gib=40,
+        db_backup_retention_days=7,
+        db_log_retention=logs.RetentionDays.ONE_WEEK,
+        database_removal_policy=RemovalPolicy.SNAPSHOT,
         auth0_public=None,  # loaded from .env.staging by get_env_config()
         public_site_domain=f"staging.{DOMAIN_NAME}",
         studio_domain=f"studio.staging.{DOMAIN_NAME}",
@@ -181,7 +196,12 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         deletion_protection=True,
         full_deployment=True,
         vpc_flow_log_retention=logs.RetentionDays.THREE_MONTHS,
-        db_instance_class="db.t4g.medium",
+        db_instance_class="db.t4g.small",
+        db_allocated_storage_gib=20,
+        db_max_allocated_storage_gib=50,
+        db_backup_retention_days=30,
+        db_log_retention=logs.RetentionDays.THREE_MONTHS,
+        database_removal_policy=RemovalPolicy.RETAIN,
         auth0_public=None,  # loaded from .env.prod by get_env_config()
         # NOTE: the apex DNS records currently point at the hand-made
         # Amplify public-site app — the first prod deploy requires removing

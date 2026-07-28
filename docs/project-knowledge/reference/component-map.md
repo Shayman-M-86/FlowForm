@@ -4,8 +4,8 @@ aliases: ["Component map"]
 document_type: reference
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:76f5ad1a7fb9fbb5dac4e24e1902a07744392ba8aec0b6c0fe26c9a05dfe78d6
-last_edited: 2026-07-27
+verified_evidence_digest: sha256:94c2a7faf74b56becffc32b38d9b280c0d131bd204d78255d9b36d628b4a20d7
+last_edited: 2026-07-28
 tags: [backend, frontend, infrastructure, security]
 related_code:
   - "../../../frontend/apps/"
@@ -23,6 +23,8 @@ related_docs:
 ---
 
 # Component map
+
+![Logical component map](../../assets/architecture/component-map.svg)
 
 This draft maps logical components and their principal dependencies. It stops
 short of file-level ownership, sequence detail, and deployment topology.

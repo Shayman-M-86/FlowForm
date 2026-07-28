@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from aws_cdk import RemovalPolicy
 from aws_cdk import aws_logs as logs
 
 from flowform_infra.config import get_env_config
@@ -30,6 +31,23 @@ def test_full_deployments_define_private_dns_and_flow_log_retention():
     assert staging.vpc_flow_log_retention == logs.RetentionDays.ONE_WEEK
     assert prod.private_dns_zone == "internal.flow-form.com.au"
     assert prod.vpc_flow_log_retention == logs.RetentionDays.THREE_MONTHS
+
+
+def test_database_lifecycle_and_capacity_are_environment_specific():
+    staging = get_env_config("staging", env_dir=_EMPTY_ENV_DIR)
+    prod = get_env_config("prod", env_dir=_EMPTY_ENV_DIR)
+
+    assert staging.removal_policy == RemovalPolicy.DESTROY
+    assert staging.database_removal_policy == RemovalPolicy.SNAPSHOT
+    assert staging.db_allocated_storage_gib == 20
+    assert staging.db_max_allocated_storage_gib == 40
+    assert staging.db_backup_retention_days == 7
+
+    assert prod.database_removal_policy == RemovalPolicy.RETAIN
+    assert prod.db_instance_class == "db.t4g.small"
+    assert prod.db_allocated_storage_gib == 20
+    assert prod.db_max_allocated_storage_gib == 50
+    assert prod.db_backup_retention_days == 30
 
 
 def test_auth0_public_none_without_env_file():

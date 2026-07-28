@@ -4,8 +4,8 @@ aliases: ["Reference documentation"]
 document_type: overview
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:34a04bf88bd886adaae01f7c9d8c625e1d04f198719df92a98837cbac1cf6191
-last_edited: 2026-07-27
+verified_evidence_digest: sha256:0e56bffb4647b991f2856f38201bd9673d49a7ebe9ac090b7f683d8d5273f821
+last_edited: 2026-07-28
 tags: [meta]
 related_code:
   - "../../../backend/"
@@ -29,9 +29,10 @@ The orientation set has three roles. [[glossary|Glossary]] stabilises shared
 product and technical vocabulary; [[repository-map|Repository map]] gives a
 maintained map from a responsibility to its repository area; and
 [[component-map|Component map]] identifies the principal logical components and
-their dependencies. Catalogue pages provide exact commands, configuration,
-environment, ports, and scripts. Generated pages are reproducible snapshots,
-not hand-authored authority.
+their dependencies. [[technology-stack|Technology stack]] inventories the
+languages, frameworks, services, and tooling each area depends on. Catalogue
+pages provide exact commands, configuration, environment, ports, and scripts.
+Generated pages are reproducible snapshots, not hand-authored authority.
 
 ```text
                          Reference documentation
@@ -52,3 +53,4 @@ until checked against staged implementation evidence.
 - [[glossary|Glossary]]
 - [[repository-map|Repository map]]
 - [[component-map|Component map]]
+- [[technology-stack|Technology stack]]

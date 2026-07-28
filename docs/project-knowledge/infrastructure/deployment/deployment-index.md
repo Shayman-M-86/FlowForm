@@ -5,12 +5,12 @@ document_type: overview
 status: verified
 authority: canonical
 verified_evidence_digest: sha256:3fa28fe2deb019773dc99b66520ca7d4aedd7f33c51d27d5bdd9c8a54a2cfad2
-last_edited: 2026-07-27
+last_edited: 2026-07-28
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../infra/deployment/"
   - "../../../../.github/workflows/"
-related_docs: ["Infrastructure knowledge", "Deployment model", "Cloud deployment"]
+related_docs: ["Infrastructure knowledge", "Deployment model", "AWS network topology", "Cloud deployment"]
 ---
 
 # Deployment documentation
@@ -67,14 +67,17 @@ not evidence that publication completed a deployment. Configuration and secrets
 must still be delivered, hosts converged, services verified, and live platform
 health observed.
 
-[[deployment-model|Deployment model]] provides the detailed environment and CDK
-topology. [[cloud-deployment|Cloud deployment]] provides the exact triggers,
-credentials, actions, and limits of the checked-in AWS publication workflows.
+[[deployment-model|Deployment model]] provides the environment and CDK stack
+topology. [[aws-network-topology|AWS network topology]] provides the VPC,
+subnet, routing, endpoint, and security-group contract. [[cloud-deployment|Cloud
+deployment]] provides the exact triggers, credentials, actions, and limits of
+the checked-in AWS publication workflows.
 
 ## Related documents
 
 - [[infrastructure-index|Infrastructure knowledge]]
 - [[deployment-model|Deployment model]]
+- [[aws-network-topology|AWS network topology]]
 - [[cloud-deployment|Cloud deployment]]
 - [[images-index|Machine images]]
 - [[containers-index|Container runtime documentation]]

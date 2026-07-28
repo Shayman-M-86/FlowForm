@@ -5,7 +5,7 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-28
 tags: [infrastructure, configuration, ci-cd]
 related_code:
   - "../../../infra/deployment/aws/cdk/"
@@ -16,10 +16,13 @@ related_code:
 related_docs:
   - "Engineering planning"
   - "ADR 0001: AWS staging infrastructure target"
+  - "AWS stack specifications"
+  - "AWS database roles and bootstrap design"
+  - "AWS DatabaseStack staging configuration"
 ---
 
 # AWS CDK staging plan
-wwa
+
 > Working execution plan, not current architecture or live-deployment truth.
 
 This plan sequences the first empty-data AWS staging environment around the
@@ -39,15 +42,17 @@ a retained-data cutover, or that a source-complete stack has been deployed.
 | Target decision | Recorded in ADR 0001 | Not applicable |
 | Security and registry | Implemented | Last recorded as deployed on 2026-07-24 |
 | Image publication | Implemented and exercised through GitHub OIDC | Four-image digest manifest recorded by the earlier execution slice |
-| Network | Four-subnet design implemented and covered by CDK assertions | Deployment and live verification not confirmed |
-| Database | Placeholder only | Not deployed |
+| Network | Four-subnet design implemented and covered by CDK assertions | Deployed and verified on 2026-07-27 |
+| Database | RDS infrastructure implemented, asserted, synthesized, and diff-reviewed | Not deployed |
 | Application compute | EC2 resource skeleton exists; convergence/bootstrap is incomplete | Not ready to deploy |
 | Frontend | Substantial CDK and deployment support exists | Outside the immediate infrastructure slice |
 | Observability | Placeholder CDK stack | Not deployed |
 
-The live network status could not be refreshed on 2026-07-27 because the local
-AWS CLI session had expired. Re-authenticate and inspect CloudFormation before
-treating the Network stack as absent or present.
+`FlowForm-Staging-Network` reached `CREATE_COMPLETE` on 2026-07-27. Live AWS
+inspection confirmed its subnets, routes, endpoint boundary, private zone, flow
+logs, Instance Connect Endpoint, and security groups. A post-deployment CDK
+diff reported no differences, and CloudFormation drift detection reported
+`IN_SYNC` with zero drifted resources.
 
 Image vulnerability triage is deliberately deferred while the staging
 infrastructure is assembled. It remains a release-readiness gate and must not
@@ -100,9 +105,11 @@ App EC2 in isolated subnet A ----> RDS in isolated subnet A
 
 ## Immediate next execution slice
 
-The next slice is to deploy and prove `FlowForm-Staging-Network`, then implement
-`DatabaseStack`. Do not begin application-host deployment merely because the
-EC2 resources synthesize: their bootstrap and convergence path is incomplete.
+The Network portion of Phase 3 is complete, and `DatabaseStack` is implemented
+and covered by CDK assertions. The next slice is to review the change through
+the staging branch, deploy it, and prove the live RDS infrastructure. Do not
+begin application-host deployment merely because the EC2 resources synthesize:
+their bootstrap and convergence path is incomplete.
 
 ### 1. Land the source through the staging workflow
 
@@ -115,73 +122,62 @@ Continue the established branch boundary:
    checkout.
 
 The image-publication workflow already uses the protected staging identity.
-Creating a general CDK deployment workflow is not required before the first
-Network deployment; operator deployment remains the controlled path for this
-slice.
+Creating a general CDK deployment workflow is not required before the Database
+deployment; operator deployment remains the controlled path for this slice.
 
-### 2. Re-authenticate and inspect before deploying
+### Completed Network deployment evidence
 
-From `infra/deployment/aws/cdk/`:
+Live inspection on 2026-07-27 confirmed:
 
-```bash
-aws login
-aws cloudformation describe-stacks \
-  --region ap-southeast-2 \
-  --stack-name FlowForm-Staging-Network
-```
+- `FlowForm-Staging-Network` is `CREATE_COMPLETE`.
+- The four intended subnets exist:
+  - proxy public A: `10.42.0.0/24` in `ap-southeast-2a`
+  - app isolated A: `10.42.1.0/24` in `ap-southeast-2a`
+  - RDS isolated A: `10.42.2.0/24` in `ap-southeast-2a`
+  - RDS isolated B: `10.42.3.0/24` in `ap-southeast-2b`
+- Only the proxy route table has a `0.0.0.0/0` Internet Gateway route.
+- The app route table alone has the S3 prefix-list route through the available
+  S3 gateway endpoint.
+- No NAT Gateway or paid interface endpoint exists.
+- The S3 endpoint policy grants only `s3:GetObject` on the regional ECR
+  starport layer bucket.
+- The private Route 53 zone is associated only with the staging VPC.
+- The VPC flow log is active, delivery is successful, all traffic is selected,
+  and `/flowform/staging/vpc-flow` has seven-day retention.
+- The EC2 Instance Connect Endpoint is complete in the app subnet.
+- Public ingress is limited to proxy TCP 80/443; app, RDS, Squid, Alloy, and
+  management paths use the intended peer security groups.
+- A post-deployment CDK diff found no differences.
+- CloudFormation drift detection reported `IN_SYNC` with zero drifted
+  resources.
 
-If the stack does not exist, review and deploy it:
+Private DNS resolution, actual ECR layer routing, Squid service access, and
+emitted cross-host flow records still require the real runtime instances and
+remain Phase 4 checks.
 
-```bash
-npx cdk diff -c env=staging FlowForm-Staging-Network
-npx cdk deploy -c env=staging FlowForm-Staging-Network
-```
+### 2. Review, deploy, and verify `DatabaseStack`
 
-Keep approval enabled and inspect the CloudFormation change set. If the stack
-already exists, compare it with the merged staging source before deciding
-whether an update is required.
+The source now declares:
 
-### 3. Prove the deployed network boundary
+- one PostgreSQL 17.9 `db.t4g.small` instance, single-AZ in Availability Zone A;
+- an explicit DB subnet group containing both isolated RDS subnets;
+- only the existing RDS security group;
+- 20 GiB encrypted gp3 storage with a 40 GiB autoscaling ceiling;
+- an RDS-managed `flowform_admin` credential encrypted with the FlowForm KMS
+  key;
+- seven-day backups, retained automated backups, and a final snapshot on
+  replacement or deletion;
+- TLS and SCRAM requirements in a PostgreSQL 17 parameter group;
+- PostgreSQL and upgrade log exports with seven-day log retention;
+- Standard database insights with seven-day performance history;
+- explicit backup and maintenance windows, automatic minor updates, and no
+  automatic major upgrade.
 
-Record deployed evidence for:
-
-- Exactly four subnets with the intended CIDRs:
-  - proxy public A: `10.42.0.0/24`
-  - app isolated A: `10.42.1.0/24`
-  - RDS isolated A: `10.42.2.0/24`
-  - RDS isolated B: `10.42.3.0/24`
-- Only the proxy subnet has a default Internet Gateway route.
-- No NAT Gateway and no paid interface endpoint exist.
-- The S3 gateway endpoint is associated only with the application subnet route
-  table and has the intended ECR layer-bucket read policy.
-- The private Route 53 zone is associated with the staging VPC.
-- The VPC flow log is active and targets
-  `/flowform/staging/vpc-flow`.
-- Security-group paths match the declared proxy, application, RDS, Alloy, DNS,
-  NTP, S3, and EC2 Instance Connect Endpoint flows.
-
-Do not create temporary hosts solely to prove runtime behaviour. Private DNS
-resolution, actual ECR layer routing, Squid service access, and emitted
-cross-host flow records belong to the compute phase when the real instances
-exist.
-
-### 4. Implement `DatabaseStack`
-
-After network proof, replace the placeholder with:
-
-- One single-AZ staging RDS PostgreSQL instance using a supported PostgreSQL
-  version compatible with the application.
-- A DB subnet group containing the two RDS subnets.
-- Placement in Availability Zone A without enabling Multi-AZ.
-- Ingress on TCP 5432 only from the application security group.
-- Storage encryption using the FlowForm KMS key.
-- A generated administrative credential in Secrets Manager.
-- Automated backups with an explicit staging retention period.
-- TLS enforcement and SCRAM authentication.
-- PostgreSQL and upgrade log exports.
-- Staging removal and deletion-protection behaviour from `EnvConfig`.
-- CDK assertions for placement, encryption, credentials, networking, backup,
-  logging, and removal behaviour.
+CDK tests, Pyright, synth, and a read-only AWS diff pass. The diff adds only the
+DB subnet group, parameter group, two log groups, RDS instance, and the Network
+stack outputs required for its existing subnets and security group. Review and
+merge this source through the staging workflow, then deploy and verify the live
+stack before marking the data portion of Phase 3 complete.
 
 The database host is not the schema. A later controlled migration/bootstrap
 step must create the two logical databases, separate core and response users,
@@ -316,10 +312,14 @@ Staging is ready for application use only when:
 - Deferred image vulnerabilities have been triaged before staging is described
   as release-ready.
 
-Production availability, retained-data migration, Multi-AZ resources, and
-production cutover remain separate work.
+Production availability, retained-data migration, and production cutover remain
+separate work. Multi-AZ is not part of the current FlowForm infrastructure
+target.
 
 ## Related documents
 
 - [[planning-index|Engineering planning]]
 - [[0001-aws-staging-infrastructure-target|ADR 0001: AWS staging infrastructure target]]
+- [[aws-stack-specifications|AWS stack specifications]]
+- [[aws-database-roles-and-bootstrap|AWS database roles and bootstrap design]]
+- [[aws-database-stack-configuration|AWS DatabaseStack staging configuration]]
