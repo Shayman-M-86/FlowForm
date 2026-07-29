@@ -39,13 +39,12 @@ done
 case "${environment}" in
   staging|prod) ;;
   "") usage >&2; exit 2 ;;
-  *) operation_die "Application stack exists only for staging or prod" ;;
+  *) operation_die "App stack exists only for staging or prod" ;;
 esac
 
-stack="FlowForm-${environment^}-Application"
 exec "${SCRIPT_DIR}/deploy.sh" \
   --environment "${environment}" \
-  --stack "${stack}" \
+  --stack "FlowForm-${environment^}-App" \
   --exclusively \
   "${mode_args[@]}" \
   -- \

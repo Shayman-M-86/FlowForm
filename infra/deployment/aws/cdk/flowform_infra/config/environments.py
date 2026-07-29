@@ -81,8 +81,8 @@ class EnvConfig:
     # (e.g. ("www",) for prod).
     public_site_extra_prefixes: tuple[str, ...] = ()
     studio_domain: str | None = None
-    # VPC-only service discovery zone. ApplicationStack publishes the proxy and
-    # app instance addresses here so host replacement does not change the
+    # VPC-only service discovery zone. ProxyStack and AppStack publish their
+    # instance addresses here so host replacement does not change the
     # cross-host addressing contract.
     private_dns_zone: str | None = None
     tags: dict[str, str] = field(default_factory=dict)

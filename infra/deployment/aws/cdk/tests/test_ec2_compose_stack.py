@@ -17,9 +17,10 @@ from flowform_infra.config import (
     runtime_group_logical_names,
     runtime_parameter_name,
 )
-from flowform_infra.stacks.application_stack import ApplicationStack
+from flowform_infra.stacks.app_stack import AppStack
 from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.network_stack import NetworkStack
+from flowform_infra.stacks.proxy_stack import ProxyStack
 from flowform_infra.stacks.registry_stack import RegistryStack
 
 _EMPTY_ENV_DIR = Path(__file__).parent
@@ -57,7 +58,7 @@ def _synth_network_stack() -> Template:
     return Template.from_stack(stack)
 
 
-def _synth_application_stack() -> Template:
+def _synth_host_stacks() -> tuple[Template, Template]:
     env_config = _staging_config()
     cdk_env = cdk.Environment(account=env_config.account, region=env_config.region)
     app = cdk.App()
@@ -98,34 +99,76 @@ def _synth_application_stack() -> Template:
         kms_key=kms_key,
         env=cdk_env,
     )
-    application = ApplicationStack(
+    proxy = ProxyStack(
         app,
-        "Application",
+        "Proxy",
         env_config=env_config,
         network_stack=network,
         registry_stack=registry,
-        task_role=task_role,
         kms_key=kms_key,
-        database_stack=database,
-        linkage_secret_arn="arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/linkage",
         observability_secret_arn=(
             "arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/observability"
         ),
         hosted_zone=hosted_zone,
         env=cdk_env,
     )
-    return Template.from_stack(application)
+    application = AppStack(
+        app,
+        "App",
+        env_config=env_config,
+        network_stack=network,
+        registry_stack=registry,
+        database_stack=database,
+        task_role=task_role,
+        kms_key=kms_key,
+        linkage_secret_arn="arn:aws:secretsmanager:ap-southeast-2:000000000000:secret:flowform/nonprod/linkage",
+        env=cdk_env,
+    )
+    application.add_dependency(proxy)
+    return Template.from_stack(application), Template.from_stack(proxy)
+
+
+def _synth_app_stack() -> Template:
+    return _synth_host_stacks()[0]
+
+
+def _synth_proxy_stack() -> Template:
+    return _synth_host_stacks()[1]
 
 
 def _backend_parameters() -> dict[str, object]:
     """Return the published backend runtime group keyed by env-var name."""
-    resources = _synth_application_stack().find_resources("AWS::SSM::Parameter")
+    resources = _synth_app_stack().find_resources("AWS::SSM::Parameter")
     published: dict[str, object] = {}
     for resource in resources.values():
         name = resource["Properties"]["Name"]
         if isinstance(name, str) and "/backend/" in name:
             published[name.rsplit("/", 1)[-1]] = resource["Properties"]["Value"]
     return published
+
+
+def test_proxy_role_can_register_as_an_ssm_managed_instance():
+    template = _synth_proxy_stack()
+    template.has_resource_properties(
+        "AWS::IAM::Role",
+        {
+            "Description": "Proxy EC2 role for FlowForm staging",
+            "ManagedPolicyArns": Match.array_with(
+                [
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:",
+                                {"Ref": "AWS::Partition"},
+                                ":iam::aws:policy/AmazonSSMManagedInstanceCore",
+                            ],
+                        ]
+                    }
+                ]
+            ),
+        },
+    )
 
 
 def test_network_has_no_nat_gateway_and_app_s3_gateway_endpoint():
@@ -224,16 +267,26 @@ def test_network_private_dns_zone_and_application_records_track_instance_address
         },
     )
 
-    application_template = _synth_application_stack()
-    rendered = application_template.to_json()
-    records = {
+    app_template, proxy_template = _synth_host_stacks()
+    app_records = {
         resource["Properties"]["Name"]: resource["Properties"]
-        for resource in rendered["Resources"].values()
+        for resource in app_template.to_json()["Resources"].values()
         if resource["Type"] == "AWS::Route53::RecordSet"
     }
+    proxy_records = {
+        resource["Properties"]["Name"]: resource["Properties"]
+        for resource in proxy_template.to_json()["Resources"].values()
+        if resource["Type"] == "AWS::Route53::RecordSet"
+    }
+    records = app_records | proxy_records
 
     assert {name for name in records if name.endswith(".internal.staging.flow-form.com.au.")} == {
         "app.internal.staging.flow-form.com.au.",
+        "proxy.internal.staging.flow-form.com.au.",
+    }
+    assert set(app_records) == {"app.internal.staging.flow-form.com.au."}
+    assert set(proxy_records) == {
+        "api.staging.flow-form.com.au.",
         "proxy.internal.staging.flow-form.com.au.",
     }
     app_target = records["app.internal.staging.flow-form.com.au."]["ResourceRecords"][0]["Fn::GetAtt"]
@@ -396,24 +449,26 @@ def test_network_management_path_is_one_eice_in_the_app_subnet():
 
 
 def test_app_instance_has_no_public_ip_and_both_instances_require_imdsv2_hop_limit_two():
-    template = _synth_application_stack()
-    template.resource_properties_count_is(
-        "AWS::EC2::Instance",
-        {"MetadataOptions": {"HttpTokens": "required", "HttpPutResponseHopLimit": 2}},
-        2,
-    )
-    template.has_resource_properties(
+    app_template, proxy_template = _synth_host_stacks()
+    for template in (app_template, proxy_template):
+        template.resource_properties_count_is(
+            "AWS::EC2::Instance",
+            {"MetadataOptions": {"HttpTokens": "required", "HttpPutResponseHopLimit": 2}},
+            1,
+        )
+    app_template.has_resource_properties(
         "AWS::EC2::Instance",
         {
             "NetworkInterfaces": [Match.object_like({"AssociatePublicIpAddress": False})],
             "Tags": Match.array_with([{"Key": "Name", "Value": "flowform-staging-app"}]),
         },
     )
-    template.has_resource_properties("AWS::EC2::EIP", {"Domain": "vpc"})
+    app_template.resource_count_is("AWS::EC2::EIP", 0)
+    proxy_template.has_resource_properties("AWS::EC2::EIP", {"Domain": "vpc"})
 
 
 def test_proxy_role_has_hosted_zone_scoped_route53_change_access():
-    template = _synth_application_stack()
+    template = _synth_proxy_stack()
     template.has_resource_properties(
         "AWS::IAM::Policy",
         {
@@ -437,7 +492,7 @@ def test_proxy_role_has_hosted_zone_scoped_route53_change_access():
 
 
 def test_proxy_role_can_read_only_the_observability_secret():
-    template = _synth_application_stack()
+    template = _synth_proxy_stack()
     rendered = str(template.to_json())
     assert "flowform/nonprod/observability" in rendered
     assert "secretsmanager:GetSecretValue" in rendered
@@ -446,7 +501,7 @@ def test_proxy_role_can_read_only_the_observability_secret():
 
 
 def test_proxy_role_can_read_only_its_runtime_parameter_path():
-    template = _synth_application_stack()
+    template = _synth_proxy_stack()
     template.has_resource_properties(
         "AWS::IAM::Policy",
         {
@@ -478,20 +533,26 @@ def test_proxy_role_can_read_only_its_runtime_parameter_path():
 
 
 def test_application_ecr_pulls_are_scoped_to_exact_host_repositories():
-    template = _synth_application_stack()
-    rendered = template.to_json()
-    policies = {
-        resource["Properties"]["PolicyName"]: resource["Properties"]["PolicyDocument"]["Statement"]
-        for resource in rendered["Resources"].values()
-        if resource["Type"] == "AWS::IAM::Policy"
-        and resource["Properties"]["PolicyName"].startswith(("AppEcrPullPolicy", "ProxyEcrPullPolicy"))
-    }
+    app_template, proxy_template = _synth_host_stacks()
 
-    assert len(policies) == 2
-    assert "repository/flowform-staging-*" not in str(policies)
+    def ecr_pull_policies(template: Template) -> dict[str, list[dict[str, object]]]:
+        return {
+            resource["Properties"]["PolicyName"]: resource["Properties"]["PolicyDocument"]["Statement"]
+            for resource in template.to_json()["Resources"].values()
+            if resource["Type"] == "AWS::IAM::Policy"
+            and resource["Properties"]["PolicyName"].startswith(("AppEcrPullPolicy", "ProxyEcrPullPolicy"))
+        }
 
-    app_statements = next(value for key, value in policies.items() if key.startswith("AppEcrPullPolicy"))
-    proxy_statements = next(value for key, value in policies.items() if key.startswith("ProxyEcrPullPolicy"))
+    app_policies = ecr_pull_policies(app_template)
+    proxy_policies = ecr_pull_policies(proxy_template)
+    assert len(app_policies) == 1
+    assert len(proxy_policies) == 1
+    assert next(iter(app_policies)).startswith("AppEcrPullPolicy")
+    assert next(iter(proxy_policies)).startswith("ProxyEcrPullPolicy")
+    assert "repository/flowform-staging-*" not in str(app_policies | proxy_policies)
+
+    app_statements = next(iter(app_policies.values()))
+    proxy_statements = next(iter(proxy_policies.values()))
     app_resources = app_statements[1]["Resource"]
     proxy_resources = proxy_statements[1]["Resource"]
 
@@ -508,59 +569,54 @@ def test_application_ecr_pulls_are_scoped_to_exact_host_repositories():
     assert "BackendRepository" not in str(proxy_resources)
 
 
-def test_application_instances_use_distinct_role_ami_parameters_and_never_the_base():
-    template = _synth_application_stack()
-    rendered = template.to_json()
-    ami_parameters = {
-        logical_id: value
-        for logical_id, value in rendered["Parameters"].items()
-        if value.get("Type") == "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
-    }
+def test_app_and_proxy_stacks_each_own_one_instance_with_their_role_ami_parameter():
+    app_template, proxy_template = _synth_host_stacks()
 
-    assert {parameter["Default"] for parameter in ami_parameters.values()} == {
-        "/flowform/staging/ec2/appAmiId",
-        "/flowform/staging/ec2/proxyAmiId",
-    }
-    assert "baseAmiId" not in str(rendered)
+    for role, template in (("app", app_template), ("proxy", proxy_template)):
+        rendered = template.to_json()
+        template.resource_count_is("AWS::EC2::Instance", 1)
+        ami_parameters = {
+            logical_id: value
+            for logical_id, value in rendered["Parameters"].items()
+            if value.get("Type") == "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+        }
+        assert len(ami_parameters) == 1
+        assert {parameter["Default"] for parameter in ami_parameters.values()} == {f"/flowform/staging/ec2/{role}AmiId"}
+        assert "baseAmiId" not in str(rendered)
 
-    defaults_by_logical_id = {logical_id: parameter["Default"] for logical_id, parameter in ami_parameters.items()}
-    instances = {
-        logical_id: resource["Properties"]
-        for logical_id, resource in rendered["Resources"].items()
-        if resource["Type"] == "AWS::EC2::Instance"
-    }
-    app_image_ref = next(value["ImageId"]["Ref"] for key, value in instances.items() if key.startswith("AppInstance"))
-    proxy_image_ref = next(
-        value["ImageId"]["Ref"] for key, value in instances.items() if key.startswith("ProxyInstance")
-    )
-    assert defaults_by_logical_id[app_image_ref] == "/flowform/staging/ec2/appAmiId"
-    assert defaults_by_logical_id[proxy_image_ref] == "/flowform/staging/ec2/proxyAmiId"
+        parameter_logical_id = next(iter(ami_parameters))
+        instance = next(
+            resource["Properties"]
+            for resource in rendered["Resources"].values()
+            if resource["Type"] == "AWS::EC2::Instance"
+        )
+        assert instance["ImageId"]["Ref"] == parameter_logical_id
 
 
 def test_application_instances_use_ten_gib_gp3_encrypted_root_volumes():
-    template = _synth_application_stack()
-    template.resource_properties_count_is(
-        "AWS::EC2::Instance",
-        {
-            "BlockDeviceMappings": [
-                {
-                    "DeviceName": "/dev/xvda",
-                    "Ebs": {
-                        "DeleteOnTermination": True,
-                        "Encrypted": True,
-                        "VolumeSize": 10,
-                        "VolumeType": "gp3",
-                    },
-                }
-            ]
-        },
-        2,
-    )
+    for template in _synth_host_stacks():
+        template.resource_properties_count_is(
+            "AWS::EC2::Instance",
+            {
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/xvda",
+                        "Ebs": {
+                            "DeleteOnTermination": True,
+                            "Encrypted": True,
+                            "VolumeSize": 10,
+                            "VolumeType": "gp3",
+                        },
+                    }
+                ]
+            },
+            1,
+        )
 
 
 def test_backend_parameters_are_published_under_the_contract_path():
     """Bootstrap reads /flowform/<scope>/backend/ and renders KEY=value lines."""
-    template = _synth_application_stack()
+    template = _synth_app_stack()
     template.has_resource_properties(
         "AWS::SSM::Parameter",
         {
@@ -578,7 +634,7 @@ def test_backend_parameters_are_published_under_the_contract_path():
 
 
 def test_proxy_runtime_parameters_include_domain_and_observability_routes():
-    template = _synth_application_stack()
+    template = _synth_proxy_stack()
     expected = {
         "API_DOMAIN": "api.staging.flow-form.com.au",
         "FLOWFORM_ENV": "prod",
@@ -630,9 +686,11 @@ def test_cors_origins_are_explicit_json_for_staging():
     assert "https://studio.staging." in origins
 
 
-def _user_data(instance_logical_prefix: str) -> str:
+def _user_data(role: str) -> str:
     """Return one instance's user data as a flattened string."""
-    resources = _synth_application_stack().find_resources("AWS::EC2::Instance")
+    template = _synth_app_stack() if role == "app" else _synth_proxy_stack()
+    instance_logical_prefix = f"{role.capitalize()}Instance"
+    resources = template.find_resources("AWS::EC2::Instance")
     for logical_id, resource in resources.items():
         if not logical_id.startswith(instance_logical_prefix):
             continue
@@ -646,17 +704,17 @@ def _user_data(instance_logical_prefix: str) -> str:
     raise AssertionError(f"no instance matching {instance_logical_prefix}")
 
 
-def _instance_context(instance_logical_prefix: str) -> dict[str, object]:
-    script = _user_data(instance_logical_prefix)
+def _instance_context(role: str) -> dict[str, object]:
+    script = _user_data(role)
     context = script.split("<<'FLOWFORM_CONTEXT'\n", 1)[1].split("\nFLOWFORM_CONTEXT", 1)[0]
     parsed: dict[str, object] = json.loads(context)
     return parsed
 
 
 def test_user_data_writes_root_owned_context_and_starts_the_baked_role_service():
-    for prefix, role in (("AppInstance", "app"), ("ProxyInstance", "proxy")):
-        script = _user_data(prefix)
-        context = _instance_context(prefix)
+    for role in ("app", "proxy"):
+        script = _user_data(role)
+        context = _instance_context(role)
         assert context["schema_version"] == 1
         assert context["environment"] == "staging"
         assert context["role"] == role
@@ -673,36 +731,41 @@ def test_user_data_writes_root_owned_context_and_starts_the_baked_role_service()
 
 
 def test_instance_context_uses_stable_private_dns_for_cross_host_addressing():
-    assert _instance_context("AppInstance")["proxy_dns_name"] == "proxy.internal.staging.flow-form.com.au"
-    assert _instance_context("ProxyInstance")["app_dns_name"] == "app.internal.staging.flow-form.com.au"
+    assert _instance_context("app")["proxy_dns_name"] == "proxy.internal.staging.flow-form.com.au"
+    assert _instance_context("proxy")["app_dns_name"] == "app.internal.staging.flow-form.com.au"
 
 
 def test_instances_do_not_pin_private_addresses():
-    resources = _synth_application_stack().find_resources("AWS::EC2::Instance")
-    for resource in resources.values():
-        properties = resource["Properties"]
+    for template in _synth_host_stacks():
+        resources = template.find_resources("AWS::EC2::Instance")
+        assert len(resources) == 1
+        properties = next(iter(resources.values()))["Properties"]
         assert "PrivateIpAddress" not in properties
         assert "10.42.0.4" not in str(properties)
         assert "10.42.1.4" not in str(properties)
 
 
 def test_release_parameter_paths_are_read_only_external_promotion_contracts():
-    template = _synth_application_stack()
-    rendered = template.to_json()
-    parameter_names = {
-        resource["Properties"]["Name"]
-        for resource in rendered["Resources"].values()
-        if resource["Type"] == "AWS::SSM::Parameter"
-    }
-    policies = {
-        resource["Properties"]["PolicyName"]: resource["Properties"]["PolicyDocument"]["Statement"]
-        for resource in rendered["Resources"].values()
-        if resource["Type"] == "AWS::IAM::Policy"
-        and resource["Properties"]["PolicyName"].startswith(("AppReleaseReadPolicy", "ProxyReleaseReadPolicy"))
-    }
+    app_template, proxy_template = _synth_host_stacks()
+    for role, policy_prefix, template in (
+        ("app", "AppReleaseReadPolicy", app_template),
+        ("proxy", "ProxyReleaseReadPolicy", proxy_template),
+    ):
+        rendered = template.to_json()
+        parameter_names = {
+            resource["Properties"]["Name"]
+            for resource in rendered["Resources"].values()
+            if resource["Type"] == "AWS::SSM::Parameter"
+        }
+        policies = {
+            resource["Properties"]["PolicyName"]: resource["Properties"]["PolicyDocument"]["Statement"]
+            for resource in rendered["Resources"].values()
+            if resource["Type"] == "AWS::IAM::Policy"
+            and resource["Properties"]["PolicyName"].startswith(("AppReleaseReadPolicy", "ProxyReleaseReadPolicy"))
+        }
 
-    assert len(policies) == 2
-    for role, policy_prefix in (("app", "AppReleaseReadPolicy"), ("proxy", "ProxyReleaseReadPolicy")):
+        assert len(policies) == 1
+        assert next(iter(policies)).startswith(policy_prefix)
         release_path = release_parameter_name("staging", role)
         assert release_path not in parameter_names
         statements = next(value for key, value in policies.items() if key.startswith(policy_prefix))

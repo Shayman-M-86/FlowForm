@@ -10,6 +10,8 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStart=/opt/flowform/runtime/common/scripts/run-role.sh proxy
 TimeoutStartSec=15min
+Restart=on-failure
+RestartSec=30s
 
 [Install]
 WantedBy=multi-user.target

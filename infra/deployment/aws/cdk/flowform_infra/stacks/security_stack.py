@@ -193,6 +193,10 @@ class SecurityStack(Stack):
             "AppTaskRole",
             assumed_by=assumed_by,
             description=f"App role for the FlowForm API ({scope_name})",
+            # This role is also the staging/prod App instance profile. The
+            # baked SSM Agent needs the managed-instance control/data channel
+            # permissions before an operator can converge the host remotely.
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")],
         )
 
         for secret in (self.app_secrets, self.db_secrets, self.linkage_secret):

@@ -4,13 +4,14 @@ import os
 import aws_cdk as cdk
 
 from flowform_infra.config import get_env_config, get_security_scope
-from flowform_infra.stacks.application_stack import ApplicationStack
+from flowform_infra.stacks.app_stack import AppStack
 from flowform_infra.stacks.database_bootstrap_stack import DatabaseBootstrapStack
 from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
 from flowform_infra.stacks.frontend_stack import FrontendStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.observability_stack import ObservabilityStack
+from flowform_infra.stacks.proxy_stack import ProxyStack
 from flowform_infra.stacks.registry_stack import RegistryStack
 from flowform_infra.stacks.security_stack import SecurityStack
 
@@ -89,24 +90,38 @@ if env_config.full_deployment:
         database_bootstrap_stack.add_dependency(security_stack)
         all_stacks.append(database_bootstrap_stack)
 
-    application_stack = ApplicationStack(
+    proxy_stack = ProxyStack(
         app,
-        f"{name_prefix}-Application",
+        f"{name_prefix}-Proxy",
         env_config=env_config,
         network_stack=network_stack,
         registry_stack=registry_stack,
-        task_role=security_stack.task_role,
         kms_key=security_stack.kms_key,
-        database_stack=database_stack,
-        linkage_secret_arn=security_stack.linkage_secret.secret_arn,
         observability_secret_arn=security_stack.observability_secret.secret_arn,
         hosted_zone=security_stack.email_identity.hosted_zone,
         env=cdk_env,
     )
-    application_stack.add_dependency(network_stack)
-    application_stack.add_dependency(registry_stack)
-    application_stack.add_dependency(security_stack)
-    application_stack.add_dependency(database_stack)
+    proxy_stack.add_dependency(network_stack)
+    proxy_stack.add_dependency(registry_stack)
+    proxy_stack.add_dependency(security_stack)
+
+    app_stack = AppStack(
+        app,
+        f"{name_prefix}-App",
+        env_config=env_config,
+        network_stack=network_stack,
+        registry_stack=registry_stack,
+        database_stack=database_stack,
+        task_role=security_stack.task_role,
+        kms_key=security_stack.kms_key,
+        linkage_secret_arn=security_stack.linkage_secret.secret_arn,
+        env=cdk_env,
+    )
+    app_stack.add_dependency(network_stack)
+    app_stack.add_dependency(registry_stack)
+    app_stack.add_dependency(security_stack)
+    app_stack.add_dependency(database_stack)
+    app_stack.add_dependency(proxy_stack)
 
     # CloudFront only accepts ACM certs from us-east-1, so the cert lives
     # in its own stack there; cross_region_references wires it into the
@@ -137,13 +152,15 @@ if env_config.full_deployment:
         env_config=env_config,
         env=cdk_env,
     )
-    observability_stack.add_dependency(application_stack)
+    observability_stack.add_dependency(proxy_stack)
+    observability_stack.add_dependency(app_stack)
 
     all_stacks += [
         registry_stack,
         network_stack,
         database_stack,
-        application_stack,
+        proxy_stack,
+        app_stack,
         frontend_cert_stack,
         frontend_stack,
         observability_stack,

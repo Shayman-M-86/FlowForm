@@ -89,6 +89,30 @@ def test_nonprod_app_role_assumable_by_ec2_and_account():
     )
 
 
+def test_app_role_can_register_as_an_ssm_managed_instance():
+    template = _synth_security_stack("dev")
+    template.has_resource_properties(
+        "AWS::IAM::Role",
+        {
+            "Description": "App role for the FlowForm API (nonprod)",
+            "ManagedPolicyArns": Match.array_with(
+                [
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:",
+                                {"Ref": "AWS::Partition"},
+                                ":iam::aws:policy/AmazonSSMManagedInstanceCore",
+                            ],
+                        ]
+                    }
+                ]
+            ),
+        },
+    )
+
+
 def test_nonprod_creates_staging_named_ci_roles():
     # Role names keep the env name (not the scope name) so the GitHub
     # workflows reference stable ARNs.
