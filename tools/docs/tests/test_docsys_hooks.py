@@ -10,7 +10,7 @@ from unittest.mock import patch
 HOOKS_DIR = Path(__file__).resolve().parents[1] / "hooks"
 sys.path.insert(0, str(HOOKS_DIR))
 
-import session_start_doc_suggestion as session_start  # noqa: E402
+import session_start_doc_suggestion as session_start   # type: ignore
 
 
 class SessionStartHookTests(unittest.TestCase):
