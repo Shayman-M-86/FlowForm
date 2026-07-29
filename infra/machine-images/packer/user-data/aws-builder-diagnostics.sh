@@ -10,6 +10,20 @@ printf '\n=== FlowForm Packer boot diagnostics: %s ===\n' \
   "$(date --iso-8601=seconds)"
 
 printf '\n--- Systems Manager transport ---\n'
+if ! systemctl list-unit-files amazon-ssm-agent.service >/dev/null 2>&1; then
+  ssm_agent_rpm_url="https://s3.ap-southeast-2.amazonaws.com/amazon-ssm-ap-southeast-2/latest/linux_amd64/amazon-ssm-agent.rpm"
+  for attempt in 1 2 3; do
+    printf 'installing amazon-ssm-agent (attempt %s/3)\n' "${attempt}"
+    if yum install -y "${ssm_agent_rpm_url}"; then
+      systemctl daemon-reload
+      break
+    fi
+    if (( attempt < 3 )); then
+      sleep "$((attempt * 5))"
+    fi
+  done
+fi
+
 if systemctl list-unit-files amazon-ssm-agent.service >/dev/null 2>&1; then
   systemctl enable --now amazon-ssm-agent.service
   systemctl --no-pager --full status amazon-ssm-agent.service
