@@ -42,6 +42,39 @@ manifest_value() {
   jq -er "$1" "${SOURCE_MANIFEST}"
 }
 
+require_relative_manifest_path() {
+  local field="$1"
+  local value="$2"
+
+  [[ -n "${value}" && "${value}" != /* ]] \
+    || die "${field} must be a non-empty relative path: ${value}"
+  [[ ! "${value}" =~ (^|/)\.\.(/|$) ]] \
+    || die "${field} must not escape its declared root: ${value}"
+}
+
+build_context_path() {
+  local image_name="$1"
+  local context
+
+  context="$(manifest_value ".images.${image_name}.context")"
+  require_relative_manifest_path "${image_name} build context" "${context}"
+  [[ -d "${REPO_ROOT}/${context}" ]] \
+    || die "${image_name} build context not found: ${context}"
+  printf '%s\n' "${REPO_ROOT}/${context}"
+}
+
+build_dockerfile_path() {
+  local image_name="$1"
+  local context_path="$2"
+  local dockerfile
+
+  dockerfile="$(manifest_value ".images.${image_name}.dockerfile")"
+  require_relative_manifest_path "${image_name} Dockerfile" "${dockerfile}"
+  [[ -f "${context_path}/${dockerfile}" ]] \
+    || die "${image_name} Dockerfile not found in its build context: ${dockerfile}"
+  printf '%s\n' "${context_path}/${dockerfile}"
+}
+
 validate_source() {
   local image_name="$1"
   local source_json="$2"
@@ -101,19 +134,25 @@ validate_manifest() {
   ' "${SOURCE_MANIFEST}" >/dev/null \
     || die "source manifest structure or staging repository set is invalid"
 
-  local image_name kind dockerfile source_json reference index_digest
+  local image_name kind context_path dockerfile_path source_json reference
+  local index_digest dockerfile_reference
   for image_name in backend caddy squid alloy; do
     kind="$(manifest_value ".images.${image_name}.kind")"
     if [[ "${kind}" == "build" ]]; then
-      dockerfile="$(manifest_value ".images.${image_name}.dockerfile")"
-      [[ -f "${REPO_ROOT}/${dockerfile}" ]] \
-        || die "${image_name} Dockerfile not found: ${dockerfile}"
+      context_path="$(build_context_path "${image_name}")"
+      dockerfile_path="$(build_dockerfile_path "${image_name}" "${context_path}")"
       while IFS= read -r source_json; do
         validate_source "${image_name}" "${source_json}"
         reference="$(jq -er '.reference' <<<"${source_json}")"
         index_digest="$(jq -er '.index_digest' <<<"${source_json}")"
-        grep -Fq "${reference#docker.io/library/}@${index_digest}" "${REPO_ROOT}/${dockerfile}" \
-          || grep -Fq "${reference}@${index_digest}" "${REPO_ROOT}/${dockerfile}" \
+        dockerfile_reference="${reference}"
+        if [[ "${dockerfile_reference}" == docker.io/library/* ]]; then
+          dockerfile_reference="${dockerfile_reference#docker.io/library/}"
+        elif [[ "${dockerfile_reference}" == docker.io/* ]]; then
+          dockerfile_reference="${dockerfile_reference#docker.io/}"
+        fi
+        grep -Fq "${dockerfile_reference}@${index_digest}" "${dockerfile_path}" \
+          || grep -Fq "${reference}@${index_digest}" "${dockerfile_path}" \
           || die "${image_name} Dockerfile does not use declared source ${reference}@${index_digest}"
       done < <(jq -c ".images.${image_name}.sources[]" "${SOURCE_MANIFEST}")
     else
@@ -190,7 +229,8 @@ publish_images() {
 
   local account_id region platform release_sha tag registry caller_account
   local temp_dir image_name kind repository target metadata_file expected_digest
-  local actual_digest source_json source_ref dockerfile context entry
+  local actual_digest source_json source_ref dockerfile context
+  local context_path dockerfile_path entry
 
   account_id="$(manifest_value '.aws.account_id')"
   region="$(manifest_value '.aws.region')"
@@ -225,15 +265,17 @@ publish_images() {
     if [[ "${kind}" == "build" ]]; then
       dockerfile="$(manifest_value ".images.${image_name}.dockerfile")"
       context="$(manifest_value ".images.${image_name}.context")"
+      context_path="$(build_context_path "${image_name}")"
+      dockerfile_path="$(build_dockerfile_path "${image_name}" "${context_path}")"
       docker buildx build \
         --platform "${platform}" \
-        --file "${REPO_ROOT}/${dockerfile}" \
+        --file "${dockerfile_path}" \
         --tag "${target}" \
         --push \
         --provenance=false \
         --sbom=false \
         --metadata-file "${metadata_file}" \
-        "${REPO_ROOT}/${context}"
+        "${context_path}"
       expected_digest="$(metadata_digest "${kind}" "${metadata_file}")"
       entry="$(
         jq -n \
