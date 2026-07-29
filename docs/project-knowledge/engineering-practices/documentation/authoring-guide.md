@@ -10,6 +10,9 @@ tags: [meta]
 related_code:
   - "../../../../tools/docs/"
   - "../../../../AGENTS.md"
+  - "../../../../.agents/skills/commit/"
+  - "../../../../.claude/skills/commit/"
+  - "../../../../.claude/commands/commit.md"
 related_docs:
   - "Documentation practice"
   - "Documentation model"
@@ -82,6 +85,11 @@ The shared `flowform-doc-verification` skill handles user-directed verification
 of specific Project Knowledge pages. It presents a small candidate list, checks
 only obvious evidence, shows the selected document and findings for approval,
 and promotes it only after explicit approval.
+
+The explicit-only shared `commit` skill stages the current intended work,
+creates the local commit through `.githooks/pre-commit`, follows actionable
+OpenAPI and Docsys repair instructions, and retries without bypassing the hook.
+Claude exposes the same workflow as `/commit`; neither surface pushes changes.
 
 ## Evidence rules
 

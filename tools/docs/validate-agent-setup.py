@@ -16,6 +16,7 @@ import tomllib
 ROOT = Path(__file__).resolve().parents[2]
 SKILL_NAME = "flowform-doc-context"
 VERIFICATION_SKILL_NAME = "flowform-doc-verification"
+COMMIT_SKILL_NAME = "commit"
 AGENT_NAME = "docs-maintainer"
 
 
@@ -167,6 +168,77 @@ def validate() -> list[str]:
                 errors,
             )
 
+    commit_codex_path = (
+        ROOT / ".agents" / "skills" / COMMIT_SKILL_NAME / "SKILL.md"
+    )
+    commit_claude_path = (
+        ROOT / ".claude" / "skills" / COMMIT_SKILL_NAME / "SKILL.md"
+    )
+    for path in (commit_codex_path, commit_claude_path):
+        _require(
+            path.is_file(),
+            f"missing skill: {path.relative_to(ROOT)}",
+            errors,
+        )
+    if commit_codex_path.is_file() and commit_claude_path.is_file():
+        _require(
+            commit_codex_path.read_text() == commit_claude_path.read_text(),
+            "Codex and Claude commit skills differ",
+            errors,
+        )
+        try:
+            commit_metadata = _front_matter(commit_codex_path)
+        except ValueError as exc:
+            errors.append(str(exc))
+            commit_metadata = {}
+        _require(
+            commit_metadata.get("name") == COMMIT_SKILL_NAME,
+            f"skill name must be {COMMIT_SKILL_NAME!r}",
+            errors,
+        )
+        _require(
+            set(commit_metadata) == {"name", "description"},
+            "commit skill front matter must contain only name and description",
+            errors,
+        )
+
+    commit_openai_yaml = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / COMMIT_SKILL_NAME
+        / "agents"
+        / "openai.yaml"
+    )
+    _require(
+        commit_openai_yaml.is_file(),
+        "missing commit-skill openai.yaml",
+        errors,
+    )
+    if commit_openai_yaml.is_file():
+        openai_yaml = commit_openai_yaml.read_text()
+        for expected in (
+            "display_name:",
+            "short_description:",
+            f"${COMMIT_SKILL_NAME}",
+            "allow_implicit_invocation: false",
+        ):
+            _require(
+                expected in openai_yaml,
+                f"commit openai.yaml missing {expected!r}",
+                errors,
+            )
+
+    commit_command = ROOT / ".claude" / "commands" / "commit.md"
+    _require(commit_command.is_file(), "missing Claude /commit command", errors)
+    if commit_command.is_file():
+        command_text = commit_command.read_text()
+        _require(
+            ".claude/skills/commit/SKILL.md" in command_text,
+            "Claude /commit command does not invoke the shared commit skill",
+            errors,
+        )
+
     codex_agent_path = ROOT / ".codex" / "agents" / f"{AGENT_NAME}.toml"
     claude_agent_path = ROOT / ".claude" / "agents" / f"{AGENT_NAME}.md"
     _require(codex_agent_path.is_file(), "missing Codex docs-maintainer", errors)
@@ -289,8 +361,9 @@ def main() -> int:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
     print(
-        "agent documentation setup valid: shared skills, documentation maintainers, "
-        "matching flowform-docs MCP configuration, and shared hooks"
+        "agent setup valid: shared context, verification, and commit skills; "
+        "documentation maintainers; matching flowform-docs MCP configuration; "
+        "and shared hooks"
     )
     return 0
 

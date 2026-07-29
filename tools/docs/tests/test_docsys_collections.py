@@ -17,7 +17,7 @@ from docsys.evidence import (
 )
 from docsys.impact import detect_impact
 from docsys.freshness import CURRENT, Freshness
-from docsys.debt import analyse, build_report, measure
+from docsys.debt import _DEFAULT_POLICY, analyse, build_report, measure
 from docsys.model import ROOT, DocSet, resolve_docs_root
 from docsys.validate import all_findings
 
@@ -314,6 +314,15 @@ class CollectionModelTests(unittest.TestCase):
         claude_verification_skill = (
             ROOT / ".claude/skills/flowform-doc-verification/SKILL.md"
         ).read_text()
+        codex_commit_skill = (
+            ROOT / ".agents/skills/commit/SKILL.md"
+        ).read_text()
+        claude_commit_skill = (
+            ROOT / ".claude/skills/commit/SKILL.md"
+        ).read_text()
+        claude_commit_command = (
+            ROOT / ".claude/commands/commit.md"
+        ).read_text()
         codex_agent = tomllib.loads(
             (ROOT / ".codex/agents/docs-maintainer.toml").read_text()
         )
@@ -323,6 +332,11 @@ class CollectionModelTests(unittest.TestCase):
 
         self.assertEqual(codex_skill, claude_skill)
         self.assertEqual(codex_verification_skill, claude_verification_skill)
+        self.assertEqual(codex_commit_skill, claude_commit_skill)
+        self.assertIn(
+            ".claude/skills/commit/SKILL.md",
+            claude_commit_command,
+        )
         self.assertEqual(codex_agent["name"], "docs-maintainer")
         self.assertEqual(codex_agent["model"], "gpt-5.6-terra")
         self.assertIn("name: docs-maintainer", claude_agent)
@@ -534,6 +548,53 @@ class CollectionModelTests(unittest.TestCase):
                     "large-overview/large-overview-index.md"
                 )
             )
+
+    def test_debt_defaults_to_project_knowledge(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "docs"
+            project = docs_root / "project-knowledge"
+            workspace = docs_root / "development-workspace"
+            project.mkdir(parents=True)
+            workspace.mkdir()
+            (docs_root / "docs-index.md").write_text(_document("Root"))
+            (project / "project-knowledge-index.md").write_text(
+                _document("Project Knowledge")
+            )
+            (workspace / "development-workspace-index.md").write_text(
+                _document("Development workspace", authority="working")
+            )
+            docset = DocSet.load(docs_root)
+
+            default_report = build_report(docset)
+            self.assertEqual(default_report["document_count"], 1)
+            self.assertEqual(
+                default_report["documents"][0]["metrics"]["collection"],
+                "project-knowledge",
+            )
+
+            root_arg = docs_root.relative_to(ROOT).as_posix()
+            mcp_report = mcp_server._tool_debt({"docs_root": root_arg})
+            self.assertEqual(mcp_report["document_count"], 1)
+            explicit_workspace = mcp_server._tool_debt(
+                {
+                    "docs_root": root_arg,
+                    "collection": "development-workspace",
+                }
+            )
+            self.assertEqual(explicit_workspace["document_count"], 1)
+
+    def test_default_debt_policy_remains_moderately_strict(self) -> None:
+        self.assertEqual(
+            _DEFAULT_POLICY,
+            {
+                "max_words": 1600,
+                "max_major_sections": 6,
+                "large_section_words": 300,
+                "large_section_count": 2,
+                "max_code_ratio": 0.4,
+                "max_code_roots": 4,
+            },
+        )
 
     def test_workspace_optional_metadata_stays_advisory_in_ci(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:

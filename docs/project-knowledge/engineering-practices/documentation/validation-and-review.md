@@ -194,12 +194,15 @@ For each completed group, check:
 ## Debt is advisory
 
 `docsys debt` separately reports maintainability pressure and split candidates.
-A debt finding requires several independent signals before it fires, and it is
-downgraded to information for unverified workspace documents. Debt findings
-identify where a document may contain several independently maintainable topics;
-they do not establish that a document is incorrect and never make an otherwise
-valid document fail validation. Split a document only after debt analysis
-confirms several independently useful topics are present.
+It analyses Project Knowledge by default. Development Workspace plans,
+investigations, migrations, and historical material are excluded because
+growth and provisional complexity are normal there; use an explicit
+`--collection development-workspace` only for a deliberate diagnostic. A debt
+finding requires several independent signals before it fires. Findings identify
+where a document may contain several independently maintainable topics; they do
+not establish that a document is incorrect and never make an otherwise valid
+document fail validation. Split a document only after debt analysis confirms
+several independently useful topics are present.
 
 ## Related documents
 
