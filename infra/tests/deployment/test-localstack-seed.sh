@@ -107,6 +107,19 @@ done < <(jq -r '
   | "/flowform/nonprod/\($group.path)/\(.)"
 ' "${CONTRACT}")
 
+# Image references are deployment/release inputs, not runtime SSM parameters.
+for obsolete_name in \
+  /flowform/nonprod/backend/BACKEND_IMAGE \
+  /flowform/nonprod/backend/ALLOY_IMAGE \
+  /flowform/nonprod/proxy/CADDY_IMAGE \
+  /flowform/nonprod/proxy/SQUID_IMAGE \
+  /flowform/nonprod/proxy/ALLOY_IMAGE; do
+  if grep -F -- "--name ${obsolete_name} " "${AWS_CALL_LOG}" >/dev/null; then
+    printf 'boot seed unexpectedly wrote image parameter: %s\n' "${obsolete_name}" >&2
+    exit 1
+  fi
+done
+
 # Boot seeding is secret-free. Managed secrets arrive later via `rehearsal sync`.
 if grep -F 'secretsmanager ' "${AWS_CALL_LOG}" >/dev/null; then
   printf 'boot seed unexpectedly called Secrets Manager\n' >&2; exit 1
@@ -176,6 +189,11 @@ grep -F 'RESULT: FAIL — stopped during ${BUILD_CURRENT_STEP}' "${BUILD_COMMAND
 grep -F 'RESULT: PASS — rehearsal build and verification completed' "${BUILD_COMMAND}" >/dev/null
 grep -F 'failed check: ${failed_check}' \
   "${VERIFY_COMMAND}" >/dev/null
+grep -F '/flowform/nonprod/backend/FLOWFORM_LOGGING_LEVEL' "${VERIFY_COMMAND}" >/dev/null
+if grep -F '/flowform/nonprod/backend/BACKEND_IMAGE' "${VERIFY_COMMAND}" >/dev/null; then
+  printf 'verification still probes the obsolete backend image parameter\n' >&2
+  exit 1
+fi
 grep -E 'DATABASE_CORE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'DATABASE_RESPONSE_HOST += "10.10.10.40"' "${PROXMOX_VARIABLES}" >/dev/null
 grep -E 'FLOWFORM_EMAIL_FROM_ADDRESS += "no-reply@flow-form.com.au"' "${PROXMOX_VARIABLES}" >/dev/null
@@ -195,10 +213,23 @@ grep -F 'registry.localstack.test:10.10.10.30' "${PROXY_OVERRIDE}" >/dev/null \
   || { printf 'proxy override missing registry.localstack.test extra_hosts\n' >&2; exit 1; }
 grep -F 'registry.localstack.test' "${TLS_SHIM_CADDYFILE}" >/dev/null \
   || { printf 'tls-shim Caddyfile missing the registry site block\n' >&2; exit 1; }
-grep -E 'BACKEND_IMAGE += "registry.localstack.test/flowform-backend:rehearsal"' "${PROXMOX_VARIABLES}" >/dev/null \
-  || { printf 'variables.tf BACKEND_IMAGE not the registry.localstack.test ref\n' >&2; exit 1; }
+if grep -Eq '^[[:space:]]+(BACKEND_IMAGE|BACKEND_ALLOY_IMAGE|CADDY_IMAGE|PROXY_ALLOY_IMAGE|SQUID_IMAGE)[[:space:]]+=' \
+  "${PROXMOX_VARIABLES}"; then
+  printf 'variables.tf still seeds image references into LocalStack\n' >&2
+  exit 1
+fi
 grep -F 'BACKEND_IMAGE=registry.localstack.test/flowform-backend:rehearsal' "${APP_CLOUD_INIT}" >/dev/null \
   || { printf 'app cloud-init BACKEND_IMAGE not the registry.localstack.test ref\n' >&2; exit 1; }
+grep -F 'ALLOY_IMAGE=registry.localstack.test/grafana/alloy:v1.18.0' "${APP_CLOUD_INIT}" >/dev/null \
+  || { printf 'app cloud-init ALLOY_IMAGE not the registry.localstack.test ref\n' >&2; exit 1; }
+grep -F 'CADDY_IMAGE=caddy:2-alpine' "${PROXY_CLOUD_INIT}" >/dev/null \
+  || { printf 'proxy cloud-init does not supply CADDY_IMAGE\n' >&2; exit 1; }
+grep -F 'SQUID_IMAGE=ubuntu/squid:6.6-24.04_edge@sha256:94f844158e12b52f51b4ae996515e37e8fb3e8d85e1c86caba1a297376e4ec4f' \
+  "${PROXY_CLOUD_INIT}" >/dev/null \
+  || { printf 'proxy cloud-init does not supply SQUID_IMAGE\n' >&2; exit 1; }
+grep -F 'ALLOY_IMAGE=grafana/alloy:v1.18.0@sha256:eb21f4c0858edffcdd1b385910ddeef26f692fc2c282f61baa724fc09d274a17' \
+  "${PROXY_CLOUD_INIT}" >/dev/null \
+  || { printf 'proxy cloud-init does not supply ALLOY_IMAGE\n' >&2; exit 1; }
 grep -F '/etc/docker/certs.d/registry.localstack.test/ca.crt' "${APP_CLOUD_INIT}" >/dev/null \
   || { printf 'app cloud-init missing the registry certs.d trust anchor\n' >&2; exit 1; }
 # No insecure-registries anywhere: dockerd validates the shim's TLS.

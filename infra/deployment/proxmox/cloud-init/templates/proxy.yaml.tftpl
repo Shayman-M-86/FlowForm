@@ -124,8 +124,11 @@ write_files:
       PROXY_PRIVATE_IP=10.10.10.10
       APP_PRIVATE_IP=10.10.10.20
       DB_BOOTSTRAP_PRIVATE_IP=10.10.10.40
-      # proxy stack image + public API host (else must come from SSM)
+      # proxy stack images are release inputs supplied by this deployment
+      # caller; public API host may still come from SSM.
       CADDY_IMAGE=caddy:2-alpine
+      SQUID_IMAGE=ubuntu/squid:6.6-24.04_edge@sha256:94f844158e12b52f51b4ae996515e37e8fb3e8d85e1c86caba1a297376e4ec4f
+      ALLOY_IMAGE=grafana/alloy:v1.18.0@sha256:eb21f4c0858edffcdd1b385910ddeef26f692fc2c282f61baa724fc09d274a17
       API_DOMAIN=api.localstack.test
       # run the shared proxy Compose base PLUS the rehearsal override, each
       # as its own -f (bootstrap-proxy.sh assembles them). docker compose resolves

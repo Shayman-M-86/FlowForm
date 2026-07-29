@@ -166,7 +166,7 @@ class ProxyStack(RoleHostStack):
         assert env_config.public_site_domain is not None
 
         values = {
-            "runtime_environment": "prod",
+            "runtime_environment": env_config.env_name,
             "api_domain": f"api.{env_config.public_site_domain}",
             "grafana_cloud_loki_url": runtime_public.grafana_cloud_loki_url,
             "grafana_cloud_loki_user": runtime_public.grafana_cloud_loki_user,

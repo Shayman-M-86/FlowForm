@@ -375,7 +375,7 @@ class TracingSettings(BaseModel):
 class FlowForm(BaseModel):
     """Top-level application settings loaded from environment variables."""
 
-    env: Literal["dev", "test", "prod"]
+    env: Literal["dev", "test", "staging", "prod"]
     app: AppSettings
     auth0: Auth0Settings
     server: ServerSettings = Field(default_factory=ServerSettings)
@@ -395,24 +395,28 @@ class FlowForm(BaseModel):
 
         mgmt = self.auth0.mgmt
         if mgmt is None or not mgmt.secret_file:
-            raise ValueError("FLOWFORM_AUTH0_MGMT_SECRET_FILE is required when FLOWFORM_ENV is dev or prod")
+            raise ValueError("FLOWFORM_AUTH0_MGMT_SECRET_FILE is required outside tests")
         if not mgmt.validate_on_startup:
-            raise ValueError("FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP must be true when FLOWFORM_ENV is dev or prod")
+            raise ValueError("FLOWFORM_AUTH0_MGMT_VALIDATE_ON_STARTUP must be true outside tests")
 
         return self
 
     @model_validator(mode="after")
     def validate_cors_settings(self) -> FlowForm:
-        """Fail closed for production browser-origin settings."""
-        if self.env != "prod":
+        """Fail closed for browser-origin settings in deployed environments."""
+        if self.env not in {"staging", "prod"}:
             return self
 
         if not self.cors.origins:
             raise ValueError(
-                "FLOWFORM_CORS_ORIGINS must contain at least one explicit origin when FLOWFORM_ENV is prod"
+                "FLOWFORM_CORS_ORIGINS must contain at least one explicit origin "
+                "when FLOWFORM_ENV is staging or prod"
             )
         if self.cors.supports_credentials and "*" in self.cors.origins:
-            raise ValueError("FLOWFORM_CORS_ORIGINS must not contain '*' when credentials are enabled in production")
+            raise ValueError(
+                "FLOWFORM_CORS_ORIGINS must not contain '*' when credentials are "
+                "enabled in staging or production"
+            )
         return self
 
 
@@ -484,13 +488,13 @@ def get_settings() -> Settings:
 
     if env is None:
         raise ConfigError(
-            "FLOWFORM_ENV is required and must be one of: dev, test, prod. "
+            "FLOWFORM_ENV is required and must be one of: dev, test, staging, prod. "
             "This should be provided by the container environment."
         )
 
     env = env.lower()
-    if env not in {"dev", "test", "prod"}:
-        raise ConfigError("FLOWFORM_ENV must be one of: dev, test, prod")
+    if env not in {"dev", "test", "staging", "prod"}:
+        raise ConfigError("FLOWFORM_ENV must be one of: dev, test, staging, prod")
 
     logger.info("Loading settings for env=%s from environment variables", env)
 

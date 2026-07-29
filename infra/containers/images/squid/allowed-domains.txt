@@ -7,6 +7,8 @@ dev-3wccg4jx4o5wvedn.au.auth0.com
 secretsmanager.ap-southeast-2.amazonaws.com
 kms.ap-southeast-2.amazonaws.com
 ssm.ap-southeast-2.amazonaws.com
+ssmmessages.ap-southeast-2.amazonaws.com
+ec2messages.ap-southeast-2.amazonaws.com
 email.ap-southeast-2.amazonaws.com
 api.ecr.ap-southeast-2.amazonaws.com
 908123139858.dkr.ecr.ap-southeast-2.amazonaws.com

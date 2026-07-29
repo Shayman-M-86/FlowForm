@@ -27,6 +27,7 @@ DEVELOPMENT_COMPOSE="${RUNTIME_ROOT}/development/compose/compose.yml"
 REHEARSAL_ROOT="${RUNTIME_ROOT}/proxmox/rehearsal"
 REHEARSAL_PROXY="${REHEARSAL_ROOT}/compose/proxy.override.yml"
 MANIFEST="${REPO_ROOT}/infra/contracts/image-sources.json"
+RUNTIME_PARAMETERS="${REPO_ROOT}/infra/contracts/runtime-parameters.json"
 
 for file in \
   "${BACKEND}" \
@@ -46,7 +47,8 @@ for file in \
   "${LOAD_RELEASE_MANIFEST}" \
   "${RUN_ROLE}" \
   "${REHEARSAL_PROXY}" \
-  "${MANIFEST}"; do
+  "${MANIFEST}" \
+  "${RUNTIME_PARAMETERS}"; do
   require_file "${file}"
 done
 
@@ -81,6 +83,10 @@ grep -Eq '^COPY --from=ghcr\.io/astral-sh/uv:0\.11\.31@sha256:[0-9a-f]{64} ' "${
   || note "Backend uv source is not immutable"
 grep -Fq 'CMD ["python", "/app/scripts/healthcheck.py"]' "${BACKEND}" \
   || note "Backend image does not own its health probe"
+grep -Fq 'https://truststore.pki.rds.amazonaws.com/ap-southeast-2/ap-southeast-2-bundle.pem' \
+  "${BACKEND}" || note "Backend image does not install the regional RDS CA bundle"
+grep -Fq 'sha256:d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b' \
+  "${BACKEND}" || note "Backend RDS CA bundle is not checksum-pinned"
 grep -Fq 'dockerfile: infra/containers/images/backend/Dockerfile' \
   "${DEVELOPMENT_COMPOSE}" \
   || note "development no longer builds the canonical Backend Dockerfile"
@@ -99,6 +105,8 @@ grep -Fq 'COPY Caddyfile /etc/caddy/Caddyfile' "${CADDY_DIR}/Dockerfile" \
   || note "Caddy image does not embed its production Caddyfile"
 grep -Fq $'\t\tdns route53' "${CADDY_DIR}/Caddyfile" \
   || note "production Caddyfile does not use Route 53 DNS-01"
+grep -Fq $'\t\tpropagation_delay 60s' "${CADDY_DIR}/Caddyfile" \
+  || note "production Caddyfile does not wait for Route 53 propagation"
 grep -Fq 'reverse_proxy http://{$APP_UPSTREAM_HOST}:5000' "${CADDY_DIR}/Caddyfile" \
   || note "Caddy does not use the stable app upstream host contract"
 
@@ -129,8 +137,20 @@ grep -Fq 'COPY allowed-domains.txt /etc/squid/allowed-domains.txt' \
   "${SQUID_DIR}/Dockerfile" || note "Squid image does not embed its AWS allow-list"
 grep -Fq 'squid -k parse -f "${rendered}"' "${SQUID_DIR}/entrypoint.sh" \
   || note "Squid startup does not validate rendered configuration"
+grep -Fq "'touch /var/log/squid/access.log' proxy" "${SQUID_DIR}/entrypoint.sh" \
+  || note "Squid entrypoint does not create its access log as the proxy user"
+if grep -Fq 'chown proxy:proxy /var/log/squid/access.log' "${SQUID_DIR}/entrypoint.sh"; then
+  note "Squid entrypoint still requires the dropped CHOWN capability"
+fi
 grep -Fq 'access_log stdio:/var/log/squid/access.log flowform_access' \
   "${SQUID_DIR}/squid.conf.template" || note "Squid access logging contract changed"
+for ssm_host in \
+  ssm.ap-southeast-2.amazonaws.com \
+  ssmmessages.ap-southeast-2.amazonaws.com \
+  ec2messages.ap-southeast-2.amazonaws.com; do
+  grep -Fxq "${ssm_host}" "${SQUID_DIR}/allowed-domains.txt" \
+    || note "Squid AWS allow-list is missing ${ssm_host}"
+done
 
 # Alloy owns both role configs and selects exactly one at runtime.
 grep -Fq 'COPY config/app.alloy /etc/flowform/alloy/app.alloy' \
@@ -175,6 +195,23 @@ jq -e '
   and .images.alloy.context == "infra/containers/images/alloy"
   and .images.alloy.dockerfile == "Dockerfile"
 ' "${MANIFEST}" >/dev/null || note "image source contract does not target canonical build contexts"
+
+# Role release manifests are the sole AWS source of immutable image references.
+# Runtime configuration must not reintroduce per-image SSM parameters that
+# render duplicate assignments into app.env or proxy.env.
+jq -e '
+  [
+    .runtime_groups.backend.parameters[].name,
+    .runtime_groups.proxy.parameters[].name
+  ]
+  | all(
+      . != "BACKEND_IMAGE"
+      and . != "CADDY_IMAGE"
+      and . != "SQUID_IMAGE"
+      and . != "ALLOY_IMAGE"
+    )
+' "${RUNTIME_PARAMETERS}" >/dev/null \
+  || note "runtime parameter contract still owns role release image references"
 
 if (( FAIL == 0 )); then
   printf '[test-container-invariants] PASS\n'

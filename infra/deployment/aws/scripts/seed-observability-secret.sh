@@ -31,8 +31,48 @@ usage() {
 Usage: seed-observability-secret.sh [--environment staging|prod] [--apply]
 
 Dry-run is the default. Supply the token with GRAFANA_CLOUD_TOKEN_FILE
-(preferred) or GRAFANA_CLOUD_TOKEN. Use --apply to write a new secret version.
+(preferred) or GRAFANA_CLOUD_TOKEN. The file may contain either the token alone
+or one GRAFANA_CLOUD_TOKEN=... dotenv assignment. Use --apply to write a new
+secret version.
 EOF
+}
+
+read_grafana_token_file() {
+  local token_file="$1"
+  local line
+  local token_value
+  local -a meaningful_lines=()
+
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="${line%$'\r'}"
+    [[ "${line}" =~ ^[[:space:]]*$ ]] && continue
+    [[ "${line}" =~ ^[[:space:]]*# ]] && continue
+    meaningful_lines+=("${line}")
+  done <"${token_file}"
+
+  [[ "${#meaningful_lines[@]}" -eq 1 ]] \
+    || die "Grafana token file must contain one token or one GRAFANA_CLOUD_TOKEN assignment"
+
+  token_value="${meaningful_lines[0]}"
+  if [[ "${token_value}" == GRAFANA_CLOUD_TOKEN=* ]]; then
+    token_value="${token_value#GRAFANA_CLOUD_TOKEN=}"
+    if [[ "${token_value}" == \"* || "${token_value}" == \'* ]]; then
+      if [[ "${token_value}" == \"*\" ]]; then
+        token_value="${token_value:1:${#token_value}-2}"
+      elif [[ "${token_value}" == \'*\' ]]; then
+        token_value="${token_value:1:${#token_value}-2}"
+      else
+        die "Grafana token assignment has mismatched quotes"
+      fi
+    fi
+  elif [[ "${token_value}" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+    die "Grafana token file contains an unexpected dotenv variable"
+  fi
+
+  [[ -n "${token_value}" ]] || die "Grafana Cloud token is empty"
+  [[ "${token_value}" != *[[:space:]]* ]] \
+    || die "Grafana Cloud token contains whitespace"
+  printf '%s' "${token_value}"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -74,11 +114,13 @@ command -v python3 >/dev/null 2>&1 || die "required command is unavailable: pyth
 if [[ -n "${GRAFANA_CLOUD_TOKEN_FILE:-}" ]]; then
   [[ -f "${GRAFANA_CLOUD_TOKEN_FILE}" ]] \
     || die "GRAFANA_CLOUD_TOKEN_FILE does not name a readable file"
-  GRAFANA_TOKEN="$(<"${GRAFANA_CLOUD_TOKEN_FILE}")"
+  GRAFANA_TOKEN="$(read_grafana_token_file "${GRAFANA_CLOUD_TOKEN_FILE}")"
 else
   GRAFANA_TOKEN="${GRAFANA_CLOUD_TOKEN:-}"
 fi
 [[ -n "${GRAFANA_TOKEN}" ]] || die "Grafana Cloud token is empty"
+[[ "${GRAFANA_TOKEN}" != *[[:space:]]* ]] \
+  || die "Grafana Cloud token contains whitespace"
 
 CALLER_ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
 [[ "${CALLER_ACCOUNT}" == "${EXPECTED_AWS_ACCOUNT_ID}" ]] \

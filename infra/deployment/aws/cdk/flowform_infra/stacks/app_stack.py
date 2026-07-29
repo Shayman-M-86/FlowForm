@@ -94,7 +94,7 @@ class AppStack(RoleHostStack):
         assert env_config.public_site_domain is not None
 
         values: dict[str, str] = {
-            "runtime_environment": "prod",
+            "runtime_environment": env_config.env_name,
             "logging_json": "true",
             "logging_level": "INFO",
             "tracing_enabled": "true",

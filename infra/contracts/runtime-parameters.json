@@ -47,14 +47,6 @@
           "name": "FLOWFORM_CORS_SUPPORTS_CREDENTIALS",
           "seed_value_key": "FLOWFORM_CORS_SUPPORTS_CREDENTIALS"
         },
-        "backend_image": {
-          "name": "BACKEND_IMAGE",
-          "seed_value_key": "BACKEND_IMAGE"
-        },
-        "alloy_image": {
-          "name": "ALLOY_IMAGE",
-          "seed_value_key": "BACKEND_ALLOY_IMAGE"
-        },
         "auth0_domain": {
           "name": "FLOWFORM_AUTH0_DOMAIN",
           "seed_value_key": "FLOWFORM_AUTH0_DOMAIN"
@@ -130,18 +122,6 @@
     "proxy": {
       "path": "proxy",
       "parameters": {
-        "caddy_image": {
-          "name": "CADDY_IMAGE",
-          "seed_value_key": "CADDY_IMAGE"
-        },
-        "squid_image": {
-          "name": "SQUID_IMAGE",
-          "seed_value_key": "SQUID_IMAGE"
-        },
-        "alloy_image": {
-          "name": "ALLOY_IMAGE",
-          "seed_value_key": "PROXY_ALLOY_IMAGE"
-        },
         "api_domain": {
           "name": "API_DOMAIN",
           "seed_value_key": "API_DOMAIN"

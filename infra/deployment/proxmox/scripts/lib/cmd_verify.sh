@@ -162,7 +162,7 @@ cmd_verify_main() {
   log "generating egress traffic from the app VM..."
   guest_ssh "${APP_IP}" '
     set -a; . /etc/flowform/bootstrap-app.env 2>/dev/null || true; set +a
-    timeout 10 aws --cli-connect-timeout 4 --cli-read-timeout 6 --endpoint-url https://ssm.localstack.test ssm get-parameter --name /flowform/nonprod/backend/BACKEND_IMAGE >/dev/null 2>&1 || true
+    timeout 10 aws --cli-connect-timeout 4 --cli-read-timeout 6 --endpoint-url https://ssm.localstack.test ssm get-parameter --name /flowform/nonprod/backend/FLOWFORM_LOGGING_LEVEL >/dev/null 2>&1 || true
     timeout 10 aws --cli-connect-timeout 4 --cli-read-timeout 6 --endpoint-url https://secretsmanager.localstack.test secretsmanager list-secrets >/dev/null 2>&1 || true
     curl -fsS --connect-timeout 4 --max-time 8 --proxy '"${SQUID_PROXY_URL}"' https://kms.localstack.test/_localstack/health >/dev/null 2>&1 || true
     curl -fsS --connect-timeout 4 --max-time 8 --proxy '"${SQUID_PROXY_URL}"' https://registry.localstack.test/v2/ >/dev/null 2>&1 || true

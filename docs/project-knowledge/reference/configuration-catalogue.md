@@ -4,8 +4,8 @@ aliases: ["Configuration catalogue"]
 document_type: reference
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:2273687d6f2fc4202bbda646c88fadd823c28644125a556fe60b033c2067603a
-last_edited: 2026-07-28
+verified_evidence_digest: sha256:bac5d454acea38b465faa5c4a3303499bd66636f81a22235eebc6a882e00a2c9
+last_edited: 2026-07-29
 tags: [configuration]
 related_code: ["../../../backend/app/core/config.py", "../../../backend/gunicorn.conf.py", "../../../frontend/", "../../../infra/", "../../../.github/workflows/", "../../../.vscode/"]
 related_docs: ["Environment variables", "Configuration implementation", "Secrets and configuration", "Configuration index"]
@@ -24,10 +24,10 @@ examples define file shape only and local/generated copies are not canonical.
 | Repository automation and tooling | `.github/workflows/`, `.githooks/`, `.vscode/`, `.claude/`, `.codex/`, `.mcp.json` |
 | Backend settings and tooling | `backend/app/core/config.py`, `backend/gunicorn.conf.py`, `backend/pyproject.toml` |
 | Frontend workspace and applications | `frontend/package.json`, workspace/package/app configuration |
-| Development/test containers | `infra/containers/strategies/dev/compose/` |
-| Runtime and rehearsal containers | `infra/containers/runtime/`, `infra/containers/strategies/` |
+| Development/test containers | `infra/containers/runtime/development/compose/` |
+| Runtime and rehearsal containers | `infra/containers/runtime/`, `infra/containers/images/` |
 | Environment and database setup | `infra/env/`, `infra/database/` |
-| AWS, Proxmox, and image builds | `infra/deployment/`, `infra/images/` |
+| AWS, Proxmox, and image builds | `infra/deployment/`, `infra/machine-images/` |
 | MCP tools | `tools/mcp/` and `.mcp.json` |
 
 Before adding a setting, identify the reader and delivery path. Do not place
