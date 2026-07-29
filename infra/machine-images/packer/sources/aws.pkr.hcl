@@ -17,6 +17,7 @@ source "amazon-ebs" "amazon_linux_2023_base" {
   subnet_id                                 = var.aws_subnet_id != "" ? var.aws_subnet_id : null
   security_group_id                         = var.aws_security_group_id != "" ? var.aws_security_group_id : null
   temporary_security_group_source_public_ip = true
+  user_data_file                            = "${var.image_root}/packer/user-data/aws-builder-diagnostics.sh"
   iam_instance_profile                      = var.aws_iam_instance_profile != "" ? var.aws_iam_instance_profile : null
   associate_public_ip_address               = var.aws_subnet_id == "" ? true : null
   ami_name                                  = "${var.aws_ami_name_prefix}-${local.build_timestamp}"
@@ -44,6 +45,7 @@ source "amazon-ebs" "flowform_role" {
   subnet_id                                 = var.aws_subnet_id != "" ? var.aws_subnet_id : null
   security_group_id                         = var.aws_security_group_id != "" ? var.aws_security_group_id : null
   temporary_security_group_source_public_ip = true
+  user_data_file                            = "${var.image_root}/packer/user-data/aws-builder-diagnostics.sh"
   iam_instance_profile                      = var.aws_iam_instance_profile != "" ? var.aws_iam_instance_profile : null
   associate_public_ip_address               = var.aws_subnet_id == "" ? true : null
   ami_name                                  = "flowform-${var.image_role}-al2023-${local.build_timestamp}"

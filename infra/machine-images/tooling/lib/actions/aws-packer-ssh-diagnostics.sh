@@ -2,15 +2,22 @@
 set -Eeuo pipefail
 
 usage() {
-  printf 'Usage: aws-packer-ssh-diagnostics.sh REGION SOURCE_COMMIT REPORT_PATH\n'
+  printf 'Usage: aws-packer-ssh-diagnostics.sh REGION SOURCE_COMMIT IMAGE_ROLE REPORT_PATH\n'
 }
 
-[[ $# == 3 ]] || { usage >&2; exit 2; }
+[[ $# == 4 ]] || { usage >&2; exit 2; }
 region="$1"
 source_commit="$2"
-report_path="$3"
+image_role="$3"
+report_path="$4"
+[[ "${image_role}" =~ ^(base|app|proxy)$ ]] || {
+  printf 'invalid image role: %s\n' "${image_role}" >&2
+  exit 2
+}
 
-exec >>"${report_path}" 2>&1
+# Keep the complete 0600 report while making the same timestamped diagnostic
+# stream visible beside Packer's own output.
+exec > >(tee -a "${report_path}") 2>&1
 
 diagnostic_log() {
   printf '%s | %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
@@ -21,16 +28,26 @@ public_ip=""
 security_group_id=""
 subnet_id=""
 vpc_id=""
+console_fingerprint=""
+ssh_handshake_recorded=0
 
 capture_console_output() {
   [[ -n "${instance_id}" ]] || return
-  diagnostic_log "latest EC2 console output"
-  aws ec2 get-console-output \
+  local output fingerprint
+  output="$(
+    aws ec2 get-console-output \
     --instance-id "${instance_id}" \
     --region "${region}" \
     --latest \
     --query Output \
     --output text 2>&1 || true
+  )"
+  [[ -n "${output}" && "${output}" != None ]] || return
+  fingerprint="$(printf '%s' "${output}" | cksum)"
+  [[ "${fingerprint}" != "${console_fingerprint}" ]] || return
+  console_fingerprint="${fingerprint}"
+  diagnostic_log "EC2 serial-console output changed"
+  printf '%s\n' "${output}"
 }
 
 finish() {
@@ -41,7 +58,8 @@ finish() {
 }
 trap finish EXIT INT TERM
 
-diagnostic_log "waiting for active Packer builder tagged source_commit=${source_commit}"
+diagnostic_log \
+  "waiting for active Packer builder tagged source_commit=${source_commit} image_role=${image_role}"
 for _ in {1..90}; do
   record="$(
     aws ec2 describe-instances \
@@ -49,6 +67,7 @@ for _ in {1..90}; do
       --filters \
         "Name=tag:managed_by,Values=packer" \
         "Name=tag:source_commit,Values=${source_commit}" \
+        "Name=tag:image_role,Values=${image_role}" \
         "Name=instance-state-name,Values=pending,running" \
       --query \
         'sort_by(Reservations[].Instances[], &LaunchTime)[-1].[InstanceId,PublicIpAddress,LaunchTime,SecurityGroups[0].GroupId,SubnetId,VpcId]' \
@@ -98,7 +117,7 @@ aws ec2 describe-network-acls \
   --query 'NetworkAcls[].{Id:NetworkAclId,Entries:Entries}' \
   --output json 2>&1 || true
 
-for attempt in {1..30}; do
+for attempt in {1..90}; do
   status="$(
     aws ec2 describe-instance-status \
       --instance-ids "${instance_id}" \
@@ -109,16 +128,20 @@ for attempt in {1..30}; do
       --output text 2>/dev/null || true
   )"
   diagnostic_log "attempt=${attempt} EC2 state/status=${status:-unavailable}"
+  capture_console_output
 
-  if nc -z -w 5 "${public_ip}" 22 >/dev/null 2>&1; then
+  if nc -z -w 3 "${public_ip}" 22 >/dev/null 2>&1; then
     diagnostic_log "TCP/22 reachable from this workstation"
-    diagnostic_log "SSH host-key handshake"
-    ssh-keyscan -T 5 "${public_ip}" 2>&1 || true
-    exit 0
+    if (( ssh_handshake_recorded == 0 )); then
+      diagnostic_log "SSH host-key handshake"
+      ssh-keyscan -T 5 "${public_ip}" 2>&1 || true
+      ssh_handshake_recorded=1
+    fi
+  else
+    diagnostic_log "TCP/22 timed out or was refused from this workstation"
   fi
 
-  diagnostic_log "TCP/22 timed out or was refused from this workstation"
-  sleep 10
+  sleep 7
 done
 
-diagnostic_log "TCP/22 remained unavailable for five minutes"
+diagnostic_log "diagnostic monitor reached its fifteen-minute limit"
