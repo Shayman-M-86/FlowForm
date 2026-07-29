@@ -75,6 +75,8 @@ grep -Fq 'default = 10' "${image_root}/packer/variables/aws.pkr.hcl"
   "${image_root}/packer/sources/aws.pkr.hcl")" == 2 ]]
 [[ "$(grep -Fc 'http_tokens                 = "required"' \
   "${image_root}/packer/sources/aws.pkr.hcl")" == 2 ]]
+grep -Fq 'amazon-ssm-ap-southeast-2/latest/linux_amd64/amazon-ssm-agent.rpm' \
+  "${image_root}/packer/user-data/aws-builder-diagnostics.sh"
 ! grep -Fq 'temporary_security_group_source_public_ip' \
   "${image_root}/packer/sources/aws.pkr.hcl"
 grep -Fq '_image_build_proxmox_target golden' "${image_root}/tooling/lib/cmd_build.sh"
