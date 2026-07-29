@@ -1,13 +1,14 @@
 // FlowForm app-box observability agent (Grafana Alloy).
 //
-// Ships backend logs and traces off the private app host. The app host does not
-// talk to Grafana directly; it forwards logs to the proxy Alloy gateway on
-// :3500 and OTLP traces on :4317 over the private network.
+// Ships backend logs, host journal records, and traces off the private app host.
+// The app host does not talk to Grafana directly; it forwards logs to the proxy
+// Alloy gateway on :3500 and OTLP traces on :4317 over the private network.
 //
 // The backend emits one JSON object per log record (FLOWFORM_LOGGING_LOG_JSON=
-// true; see backend/app/logging/logging_config.py JsonFormatter). We parse that
-// here so Grafana shows the human message and a few low-cardinality labels, and
-// keep high-cardinality context (request_id, user_id, ids) as fields, not labels.
+// true; see backend/app/logging/logging_config.py JsonFormatter). We parse only
+// the stable fields needed for labels and retain the original JSON as the Loki
+// line. That keeps every sanitized diagnostic field (including exceptions)
+// available to `| json` queries without indexing high-cardinality context.
 //
 // Injected by docker compose from the app bootstrap env:
 //   PROXY_GATEWAY_HOST proxy Alloy gateway host (:3500 logs, :4317 traces)
@@ -51,6 +52,53 @@ loki.write "gateway" {
   endpoint {
     url = "http://" + sys.env("PROXY_GATEWAY_HOST") + ":3500/loki/api/v1/push"
   }
+}
+
+// --- Host systemd journal ----------------------------------------------------
+// Compose already mounts the volatile and persistent journal paths. Forward the
+// current boot's role/bootstrap, Docker, and SSM records through the same
+// private gateway as container logs. This cannot report a failure that prevents
+// Alloy itself from starting, but it preserves the surrounding host evidence
+// whenever the observability container comes up.
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "hostname"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}
+
+loki.source.journal "host" {
+  max_age       = "12h"
+  relabel_rules = loki.relabel.journal.rules
+  labels = {
+    job         = "systemd-journal",
+    environment = sys.env("FLOWFORM_ENV"),
+    platform    = sys.env("FLOWFORM_PLATFORM"),
+    host_role   = "app",
+  }
+  forward_to = [loki.write.gateway.receiver]
 }
 
 // --- Docker container logs (backend only lives here) -------------------------
@@ -115,8 +163,8 @@ loki.source.docker "containers" {
 
 // --- Parse the backend's JSON records ----------------------------------------
 loki.process "backend" {
-  // Only the backend logs JSON. gunicorn's own startup banner is plain text, so
-  // scope JSON parsing to the backend service and leave anything else untouched.
+  // FlowForm application records are JSON. Gunicorn's native startup banner can
+  // be plain text in the same stream; retain the original line in either case.
   stage.match {
     selector = "{service_name=\"backend\"}"
 
@@ -145,7 +193,7 @@ loki.process "backend" {
     // Index only stable, low-cardinality fields. `path` is the RAW request path
     // (request.path — carries UUIDs), and request_id / duration_ms / status
     // are per-request, so none of them become labels: that would explode Loki
-    // stream cardinality. They remain parsed values in the record.
+    // stream cardinality. They remain fields in the original JSON line.
     stage.labels {
       values = {
         level      = "",
@@ -167,27 +215,10 @@ loki.process "backend" {
       }
     }
 
-    // Rebuild the visible line as canonical logfmt from the parsed JSON fields
-    // so every field is queryable via `| logfmt` — matching caddy/squid — rather
-    // than the fields being trapped in the JSON and the line being free prose.
-    // `ts`/`level` are deliberately omitted (ts is Loki's timestamp column,
-    // level is the indexed label) to avoid duplication.
-    //
-    // The human `message` is folded in as a quoted `msg` field ONLY on non-
-    // request lines (startup banner, business events, errors) where it is the
-    // sole content. On request lines the message is just prose restating
-    // method/path/status/duration (e.g. "1.2.3.4 | GET /x -> 200 duration_ms=5"),
-    // which the structured fields already carry — so `msg` is suppressed there
-    // (keyed off `method` being present) to avoid the same duplication we
-    // stripped from squid/caddy. Only non-empty fields render.
-    stage.template {
-      source   = "line"
-      template = "{{ if and .message (not .method) }}msg=\"{{ .message }}\" {{ end }}{{ if .logger }}logger={{ .logger }} {{ end }}{{ if .method }}method={{ .method }} {{ end }}{{ if .status }}status={{ .status }} {{ end }}{{ if .path }}path=\"{{ .path }}\" {{ end }}{{ if .client_ip }}client_ip={{ .client_ip }} {{ end }}{{ if .duration_ms }}duration_ms={{ .duration_ms }} {{ end }}{{ if .request_id }}request_id={{ .request_id }} {{ end }}{{ if .trace_id }}trace_id={{ .trace_id }} {{ end }}{{ if .span_id }}span_id={{ .span_id }} {{ end }}{{ if .user_id }}user_id={{ .user_id }} {{ end }}{{ if .event_type }}event_type={{ .event_type }} {{ end }}{{ if .environment }}environment={{ .environment }}{{ end }}"
-    }
-
-    stage.output {
-      source = "line"
-    }
+    // Do not replace the line with a hand-built logfmt subset. The backend
+    // already emits valid JSON, including a SensitiveDataFilter-sanitized
+    // `exception` field. Keeping that original line prevents query-time
+    // JSONParserErr failures and avoids silently discarding diagnostics.
   }
 
   // --- This agent's own logs: canonical logfmt -------------------------------

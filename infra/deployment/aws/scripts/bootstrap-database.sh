@@ -21,6 +21,9 @@ set -Eeuo pipefail
 #   infra/deployment/aws/scripts/bootstrap-database.sh [--env staging] [--apply]
 #   infra/deployment/aws/scripts/bootstrap-database.sh [--env staging] --cleanup
 #
+# Set FLOWFORM_OPERATION_ID to correlate this invocation with a wider deployment.
+# A standalone invocation generates its own operation ID.
+#
 # Dry run is the default. Use --apply to deploy and invoke. Use --cleanup to
 # remove an endpoint left by an ungraceful workstation or process failure.
 
@@ -35,6 +38,7 @@ CLEANUP_ONLY=false
 ENDPOINT_ID=""
 CREATE_ERROR_FILE=""
 RESULT_DIR=""
+FLOWFORM_OPERATION_ID="${FLOWFORM_OPERATION_ID:-}"
 
 log() { printf '[bootstrap-database] %s\n' "$*"; }
 warn() { printf '[bootstrap-database] WARNING: %s\n' "$*" >&2; }
@@ -86,6 +90,35 @@ command -v jq >/dev/null || die "jq is required"
 NAME_SUFFIX="${ENV_NAME^}"
 DATABASE_STACK="FlowForm-${NAME_SUFFIX}-Database"
 BOOTSTRAP_STACK="FlowForm-${NAME_SUFFIX}-DatabaseBootstrap"
+
+generate_operation_id() {
+  local source_commit="unknown"
+  local unique_suffix
+
+  if command -v git >/dev/null; then
+    source_commit="$(git -C "${SCRIPT_DIR}" rev-parse --short=12 HEAD 2>/dev/null || printf 'unknown')"
+  fi
+  if [[ -r /proc/sys/kernel/random/uuid ]]; then
+    read -r unique_suffix </proc/sys/kernel/random/uuid
+  elif command -v uuidgen >/dev/null; then
+    unique_suffix="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+  else
+    unique_suffix="$$-${RANDOM}-${RANDOM}"
+  fi
+
+  printf '%s-database-bootstrap-%s-%s-%s' \
+    "${ENV_NAME}" \
+    "$(date -u +%Y%m%dT%H%M%SZ)" \
+    "${source_commit}" \
+    "${unique_suffix:0:8}"
+}
+
+if [[ -z "${FLOWFORM_OPERATION_ID}" ]]; then
+  FLOWFORM_OPERATION_ID="$(generate_operation_id)"
+fi
+[[ "${FLOWFORM_OPERATION_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$ ]] \
+  || die "FLOWFORM_OPERATION_ID must contain only letters, numbers, '.', '_', ':', '/', or '-' (maximum 128 characters)"
+export FLOWFORM_OPERATION_ID
 
 owned_endpoint_ids() {
   aws ec2 describe-vpc-endpoints \
@@ -163,6 +196,29 @@ remove_endpoint() {
   fi
 }
 
+show_lambda_failure_logs() {
+  local filter_pattern="{ $.operation_id = \"${FLOWFORM_OPERATION_ID}\" }"
+  local log_events
+
+  warn "retrieving recent Lambda logs for operation ${FLOWFORM_OPERATION_ID}"
+  for _attempt in {1..5}; do
+    if log_events="$(
+      aws logs filter-log-events \
+        --region "${REGION}" \
+        --log-group-name "${LOG_GROUP_NAME}" \
+        --start-time "$((($(date +%s) - 900) * 1000))" \
+        --filter-pattern "${filter_pattern}" \
+        --output json \
+        2>/dev/null
+    )" && jq -e '.events | length > 0' <<<"${log_events}" >/dev/null; then
+      jq -r '.events[].message' <<<"${log_events}" >&2
+      return
+    fi
+    sleep 2
+  done
+  warn "no correlated log records were available yet; query ${LOG_GROUP_NAME} with operation_id=${FLOWFORM_OPERATION_ID}"
+}
+
 cleanup() {
   local exit_code=$?
   trap - EXIT
@@ -218,6 +274,7 @@ fi
 log "database stack  ${DATABASE_STACK} (${database_status})"
 log "helper stack    ${BOOTSTRAP_STACK}"
 log "region          ${REGION}"
+log "operation ID    ${FLOWFORM_OPERATION_ID}"
 
 if [[ "${APPLY}" != true ]]; then
   log ""
@@ -278,13 +335,15 @@ tag_specification="$(
   jq -cn \
     --arg environment "${ENV_NAME}" \
     --arg stack "${BOOTSTRAP_STACK}" \
+    --arg operation_id "${FLOWFORM_OPERATION_ID}" \
     '[
       {
         ResourceType: "vpc-endpoint",
         Tags: [
           {Key: "ManagedBy", Value: "DatabaseBootstrap"},
           {Key: "Environment", Value: $environment},
-          {Key: "BootstrapStack", Value: $stack}
+          {Key: "BootstrapStack", Value: $stack},
+          {Key: "OperationId", Value: $operation_id}
         ]
       }
     ]'
@@ -334,7 +393,12 @@ payload="$(
   jq -cn \
     --arg version "${BOOTSTRAP_VERSION}" \
     --arg checksum "${BOOTSTRAP_CHECKSUM}" \
-    '{BootstrapVersion: $version, BootstrapChecksum: $checksum}'
+    --arg operation_id "${FLOWFORM_OPERATION_ID}" \
+    '{
+      BootstrapVersion: $version,
+      BootstrapChecksum: $checksum,
+      OperationId: $operation_id
+    }'
 )"
 RESULT_DIR="$(mktemp -d /tmp/flowform-database-bootstrap.XXXXXX)"
 
@@ -349,6 +413,7 @@ invoke_result="$(
 )"
 
 if [[ "$(jq -r '.FunctionError // empty' <<<"${invoke_result}")" != "" ]]; then
+  show_lambda_failure_logs
   die "Lambda invocation failed; inspect ${LOG_GROUP_NAME}"
 fi
 if ! jq -e \
@@ -360,6 +425,7 @@ if ! jq -e \
   "${RESULT_DIR}/lambda-result.json" >/dev/null; then
   error_code="$(jq -r '.ErrorCode // "BootstrapFailed"' "${RESULT_DIR}/lambda-result.json")"
   error_message="$(jq -r '.ErrorMessage // "Database bootstrap failed."' "${RESULT_DIR}/lambda-result.json")"
+  show_lambda_failure_logs
   die "${error_code}: ${error_message} Inspect ${LOG_GROUP_NAME}"
 fi
 

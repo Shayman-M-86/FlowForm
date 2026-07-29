@@ -164,7 +164,31 @@ for config in "${ALLOY_DIR}/config/app.alloy" "${ALLOY_DIR}/config/proxy.alloy";
     || note "${config##*/} does not use runtime environment identity"
   grep -Fq 'sys.env("FLOWFORM_PLATFORM")' "${config}" \
     || note "${config##*/} does not use runtime platform identity"
+  grep -Fq 'loki.source.journal "host"' "${config}" \
+    || note "${config##*/} does not collect the host systemd journal"
+  grep -Fq 'target_label  = "service_name"' "${config}" \
+    || note "${config##*/} does not expose journal units as service names"
+  grep -Fq 'source_labels = ["__journal_priority_keyword"]' "${config}" \
+    || note "${config##*/} does not expose journal priority as log level"
 done
+
+# Backend records already arrive as valid JSON. Alloy may extract stable labels,
+# but it must not replace the line with a partial logfmt rendering: doing so
+# breaks Grafana `| json` queries and drops sanitized exception details.
+backend_json_pipeline="$(
+  awk '
+    /selector = "\{service_name=\\"backend\\"\}"/ { in_backend = 1 }
+    /This agent.s own logs/ { in_backend = 0 }
+    in_backend { print }
+  ' "${ALLOY_DIR}/config/app.alloy"
+)"
+[[ -n "${backend_json_pipeline}" ]] \
+  || note "App Alloy config has no backend JSON processing stage"
+if grep -Fq 'stage.output' <<<"${backend_json_pipeline}"; then
+  note "App Alloy replaces the backend JSON line instead of retaining it"
+fi
+grep -Fq 'prevents query-time' "${ALLOY_DIR}/config/app.alloy" \
+  || note "App Alloy does not document preservation of backend JSON diagnostics"
 
 # Role Compose consumes container-owned defaults; only rehearsal may override
 # the production Caddyfile and Squid allow-list.
@@ -176,6 +200,10 @@ grep -Fq 'FLOWFORM_ALLOY_ROLE: app' "${APP_COMPOSE}" \
   || note "App Compose does not select the app Alloy role"
 grep -Fq 'FLOWFORM_ALLOY_ROLE: proxy' "${PROXY_COMPOSE}" \
   || note "Proxy Compose does not select the proxy Alloy role"
+grep -Fq 'operation=converge' "${RUN_ROLE}" \
+  || note "role convergence does not emit an operation record"
+grep -Fq '"${FLOWFORM_RELEASE_SOURCE_COMMIT}"' "${RUN_ROLE}" \
+  || note "role convergence does not identify the selected source commit"
 grep -Fq 'Caddyfile.proxy:/etc/caddy/Caddyfile:ro' "${REHEARSAL_PROXY}" \
   || note "rehearsal no longer overrides the production Caddyfile"
 grep -Fq 'allowed-domains.txt:/etc/squid/allowed-domains.txt:ro' "${REHEARSAL_PROXY}" \

@@ -53,9 +53,10 @@ _image_build_proxmox_target() { # target verify-after
 
 cmd_build_main() {
   local platform="${1:-}" target="" validate_only=0 syntax_only=0 diagnose_ssh=0
+  local diagnostics_mode="auto"
   local on_error="cleanup"
   if [[ "${platform}" == -h || "${platform}" == --help ]]; then
-    printf '%s\n' 'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]' \
+    printf '%s\n' 'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]' \
       '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]'
     return
   fi
@@ -66,10 +67,11 @@ cmd_build_main() {
   fi
   if [[ "${target}" == -h || "${target}" == --help ]]; then
     printf '%s\n' \
-      'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]' \
+      'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]' \
       '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
       '' \
-      '  --diagnose-ssh  Stream EC2, boot, network, TCP/22, and Packer diagnostics and retain logs under /tmp.' \
+      '  --diagnose-ssh  Explicitly enable the diagnostics used by default for live AWS builds.' \
+      '  --no-diagnostics  Disable live AWS EC2, boot, network, SSH, and Packer debug diagnostics.' \
       '  --on-error MODE Packer failure handling: cleanup (default), abort, or ask.'
     return
   fi
@@ -77,7 +79,8 @@ cmd_build_main() {
     case "$1" in
       --validate-only) validate_only=1; shift ;;
       --syntax-only) syntax_only=1; validate_only=1; shift ;;
-      --diagnose-ssh) diagnose_ssh=1; shift ;;
+      --diagnose-ssh) diagnostics_mode="enabled"; shift ;;
+      --no-diagnostics) diagnostics_mode="disabled"; shift ;;
       --on-error)
         [[ $# -ge 2 ]] || die "--on-error requires cleanup, abort, or ask"
         on_error="$2"
@@ -89,10 +92,11 @@ cmd_build_main() {
         ;;
       -h|--help)
         printf '%s\n' \
-          'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]' \
+          'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]' \
           '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
           '' \
-          '  --diagnose-ssh  Stream EC2, boot, network, TCP/22, and Packer diagnostics and retain logs under /tmp.' \
+          '  --diagnose-ssh  Explicitly enable the diagnostics used by default for live AWS builds.' \
+          '  --no-diagnostics  Disable live AWS EC2, boot, network, SSH, and Packer debug diagnostics.' \
           '  --on-error MODE Packer failure handling: cleanup (default), abort, or ask.'
         return
         ;;
@@ -101,6 +105,11 @@ cmd_build_main() {
   done
   [[ "${on_error}" =~ ^(cleanup|abort|ask)$ ]] \
     || die "--on-error must be cleanup, abort, or ask"
+  if [[ "${platform}" == aws && "${validate_only}" == 0 && "${diagnostics_mode}" != disabled ]]; then
+    diagnose_ssh=1
+  elif [[ "${diagnostics_mode}" == enabled ]]; then
+    diagnose_ssh=1
+  fi
   export PACKER_VALIDATE_ONLY="${validate_only}"
   export PACKER_SYNTAX_ONLY="${syntax_only}"
   export PACKER_DIAGNOSE_SSH="${diagnose_ssh}"
@@ -158,7 +167,7 @@ cmd_build_main() {
             (( validate_only == 1 )) || _image_verify_aws "${target}" --vars-file "${vars_file}" --parent-ami-id "${built_base}"
           done
           ;;
-        *) die "usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]" ;;
+        *) die "usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]" ;;
       esac
       ;;
     proxmox)

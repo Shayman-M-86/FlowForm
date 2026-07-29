@@ -13,25 +13,33 @@ class AppEmailIdentity(Construct):
     """
 
     def __init__(
-        self, scope: Construct, construct_id: str, *, account: str, region: str, domain_name: str
+        self,
+        scope: Construct,
+        construct_id: str,
+        *,
+        account: str,
+        region: str,
+        domain_name: str,
+        configuration_set_name: str,
     ) -> None:
         super().__init__(scope, construct_id)
 
         self.domain_name = domain_name
         self.hosted_zone = route53.HostedZone.from_lookup(self, "HostedZone", domain_name=domain_name)
         self._identity_arn = f"arn:aws:ses:{region}:{account}:identity/{domain_name}"
+        self._configuration_set_arn = f"arn:aws:ses:{region}:{account}:configuration-set/{configuration_set_name}"
 
     def grant_send(self, grantee: iam.IGrantable) -> None:
-        """Grant ses:SendEmail / ses:SendRawEmail, scoped to this domain identity.
+        """Grant SES sending through this identity and its configuration set.
 
-        SES identities have no CDK-managed resource to call `.grant_send()`
-        on natively, so this is the hand-written equivalent — kept here
-        rather than inline in a stack so the identity and its access rule
-        live in one place.
+        SES authorizes a send against both the sender identity and the
+        configuration set attached to it. Neither imported resource has a
+        CDK-managed object to call ``grant_send()`` on, so keep both exact
+        resource ARNs together here.
         """
         grantee.grant_principal.add_to_principal_policy(
             iam.PolicyStatement(
                 actions=["ses:SendEmail", "ses:SendRawEmail"],
-                resources=[self._identity_arn],
+                resources=[self._identity_arn, self._configuration_set_arn],
             )
         )

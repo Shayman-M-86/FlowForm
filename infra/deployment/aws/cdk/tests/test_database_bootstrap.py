@@ -1,9 +1,13 @@
 import json
+import logging
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+from flowform_infra.database_bootstrap.bootstrap import handler as handler_module
 from flowform_infra.database_bootstrap.bootstrap.models import (
+    BootstrapPhase,
     BootstrapRequest,
     DatabaseCredentials,
 )
@@ -14,6 +18,111 @@ from flowform_infra.database_bootstrap.bootstrap.services import SqlRepository
 
 CHECKSUM = "a" * 64
 DATABASE_INIT_DIR = Path(__file__).parents[5] / "infra" / "database" / "init"
+
+
+def _configure_handler_environment(monkeypatch):
+    monkeypatch.setenv("BOOTSTRAP_VERSION", "3")
+    monkeypatch.setenv("BOOTSTRAP_CHECKSUM", CHECKSUM)
+    monkeypatch.setenv("DATABASE_SECRET_ARN", "database-secret")
+    monkeypatch.setenv("DATABASE_HOST", "database.internal")
+    monkeypatch.setenv("DATABASE_PORT", "5432")
+    monkeypatch.setenv("FLOWFORM_ENVIRONMENT", "staging")
+    monkeypatch.setattr(handler_module.boto3, "client", lambda _service: object())
+
+
+def test_handler_operation_id_falls_back_to_the_lambda_request():
+    assert handler_module._operation_id({}, "request-123") == "lambda-request-123"
+
+
+def test_handler_emits_correlated_structured_success_log(monkeypatch, caplog):
+    class CredentialProvider:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def load(self):
+            return object()
+
+    class Bootstrapper:
+        def __init__(self, **_kwargs):
+            self.phase = BootstrapPhase.CONNECT
+
+        def run(self, _request):
+            self.phase = BootstrapPhase.COMPLETE
+
+    _configure_handler_environment(monkeypatch)
+    monkeypatch.setattr(handler_module, "SecretsManagerCredentialProvider", CredentialProvider)
+    monkeypatch.setattr(handler_module, "PostgresConnector", lambda _credentials: object())
+    monkeypatch.setattr(handler_module, "SqlRepository", lambda: object())
+    monkeypatch.setattr(handler_module, "PostgresBootstrapper", Bootstrapper)
+    monotonic_values = iter((100.0, 100.125))
+    monkeypatch.setattr(handler_module.time, "monotonic", lambda: next(monotonic_values))
+    caplog.set_level(logging.INFO)
+
+    result = handler_module.handler(
+        {
+            "BootstrapVersion": "3",
+            "BootstrapChecksum": CHECKSUM,
+            "OperationId": "staging-deploy-123",
+        },
+        SimpleNamespace(aws_request_id="lambda-request-123"),
+    )
+
+    assert result == {
+        "Succeeded": True,
+        "BootstrapVersion": "3",
+        "BootstrapChecksum": CHECKSUM,
+    }
+    completed = next(record for record in caplog.records if record.message == "database_bootstrap.completed")
+    assert completed.operation_id == "staging-deploy-123"
+    assert completed.environment == "staging"
+    assert completed.lambda_request_id == "lambda-request-123"
+    assert completed.component == "database-bootstrap"
+    assert completed.phase == "complete"
+    assert completed.outcome == "succeeded"
+    assert completed.duration_ms == 125
+    assert completed.bootstrap_version == "3"
+    assert completed.bootstrap_checksum == CHECKSUM
+
+
+def test_handler_suppresses_external_failure_details(monkeypatch, caplog):
+    class ExternalServiceFailure(Exception):
+        pass
+
+    class CredentialProvider:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def load(self):
+            raise ExternalServiceFailure("do-not-log-this-secret")
+
+    _configure_handler_environment(monkeypatch)
+    monkeypatch.setattr(handler_module, "SecretsManagerCredentialProvider", CredentialProvider)
+    monotonic_values = iter((100.0, 100.25))
+    monkeypatch.setattr(handler_module.time, "monotonic", lambda: next(monotonic_values))
+    caplog.set_level(logging.INFO)
+
+    result = handler_module.handler(
+        {
+            "BootstrapVersion": "3",
+            "BootstrapChecksum": CHECKSUM,
+            "OperationId": "staging-deploy-456",
+        },
+        SimpleNamespace(aws_request_id="lambda-request-456"),
+    )
+
+    assert result == {
+        "Succeeded": False,
+        "ErrorCode": "ExternalServiceFailure",
+        "ErrorMessage": "Database bootstrap failed during load_secret.",
+    }
+    failed = next(record for record in caplog.records if record.message == "database_bootstrap.failed")
+    assert failed.operation_id == "staging-deploy-456"
+    assert failed.phase == "load_secret"
+    assert failed.outcome == "failed"
+    assert failed.duration_ms == 250
+    assert failed.error_code == "ExternalServiceFailure"
+    assert failed.error_detail == "detail suppressed"
+    assert "do-not-log-this-secret" not in caplog.text
 
 
 def test_bootstrap_request_accepts_the_deployed_version_identity():

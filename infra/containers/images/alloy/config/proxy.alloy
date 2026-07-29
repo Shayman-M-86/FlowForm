@@ -120,8 +120,23 @@ loki.relabel "journal" {
   }
 
   rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "service"
+  }
+
+  rule {
     source_labels = ["__journal__hostname"]
     target_label  = "hostname"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
   }
 }
 
@@ -130,7 +145,12 @@ loki.source.journal "host" {
   // read-only into the container (see proxy.yml).
   max_age       = "12h"
   relabel_rules = loki.relabel.journal.rules
-  labels        = {job = "systemd-journal"}
+  labels = {
+    job         = "systemd-journal",
+    environment = sys.env("FLOWFORM_ENV"),
+    platform    = sys.env("FLOWFORM_PLATFORM"),
+    host_role   = "proxy",
+  }
   forward_to    = [loki.write.grafana_cloud.receiver]
 }
 
