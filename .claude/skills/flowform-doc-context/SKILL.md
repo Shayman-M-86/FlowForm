@@ -1,66 +1,26 @@
 ---
 name: flowform-doc-context
-description: Load focused FlowForm documentation with Docsys at task start when session guidance suggests it, or when the user explicitly asks to consult or verify repository documentation.
+description: Find and read focused FlowForm documentation only when the user requests documentation work or implementation inspection reveals a material documentation gap.
 ---
 
 # FlowForm documentation context
 
-Use Docsys to load only the documentation needed for the task. Normally run
-this workflow once near task start. Do not rerun it for later prompts in the
-same task unless the scope materially changes or the user asks for another
-documentation check. Skip it for spelling, formatting, and isolated mechanical
-changes.
+Use this skill only for explicit documentation consultation or editing,
+documentation-focused tasks, or a material gap discovered while inspecting the
+implementation. Do not invoke it automatically at task start.
 
 ## Workflow
 
-1. Call `get_task_context` with the task and known changed files.
-2. Check `documentation_reliability`, then read the returned primary documents.
-   Load related pages only when a material gap remains.
-3. For explanation-only questions, answer directly from verified, current
-   primary documents when they cover the question. Do not inspect code merely
-   because implementation locations were returned.
-4. Do not call `get_impacted_docs` after each prompt or ordinary follow-up
-   turn. After behavioural or architectural changes have settled, review
-   impact once near task completion. Call `get_impacted_docs` only when
-   actively updating affected documentation, when scope materially changes
-   after the review, or when the user asks for it. Update only documents whose
-   meaning actually changed.
+1. Run `tools/docs/bin/docsys find --help` only when search controls are needed.
+2. Use `find` with concise terms, a documentation scope, or exact code files;
+   keep the result set at three or fewer.
+3. Use `read` for one selected path or section. Do not load neighbours or full
+   documents by default.
+4. Treat implementation, tests, configuration, and automation as authoritative
+   when changing behaviour or when a selected document is unreliable.
+5. Run `impact` once near completion only when documentation meaning may have
+   changed. Update only affected authored pages and regenerate generated pages.
 
-Do not scan the full documentation tree.
-
-## Reliability
-
-- Apply reliability to the documents actually used. A draft candidate or
-  neighbour does not weaken a separate verified document.
-- Surface a reliability warning only when the answer relies on an affected
-  draft, stale, scaffold, or modified document.
-- When the assessment is unreliable, say: **“I think the documentation is
-  unreliable for this question.”**
-- Report contradictions with repository evidence explicitly.
-- If editing a contradicted page, correct it, set `status: draft`, and clear
-  `verified_evidence_digest`.
-- For explanation-only work, ask before expanding a focused check into a broad
-  audit.
-
-Inspect implementation only when changing or diagnosing it, when the user asks
-for verification, or when the relevant documentation is missing, unreliable,
-ambiguous, or internally contradictory.
-
-## Documentation changes
-
-- Put accepted current behaviour in Project Knowledge and unfinished work in
-  the Development Workspace.
-- Keep folder heads useful as overviews, update links and metadata with content,
-  and change generators instead of generated files.
-- Preserve globally unique titles and the
-  `<folder-name>/<folder-name>-index.md` convention.
-- Run relevant documentation validation. Do not commit unless explicitly asked.
-
-## Verification
-
-- Keep changed or contradicted Project Knowledge as `draft` with a null
-  evidence digest until reviewed.
-- Use `$flowform-doc-verification` when the user wants to review and promote
-  Project Knowledge. That workflow handles approval and staged verification
-  metadata.
-- Let pre-commit check `last_edited` and evidence drift without changing files.
+When a parent agent supplies document paths, use them directly and skip
+discovery. Do not scan the documentation tree or reload context on ordinary
+follow-up prompts.

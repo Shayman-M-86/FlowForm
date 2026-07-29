@@ -2,23 +2,24 @@
 title: Respondent access and continuity
 aliases: ["Respondent access and continuity"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:25b411d514b5d7378e845a076545b3331529bec598c5df6f8325be36096cc48c
-last_edited: 2026-07-28
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, security]
 related_code:
   - "../../../backend/app/domain/public_link_rules.py"
   - "../../../backend/app/domain/submission_access_rules.py"
   - "../../../backend/app/domain/survey_rules.py"
   - "../../../backend/app/services/survey_links.py"
-  - "../../../backend/app/services/public_submissions/core/resolution/"
   - "../../../backend/app/schema/orm/core/project_subject.py"
   - "../../../backend/app/schema/orm/core/survey_access.py"
   - "../../../backend/tests/integration/core/test_flow_matrix.py"
   - "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts"
   - "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
   - "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
+change_triggers:
+  - "../../../backend/app/services/public_submissions/core/resolution/"
 related_docs:
   - "Product knowledge"
   - "Links and subjects"

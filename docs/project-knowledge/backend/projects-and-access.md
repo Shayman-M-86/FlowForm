@@ -2,18 +2,19 @@
 title: Projects and access
 aliases: ["Projects and access"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:93ac1b4b36e700d1a529efa7bfdd51e92e4104d612fa1c8a16dbb05eb9c03f87
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, security]
 related_code:
-  - "../../../backend/app/services/access/"
   - "../../../backend/app/services/projects.py"
   - "../../../backend/app/services/members.py"
   - "../../../backend/app/services/roles.py"
   - "../../../backend/app/schema/orm/core/project.py"
   - "../../../backend/app/domain/permissions.py"
+change_triggers:
+  - "../../../backend/app/services/access/"
 related_docs:
   - "Backend knowledge"
   - "Identity and authentication"

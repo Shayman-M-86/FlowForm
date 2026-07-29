@@ -5,9 +5,10 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-30
 tags: [backend, security]
-related_code:
+related_code: []
+change_triggers:
   - "../../../backend/app/db/"
   - "../../../backend/app/schema/orm/"
   - "../../../infra/database/"

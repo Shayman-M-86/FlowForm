@@ -1,318 +1,281 @@
 #!/usr/bin/env python3
-"""Model Context Protocol server for FlowForm documentation.
-
-Exposes the deterministic ``docsys`` tools over MCP so AI agents can retrieve
-concise, high-quality documentation context instead of searching the repo. This
-is the preferred interface for agents.
-
-It speaks MCP's JSON-RPC 2.0 framing over stdio directly, with no third-party
-dependency, keeping the whole toolkit installable with only the standard
-library. It implements the subset of MCP that tool-using clients need:
-``initialize``, ``tools/list``, and ``tools/call`` (plus the ``notifications/
-initialized`` acknowledgement).
-
-Tools exposed:
-
-    search_docs         ranked deterministic search
-    get_document        one document by title or path
-    get_related         neighbouring documents of a document
-    get_task_context    smallest useful context for a task / changed files
-    get_impacted_docs   documentation impacted by a git range
-    check_freshness     freshness classification for all documents
-    documentation_debt  structural complexity and split candidates
-    doc_health          documentation health snapshot
-
-Register with a client, e.g. Claude Code:
-
-    claude mcp add flowform-docs -- python3 tools/docs/docsys/mcp_server.py
-
-Every tool loads a fresh :class:`DocSet` per call so results always reflect the
-current working tree; the documentation set is small enough that this is cheap.
-"""
+"""Small, read-only MCP adapter for progressive Docsys discovery."""
 from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Callable
+from typing import Any
 
-from . import freshness as freshness_mod
-from . import health as health_mod
-from .context import build_context
-from .debt import build_report as build_debt_report
-from .impact import impact_report
-from .model import DocSet, resolve_docs_root
-from .query import QueryEngine
-from .retrieve import get_document, get_related
+from .contracts import (
+    FindRequest,
+    ReadRequest,
+    execute_find,
+    execute_read,
+)
 
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "flowform-docsys", "version": "1.0.0"}
+SERVER_INFO = {"name": "flowform-docsys", "version": "2.0.0"}
 
-# --- tool schema declarations --------------------------------------------
+_READ_ONLY = {
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+}
 
-_DOCS_ROOT = {
-    "type": "string",
-    "description": "repository-relative docs root; defaults to docs",
+_FIND_OUTPUT = {
+    "type": "object",
+    "properties": {
+        "items": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+                "type": "object",
+                "properties": {
+                    name: {"type": "string"}
+                    for name in ("path", "title", "status", "summary")
+                },
+                "required": ["path", "title", "status", "summary"],
+                "additionalProperties": False,
+            },
+        },
+        "total": {"type": "integer"},
+        "returned": {"type": "integer", "maximum": 5},
+        "truncated": {"type": "boolean"},
+        "warning": {"type": "string"},
+    },
+    "required": ["items", "total", "returned", "truncated"],
+    "additionalProperties": False,
+}
+
+_READ_OUTPUT = {
+    "type": "object",
+    "properties": {
+        **{
+            name: {"type": "string"}
+            for name in ("path", "title", "status", "summary", "content")
+        },
+        "headings": {"type": "array", "items": {"type": "string"}},
+        "truncated": {"type": "boolean"},
+        "next_offset": {"type": ["integer", "null"]},
+    },
+    "required": [
+        "path",
+        "title",
+        "status",
+        "summary",
+        "headings",
+        "content",
+        "truncated",
+        "next_offset",
+    ],
+    "additionalProperties": False,
 }
 
 TOOLS = [
     {
-        "name": "search_docs",
-        "description": (
-            "Ranked deterministic search over FlowForm documentation. Returns "
-            "the most relevant documents with scores, matched terms, and a "
-            "snippet. Prefer this over reading the docs tree directly."
-        ),
+        "name": "find",
+        "description": "Find a few relevant FlowForm documents.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "search text"},
-                "limit": {"type": "integer", "default": 8},
-                "type": {"type": "string", "description": "filter by document_type"},
-                "tag": {"type": "string", "description": "filter by tag"},
-                "min_status": {
-                    "type": "string",
-                    "enum": ["scaffold", "draft", "verified"],
-                },
-                "collection": {
-                    "type": "string",
-                    "enum": [
-                        "project-knowledge",
-                        "development-workspace",
-                        "legacy",
-                        "root",
-                    ],
-                },
-                "docs_root": _DOCS_ROOT,
-            },
-            "required": ["query"],
-        },
-    },
-    {
-        "name": "get_document",
-        "description": "Retrieve one document (body + metadata) by title or path.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "identifier": {"type": "string"},
-                "include_body": {"type": "boolean", "default": True},
-                "docs_root": _DOCS_ROOT,
-            },
-            "required": ["identifier"],
-        },
-    },
-    {
-        "name": "get_related",
-        "description": "Retrieve documents linked to a document (links + backlinks).",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "identifier": {"type": "string"},
-                "docs_root": _DOCS_ROOT,
-            },
-            "required": ["identifier"],
-        },
-    },
-    {
-        "name": "get_task_context",
-        "description": (
-            "Assemble the smallest useful documentation context for a task and/"
-            "or changed files: primary docs, neighbours, implementation "
-            "locations, workflows, and open questions."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "task": {"type": "string"},
-                "changed_files": {
+                "query": {"type": "string"},
+                "scope": {"type": "string"},
+                "code_paths": {
                     "type": "array",
                     "items": {"type": "string"},
+                    "maxItems": 10,
                 },
-                "docs_root": _DOCS_ROOT,
-            },
-        },
-    },
-    {
-        "name": "get_impacted_docs",
-        "description": (
-            "Given a git range (base/head; defaults to the working tree), list "
-            "documentation that may need review, ranked by confidence, with "
-            "reasons and whether each doc was already modified."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "base": {"type": "string"},
-                "head": {"type": "string"},
-                "docs_root": _DOCS_ROOT,
-            },
-        },
-    },
-    {
-        "name": "check_freshness",
-        "description": (
-            "Classify documents as current / review suggested / likely stale / "
-            "unknown by comparing verified_evidence_digest with current "
-            "related_code and change_triggers evidence."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "only": {
+                "match": {
                     "type": "string",
-                    "enum": [
-                        "current",
-                        "review suggested",
-                        "likely stale",
-                        "unknown",
-                    ],
+                    "enum": ["all", "any", "phrase"],
+                    "default": "all",
                 },
-                "docs_root": _DOCS_ROOT,
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "default": 3,
+                },
             },
+            "additionalProperties": False,
         },
+        "outputSchema": _FIND_OUTPUT,
+        "annotations": _READ_ONLY,
     },
     {
-        "name": "documentation_debt",
-        "description": (
-            "Advisory structural complexity metrics and explainable split "
-            "candidates for Project Knowledge by default. Findings do not fail "
-            "validation."
-        ),
+        "name": "read",
+        "description": "Read one exact document path or section.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "collection": {
-                    "type": "string",
-                    "description": (
-                        "collection to analyse; defaults to project-knowledge"
-                    ),
-                    "default": "project-knowledge",
-                    "enum": [
-                        "project-knowledge",
-                        "development-workspace",
-                        "legacy",
-                        "root",
-                    ],
+                "path": {"type": "string"},
+                "section": {"type": "string"},
+                "offset": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0,
                 },
-                "docs_root": _DOCS_ROOT,
-                "suggest_splits": {"type": "boolean", "default": False},
+                "max_chars": {
+                    "type": "integer",
+                    "minimum": 500,
+                    "maximum": 8000,
+                    "default": 4000,
+                },
             },
+            "required": ["path"],
+            "additionalProperties": False,
         },
-    },
-    {
-        "name": "doc_health",
-        "description": (
-            "Documentation health snapshot: status/freshness counts, stale "
-            "docs, orphans, heavily connected docs, open questions, invalid "
-            "metadata, and broken links."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {"docs_root": _DOCS_ROOT},
-        },
+        "outputSchema": _READ_OUTPUT,
+        "annotations": _READ_ONLY,
     },
 ]
 
-# --- tool implementations ------------------------------------------------
+_FIND_KEYS = frozenset({"query", "scope", "code_paths", "match", "limit"})
+_READ_KEYS = frozenset({"path", "section", "offset", "max_chars"})
 
 
-def _tool_search(args: dict) -> dict:
-    engine = QueryEngine(DocSet.load(resolve_docs_root(args.get("docs_root"))))
-    results = engine.search(
-        args["query"],
-        limit=int(args.get("limit", 8)),
-        doc_type=args.get("type"),
-        tag=args.get("tag"),
-        min_status=args.get("min_status"),
-        collection=args.get("collection"),
+class ToolInputError(ValueError):
+    """An invalid MCP tool argument."""
+
+
+def _require_mapping(value: object) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ToolInputError("arguments must be an object")
+    return value
+
+
+def _reject_unknown(args: dict[str, Any], allowed: frozenset[str]) -> None:
+    unknown = sorted(set(args) - allowed)
+    if unknown:
+        raise ToolInputError(f"unknown argument: {unknown[0]}")
+
+
+def _optional_string(
+    args: dict[str, Any], name: str, *, default: str | None = None
+) -> str | None:
+    value = args.get(name, default)
+    if value is not None and not isinstance(value, str):
+        raise ToolInputError(f"{name} must be a string")
+    return value
+
+
+def _integer(
+    args: dict[str, Any],
+    name: str,
+    *,
+    default: int,
+    minimum: int,
+    maximum: int | None = None,
+) -> int:
+    value = args.get(name, default)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ToolInputError(f"{name} must be an integer")
+    if value < minimum or (maximum is not None and value > maximum):
+        upper = f" and {maximum}" if maximum is not None else ""
+        raise ToolInputError(f"{name} must be between {minimum}{upper}")
+    return value
+
+
+def _tool_find(raw_args: object) -> dict[str, Any]:
+    args = _require_mapping(raw_args)
+    _reject_unknown(args, _FIND_KEYS)
+
+    query = _optional_string(args, "query", default="") or ""
+    scope = _optional_string(args, "scope")
+    match = _optional_string(args, "match", default="all") or "all"
+    if match not in {"all", "any", "phrase"}:
+        raise ToolInputError("match must be one of: all, any, phrase")
+
+    raw_code_paths = args.get("code_paths", [])
+    if not isinstance(raw_code_paths, list) or any(
+        not isinstance(path, str) for path in raw_code_paths
+    ):
+        raise ToolInputError("code_paths must be an array of strings")
+    if len(raw_code_paths) > 10:
+        raise ToolInputError("code_paths must contain at most 10 files")
+
+    request = FindRequest(
+        query=query,
+        scope=scope,
+        code_paths=tuple(raw_code_paths),
+        match=match,
+        limit=_integer(args, "limit", default=3, minimum=1, maximum=5),
     )
-    return {"results": [r.as_dict() for r in results]}
+    return execute_find(request).as_dict()
 
 
-def _tool_get_document(args: dict) -> dict:
-    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
-    doc = get_document(
-        args["identifier"],
-        docset=docset,
-        include_body=args.get("include_body", True),
+def _tool_read(raw_args: object) -> dict[str, Any]:
+    args = _require_mapping(raw_args)
+    _reject_unknown(args, _READ_KEYS)
+
+    path = _optional_string(args, "path")
+    if not path:
+        raise ToolInputError("path is required")
+
+    request = ReadRequest(
+        path=path,
+        section=_optional_string(args, "section"),
+        include_body=True,
+        offset=_integer(args, "offset", default=0, minimum=0),
+        max_chars=_integer(
+            args,
+            "max_chars",
+            default=4000,
+            minimum=500,
+            maximum=8000,
+        ),
     )
-    if doc is None:
-        return {"error": f"no document matching {args['identifier']!r}"}
-    return doc
+    return execute_read(request).as_dict()
 
 
-def _tool_get_related(args: dict) -> dict:
-    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
-    rel = get_related(args["identifier"], docset=docset)
-    if rel is None:
-        return {"error": f"no document matching {args['identifier']!r}"}
-    return rel
-
-
-def _tool_task_context(args: dict) -> dict:
-    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
-    bundle = build_context(
-        task=args.get("task", ""),
-        changed_files=args.get("changed_files") or [],
-        docset=docset,
-    )
-    return bundle.as_dict()
-
-
-def _tool_impacted(args: dict) -> dict:
-    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
-    return impact_report(args.get("base"), args.get("head"), docset=docset)
-
-
-def _tool_freshness(args: dict) -> dict:
-    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
-    report = freshness_mod.health_report(docset=docset)
-    only = args.get("only")
-    if only:
-        report["documents"] = [
-            d for d in report["documents"] if d["classification"] == only
-        ]
-    return report
-
-
-def _tool_health(args: dict) -> dict:
-    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
-    return health_mod.build_health(docset=docset)
-
-
-def _tool_debt(args: dict) -> dict:
-    docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
-    return build_debt_report(
-        docset,
-        collection=args.get("collection") or "project-knowledge",
-        suggest_splits=bool(args.get("suggest_splits")),
-    )
-
-
-HANDLERS = {
-    "search_docs": _tool_search,
-    "get_document": _tool_get_document,
-    "get_related": _tool_get_related,
-    "get_task_context": _tool_task_context,
-    "get_impacted_docs": _tool_impacted,
-    "check_freshness": _tool_freshness,
-    "documentation_debt": _tool_debt,
-    "doc_health": _tool_health,
+HANDLERS: dict[str, Callable[[object], dict[str, Any]]] = {
+    "find": _tool_find,
+    "read": _tool_read,
 }
 
-# --- JSON-RPC / MCP plumbing ---------------------------------------------
 
-
-def _result(id_, result):
+def _result(id_: object, result: object) -> dict[str, object]:
     return {"jsonrpc": "2.0", "id": id_, "result": result}
 
 
-def _error(id_, code, message):
+def _error(id_: object, code: int, message: str) -> dict[str, object]:
     return {"jsonrpc": "2.0", "id": id_, "error": {"code": code, "message": message}}
 
 
-def handle_request(req: dict) -> dict | None:
+def _tool_result(
+    payload: dict[str, Any], *, is_error: bool = False
+) -> dict[str, object]:
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": json.dumps(
+                    payload,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+            }
+        ],
+        "structuredContent": payload,
+        "isError": is_error,
+    }
+
+
+def _tool_failure(code: str, message: str) -> dict[str, object]:
+    return _tool_result(
+        {"error": {"code": code, "message": message}},
+        is_error=True,
+    )
+
+
+def handle_request(req: dict[str, Any]) -> dict[str, object] | None:
     method = req.get("method")
     id_ = req.get("id")
-    params = req.get("params") or {}
+    params = req.get("params", {})
+    if params is None:
+        params = {}
 
     if method == "initialize":
         return _result(
@@ -324,37 +287,35 @@ def handle_request(req: dict) -> dict | None:
             },
         )
     if method in ("notifications/initialized", "initialized"):
-        return None  # notification: no response
+        return None
     if method == "ping":
         return _result(id_, {})
     if method == "tools/list":
         return _result(id_, {"tools": TOOLS})
     if method == "tools/call":
+        if not isinstance(params, dict):
+            return _result(
+                id_, _tool_failure("invalid_request", "params must be an object")
+            )
         name = str(params.get("name") or "")
-        args = params.get("arguments") or {}
         handler = HANDLERS.get(name)
         if handler is None:
-            return _error(id_, -32602, f"unknown tool: {name}")
+            return _result(
+                id_, _tool_failure("unknown_tool", f"unknown tool: {name}")
+            )
         try:
-            payload = handler(args)
-        except Exception as exc:  # surface tool errors to the client, don't crash
+            arguments = params.get("arguments", {})
+            if arguments is None:
+                arguments = {}
+            payload = handler(arguments)
+        except (ToolInputError, ValueError, FileNotFoundError) as exc:
+            return _result(id_, _tool_failure("invalid_request", str(exc)))
+        except Exception:
             return _result(
                 id_,
-                {
-                    "content": [
-                        {"type": "text", "text": f"tool error: {exc}"}
-                    ],
-                    "isError": True,
-                },
+                _tool_failure("tool_error", "documentation request failed"),
             )
-        return _result(
-            id_,
-            {
-                "content": [
-                    {"type": "text", "text": json.dumps(payload, indent=2)}
-                ]
-            },
-        )
+        return _result(id_, _tool_result(payload))
     if id_ is not None:
         return _error(id_, -32601, f"method not found: {method}")
     return None
@@ -374,7 +335,9 @@ def serve(stdin=None, stdout=None) -> int:
             continue
         response = handle_request(req)
         if response is not None:
-            stdout.write(json.dumps(response) + "\n")
+            stdout.write(
+                json.dumps(response, ensure_ascii=False, separators=(",", ":")) + "\n"
+            )
             stdout.flush()
     return 0
 

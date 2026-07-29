@@ -5,9 +5,10 @@ document_type: historical-plan
 status: draft
 authority: historical
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-30
 tags: [meta]
-related_code:
+related_code: []
+change_triggers:
   - "../../../../tools/docs/"
 related_docs:
   - "Completed workspace material"
@@ -25,8 +26,8 @@ identified path-coupling risks in tooling and argued for staged migration rather
 than rebuilding documentation content blindly.
 
 The restructure is complete. Treat its phases and open questions as historical
-design input; use the current documentation model, authoring guide, and tooling
-for ongoing work.
+design input; use the current documentation model, documentation workflow, and
+tooling for ongoing work.
 
 ## Related documents
 

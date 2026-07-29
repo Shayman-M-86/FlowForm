@@ -5,18 +5,19 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-30
 tags: [backend]
 related_code:
+  - "../../../backend/scripts/run-tests.sh"
+change_triggers:
   - "../../../infra/database/init/"
   - "../../../infra/database/flowform_*_mock_data.sql"
   - "../../../backend/app/schema/orm/"
   - "../../../backend/app/db/error_handling/"
-  - "../../../backend/scripts/run-tests.sh"
 related_docs:
   - "Data knowledge"
   - "Responses and encryption"
-  - "Configuration implementation"
+  - "Configuration and secrets"
 ---
 
 # Database migrations
@@ -84,4 +85,4 @@ path.
 
 - [[data-index|Data knowledge]]
 - [[responses-and-encryption|Responses and encryption]]
-- [[configuration|Configuration implementation]]
+- [[configuration|Configuration and secrets]]

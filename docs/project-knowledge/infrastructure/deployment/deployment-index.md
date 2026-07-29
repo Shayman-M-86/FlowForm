@@ -1,88 +1,125 @@
 ---
-title: Deployment documentation
-aliases: ["Deployment documentation"]
-document_type: overview
+title: Deployment architecture
+aliases: ["Deployment architecture", "Deployment documentation", "Deployment model", "AWS network topology", "Cloud deployment", "AWS staging bring-up"]
+document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-30
 tags: [infrastructure, ci-cd]
 related_code:
-  - "../../../../infra/deployment/"
+  - "../../../../infra/deployment/aws/cdk/app.py"
+  - "../../../../infra/deployment/aws/operations/README.md"
+change_triggers:
+  - "../../../../infra/deployment/aws/"
+  - "../../../../infra/deployment/bootstrap/"
   - "../../../../.github/workflows/"
-related_docs: ["Infrastructure knowledge", "Deployment model", "AWS network topology", "AWS staging bring-up", "Cloud deployment"]
+related_docs: ["Infrastructure knowledge", "Container runtime", "Machine images", "Proxmox rehearsal", "Configuration and secrets"]
 ---
 
-# Deployment documentation
+# Deployment architecture
 
-FlowForm deployment has two distinct concerns: declaring the environment that
-should exist and publishing artifacts that an environment may consume. The CDK
-application describes AWS environment shapes; the Proxmox tooling describes a
-local rehearsal with comparable runtime roles. GitHub workflows currently
-publish selected frontend assets and runtime images, but do not perform a full
-backend deployment.
+Deployment joins declared environment topology, promoted immutable artifacts,
+runtime configuration, and host convergence. These are separate decisions: an
+artifact can exist without being selected by an environment, and a declared
+environment can exist without showing that its hosts are healthy.
 
 ```text
-declarations                  artifacts
-    |                            |
-    v                            v
-CDK / Terraform shape      frontend / runtime images
-    |                            |
-    +-------------+--------------+
-                  v
-        configuration + secrets
-                  |
-                  v
-           host convergence
-                  |
-                  v
-             live verification
+environment declaration + network boundary
+                    |
+published machine/container artifacts
+                    |
+                    v
+          selected release and configuration
+                    |
+                    v
+              host convergence
+                    |
+                    v
+             environment verification
 ```
 
-## Declared environments
+## AWS operator-facing operations model
 
-The AWS model distinguishes development from full-deployment environments.
-Full environments compose security, registry, networking, database,
-application, frontend, and observability stacks with explicit dependencies.
-Hosts consume completed machine-image identifiers and converge through shared
-bootstrap contracts. A synthesized topology establishes intended resource
-relationships; it does not demonstrate that those resources exist in an
-account.
+AWS deployment work is exposed through one operator-facing operations area.
+Its entry points are thin coordinators that can be invoked from a developer
+workstation or an automated CLI workflow. They validate the requested action
+and delegate to the image, container, deployment, configuration, or host
+implementation that owns it.
 
-The local Proxmox rehearsal owns its Terraform, cloud-init, fixture, and
-operator lifecycle separately. Both platforms consume machine images and
-runtime definitions, but neither platform owns the process that builds those
-artifacts.
+```text
+operator or automated workflow
+             |
+             v
+ centralized AWS operations surface
+      |          |          |
+      v          v          v
+  artifacts   topology   running hosts
+ build/select  deploy     converge/verify/recover
+      \          |          /
+       +---- owning implementations
+```
 
-## Publication and convergence
+This gives operators a consistent place to discover AWS infrastructure actions
+without creating a second implementation layer. The operations area owns
+workflow boundaries and safety checks; Packer, container tooling, deployment
+code, and host automation continue to own execution details. Its README and
+command help are authoritative for which actions are currently available.
+Proxmox retains its separate rehearsal lifecycle.
 
-The frontend publication workflow builds and synchronizes the two frontend
-applications to the staging hosting boundary. The runtime-image workflow
-publishes four immutable image sources and retains a digest manifest. Neither
-workflow applies CDK, promotes image digests into active runtime parameters,
-runs database migrations, or restarts application hosts.
+## AWS boundary
 
-Host bootstrap and container definitions are therefore downstream consumers,
-not evidence that publication completed a deployment. Configuration and secrets
-must still be delivered, hosts converged, services verified, and live platform
-health observed.
+AWS deployment code owns the cloud topology, including the separation between
+public ingress/proxy responsibilities and private application and data
+responsibilities. Network controls, service identity, and runtime policy each
+contribute to that boundary; no single layer establishes application security
+or service health.
 
-[[deployment-model|Deployment model]] provides the environment and CDK stack
-topology. [[aws-network-topology|AWS network topology]] provides the VPC,
-subnet, routing, endpoint, and security-group contract. [[cloud-deployment|Cloud
-deployment]] provides the exact triggers, credentials, actions, and limits of
-the checked-in AWS publication workflows.
-[[aws-staging-bring-up|AWS staging bring-up]] provides the ordered operator
-boundary from a reviewed staging commit through AMI publication, secret
-seeding, application deployment, and live verification.
+### Network topology at a glance
+
+The durable topology is a trust and traffic model, not a resource inventory.
+Inbound traffic crosses a public edge before reaching private application and
+data responsibilities. Outbound application traffic uses an explicitly
+controlled path to approved external dependencies. Deployment, artifact,
+configuration, secret, and management services form a separate control plane.
+
+```text
+internet clients
+       |
+       v
+public ingress / proxy
+       |
+       v
+private application ----> controlled outbound access
+       |                         |
+       v                         v
+private data              external dependencies
+
+deployment control plane ---> artifacts, configuration, secrets, management
+```
+
+This overview explains the intended boundary only. The current deployment
+source owns exact network construction, addressing, service placement, and
+environment-specific exceptions. A listener declared by a container is runtime
+intent; deployment networking determines whether it is externally reachable.
+
+The AWS operations layer deliberately distinguishes image and container
+publication, release promotion, environment deployment, and convergence of
+already deployed hosts. Exact command sequences, account prerequisites, and
+recovery procedures change with the implementation and belong next to those
+operations.
+
+## Other environments
+
+The local Proxmox rehearsal has a separate lifecycle and topology, but consumes
+the same broad artifact and runtime boundaries. Development and test
+environments are separate local compositions, not smaller versions of a cloud
+deployment.
 
 ## Related documents
 
 - [[infrastructure-index|Infrastructure knowledge]]
-- [[deployment-model|Deployment model]]
-- [[aws-network-topology|AWS network topology]]
-- [[aws-staging-bring-up|AWS staging bring-up]]
-- [[cloud-deployment|Cloud deployment]]
+- [[containers-index|Container runtime]]
 - [[images-index|Machine images]]
-- [[containers-index|Container runtime documentation]]
 - [[proxmox-index|Proxmox rehearsal]]
+- [[configuration|Configuration and secrets]]

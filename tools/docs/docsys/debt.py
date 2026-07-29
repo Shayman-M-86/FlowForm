@@ -338,8 +338,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--changed", action="store_true")
     parser.add_argument("--history", action="store_true")
     parser.add_argument("--suggest-splits", action="store_true")
+    parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument("--all", action="store_true", dest="show_all")
+    parser.add_argument("--details", action="store_true")
     parser.add_argument("--format", choices=("text", "json"), default="text")
     args = parser.parse_args(argv)
+    if args.limit < 1:
+        parser.error("--limit must be at least 1")
     docset = DocSet.load(resolve_docs_root(args.docs_root))
     selected = set(args.paths)
     if args.changed:
@@ -356,25 +361,38 @@ def main(argv: list[str] | None = None) -> int:
         args.history,
         args.suggest_splits,
     )
+    selected_results = [
+        result for result in report["documents"] if result["findings"]
+    ]
+    shown = selected_results if args.show_all else selected_results[: args.limit]
     if args.format == "json":
-        print(json.dumps(report, indent=2))
+        payload = {
+            "schema": report["schema"],
+            "document_count": report["document_count"],
+            "total": len(selected_results),
+            "returned": len(shown),
+            "truncated": len(shown) < len(selected_results),
+            "items": shown,
+        }
+        print(json.dumps(payload, separators=(",", ":")))
     else:
         print(f"Documentation debt: {report['document_count']} document(s)")
-        for result in report["documents"]:
+        for result in shown:
             metrics = result["metrics"]
             findings = result["findings"]
-            if not findings:
-                continue
-            print(f"\n{metrics['path']} ({metrics['word_count']} words)")
+            print(f"{metrics['path']} ({metrics['word_count']} words)")
             for finding in findings:
                 print(
-                    f"  {finding['severity']}: {finding['message']} "
-                    f"(confidence {finding['confidence']:.0%})"
+                  f"  {finding['severity']}: {finding['message']} "
+                  f"(confidence {finding['confidence']:.0%})"
                 )
-                for evidence in finding["evidence"]:
-                    print(f"    - {evidence}")
-                for child in finding["suggested_children"]:
-                    print(f"    -> {child}")
+                if args.details:
+                    for evidence in finding["evidence"]:
+                        print(f"    - {evidence}")
+                    for child in finding["suggested_children"]:
+                        print(f"    -> {child}")
+        if len(shown) < len(selected_results):
+            print(f"… {len(selected_results) - len(shown)} more; use --all")
     return 0
 
 

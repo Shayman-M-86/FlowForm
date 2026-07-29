@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate deterministic generated reference catalogues.
+"""Regenerate the small set of useful generated reference catalogues.
 
 Run from the repository root. ``--docs-root`` selects the documentation tree.
 Docsys owns the JSON discovery products and health dashboard.
@@ -7,7 +7,6 @@ Docsys owns the JSON discovery products and health dashboard.
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import subprocess
 from datetime import date
@@ -118,44 +117,19 @@ def workflows() -> str:
                     "## Workflow inventory\n\n| File | Name | Trigger declaration |\n| --- | --- | --- |\n" + "\n".join(sorted(rows)))
 
 
-def configuration() -> str:
-    names: set[str] = set()
-    for path in tracked():
-        if path.suffix not in {".py", ".sh", ".yml", ".yaml", ".json", ".md"}:
-            continue
-        if not str(path).startswith(("backend/", "infra/", "scripts/", ".github/")):
-            continue
-        names.update(re.findall(r"\b(?:FLOWFORM|AUTH0|AWS|DATABASE|POSTGRES|GRAFANA)_[A-Z0-9_]+\b", (ROOT / path).read_text(errors="replace")))
-    rows = "\n".join(f"| `{name}` | repository configuration reference |" for name in sorted(names))
-    return markdown("Configuration index", ["configuration"], ["backend/", "infra/", "scripts/", ".github/"],
-                    "## Names discovered\n\n| Name | Discovery scope |\n| --- | --- |\n" + rows)
-
-
-def dependencies() -> str:
-    rows = []
-    for path in tracked():
-        if path.name == "pyproject.toml":
-            rows.append(f"| Python project | `{path}` | `project dependencies and tool configuration` |")
-        elif path.name == "package.json" and str(path).startswith("frontend/"):
-            data = json.loads((ROOT / path).read_text())
-            deps = sorted(set((data.get("dependencies") or {}) | (data.get("devDependencies") or {})))
-            rows.append(f"| {data.get('name', path.parent.name)} | `{path}` | {', '.join(f'`{d}`' for d in deps) or '_none_'} |")
-    return markdown("Dependency map", ["tooling"], ["**/pyproject.toml", "frontend/**/package.json"],
-                    "## Manifest inventory\n\n| Component | Manifest | Declared packages |\n| --- | --- | --- |\n" + "\n".join(sorted(rows)))
-
-
-def infrastructure() -> str:
-    paths = [str(p) for p in tracked("infra/") if p.suffix in {".py", ".tf", ".yml", ".yaml", ".sh", ".json"}]
-    rows = "\n".join(f"- `{path}`" for path in paths)
-    return markdown("Infrastructure resources", ["infrastructure"], ["infra/**/*.py", "infra/**/*.tf", "infra/**/*.yml", "infra/**/*.yaml", "infra/**/*.sh"],
-                    "## Declared infrastructure source inventory\n\n" + (rows or "_No matching tracked sources._"))
-
-
 def generated_index() -> str:
-    content = markdown("Generated reference documentation", ["meta"], [GENERATOR, "tools/docs/generate-repository-tree.py", "tools/docs/docsys/"],
-                    "## Contents\n\nThis branch contains reproducible inventories and Docsys discovery snapshots. It does not own explanatory architecture.\n\n- [[api-routes|API routes]]\n- [[ci-workflows|CI workflows]]\n- [[configuration-index|Configuration index]]\n- [[dependency-map|Dependency map]]\n- [[infrastructure-resources|Infrastructure resources]]\n- [[repository-tree|Repository tree snapshot]]\n- [[documentation-dashboard|Documentation health dashboard]]")
-    return content.replace('related_docs: ["Generated reference documentation", "Reference documentation"]',
-                           'related_docs: ["Reference documentation"]')
+    content = markdown("Generated reference documentation", ["meta"], [GENERATOR, "tools/docs/docsys/"],
+                    "## Contents\n\nThis branch retains only compact, reproducible snapshots that are useful for navigation. It does not own explanatory architecture or exhaustive repository inventories.\n\n- [[api-routes|API routes]]\n- [[ci-workflows|CI workflows]]\n- [[documentation-dashboard|Documentation health dashboard]]")
+    return (
+        content.replace(
+            'related_docs: ["Generated reference documentation", "Reference documentation"]',
+            'related_docs: ["Reference documentation"]',
+        )
+        .replace(
+            "- [[generated-index|Generated reference documentation]]\n",
+            "",
+        )
+    )
 
 
 def main() -> int:
@@ -166,12 +140,21 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     products = {
         "generated-index.md": generated_index(), "api-routes.md": api_routes(),
-        "ci-workflows.md": workflows(), "configuration-index.md": configuration(),
-        "dependency-map.md": dependencies(), "infrastructure-resources.md": infrastructure(),
+        "ci-workflows.md": workflows(),
     }
     for name, content in products.items():
         (out / name).write_text(content)
         print(f"wrote {out / name}")
+    for name in (
+        "configuration-index.md",
+        "dependency-map.md",
+        "infrastructure-resources.md",
+        "repository-tree.md",
+    ):
+        stale = out / name
+        if stale.exists():
+            stale.unlink()
+            print(f"removed {stale}")
     return 0
 
 

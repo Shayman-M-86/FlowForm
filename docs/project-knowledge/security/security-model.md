@@ -2,17 +2,18 @@
 title: Security model
 aliases: ["Security model"]
 document_type: architecture
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:4ff138dd1ccd6f06117bf6afc7f24778b23bd9eac4f8a186b43df0ec5aeb9fba
-last_edited: 2026-07-29
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, infrastructure, security]
 related_code:
+  - "../../../backend/app/core/config.py"
+change_triggers:
   - "../../../backend/app/middleware/auth/"
   - "../../../backend/app/services/access/"
   - "../../../backend/app/services/public_submissions/"
   - "../../../backend/app/crypto/"
-  - "../../../backend/app/core/config.py"
   - "../../../backend/app/middleware/rate_limit/"
   - "../../../infra/containers/"
   - "../../../infra/deployment/"
@@ -22,7 +23,7 @@ related_docs:
   - "Identity and authentication"
   - "Respondent access and continuity"
   - "Responses and encryption"
-  - "Configuration implementation"
+  - "Configuration and secrets"
 ---
 
 # Security model
@@ -101,4 +102,4 @@ or a complete threat model.
 - [[identity-and-authentication|Identity and authentication]]
 - [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[responses-and-encryption|Responses and encryption]]
-- [[configuration|Configuration implementation]]
+- [[configuration|Configuration and secrets]]

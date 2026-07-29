@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # Launch the FlowForm Docsys documentation MCP server.
 #
-# Exposes the deterministic docsys documentation tools (search_docs,
-# get_document, get_related, get_task_context, get_impacted_docs,
-# check_freshness, documentation_debt, doc_health) over MCP stdio. It reuses
-# the existing tools/docs/docsys package; it does not reimplement anything.
+# Exposes the bounded, read-only Docsys `find` and `read` tools over MCP stdio.
+# The MCP adapter and CLI share the same Docsys request contracts.
 #
 # The server is standard-library only, so no virtualenv or dependency install
 # is required — just a Python 3 interpreter.

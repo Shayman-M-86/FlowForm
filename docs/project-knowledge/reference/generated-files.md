@@ -2,13 +2,20 @@
 title: Generated files
 aliases: ["Generated files"]
 document_type: reference
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:4cd01763d36c2aa77e11b17f0579af26d4f544adad893fb9dd852316748b14b3
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [tooling]
-related_code: ["../../../backend/scripts/export-openapi.sh", "../../../frontend/scripts/generate-types.mjs", "../../../scripts/ci/sync-openapi.sh", "../../../tools/docs/", "../../../scripts/secrets/generate-env-files.sh", "../../../infra/images/"]
-related_docs: ["Generated reference documentation", "Scripts catalogue", "Repository map"]
+related_code:
+  - "../../../backend/scripts/export-openapi.sh"
+  - "../../../frontend/scripts/generate-types.mjs"
+  - "../../../scripts/ci/sync-openapi.sh"
+  - "../../../scripts/secrets/generate-env-files.sh"
+change_triggers:
+  - "../../../tools/docs/"
+  - "../../../infra/machine-images/"
+related_docs: ["Generated reference documentation", "Configuration and generated output", "Repository ownership and entry points"]
 ---
 
 # Generated files
@@ -30,14 +37,12 @@ maintained source + generator
             +--> discard when transient
 ```
 
-| Output family | Generator/source | Policy |
+| Output family | Owning source | Policy |
 | --- | --- | --- |
-| `backend/openapi.yaml` | `backend/scripts/export-openapi.sh` | Committed contract; regenerate and review drift. |
-| Studio API/schema artifacts | Studio scripts and `frontend/scripts/generate-types.mjs` | Committed; do not hand-edit. |
-| Documentation index, health, and discovery output | `tools/docs/` / `python3 -m docsys` | Generated documentation; regenerate only. |
-| Repository tree snapshot | `tools/docs/generate-repository-tree.py` | Generated documentation; regenerate only. |
-| Development environment files | `scripts/secrets/generate-env-files.sh` | Machine-local and environment-specific. |
-| Packer/CDK build output | image tooling and CDK synthesis | Transient unless intentionally captured as evidence. |
+| API contracts and browser artifacts | Backend contract export and frontend generation. | Regenerate and review committed drift. |
+| Documentation inventories and health output | Documentation tooling. | Regenerate only. |
+| Local configuration material | Local configuration tooling. | Environment-specific; do not treat as canonical. |
+| Build and deployment output | The owning image or deployment tool. | Normally transient unless deliberately captured as evidence. |
 
 The active documentation tree's generated documentation lives under
 `project-knowledge/reference/generated/`; do not manually edit it.
@@ -45,5 +50,5 @@ The active documentation tree's generated documentation lives under
 ## Related documents
 
 - [[generated-index|Generated reference documentation]]
-- [[scripts-catalogue|Scripts catalogue]]
-- [[repository-map|Repository map]]
+- [[configuration-catalogue|Configuration and generated output]]
+- [[repository-map|Repository ownership and entry points]]

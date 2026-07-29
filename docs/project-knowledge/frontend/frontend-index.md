@@ -2,18 +2,19 @@
 title: Frontend implementation
 aliases: ["Frontend implementation"]
 document_type: implementation
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:31324dbf9dbb4b7b7c3c6e2d7f6c59b4ba94b7cbfb5c1a9b1945743cec658eec
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [frontend]
 related_code:
   - "../../../frontend/package.json"
   - "../../../frontend/pnpm-workspace.yaml"
+  - "../../../frontend/scripts/generate-types.mjs"
+change_triggers:
   - "../../../frontend/apps/public-site/src/"
   - "../../../frontend/apps/studio-app/src/"
   - "../../../frontend/packages/"
-  - "../../../frontend/scripts/generate-types.mjs"
 related_docs: ["Builder and rules", "Product knowledge"]
 ---
 

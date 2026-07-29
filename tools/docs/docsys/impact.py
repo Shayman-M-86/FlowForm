@@ -157,16 +157,18 @@ def impact_report(
     base: str | None = None,
     head: str | None = None,
     docset: DocSet | None = None,
+    changed_files: list[str] | None = None,
 ) -> dict:
     """Build a full impact report for a git range (or the working tree)."""
-    diff = gitutil.changed_files(base, head)
+    diff = None if changed_files is not None else gitutil.changed_files(base, head)
+    files = changed_files if changed_files is not None else diff.files
     # Documentation edits themselves are reported separately so a reviewer can
     # see whether impacted docs were already touched in the same change.
     documentation_prefixes = ("docs/",)
     code_changes = [
-        f for f in diff.files if not f.startswith(documentation_prefixes)
+        f for f in files if not f.startswith(documentation_prefixes)
     ]
-    doc_changes = [f for f in diff.files if f.startswith(documentation_prefixes)]
+    doc_changes = [f for f in files if f.startswith(documentation_prefixes)]
     impacted = detect_impact(code_changes, docset)
 
     changed_doc_paths = set(doc_changes)
@@ -178,9 +180,9 @@ def impact_report(
 
     return {
         "schema": "flowform.docsys.impact/1",
-        "comparison": diff.reason,
-        "base": diff.base,
-        "head": diff.head,
+        "comparison": "explicit changed files" if diff is None else diff.reason,
+        "base": None if diff is None else diff.base,
+        "head": None if diff is None else diff.head,
         "changed_code_files": sorted(code_changes),
         "changed_doc_files": sorted(doc_changes),
         "impacted_document_count": len(results),
@@ -194,26 +196,69 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="docsys impact")
     parser.add_argument("--base", help="base commit/ref to diff against")
     parser.add_argument("--head", help="head commit/ref (default HEAD)")
-    parser.add_argument("--json", action="store_true", help="emit JSON")
+    parser.add_argument(
+        "--changed",
+        action="append",
+        default=[],
+        metavar="FILE",
+        help="analyse an exact changed file instead of a Git range; repeatable",
+    )
+    parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument("--all", action="store_true", dest="show_all")
+    parser.add_argument("--details", action="store_true")
+    parser.add_argument("--format", choices=("text", "json"), default="text")
     args = parser.parse_args(argv)
 
-    report = impact_report(args.base, args.head)
-    if args.json:
-        print(json.dumps(report, indent=2))
+    if args.changed and (args.base or args.head):
+        parser.error("--changed cannot be combined with --base or --head")
+    if args.limit < 1:
+        parser.error("--limit must be at least 1")
+
+    report = impact_report(
+        args.base,
+        args.head,
+        changed_files=args.changed or None,
+    )
+    documents = report["impacted_documents"]
+    shown = documents if args.show_all else documents[: args.limit]
+    if args.format == "json":
+        payload = {
+            "schema": report["schema"],
+            "comparison": report["comparison"],
+            "total": len(documents),
+            "returned": len(shown),
+            "truncated": len(shown) < len(documents),
+            "items": (
+                shown
+                if args.details
+                else [
+                    {
+                        "path": item["path"],
+                        "title": item["title"],
+                        "confidence": item["confidence"],
+                        "modified_in_change": item["modified_in_change"],
+                    }
+                    for item in shown
+                ]
+            ),
+        }
+        print(json.dumps(payload, separators=(",", ":")))
         return 0
 
     print(f"Impact report ({report['comparison']})")
     print(f"  code files changed: {len(report['changed_code_files'])}")
     print(f"  docs changed:       {len(report['changed_doc_files'])}")
     print(f"  impacted documents: {report['impacted_document_count']}")
-    for d in report["impacted_documents"]:
+    for d in shown:
         flag = "edited" if d["modified_in_change"] else "NOT edited"
-        print(f"\n  [{d['confidence'].upper():6}] {d['title']}  ({flag})")
-        print(f"           {d['path']}")
-        for reason in d["reasons"]:
-            print(f"           - {reason}")
-        for f in d["matched_files"][:6]:
-            print(f"           · {f}")
+        print(f"  [{d['confidence'].upper():6}] {d['path']} — {d['title']} ({flag})")
+        if args.details:
+            for reason in d["reasons"]:
+                print(f"           - {reason}")
+            for f in d["matched_files"][:6]:
+                print(f"           · {f}")
+    if len(shown) < len(documents):
+        print(f"  … {len(documents) - len(shown)} more; use --all")
     return 0
 
 

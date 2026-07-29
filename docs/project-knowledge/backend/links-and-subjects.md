@@ -2,19 +2,20 @@
 title: Links and subjects
 aliases: ["Links and subjects"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:c32dd420da148de7b4c588d69a6e2ae81eec019490a5c3e992e73146401aa70a
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, security]
 related_code:
   - "../../../backend/app/services/survey_links.py"
   - "../../../backend/app/services/participants.py"
-  - "../../../backend/app/services/public_submissions/core/resolution/"
   - "../../../backend/app/schema/orm/core/project_subject.py"
   - "../../../backend/app/schema/orm/core/survey_access.py"
   - "../../../frontend/apps/studio-app/src/lib/surveyAccessDesign.ts"
   - "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/SurveyAccessTab.tsx"
+change_triggers:
+  - "../../../backend/app/services/public_submissions/core/resolution/"
 related_docs:
   - "Backend knowledge"
   - "Respondent access and continuity"

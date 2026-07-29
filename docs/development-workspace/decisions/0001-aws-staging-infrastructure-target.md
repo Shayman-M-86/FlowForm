@@ -5,17 +5,17 @@ document_type: decision
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-30
 tags: [infrastructure, security, configuration, ci-cd]
-related_code:
+related_code: []
+change_triggers:
   - "../../../infra/deployment/aws/cdk/"
   - "../../../infra/deployment/bootstrap/"
   - "../../../infra/containers/"
-  - "../../../infra/images/"
+  - "../../../infra/machine-images/"
 related_docs:
   - "Engineering decisions"
-  - "AWS CDK staging plan"
-  - "AWS stack specifications"
+  - "AWS staging runtime convergence"
 ---
 
 # ADR 0001: AWS staging infrastructure target
@@ -51,12 +51,12 @@ or database access, multi-AZ capacity, and static AWS credentials. Deployment
 identities are intended to use short-lived GitHub OIDC credentials and routine
 host control is intended to use SSM with a recovery path.
 
-The detailed implementation sequence is retained in
-[[aws-cdk-staging-plan|AWS CDK staging plan]]. Re-verify source and current
-infrastructure documentation before relying on any of these boundaries.
+The remaining delivery work is coordinated in
+[[aws-staging-runtime-convergence|AWS staging runtime convergence]]. Re-verify
+source and current infrastructure documentation before relying on these
+boundaries.
 
 ## Related documents
 
 - [[decisions-index|Engineering decisions]]
-- [[aws-cdk-staging-plan|AWS CDK staging plan]]
-- [[aws-stack-specifications|AWS stack specifications]]
+- [[aws-staging-runtime-convergence|AWS staging runtime convergence]]

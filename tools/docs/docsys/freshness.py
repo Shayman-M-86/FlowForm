@@ -137,17 +137,48 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(prog="docsys freshness")
-    parser.add_argument("--json", action="store_true", help="emit JSON")
+    parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument("--all", action="store_true", dest="show_all")
+    parser.add_argument("--details", action="store_true")
+    parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument(
         "--only",
         choices=[CURRENT, REVIEW, STALE, UNKNOWN],
         help="show only one classification",
     )
     args = parser.parse_args(argv)
+    if args.limit < 1:
+        parser.error("--limit must be at least 1")
 
     report = health_report()
-    if args.json:
-        print(json.dumps(report, indent=2))
+    selected = [
+        item
+        for item in report["documents"]
+        if (not args.only or item["classification"] == args.only)
+        and (args.only or item["classification"] != CURRENT)
+    ]
+    shown = selected if args.show_all else selected[: args.limit]
+    if args.format == "json":
+        payload = {
+            "schema": report["schema"],
+            "counts": report["counts"],
+            "total": len(selected),
+            "returned": len(shown),
+            "truncated": len(shown) < len(selected),
+            "items": (
+                shown
+                if args.details
+                else [
+                    {
+                        "path": item["path"],
+                        "title": item["title"],
+                        "classification": item["classification"],
+                    }
+                    for item in shown
+                ]
+            ),
+        }
+        print(json.dumps(payload, separators=(",", ":")))
         return 0
 
     c = report["counts"]
@@ -156,15 +187,13 @@ def main(argv: list[str] | None = None) -> int:
         f"{c[CURRENT]} current, {c[REVIEW]} review, "
         f"{c[STALE]} likely stale, {c[UNKNOWN]} unknown"
     )
-    for d in report["documents"]:
-        if args.only and d["classification"] != args.only:
-            continue
-        if d["classification"] == CURRENT and not args.only:
-            continue  # keep the default view focused on what needs attention
-        print(f"\n  [{d['classification']}] {d['title']}")
-        print(f"           {d['path']}")
-        for reason in d["reasons"]:
-            print(f"           - {reason}")
+    for d in shown:
+        print(f"  [{d['classification']}] {d['path']} — {d['title']}")
+        if args.details:
+            for reason in d["reasons"]:
+                print(f"           - {reason}")
+    if len(shown) < len(selected):
+        print(f"  … {len(selected) - len(shown)} more; use --all")
     return 0
 
 

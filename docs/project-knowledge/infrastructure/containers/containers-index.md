@@ -1,68 +1,50 @@
 ---
-title: Container runtime documentation
-aliases: ["Container runtime documentation"]
-document_type: overview
-status: verified
+title: Container runtime
+aliases: ["Container runtime", "Container runtime documentation", "Runtime containers"]
+document_type: architecture
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:d44d410c9781be22efc0c482ff8cece91acf82bb26239bc80a2ba20e6e0e9126
-last_edited: 2026-07-27
-tags: [infrastructure, backend]
+verified_evidence_digest: null
+last_edited: 2026-07-30
+tags: [infrastructure]
 related_code:
-  - "../../../../infra/containers/"
-related_docs: ["Infrastructure knowledge", "Runtime containers"]
+  - "../../../../infra/containers/README.md"
+change_triggers:
+  - "../../../../infra/containers/images/"
+  - "../../../../infra/containers/runtime/"
+related_docs: ["Infrastructure knowledge", "Deployment architecture", "Local infrastructure"]
 ---
 
-# Container runtime documentation
+# Container runtime
 
-FlowForm's container layer separates reusable images, shared host roles, and
-environment-specific composition. Buildable base images provide application
-software or supporting services. Shared runtime Compose files define the
-deployed application and proxy roles. Strategy directories adapt those roles
-for development, test, AWS-oriented deployment, and the Proxmox rehearsal.
+The container tree separates independently published service images from the
+runtime definitions that compose them. Image contexts own service software and
+configuration templates; runtime definitions own topology, role composition,
+and environment adapters. Secrets are selected at runtime and are not part of
+an image build.
 
 ```text
-buildable container images
-           |
-           v
-shared runtime definitions
-     /              \
-    v                v
- app host role    proxy host role
-    |                |
-    +--------+-------+
-             |
-   environment strategy overlays
-   dev / test / AWS / rehearsal
+container image contexts
+          |
+          v
+ shared runtime roles and helpers
+          |
+     +----+----+
+     v         v
+  AWS roles  local/rehearsal adapters
 ```
 
-## Runtime shape
+The deployed runtime separates proxy and application roles. Local development,
+tests, and the Proxmox rehearsal adapt that shared model without establishing a
+claim that every service runs in every environment. Database placement and
+credentials are supplied by the selected environment.
 
-The shared deployment model uses two host-level Compose projects. The
-application role runs the backend and its local telemetry collector; the proxy
-role runs ingress, restricted egress, and the telemetry gateway. PostgreSQL is
-not part of either shared host composition. Database placement and credentials
-are supplied by the selected environment.
-
-Development and tests deliberately use different compositions. Development
-combines a source-mounted backend with two PostgreSQL services for iteration.
-The rehearsal preserves the split roles and adds isolated fixture services,
-local TLS, and registry overlays. These variants share contracts where useful
-without implying that every service runs in every environment.
-
-## Security and state boundaries
-
-Runtime services receive confidential values through file-backed secrets where
-the shared contract requires them. Compose definitions constrain privileges,
-writable paths, and log growth; individual collectors regain only the host
-access needed for their role. Persistent application data belongs to database
-or explicitly named volumes, not to the container image.
-
-[[runtime-containers|Runtime containers]] provides the detailed service,
-network, mount, secret, and overlay mapping behind this model.
+The checked-in Compose and image definitions specify intended service
+boundaries, including constrained privileges, mounts, and logging. They are not
+proof that an external telemetry destination, registry, or deployment is live.
 
 ## Related documents
 
 - [[infrastructure-index|Infrastructure knowledge]]
-- [[runtime-containers|Runtime containers]]
-- [[deployment-index|Deployment documentation]]
+- [[deployment-index|Deployment architecture]]
 - [[local-infrastructure|Local infrastructure]]

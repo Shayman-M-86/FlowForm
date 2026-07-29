@@ -2,21 +2,21 @@
 title: Backend configuration patterns
 aliases: ["Backend configuration patterns"]
 document_type: implementation
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:31061852b3fdb13ae9486f6d432b8e3386e46336047580d7fe235750d818efa5
-last_edited: 2026-07-29
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, configuration]
 related_code:
   - "../../../../backend/app/core/config.py"
   - "../../../../backend/app/core/factory.py"
   - "../../../../backend/app/aws/startup_validation.py"
+change_triggers:
   - "../../../../infra/env/"
   - "../../../../scripts/secrets/"
 related_docs:
   - "Backend implementation documentation"
-  - "Configuration implementation"
-  - "Secrets and configuration"
+  - "Configuration and secrets"
 ---
 
 # Backend configuration patterns
@@ -54,5 +54,4 @@ linked code and configuration references before this document can be promoted.
 ## Related documents
 
 - [[implementation-index|Backend implementation documentation]]
-- [[configuration|Configuration implementation]]
-- [[secrets-and-configuration|Secrets and configuration]]
+- [[configuration|Configuration and secrets]]

@@ -9,6 +9,7 @@ Checks every Markdown file under docs/ for:
 - an Obsidian alias matching each document title
 - tags drawn only from the controlled vocabulary in the documentation model
 - related_docs entries that resolve to an existing document title
+- related_code entries that name exact existing repository files
 - optional tooling fields, when present, having valid shapes: change_triggers
   and exclusions must be lists; code_confidence must be high/medium/low
 
@@ -20,6 +21,8 @@ for the conventions.
 import re
 from pathlib import Path
 
+from docsys.model import related_code_file_error
+
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 
@@ -28,11 +31,10 @@ REQUIRED = ["title", "document_type", "status", "authority",
             "related_docs"]
 ALLOWED_STATUS = {"scaffold", "draft", "verified"}
 ALLOWED_CONFIDENCE = {"high", "medium", "low"}
-# Optional tooling fields (consumed by tools/docs/docsys/): related_code may
-# use directories and globs; change_triggers/exclusions extend or subtract the
-# matched code set; code_confidence weights impact/freshness. See the
-# documentation model for the contract.
-LIST_FIELDS = {"aliases", "change_triggers", "exclusions"}
+# Optional tooling fields (consumed by tools/docs/docsys/):
+# change_triggers/exclusions may use broader patterns; related_code is restricted
+# to exact existing repository files.
+LIST_FIELDS = {"aliases", "related_code", "change_triggers", "exclusions"}
 TAG_VOCABULARY = {"backend", "frontend", "infrastructure", "security",
                   "configuration", "ci-cd", "tooling", "meta"}
 
@@ -114,6 +116,11 @@ for path in sorted(DOCS.rglob("*.md")):
     for field in LIST_FIELDS:
         if field in fm and not isinstance(fm[field], list):
             issues.append(f"{rel}: optional field '{field}' must be a list")
+    related_code = fm.get("related_code")
+    if isinstance(related_code, list):
+        for entry in related_code:
+            if error := related_code_file_error(path, entry):
+                issues.append(f"{rel}: related_code '{entry}' {error}")
     confidence = fm.get("code_confidence")
     if confidence is not None and confidence not in ALLOWED_CONFIDENCE:
         issues.append(f"{rel}: code_confidence '{confidence}' not in "

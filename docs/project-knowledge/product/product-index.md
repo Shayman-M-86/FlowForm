@@ -2,15 +2,16 @@
 title: Product knowledge
 aliases: ["Product knowledge"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:03a269819498fc21b450d2f60b04c2801e56334a4a76d431ba4c7922624fdf58
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, frontend, security]
 related_code:
-  - "../../../frontend/packages/builder/src/"
   - "../../../backend/app/services/content.py"
   - "../../../backend/app/domain/submission_access_rules.py"
+change_triggers:
+  - "../../../frontend/packages/builder/src/"
   - "../../../backend/app/services/public_submissions/"
 related_docs:
   - "Builder and rules"

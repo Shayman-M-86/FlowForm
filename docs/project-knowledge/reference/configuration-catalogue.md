@@ -1,42 +1,45 @@
 ---
-title: Configuration catalogue
-aliases: ["Configuration catalogue"]
+title: Configuration and generated output
+aliases: ["Configuration catalogue", "Configuration and generated output"]
 document_type: reference
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:bac5d454acea38b465faa5c4a3303499bd66636f81a22235eebc6a882e00a2c9
-last_edited: 2026-07-29
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [configuration]
-related_code: ["../../../backend/app/core/config.py", "../../../backend/gunicorn.conf.py", "../../../frontend/", "../../../infra/", "../../../.github/workflows/", "../../../.vscode/"]
-related_docs: ["Environment variables", "Configuration implementation", "Secrets and configuration", "Configuration index"]
+related_code:
+  - "../../../backend/app/core/config.py"
+  - "../../../backend/gunicorn.conf.py"
+change_triggers:
+  - "../../../frontend/"
+  - "../../../infra/"
+  - "../../../.github/workflows/"
+  - "../../../.vscode/"
+related_docs: ["Repository ownership and entry points", "Configuration and secrets", "Generated files"]
 ---
 
-# Configuration catalogue
+# Configuration and generated output
 
-This catalogue identifies maintained configuration families and their owners.
-It does not enumerate variable values, credentials, service ports, or runtime
-procedures. Configuration files, settings modules, Compose definitions,
-infrastructure definitions, and CI workflows are authoritative for their area;
-examples define file shape only and local/generated copies are not canonical.
+This page identifies configuration and derived-output owners. It deliberately
+does not reproduce variable names, values, ports, commands, credentials, or
+runtime procedures. The reader of a setting and the generator of an artifact
+are authoritative.
 
-| Family | Primary owner/location |
+| Concern | Owner |
 | --- | --- |
-| Repository automation and tooling | `.github/workflows/`, `.githooks/`, `.vscode/`, `.claude/`, `.codex/`, `.mcp.json` |
-| Backend settings and tooling | `backend/app/core/config.py`, `backend/gunicorn.conf.py`, `backend/pyproject.toml` |
-| Frontend workspace and applications | `frontend/package.json`, workspace/package/app configuration |
-| Development/test containers | `infra/containers/runtime/development/compose/` |
-| Runtime and rehearsal containers | `infra/containers/runtime/`, `infra/containers/images/` |
-| Environment and database setup | `infra/env/`, `infra/database/` |
-| AWS, Proxmox, and image builds | `infra/deployment/`, `infra/machine-images/` |
-| MCP tools | `tools/mcp/` and `.mcp.json` |
+| Application settings and secret handling | Backend settings and the configuration/security documentation branches. |
+| Browser build settings | The owning frontend application and workspace configuration. |
+| Container, database, environment, and deployment settings | Their relevant `infra/` owner. |
+| CI and development tooling | The workflow or tool that reads the setting. |
+| API contracts, generated frontend artifacts, and documentation inventories | Their generating script or tool. |
 
-Before adding a setting, identify the reader and delivery path. Do not place
-secret values in examples, state, generated environment files, or this
-catalogue.
+Before adding a setting, identify its reader, delivery path, and whether it is
+secret. Before changing generated output, identify its generator and inputs.
+Examples describe shape, not live values; local and generated copies are not
+canonical secret stores.
 
 ## Related documents
 
-- [[environment-variables|Environment variables]]
-- [[configuration|Configuration implementation]]
-- [[secrets-and-configuration|Secrets and configuration]]
-- [[configuration-index|Configuration index]]
+- [[repository-map|Repository ownership and entry points]]
+- [[configuration|Configuration and secrets]]
+- [[generated-files|Generated files]]

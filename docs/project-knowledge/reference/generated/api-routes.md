@@ -5,7 +5,7 @@ document_type: generated
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-30
 tags: [backend]
 related_code: []
 related_docs: ["Generated reference documentation", "Reference documentation"]

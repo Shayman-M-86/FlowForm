@@ -8,8 +8,8 @@ front-matter shape used across ``docs/`` — the same shape the existing
 ``tools/docs/validate-doc-*.py`` validators parse — extended with the
 optional tooling fields described in the documentation model:
 
-- ``related_code``    list of repo paths, directories, or globs (relative to
-                      the document) that own the claims in the document
+- ``related_code``    list of exact repository files (relative to the
+                      document) that own the claims in the document
 - ``change_triggers`` optional extra paths/globs that should flag the document
                       for review even if not in ``related_code``
 - ``exclusions``      optional paths/globs to subtract from the matched set
@@ -149,14 +149,14 @@ def _repo_relative(path: Path) -> str:
 
 
 def resolve_code_pattern(doc_path: Path, pattern: str) -> str:
-    """Resolve one ``related_code`` entry to a repo-relative pattern string.
+    """Resolve one code-linkage entry to a repo-relative pattern string.
 
     Entries are written relative to the document's directory (the same
-    convention as relative Markdown links and ``related_code`` in existing
-    docs). A trailing ``/`` marks a directory prefix; ``*``/``?``/``[`` mark a
-    glob. Plain files and directories are normalised the same way. The returned
-    string preserves any trailing ``/`` and glob metacharacters so
-    :func:`pattern_matches` can interpret them.
+    convention as relative Markdown links). ``related_code`` validation permits
+    only exact files, while optional trigger and exclusion fields may contain
+    directories or globs. The returned string preserves trailing ``/`` and glob
+    metacharacters so :func:`pattern_matches` can interpret those broader
+    fields.
     """
     pattern = pattern.strip()
     if not pattern:
@@ -168,6 +168,26 @@ def resolve_code_pattern(doc_path: Path, pattern: str) -> str:
     if had_trailing_slash and not rel.endswith("/"):
         rel += "/"
     return rel
+
+
+def related_code_file_error(doc_path: Path, value: object) -> str | None:
+    """Return why a ``related_code`` entry is not one exact repository file."""
+    raw = str(value).strip()
+    if not raw:
+        return "must not be empty"
+    if Path(raw).is_absolute():
+        return "must be relative to the document"
+    if raw.endswith("/") or any(char in raw for char in "*?["):
+        return "must name one file; directories and globs are not allowed"
+
+    resolved = (doc_path.parent / raw).resolve()
+    try:
+        resolved.relative_to(ROOT)
+    except ValueError:
+        return "must stay inside the repository"
+    if not resolved.is_file():
+        return "must resolve to an existing file"
+    return None
 
 
 def pattern_matches(pattern: str, repo_path: str) -> bool:

@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""Validate the shared Codex/Claude documentation-context setup.
-
-This validator intentionally uses only the Python standard library so it works
-in the same dependency-free environments as Docsys and CI.
-"""
+"""Validate the lightweight Codex/Claude documentation workflow."""
 
 from __future__ import annotations
 
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -14,13 +11,16 @@ from pathlib import Path
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
-SKILL_NAME = "flowform-doc-context"
-VERIFICATION_SKILL_NAME = "flowform-doc-verification"
-COMMIT_SKILL_NAME = "commit"
+SKILLS = ("flowform-doc-context", "flowform-doc-verification")
 AGENT_NAME = "docs-maintainer"
 
 
-def _front_matter(path: Path) -> dict[str, str]:
+def _require(condition: bool, message: str, errors: list[str]) -> None:
+    if not condition:
+        errors.append(message)
+
+
+def _front_matter(path: Path) -> tuple[dict[str, str], str]:
     text = path.read_text()
     if not text.startswith("---\n"):
         raise ValueError(f"{path.relative_to(ROOT)}: missing YAML front matter")
@@ -34,321 +34,190 @@ def _front_matter(path: Path) -> dict[str, str]:
         key, separator, value = line.partition(":")
         if separator:
             values[key.strip()] = value.strip().strip("\"'")
-    return values
+    return values, text[marker + 5 :].strip()
 
 
-def _require(condition: bool, message: str, errors: list[str]) -> None:
-    if not condition:
-        errors.append(message)
+def _commands(hook_map: dict, event: str) -> list[str]:
+    return [
+        hook.get("command", "")
+        for group in hook_map.get(event, [])
+        for hook in group.get("hooks", [])
+    ]
+
+
+def _validate_skills(errors: list[str]) -> None:
+    for name in SKILLS:
+        canonical = ROOT / ".agents" / "skills" / name / "SKILL.md"
+        mirror = ROOT / ".claude" / "skills" / name / "SKILL.md"
+        for path in (canonical, mirror):
+            _require(path.is_file(), f"missing skill: {path.relative_to(ROOT)}", errors)
+        if not canonical.is_file() or not mirror.is_file():
+            continue
+        _require(
+            canonical.read_text() == mirror.read_text(),
+            f"Claude mirror differs from .agents canonical skill: {name}",
+            errors,
+        )
+        try:
+            metadata, _ = _front_matter(canonical)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
+        _require(metadata.get("name") == name, f"skill name must be {name!r}", errors)
+        _require(
+            set(metadata) == {"name", "description"},
+            f"{name} front matter must contain only name and description",
+            errors,
+        )
+
+        openai_yaml = canonical.parent / "agents" / "openai.yaml"
+        _require(
+            openai_yaml.is_file(),
+            f"missing skill metadata: {openai_yaml.relative_to(ROOT)}",
+            errors,
+        )
+        if openai_yaml.is_file():
+            text = openai_yaml.read_text()
+            _require(f"${name}" in text, f"{name} metadata must reference the skill", errors)
+            _require(
+                "dependencies:" not in text and "flowform-docs" not in text,
+                f"{name} must not preload MCP dependencies",
+                errors,
+            )
+
+
+def _validate_maintainers(errors: list[str]) -> None:
+    codex_path = ROOT / ".codex" / "agents" / f"{AGENT_NAME}.toml"
+    claude_path = ROOT / ".claude" / "agents" / f"{AGENT_NAME}.md"
+    _require(codex_path.is_file(), "missing Codex docs-maintainer", errors)
+    _require(claude_path.is_file(), "missing Claude docs-maintainer", errors)
+    if not codex_path.is_file() or not claude_path.is_file():
+        return
+    try:
+        codex = tomllib.loads(codex_path.read_text())
+        claude_metadata, claude_body = _front_matter(claude_path)
+    except (tomllib.TOMLDecodeError, ValueError) as exc:
+        errors.append(f"invalid docs-maintainer configuration: {exc}")
+        return
+    codex_body = str(codex.get("developer_instructions", "")).strip()
+    _require(codex.get("name") == AGENT_NAME, "invalid Codex docs-maintainer name", errors)
+    _require(
+        claude_metadata.get("name") == AGENT_NAME,
+        "invalid Claude docs-maintainer name",
+        errors,
+    )
+    required = (
+        "Use document paths supplied by the parent.",
+        "Do not rerun documentation discovery unless the assigned task is to locate or review documentation.",
+    )
+    for sentence in required:
+        _require(sentence in codex_body, f"Codex docs-maintainer missing: {sentence}", errors)
+        _require(sentence in claude_body, f"Claude docs-maintainer missing: {sentence}", errors)
+    forbidden = ("docs_root", "get_task_context", "preloaded", "skills:")
+    for token in forbidden:
+        _require(
+            token not in codex_path.read_text() and token not in claude_path.read_text(),
+            f"docs-maintainer must not force discovery through {token!r}",
+            errors,
+        )
+
+
+def _validate_mcp(errors: list[str]) -> None:
+    try:
+        codex = tomllib.loads((ROOT / ".codex/config.toml").read_text())
+        claude = json.loads((ROOT / ".mcp.json").read_text())
+    except (OSError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
+        errors.append(f"invalid MCP configuration: {exc}")
+        return
+    codex_server = codex.get("mcp_servers", {}).get("flowform-docs", {})
+    claude_server = claude.get("mcpServers", {}).get("flowform-docs", {})
+    _require(bool(codex_server), "Codex flowform-docs MCP is missing", errors)
+    _require(bool(claude_server), "Claude flowform-docs MCP is missing", errors)
+    _require(
+        codex_server.get("command") == claude_server.get("command")
+        and codex_server.get("args") == claude_server.get("args"),
+        "Codex and Claude flowform-docs launchers differ",
+        errors,
+    )
+    launcher = " ".join(
+        [str(codex_server.get("command", ""))]
+        + [str(item) for item in codex_server.get("args", [])]
+    )
+    _require("tools/mcp/docsys_run.sh" in launcher, "invalid Docsys launcher", errors)
+    for owner, server in (("Codex", codex_server), ("Claude", claude_server)):
+        for argument in server.get("args", []):
+            _require(
+                not Path(str(argument)).is_absolute(),
+                f"{owner} flowform-docs launcher arguments must be repository-relative",
+                errors,
+            )
+
+    sys.path.insert(0, str(ROOT / "tools" / "docs"))
+    try:
+        module = importlib.import_module("docsys.mcp_server")
+        tools = module.TOOLS
+    except Exception as exc:
+        errors.append(f"cannot load flowform-docs tool declarations: {exc}")
+        return
+    _require([tool.get("name") for tool in tools] == ["find", "read"], "MCP must advertise only find and read", errors)
+    _require(
+        len(json.dumps(tools, separators=(",", ":")).encode()) < 2_000,
+        "combined MCP tool declarations must remain below 2 KB",
+        errors,
+    )
+    for tool in tools:
+        schema = tool.get("inputSchema", {})
+        _require(schema.get("additionalProperties") is False, f"{tool.get('name')} must reject unknown properties", errors)
+        annotations = tool.get("annotations", {})
+        _require(annotations.get("readOnlyHint") is True, f"{tool.get('name')} must be marked read-only", errors)
+        _require("docs_root" not in schema.get("properties", {}), f"{tool.get('name')} must not expose docs_root", errors)
+    by_name = {tool["name"]: tool for tool in tools}
+    if "find" in by_name:
+        limit = by_name["find"]["inputSchema"]["properties"].get("limit", {})
+        _require(limit.get("maximum") == 5, "MCP find limit must be capped at 5", errors)
+    if "read" in by_name:
+        max_chars = by_name["read"]["inputSchema"]["properties"].get("max_chars", {})
+        _require(max_chars.get("maximum") == 8_000, "MCP read max_chars must be capped at 8000", errors)
+
+
+def _validate_hooks(errors: list[str]) -> None:
+    try:
+        codex = json.loads((ROOT / ".codex/hooks.json").read_text()).get("hooks", {})
+        claude = json.loads((ROOT / ".claude/settings.json").read_text()).get("hooks", {})
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"invalid hook configuration: {exc}")
+        return
+    for owner, hook_map in (("Codex", codex), ("Claude", claude)):
+        session_commands = _commands(hook_map, "SessionStart")
+        _require(
+            not any("doc" in command.lower() for command in session_commands),
+            f"{owner} must not run documentation SessionStart hooks",
+            errors,
+        )
+    removed = (
+        ROOT / "tools/docs/hooks/session_start_doc_suggestion.py",
+        ROOT / "tools/docs/hooks/stop_doc_impact_review.py",
+        ROOT / "tools/docs/hooks/record_doc_review.py",
+        ROOT / ".claude/hooks/stop_doc_impact_review.py",
+    )
+    for path in removed:
+        _require(not path.exists(), f"obsolete hook remains: {path.relative_to(ROOT)}", errors)
 
 
 def validate() -> list[str]:
     errors: list[str] = []
-    codex_skill_path = (
-        ROOT / ".agents" / "skills" / SKILL_NAME / "SKILL.md"
-    )
-    claude_skill_path = (
-        ROOT / ".claude" / "skills" / SKILL_NAME / "SKILL.md"
-    )
-
-    for path in (codex_skill_path, claude_skill_path):
-        _require(
-            path.is_file(),
-            f"missing skill: {path.relative_to(ROOT)}",
-            errors,
-        )
-    if errors:
-        return errors
-
-    codex_skill = codex_skill_path.read_text()
-    claude_skill = claude_skill_path.read_text()
+    _validate_skills(errors)
+    _validate_maintainers(errors)
+    _validate_mcp(errors)
+    _validate_hooks(errors)
     _require(
-        codex_skill == claude_skill,
-        "Codex and Claude flowform-doc-context skills differ",
-        errors,
-    )
-    try:
-        metadata = _front_matter(codex_skill_path)
-    except ValueError as exc:
-        errors.append(str(exc))
-        metadata = {}
-    _require(
-        metadata.get("name") == SKILL_NAME,
-        f"skill name must be {SKILL_NAME!r}",
+        (ROOT / "tools/docs/bin/docsys").is_file(),
+        "missing tools/docs/bin/docsys",
         errors,
     )
     _require(
-        bool(metadata.get("description")),
-        "skill description must not be empty",
-        errors,
-    )
-    _require(
-        set(metadata) == {"name", "description"},
-        "shared skill front matter must contain only name and description",
-        errors,
-    )
-
-    verification_codex_path = (
-        ROOT / ".agents" / "skills" / VERIFICATION_SKILL_NAME / "SKILL.md"
-    )
-    verification_claude_path = (
-        ROOT / ".claude" / "skills" / VERIFICATION_SKILL_NAME / "SKILL.md"
-    )
-    for path in (verification_codex_path, verification_claude_path):
-        _require(
-            path.is_file(),
-            f"missing skill: {path.relative_to(ROOT)}",
-            errors,
-        )
-    if verification_codex_path.is_file() and verification_claude_path.is_file():
-        _require(
-            verification_codex_path.read_text()
-            == verification_claude_path.read_text(),
-            "Codex and Claude flowform-doc-verification skills differ",
-            errors,
-        )
-        try:
-            verification_metadata = _front_matter(verification_codex_path)
-        except ValueError as exc:
-            errors.append(str(exc))
-            verification_metadata = {}
-        _require(
-            verification_metadata.get("name") == VERIFICATION_SKILL_NAME,
-            f"skill name must be {VERIFICATION_SKILL_NAME!r}",
-            errors,
-        )
-        _require(
-            set(verification_metadata) == {"name", "description"},
-            "verification skill front matter must contain only name and description",
-            errors,
-        )
-
-    openai_yaml_path = (
-        ROOT / ".agents" / "skills" / SKILL_NAME / "agents" / "openai.yaml"
-    )
-    _require(openai_yaml_path.is_file(), "missing Codex openai.yaml", errors)
-    if openai_yaml_path.is_file():
-        openai_yaml = openai_yaml_path.read_text()
-        for expected in (
-            "display_name:",
-            "short_description:",
-            f"${SKILL_NAME}",
-            'value: "flowform-docs"',
-        ):
-            _require(
-                expected in openai_yaml,
-                f"Codex openai.yaml missing {expected!r}",
-                errors,
-            )
-
-    verification_openai_yaml = (
-        ROOT
-        / ".agents"
-        / "skills"
-        / VERIFICATION_SKILL_NAME
-        / "agents"
-        / "openai.yaml"
-    )
-    _require(
-        verification_openai_yaml.is_file(),
-        "missing verification-skill openai.yaml",
-        errors,
-    )
-    if verification_openai_yaml.is_file():
-        openai_yaml = verification_openai_yaml.read_text()
-        for expected in (
-            "display_name:",
-            "short_description:",
-            f"${VERIFICATION_SKILL_NAME}",
-            'value: "flowform-docs"',
-        ):
-            _require(
-                expected in openai_yaml,
-                f"verification openai.yaml missing {expected!r}",
-                errors,
-            )
-
-    commit_codex_path = (
-        ROOT / ".agents" / "skills" / COMMIT_SKILL_NAME / "SKILL.md"
-    )
-    commit_claude_path = (
-        ROOT / ".claude" / "skills" / COMMIT_SKILL_NAME / "SKILL.md"
-    )
-    for path in (commit_codex_path, commit_claude_path):
-        _require(
-            path.is_file(),
-            f"missing skill: {path.relative_to(ROOT)}",
-            errors,
-        )
-    if commit_codex_path.is_file() and commit_claude_path.is_file():
-        _require(
-            commit_codex_path.read_text() == commit_claude_path.read_text(),
-            "Codex and Claude commit skills differ",
-            errors,
-        )
-        try:
-            commit_metadata = _front_matter(commit_codex_path)
-        except ValueError as exc:
-            errors.append(str(exc))
-            commit_metadata = {}
-        _require(
-            commit_metadata.get("name") == COMMIT_SKILL_NAME,
-            f"skill name must be {COMMIT_SKILL_NAME!r}",
-            errors,
-        )
-        _require(
-            set(commit_metadata) == {"name", "description"},
-            "commit skill front matter must contain only name and description",
-            errors,
-        )
-
-    commit_openai_yaml = (
-        ROOT
-        / ".agents"
-        / "skills"
-        / COMMIT_SKILL_NAME
-        / "agents"
-        / "openai.yaml"
-    )
-    _require(
-        commit_openai_yaml.is_file(),
-        "missing commit-skill openai.yaml",
-        errors,
-    )
-    if commit_openai_yaml.is_file():
-        openai_yaml = commit_openai_yaml.read_text()
-        for expected in (
-            "display_name:",
-            "short_description:",
-            f"${COMMIT_SKILL_NAME}",
-            "allow_implicit_invocation: false",
-        ):
-            _require(
-                expected in openai_yaml,
-                f"commit openai.yaml missing {expected!r}",
-                errors,
-            )
-
-    commit_command = ROOT / ".claude" / "commands" / "commit.md"
-    _require(commit_command.is_file(), "missing Claude /commit command", errors)
-    if commit_command.is_file():
-        command_text = commit_command.read_text()
-        _require(
-            ".claude/skills/commit/SKILL.md" in command_text,
-            "Claude /commit command does not invoke the shared commit skill",
-            errors,
-        )
-
-    codex_agent_path = ROOT / ".codex" / "agents" / f"{AGENT_NAME}.toml"
-    claude_agent_path = ROOT / ".claude" / "agents" / f"{AGENT_NAME}.md"
-    _require(codex_agent_path.is_file(), "missing Codex docs-maintainer", errors)
-    _require(claude_agent_path.is_file(), "missing Claude docs-maintainer", errors)
-
-    if codex_agent_path.is_file():
-        try:
-            codex_agent = tomllib.loads(codex_agent_path.read_text())
-        except tomllib.TOMLDecodeError as exc:
-            errors.append(f"invalid Codex agent TOML: {exc}")
-            codex_agent = {}
-        for key in ("name", "description", "developer_instructions"):
-            _require(
-                bool(codex_agent.get(key)),
-                f"Codex docs-maintainer missing {key}",
-                errors,
-            )
-        _require(
-            codex_agent.get("name") == AGENT_NAME,
-            f"Codex agent name must be {AGENT_NAME!r}",
-            errors,
-        )
-        _require(
-            codex_agent.get("model") == "gpt-5.6-terra",
-            "Codex docs-maintainer must use gpt-5.6-terra",
-            errors,
-        )
-
-    if claude_agent_path.is_file():
-        try:
-            claude_metadata = _front_matter(claude_agent_path)
-        except ValueError as exc:
-            errors.append(str(exc))
-            claude_metadata = {}
-        _require(
-            claude_metadata.get("name") == AGENT_NAME,
-            f"Claude agent name must be {AGENT_NAME!r}",
-            errors,
-        )
-        claude_agent = claude_agent_path.read_text()
-        _require(
-            "model: sonnet" in claude_agent,
-            "Claude docs-maintainer must use Sonnet",
-            errors,
-        )
-        _require(
-            f"- {SKILL_NAME}" in claude_agent,
-            "Claude docs-maintainer must preload flowform-doc-context",
-            errors,
-        )
-
-    try:
-        codex_config = tomllib.loads((ROOT / ".codex/config.toml").read_text())
-        codex_hooks = json.loads((ROOT / ".codex/hooks.json").read_text())
-        claude_mcp = json.loads((ROOT / ".mcp.json").read_text())
-        claude_settings = json.loads((ROOT / ".claude/settings.json").read_text())
-    except (OSError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
-        errors.append(f"invalid agent configuration: {exc}")
-        return errors
-
-    codex_docs_mcp = codex_config.get("mcp_servers", {}).get("flowform-docs", {})
-    claude_docs_mcp = claude_mcp.get("mcpServers", {}).get("flowform-docs", {})
-    _require(bool(codex_docs_mcp), "Codex flowform-docs MCP is missing", errors)
-    _require(bool(claude_docs_mcp), "Claude flowform-docs MCP is missing", errors)
-    _require(
-        codex_docs_mcp.get("command") == claude_docs_mcp.get("command")
-        and codex_docs_mcp.get("args") == claude_docs_mcp.get("args"),
-        "Codex and Claude flowform-docs MCP launchers differ",
-        errors,
-    )
-    allowed = claude_settings.get("permissions", {}).get("allow", [])
-    _require(
-        "mcp__flowform-docs__*" in allowed,
-        "Claude does not allow the read-only flowform-docs MCP tools",
-        errors,
-    )
-
-    codex_hook_map = codex_hooks.get("hooks", {})
-    claude_hook_map = claude_settings.get("hooks", {})
-    _require(
-        codex_hook_map == claude_hook_map,
-        "Codex and Claude hook configurations differ",
-        errors,
-    )
-    hook_commands = [
-        hook.get("command", "")
-        for groups in codex_hook_map.values()
-        for group in groups
-        for hook in group.get("hooks", [])
-    ]
-    _require(
-        len(hook_commands) == 2,
-        "Codex and Claude must share exactly two configured hooks",
-        errors,
-    )
-    _require(
-        all("tools/docs/hooks/" in command for command in hook_commands),
-        "all agent hooks must use tools/docs/hooks",
-        errors,
-    )
-    compatibility_hooks = list((ROOT / ".claude/hooks").glob("*.py"))
-    _require(
-        all(
-            "TARGET =" in path.read_text()
-            and '"tools"' in path.read_text()
-            and '"hooks"' in path.read_text()
-            and "os.execv" in path.read_text()
-            for path in compatibility_hooks
-        ),
-        ".claude/hooks may contain only forwarders to tools/docs/hooks",
+        (ROOT / "tools/docs/sync-agent-doc-config.py").is_file(),
+        "missing documentation-agent sync command",
         errors,
     )
     return errors
@@ -360,11 +229,7 @@ def main() -> int:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
-    print(
-        "agent setup valid: shared context, verification, and commit skills; "
-        "documentation maintainers; matching flowform-docs MCP configuration; "
-        "and shared hooks"
-    )
+    print("agent documentation workflow valid: on-demand skills, bounded MCP, and no startup documentation hook")
     return 0
 
 

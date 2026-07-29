@@ -1,57 +1,51 @@
 #!/usr/bin/env python3
-"""Single entry point for the documentation tooling: ``python3 -m docsys``.
-
-Subcommands map to the focused tools in this package:
-
-    index       (re)build the active tree's documentation-index.json
-    impact      report documentation impacted by code changes
-    freshness   classify documents against their evidence digest
-    evidence    promote/invalidate staged documentation verification
-    query       ranked deterministic search over documentation
-    context     assemble minimal task/change context
-    health      regenerate the documentation health report + dashboard
-    validate    collection-aware structural validation profiles
-    debt        advisory maintainability and split-candidate analysis
-    propose     scaffold reviewable, agent-assisted update proposals
-
-Each subcommand also runs standalone (``python3 -m docsys.impact ...``); this
-dispatcher just gives agents and humans one memorable command.
-"""
+"""FlowForm documentation tooling."""
 
 from __future__ import annotations
 
+import importlib
 import sys
 
 _COMMANDS = {
-    "index": "docsys.index",
-    "impact": "docsys.impact",
-    "freshness": "docsys.freshness",
-    "evidence": "docsys.evidence",
-    "query": "docsys.query",
-    "search": "docsys.query",
-    "context": "docsys.context",
-    "health": "docsys.health",
-    "propose": "docsys.propose",
-    "validate": "docsys.validate",
-    "debt": "docsys.debt",
+    "find": ("docsys.query", "find a small set of relevant documents"),
+    "read": ("docsys.retrieve", "read one exact document or section"),
+    "impact": ("docsys.impact", "find documentation affected by code changes"),
+    "freshness": ("docsys.freshness", "check implementation evidence freshness"),
+    "health": ("docsys.health", "summarize documentation health"),
+    "debt": ("docsys.debt", "inspect documentation maintenance debt"),
+    "validate": ("docsys.validate", "validate documentation structure"),
+    "index": ("docsys.index", "regenerate the documentation index"),
+    "evidence": ("docsys.evidence", "check or promote verification evidence"),
 }
 
 
-def main(argv: list[str] | None = None) -> int:
-    argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] in ("-h", "--help"):
-        print(__doc__)
-        print("commands:", ", ".join(_COMMANDS))
-        return 0
-    cmd, rest = argv[0], argv[1:]
-    module_name = _COMMANDS.get(cmd)
-    if not module_name:
-        print(f"unknown command: {cmd}")
-        print("commands:", ", ".join(_COMMANDS))
-        return 2
-    import importlib
+def _print_help() -> None:
+    print("usage: docsys COMMAND [OPTIONS]")
+    print()
+    print("Focused documentation discovery and maintenance.")
+    print()
+    print("commands:")
+    width = max(len(command) for command in _COMMANDS)
+    for command, (_, description) in _COMMANDS.items():
+        print(f"  {command:<{width}}  {description}")
+    print()
+    print("Run 'docsys COMMAND --help' for command options.")
 
-    module = importlib.import_module(module_name)
+
+def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if not args or args[0] in {"-h", "--help"}:
+        _print_help()
+        return 0
+
+    command, rest = args[0], args[1:]
+    target = _COMMANDS.get(command)
+    if target is None:
+        print(f"unknown command: {command}", file=sys.stderr)
+        print("Run 'docsys --help' for available commands.", file=sys.stderr)
+        return 2
+
+    module = importlib.import_module(target[0])
     return module.main(rest)
 
 

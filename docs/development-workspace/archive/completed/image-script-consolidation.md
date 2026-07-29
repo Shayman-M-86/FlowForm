@@ -5,10 +5,11 @@ document_type: completed-plan
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-30
 tags: [infrastructure, tooling]
-related_code:
-  - "../../../../infra/images/"
+related_code: []
+change_triggers:
+  - "../../../../infra/machine-images/"
   - "../../../../infra/tests/images/"
 related_docs: ["Completed workspace material"]
 ---
@@ -25,7 +26,7 @@ Its phases covered contract tests, a dispatcher/common library, migration of
 build and mutation commands, legacy-entry-point cutover, and documentation.
 The plan is retained for its rationale and safety ideas only. Current script
 names, supported commands, and completion state must be verified from
-`infra/images/`, tests, and current Project Knowledge.
+the machine-image tooling, tests, and current Project Knowledge.
 
 ## Related documents
 

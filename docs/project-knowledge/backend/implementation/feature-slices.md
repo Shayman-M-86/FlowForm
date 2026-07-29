@@ -2,18 +2,19 @@
 title: Backend feature slices
 aliases: ["Backend feature slices"]
 document_type: implementation
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:1341271d646459f6a9958d1dec6f3aef1a07519701cfc2c26e4668795935568a
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend]
 related_code:
+  - "../../../../backend/openapi.yaml"
+  - "../../../../scripts/ci/sync-openapi.sh"
+change_triggers:
   - "../../../../backend/app/api/v1/"
   - "../../../../backend/app/schema/api/"
   - "../../../../backend/app/services/"
   - "../../../../backend/app/repositories/"
-  - "../../../../backend/openapi.yaml"
-  - "../../../../scripts/ci/sync-openapi.sh"
 related_docs:
   - "Backend implementation documentation"
   - "Backend code organization"

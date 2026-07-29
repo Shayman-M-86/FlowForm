@@ -2,15 +2,16 @@
 title: Component map
 aliases: ["Component map"]
 document_type: reference
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:94c2a7faf74b56becffc32b38d9b280c0d131bd204d78255d9b36d628b4a20d7
-last_edited: 2026-07-28
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, frontend, infrastructure, security]
 related_code:
+  - "../../../backend/app/core/factory.py"
+change_triggers:
   - "../../../frontend/apps/"
   - "../../../frontend/packages/"
-  - "../../../backend/app/core/factory.py"
   - "../../../backend/app/api/v1/"
   - "../../../backend/app/services/"
   - "../../../backend/app/repositories/"
@@ -26,17 +27,16 @@ related_docs:
 
 ![Logical component map](../../assets/architecture/component-map.svg)
 
-This draft maps logical components and their principal dependencies. It stops
-short of file-level ownership, sequence detail, and deployment topology.
+This map names durable logical boundaries. It stops short of file-level
+ownership, commands, sequence detail, and deployment topology.
 
-| Component | Responsibility | Primary dependencies |
+| Component | Responsibility |
 | --- | --- | --- |
-| Public site | Static public product and documentation experience | shared frontend packages |
-| Studio application | Project/survey management and respondent UI surface | Auth0, backend API, shared packages |
-| Shared frontend packages | Builder, schema, UI, styles, and site-shell source shared by applications | generated backend contract where applicable |
-| Backend API | HTTP boundary and coordination of auth, policy, persistence, encryption, and email | Auth0, service dependencies, core/response stores |
-| Core data store | Identifying/admin state, survey content/access, and submission metadata | backend only |
-| Response data store | Encrypted envelopes and answer rows, separate from core SQL relations | backend only |
+| Public site | Public product and documentation experience. |
+| Studio application | Authenticated management and respondent-facing application surface. |
+| Shared frontend packages | Reusable builder, schema, UI, styles, and site-shell capabilities. |
+| Backend API | HTTP coordination of identity, policy, persistence, encryption, and email. |
+| Core and response stores | Separate administrative/content and protected response-data boundaries. |
 
 ```text
 Public Site --------> shared frontend packages <-------- Studio

@@ -5,13 +5,14 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-29
+last_edited: 2026-07-30
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"
   - "../../../backend/scripts/run_backend_security.sh"
   - "../../../backend/scripts/run-tests.py"
   - "../../../scripts/ci/check-openapi-contracts.sh"
+change_triggers:
   - "../../../tools/docs/"
 related_docs: ["Engineering practices", "Testing workflow", "CI/CD implementation", "CI workflows"]
 ---

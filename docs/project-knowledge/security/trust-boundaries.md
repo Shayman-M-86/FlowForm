@@ -2,13 +2,14 @@
 title: Trust boundaries
 aliases: ["Trust boundaries"]
 document_type: architecture
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:9916241e555d0ab00a609c81ba4a213fa198eec05b777b9c6e5fd3149bf848d6
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, infrastructure, security]
 related_code:
   - "../../../backend/app/core/extensions.py"
+change_triggers:
   - "../../../backend/app/middleware/auth/"
   - "../../../backend/app/services/public_submissions/"
   - "../../../backend/app/db/"

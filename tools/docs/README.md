@@ -4,9 +4,10 @@ document_type: implementation
 status: scaffold
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-27
-related_code: ["generate-repository-tree.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/"]
-related_docs: ["../../docs/project-knowledge/engineering-practices/documentation/authoring-guide.md", "../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md"]
+last_edited: 2026-07-30
+related_code: ["generate-reference-docs.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/__main__.py"]
+change_triggers: ["docsys/"]
+related_docs: ["../../docs/project-knowledge/engineering-practices/documentation/documentation-workflow.md", "../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md"]
 ---
 
 # Documentation tools
@@ -16,8 +17,8 @@ Provides lightweight, dependency-free tools for generating and validating the
 
 ## Available tools
 
-`generate-reference-docs.py` and `generate-repository-tree.py` regenerate
-reference output under `docs/project-knowledge/reference/generated/`.
+`generate-reference-docs.py` regenerates the compact reference output under
+`docs/project-knowledge/reference/generated/`.
 `validate-doc-links.py` checks that `[[wiki links]]` resolve to Obsidian note
 filenames or shortest unique note paths and that relative Markdown links resolve
 on disk. `validate-doc-metadata.py` checks required front-matter keys, ISO
@@ -25,14 +26,16 @@ on disk. `validate-doc-metadata.py` checks required front-matter keys, ISO
 global title uniqueness, the controlled tag vocabulary, and `related_docs`
 resolution.
 
-The `docsys/` package builds on the same conventions to offer a documentation index, impact detection, staged evidence verification, freshness checks, deterministic search, task-context assembly, collection-aware validation, advisory documentation-debt analysis, a health dashboard, reviewable update proposals, and an MCP server. See `docsys/README.md`. Run it as `python3 -m docsys <command>` (with `tools/docs/` on `PYTHONPATH`).
+Use `tools/docs/bin/docsys --help` for documentation discovery, retrieval,
+impact review, validation, health checks, and evidence promotion. `find`
+returns a small candidate set and `read` loads only the selected outline,
+section, or bounded body. Exact flags and defaults live in command help rather
+than being duplicated here.
 
-`validate-agent-setup.py` validates the dependency-free, shared Codex and
-Claude documentation-context skill, their `docs-maintainer` agents, and
-matching `flowform-docs` MCP registrations. `hooks/` contains the shared
-SessionStart and PostToolUse hook implementations used by both agents; agent
-configuration files point here instead of maintaining agent-specific copies.
-See `hooks/README.md` for the lifecycle diagram.
+`validate-agent-setup.py` checks the shared documentation skills,
+documentation-maintainer instructions, and the bounded `flowform-docs` MCP
+registration. `sync-agent-doc-config.py` keeps the Claude skill mirrors aligned
+with the canonical `.agents` copies.
 
 ## Conventions enforced
 
@@ -42,7 +45,8 @@ the validators are the executable form of those rules.
 
 ## Usage expectations
 
-Run scripts from the repository root with `python3`. Both validators exit non-zero when issues are found, so they are safe to wire into CI or hooks.
+Run scripts from the repository root. Use each command's `--help` before
+requesting broad output. Validators exit non-zero when issues are found.
 
 ## Limitations
 
