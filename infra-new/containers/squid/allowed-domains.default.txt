@@ -1,0 +1,13 @@
+# TODO(migration): Update paths, contracts, and runtime wiring for infra-new before this file is used.
+# Two Auth0 hosts: the custom login/issuer domain the backend validates tokens
+# against, and the canonical tenant domain the Management API (/api/v2) is
+# served from — Auth0 does not serve /api/v2 on custom domains, so the backend
+# dials both.
+auth.flow-form.com.au
+dev-3wccg4jx4o5wvedn.au.auth0.com
+secretsmanager.ap-southeast-2.amazonaws.com
+kms.ap-southeast-2.amazonaws.com
+ssm.ap-southeast-2.amazonaws.com
+email.ap-southeast-2.amazonaws.com
+api.ecr.ap-southeast-2.amazonaws.com
+908123139858.dkr.ecr.ap-southeast-2.amazonaws.com

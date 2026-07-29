@@ -1,0 +1,24 @@
+{
+  "_migration_todo": "TODO(migration): Update paths, contracts, and runtime wiring for infra-new before this file is used.",
+    "include": [
+        "flowform_infra",
+        "tests",
+        "app.py"
+    ],
+    "exclude": [
+        "**/__pycache__",
+        ".venv",
+        ".pytest_cache",
+        ".ruff_cache",
+        "**/node_modules",
+        "**/.*",
+        "cdk.out"
+    ],
+    "typeCheckingMode": "standard",
+    "venvPath": ".",
+    "venv": ".venv",
+    "pythonVersion": "3.14",
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "reportArgumentType": "none"
+}
