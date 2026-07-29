@@ -14,6 +14,15 @@ for command in --help 'build --help' 'prepare --help' 'verify --help' \
 done
 infra_build_help="$("${image}" build aws --help)"
 grep -Fq -- '--diagnose-ssh' <<<"${infra_build_help}"
+grep -Fq -- '--on-error MODE' <<<"${infra_build_help}"
+
+if "${image}" build aws app --on-error invalid \
+    >"${tmp}/bad-on-error.out" 2>"${tmp}/bad-on-error.err"; then
+  echo 'invalid Packer on-error mode unexpectedly succeeded' >&2
+  exit 1
+fi
+grep -Fq -- '--on-error must be cleanup, abort, or ask' \
+  "${tmp}/bad-on-error.err"
 
 cat >"${tmp}/manifest.json" <<'JSON'
 {"builds":[{"builder_type":"amazon-ebs","artifact_id":"ap-southeast-2:ami-abc123"}]}

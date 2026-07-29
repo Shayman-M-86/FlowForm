@@ -53,8 +53,9 @@ _image_build_proxmox_target() { # target verify-after
 
 cmd_build_main() {
   local platform="${1:-}" target="" validate_only=0 syntax_only=0 diagnose_ssh=0
+  local on_error="cleanup"
   if [[ "${platform}" == -h || "${platform}" == --help ]]; then
-    printf '%s\n' 'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh]' \
+    printf '%s\n' 'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]' \
       '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]'
     return
   fi
@@ -65,10 +66,11 @@ cmd_build_main() {
   fi
   if [[ "${target}" == -h || "${target}" == --help ]]; then
     printf '%s\n' \
-      'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh]' \
+      'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]' \
       '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
       '' \
-      '  --diagnose-ssh  Record live EC2, boot, network, TCP/22, and Packer logs under /tmp.'
+      '  --diagnose-ssh  Stream EC2, boot, network, TCP/22, and Packer diagnostics and retain logs under /tmp.' \
+      '  --on-error MODE Packer failure handling: cleanup (default), abort, or ask.'
     return
   fi
   while [[ $# -gt 0 ]]; do
@@ -76,24 +78,39 @@ cmd_build_main() {
       --validate-only) validate_only=1; shift ;;
       --syntax-only) syntax_only=1; validate_only=1; shift ;;
       --diagnose-ssh) diagnose_ssh=1; shift ;;
+      --on-error)
+        [[ $# -ge 2 ]] || die "--on-error requires cleanup, abort, or ask"
+        on_error="$2"
+        shift 2
+        ;;
+      --on-error=*)
+        on_error="${1#*=}"
+        shift
+        ;;
       -h|--help)
         printf '%s\n' \
-          'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh]' \
+          'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]' \
           '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
           '' \
-          '  --diagnose-ssh  Record live EC2, boot, network, TCP/22, and Packer logs under /tmp.'
+          '  --diagnose-ssh  Stream EC2, boot, network, TCP/22, and Packer diagnostics and retain logs under /tmp.' \
+          '  --on-error MODE Packer failure handling: cleanup (default), abort, or ask.'
         return
         ;;
       *) die "unknown build argument: $1" ;;
     esac
   done
+  [[ "${on_error}" =~ ^(cleanup|abort|ask)$ ]] \
+    || die "--on-error must be cleanup, abort, or ask"
   export PACKER_VALIDATE_ONLY="${validate_only}"
   export PACKER_SYNTAX_ONLY="${syntax_only}"
   export PACKER_DIAGNOSE_SSH="${diagnose_ssh}"
+  export PACKER_ON_ERROR="${on_error}"
   case "${platform}" in
     aws)
       (( diagnose_ssh == 0 || validate_only == 0 )) \
         || die "--diagnose-ssh cannot be combined with validation-only modes"
+      (( validate_only == 0 )) || [[ "${on_error}" == cleanup ]] \
+        || die "--on-error is available only for live builds"
       local vars_file="${PACKER_DIR}/variables/aws.auto.pkrvars.hcl"
       require_vars_file "${vars_file}" "aws.auto.pkrvars.hcl.example"
       _image_validate_aws_vars "${vars_file}"
@@ -141,11 +158,12 @@ cmd_build_main() {
             (( validate_only == 1 )) || _image_verify_aws "${target}" --vars-file "${vars_file}" --parent-ami-id "${built_base}"
           done
           ;;
-        *) die "usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh]" ;;
+        *) die "usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh] [--on-error MODE]" ;;
       esac
       ;;
     proxmox)
       (( diagnose_ssh == 0 )) || die "--diagnose-ssh is available only for AWS builds"
+      [[ "${on_error}" == cleanup ]] || die "--on-error is available only for AWS builds"
       case "${target}" in
         golden|localstack|db) _image_build_proxmox_target "${target}" 1 ;;
         all)

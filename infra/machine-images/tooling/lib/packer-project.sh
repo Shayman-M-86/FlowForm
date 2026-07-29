@@ -43,7 +43,7 @@ run_packer_build() (
   local vars_file="$3"
   shift 3
   local project_dir original_aws_config original_aws_profile packer_aws_config
-  local credential_helper aws_region source_commit diagnostic_report=""
+  local credential_helper aws_region source_commit diagnostic_report="" diagnostic_role
   local diagnostics_pid="" packer_log_path=""
   local -a validate_args
   local -a extra_args=("$@")
@@ -146,8 +146,22 @@ run_packer_build() (
         "${vars_file}"
     )"
     [[ -n "${aws_region}" ]] || die "could not resolve aws_region for SSH diagnostics"
+    case "${only_target}" in
+      *amazon_linux_2023_base) diagnostic_role="base" ;;
+      *flowform_role)
+        local argument
+        for argument in "${extra_args[@]}"; do
+          case "${argument}" in
+            image_role=*) diagnostic_role="${argument#*=}"; break ;;
+          esac
+        done
+        ;;
+      *) die "could not resolve image role for SSH diagnostics from ${only_target}" ;;
+    esac
+    [[ "${diagnostic_role}" =~ ^(base|app|proxy)$ ]] \
+      || die "invalid image role for SSH diagnostics: ${diagnostic_role}"
     diagnostic_report="$(
-      mktemp "${TMPDIR:-/tmp}/flowform-packer-ssh-${source_commit:0:12}-XXXXXX.log"
+      mktemp "${TMPDIR:-/tmp}/flowform-packer-ssh-${diagnostic_role}-${source_commit:0:12}-XXXXXX.log"
     )"
     packer_log_path="${diagnostic_report%.log}.packer.log"
     chmod 0600 "${diagnostic_report}"
@@ -157,13 +171,14 @@ run_packer_build() (
     export PACKER_LOG_PATH="${packer_log_path}"
     log "SSH diagnostics enabled; live report: ${diagnostic_report}"
     bash "${IMAGE_SCRIPT_DIR}/lib/actions/aws-packer-ssh-diagnostics.sh" \
-      "${aws_region}" "${source_commit}" "${diagnostic_report}" &
+      "${aws_region}" "${source_commit}" "${diagnostic_role}" "${diagnostic_report}" &
     diagnostics_pid=$!
   fi
 
   log "building Packer target ${only_target}"
   packer build \
     -timestamp-ui \
+    -on-error="${PACKER_ON_ERROR:-cleanup}" \
     -only="${only_target}" \
     -var "image_root=${IMAGE_ROOT}" \
     -var "repo_root=${REPO_ROOT}" \
