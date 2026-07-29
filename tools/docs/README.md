@@ -30,9 +30,9 @@ The `docsys/` package builds on the same conventions to offer a documentation in
 `validate-agent-setup.py` validates the dependency-free, shared Codex and
 Claude documentation-context skill, their `docs-maintainer` agents, and
 matching `flowform-docs` MCP registrations. `hooks/` contains the shared
-SessionStart, PostToolUse, and Stop hook implementations used by both agents;
-agent configuration files point here instead of maintaining agent-specific
-copies. See `hooks/README.md` for the lifecycle diagram.
+SessionStart and PostToolUse hook implementations used by both agents; agent
+configuration files point here instead of maintaining agent-specific copies.
+See `hooks/README.md` for the lifecycle diagram.
 
 ## Conventions enforced
 

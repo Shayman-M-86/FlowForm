@@ -128,13 +128,13 @@ Docker parity with EC2.
 
 ## EC2 Compose bootstrap contract
 
-The split EC2 runtime keeps the same secret-file convention. The proxy instance
-layers `infra/containers/strategies/aws/compose/proxy.override.yml` on
-`infra/containers/runtime/compose/proxy.yml` and consumes a bootstrap-written
-proxy env file; the private app instance runs
-`infra/containers/runtime/compose/app.yml` with
-`--env-file /opt/flowform/backend.env`. That backend env file must contain
-only non-secret config, image refs, private IPs, proxy settings, and logging
-settings. Keep production logging on stdout JSON
-(`FLOWFORM_LOGGING_LOG_JSON=true`) and leave `FLOWFORM_LOGGING_LOG_FILE`
-unset so `read_only: true` remains honest.
+The split EC2 runtime keeps the same secret-file convention, but CDK supplies
+only the small non-secret instance context defined by
+`infra/contracts/instance-context.schema.json`. The app context names the
+private proxy DNS record and the proxy context names the private app DNS
+record; neither host is coupled to a fixed peer address.
+
+The baked role service reads non-secret runtime configuration from its
+configuration root and an immutable container manifest from its release
+parameter. Release tooling owns promotion. CDK does not place secrets,
+container digests, or release-manifest content in user data or CloudFormation.

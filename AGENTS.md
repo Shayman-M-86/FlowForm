@@ -49,14 +49,17 @@ draft candidates do not weaken verified sources. Inspect the repository when
 implementing, diagnosing, explicitly verifying, or resolving a material gap or
 contradiction.
 
-After behavioural or architectural changes, review the impacted documentation.
-Update only pages whose meaning changed, and regenerate generated documentation
-instead of editing it manually. After reviewing implementation-backed claims,
-use `docsys evidence promote --staged` to record staged evidence for Project
+After behavioural or architectural changes have settled, review documentation
+impact once near task completion. Do not call `get_impacted_docs` after each
+prompt or ordinary follow-up turn. Call it only when actively updating affected
+documentation, when the task scope materially changes after the review, or when
+the user asks for it. Update only pages whose meaning changed, and regenerate
+generated documentation instead of editing it manually.
+After reviewing implementation-backed claims, use
+`docsys evidence promote --staged` to record staged evidence for Project
 Knowledge; Development Workspace is not verified. The pre-commit hook enforces
 verification drift and checks document `last_edited` dates without modifying
-or staging files. Treat
-`old-docs/` as historical material.
+or staging files. Treat `old-docs/` as historical material.
 
 Codex and Claude provide a `docs-maintainer` specialist for bounded
 documentation work. The parent agent remains responsible for integration and

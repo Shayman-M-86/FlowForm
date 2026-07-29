@@ -18,12 +18,12 @@ _LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 _WIKI = re.compile(r"\[\[([^\]|]+)")
 
 _DEFAULT_POLICY = {
-    "max_words": 2500,
-    "max_major_sections": 10,
-    "large_section_words": 400,
-    "large_section_count": 3,
-    "max_code_ratio": 0.45,
-    "max_code_roots": 5,
+    "max_words": 1600,
+    "max_major_sections": 6,
+    "large_section_words": 300,
+    "large_section_count": 2,
+    "max_code_ratio": 0.4,
+    "max_code_roots": 4,
 }
 _POLICIES = {
     "overview": {**_DEFAULT_POLICY, "max_words": 1400, "max_major_sections": 8},
@@ -297,7 +297,7 @@ def analyse(
 
 def build_report(
     docset: DocSet,
-    collection: str | None = None,
+    collection: str | None = "project-knowledge",
     paths: set[str] | None = None,
     include_history: bool = False,
     suggest_splits: bool = False,
@@ -332,6 +332,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--collection",
         choices=["project-knowledge", "development-workspace", "legacy", "root"],
+        default="project-knowledge",
+        help="collection to analyse (default: project-knowledge)",
     )
     parser.add_argument("--changed", action="store_true")
     parser.add_argument("--history", action="store_true")

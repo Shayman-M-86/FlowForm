@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flow-form.com.au/contracts/app-release.schema.json",
+  "title": "FlowForm application release",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_commit",
+    "images"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "source_commit": {
+      "$ref": "#/$defs/sourceCommit"
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend",
+        "alloy"
+      ],
+      "properties": {
+        "backend": {
+          "$ref": "#/$defs/ecrDigestReference"
+        },
+        "alloy": {
+          "$ref": "#/$defs/ecrDigestReference"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sourceCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "ecrDigestReference": {
+      "type": "string",
+      "pattern": "^[0-9]{12}\\.dkr\\.ecr\\.[a-z0-9-]+\\.amazonaws\\.com/[a-z0-9][a-z0-9._/-]*@sha256:[0-9a-f]{64}$"
+    }
+  }
+}

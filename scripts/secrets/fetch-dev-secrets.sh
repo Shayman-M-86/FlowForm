@@ -26,7 +26,7 @@ set -euo pipefail
 # Usage:
 #   scripts/secrets/fetch-dev-secrets.sh
 #   FLOWFORM_SECRET_DIR="$XDG_RUNTIME_DIR/flowform-secrets" \
-#     docker compose -f infra/containers/strategies/dev/compose/compose.yml up -d
+#     docker compose -f infra/containers/runtime/development/compose/compose.yml up -d
 #
 # (Export FLOWFORM_SECRET_DIR in your shell rc so compose always finds it.)
 # tmpfs empties on reboot — just re-run this script.
@@ -102,7 +102,13 @@ if ! rm -rf "${OUT_DIR}" 2>/dev/null; then
   echo "==> Removing Docker-created root-owned secret stubs (sudo required)"
   sudo rm -rf -- "${OUT_DIR}"
 fi
-install -d -m 700 -- "${OUT_DIR}"
+# 711, not 700: the Postgres containers run initdb as the non-root postgres
+# user (uid 999), which must traverse this directory to reach the DB password
+# files below. With 700 the traversal fails and every path under it resolves
+# as ENOENT, which the init script reports as "secret file not found" even
+# though the file exists and is mode 644. --x grants traversal only: other
+# users still cannot list the directory, so the 600 files below stay private.
+install -d -m 711 -- "${OUT_DIR}"
 umask 177
 
 write_key() { # $1=json blob  $2=json key  $3=file name

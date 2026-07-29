@@ -69,7 +69,7 @@ cmd_build_main() {
   here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
   dispatcher="${here}/rehearsal"
   repo_root="$(cd -- "${here}/../../../.." && pwd)"
-  registry_dir="${repo_root}/infra/containers/strategies/rehearsal/services/registry"
+  registry_dir="${repo_root}/infra/containers/runtime/proxmox/rehearsal/services/registry"
   push_script="${registry_dir}/build-and-push-backend.sh"
   alloy_script="${registry_dir}/mirror-alloy-image.sh"
   BUILD_STARTED_AT="$(date +%s)"

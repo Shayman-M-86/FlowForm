@@ -2,10 +2,10 @@
 title: Continuous integration
 aliases: ["Continuous integration"]
 document_type: workflow
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:e3502fd92602a3b849487f2206ffb72bf1956b02d34aefaaf333f085dfe0bc34
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-29
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"

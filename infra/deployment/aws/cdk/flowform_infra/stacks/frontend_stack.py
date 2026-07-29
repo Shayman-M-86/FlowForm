@@ -40,7 +40,7 @@ class FrontendStack(Stack):
         if env_config.auth0_public is None:
             raise ValueError(
                 f"EnvConfig for '{env_config.env_name}' has no auth0_public config — "
-                f"create infra/platforms/aws/cdk/.env.{env_config.env_name} with AUTH0_DOMAIN, "
+                f"create infra/deployment/aws/cdk/.env.{env_config.env_name} with AUTH0_DOMAIN, "
                 "AUTH0_CLIENT_ID, and AUTH0_AUDIENCE (see .env.dev.example) "
                 "before deploying the frontend stack."
             )
@@ -78,13 +78,11 @@ class FrontendStack(Stack):
             immutable_path_patterns=("/assets/*",),
         )
 
-
         # Build-time config for the CI frontend builds (all non-secret,
         # client-side values — they ship in the JS bundle). The deploy
         # workflow reads these before running vite build.
         #
-        # TODO: api-base-url points at the planned API hostname; create the
-        # ALB + Route 53 record for it when application_stack.py is built.
+        # application_stack.py owns the API hostname and Route 53 record.
         api_base_url = f"https://api.{env_config.public_site_domain}"
         frontend_params = {
             "vite-auth0-domain": env_config.auth0_public.domain,

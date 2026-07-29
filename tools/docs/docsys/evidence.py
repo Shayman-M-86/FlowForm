@@ -8,7 +8,7 @@ the staged implementation evidence named by ``related_code`` and
 
 Commands:
 
-    python3 -m docsys evidence promote --staged docs/path.md [...]
+    python3 -m docsys evidence promote --staged [--stage] docs/path.md [...]
     python3 -m docsys evidence sync-last-edited
     python3 -m docsys evidence check-last-edited
     python3 -m docsys evidence check-staged
@@ -207,8 +207,8 @@ def _load_index_document(doc: Document) -> Document:
     return load_document_text(doc.path, text, doc.docs_dir) or doc
 
 
-def promote_staged(values: list[str]) -> int:
-    """Prepare verified metadata against staged evidence without staging it."""
+def promote_staged(values: list[str], *, stage: bool = False) -> int:
+    """Prepare verified metadata against staged evidence and optionally stage it."""
     source = EvidenceSource.from_index()
     promoted: list[str] = []
 
@@ -237,9 +237,17 @@ def promote_staged(values: list[str]) -> int:
     for rel in promoted:
         print(f"prepared verified metadata against staged evidence: {rel}")
     if promoted:
-        print()
-        print("Stage the updated documents, then retry the commit:")
-        print(f"  git add -- {' '.join(shlex.quote(path) for path in promoted)}")
+        if stage:
+            _git_bytes(["add", "--", *promoted])
+            print()
+            print(
+                "staged updated verified metadata: "
+                f"{' '.join(shlex.quote(path) for path in promoted)}"
+            )
+        else:
+            print()
+            print("Stage the updated documents, then retry the commit:")
+            print(f"  git add -- {' '.join(shlex.quote(path) for path in promoted)}")
     return 0
 
 
@@ -307,7 +315,7 @@ def check_staged() -> int:
     print("     - If the documents are still accurate, approve and re-verify them:")
     print(
         "       PYTHONPATH=tools/docs python3 -m docsys evidence "
-        f"promote --staged {quoted_paths}"
+        f"promote --staged --stage {quoted_paths}"
     )
     print(
         "     - If a document is outdated, correct it before promoting."
@@ -317,7 +325,7 @@ def check_staged() -> int:
         "`verified_evidence_digest: null`."
     )
     print()
-    print("  3. Stage the documentation changes and run the commit again.")
+    print("  3. Run the commit again.")
     print()
     print("No files were changed or staged by this check.")
     print()
@@ -396,9 +404,14 @@ def main(argv: list[str] | None = None) -> int:
         help="mark explicitly reviewed staged documents verified",
     )
     promote.add_argument("--staged", action="store_true", required=True)
+    promote.add_argument(
+        "--stage",
+        action="store_true",
+        help="stage the promoted documentation paths after updating metadata",
+    )
     promote.add_argument("paths", nargs="+")
 
-    check = subparsers.add_parser(
+    subparsers.add_parser(
         "check-staged",
         help="validate verified documents against staged evidence",
     )
@@ -415,7 +428,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "promote":
-            return promote_staged(args.paths)
+            return promote_staged(args.paths, stage=args.stage)
         if args.command == "check-staged":
             return check_staged()
         if args.command == "sync-last-edited":

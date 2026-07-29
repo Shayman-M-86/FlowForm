@@ -173,13 +173,18 @@ TOOLS = [
         "name": "documentation_debt",
         "description": (
             "Advisory structural complexity metrics and explainable split "
-            "candidates. Findings do not fail validation."
+            "candidates for Project Knowledge by default. Findings do not fail "
+            "validation."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
                 "collection": {
                     "type": "string",
+                    "description": (
+                        "collection to analyse; defaults to project-knowledge"
+                    ),
+                    "default": "project-knowledge",
                     "enum": [
                         "project-knowledge",
                         "development-workspace",
@@ -277,7 +282,7 @@ def _tool_debt(args: dict) -> dict:
     docset = DocSet.load(resolve_docs_root(args.get("docs_root")))
     return build_debt_report(
         docset,
-        collection=args.get("collection"),
+        collection=args.get("collection") or "project-knowledge",
         suggest_splits=bool(args.get("suggest_splits")),
     )
 

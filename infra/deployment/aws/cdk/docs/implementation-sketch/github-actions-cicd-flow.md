@@ -111,7 +111,7 @@ Existing shape:
 - Set up Docker Buildx.
 - Generate temporary test secret files from the GitHub `test` environment.
 - Render Docker Compose config.
-- Start `infra/containers/strategies/dev/compose/compose.test.yml`.
+- Start `infra/containers/runtime/development/compose/compose.test.yml`.
 - Run `uv run pytest tests --cov=app`.
 - Upload coverage and debug artifacts.
 - Always tear down Compose with `docker compose down -v --remove-orphans`.

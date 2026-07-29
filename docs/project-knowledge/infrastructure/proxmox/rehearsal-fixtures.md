@@ -2,10 +2,10 @@
 title: Proxmox rehearsal fixtures and egress
 aliases: ["Proxmox rehearsal fixtures and egress"]
 document_type: implementation
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:9d41c41b4f72d2f373107e99760b5400c86544d1551351b73b6bf4270d1ca465
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-29
 tags: [infrastructure, security]
 related_code:
   - "../../../../infra/containers/strategies/rehearsal/fixtures/"

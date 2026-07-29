@@ -2,10 +2,10 @@
 title: Cloud deployment
 aliases: ["Cloud deployment"]
 document_type: workflow
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:ebc60406febfa3b8eebd0c9a93140dff2dc7da00455383daead260fd14977a82
-last_edited: 2026-07-28
+verified_evidence_digest: null
+last_edited: 2026-07-29
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../.github/workflows/deploy.yml"

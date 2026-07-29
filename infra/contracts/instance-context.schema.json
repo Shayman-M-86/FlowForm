@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flow-form.com.au/contracts/instance-context.schema.json",
+  "title": "FlowForm instance context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "environment",
+    "role",
+    "region",
+    "parameter_root",
+    "configuration_root"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "environment": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "role": {
+      "enum": [
+        "app",
+        "proxy"
+      ]
+    },
+    "region": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(?:-gov)?-[a-z]+-[0-9]+$"
+    },
+    "parameter_root": {
+      "type": "string",
+      "pattern": "^/flowform/[a-z][a-z0-9-]*$"
+    },
+    "configuration_root": {
+      "type": "string",
+      "pattern": "^/flowform/[a-z][a-z0-9-]*$"
+    },
+    "proxy_dns_name": {
+      "$ref": "#/$defs/dnsName"
+    },
+    "app_dns_name": {
+      "$ref": "#/$defs/dnsName"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "app"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "required": [
+          "proxy_dns_name"
+        ],
+        "not": {
+          "required": [
+            "app_dns_name"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "proxy"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "required": [
+          "app_dns_name"
+        ],
+        "not": {
+          "required": [
+            "proxy_dns_name"
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "dnsName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253,
+      "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    }
+  }
+}

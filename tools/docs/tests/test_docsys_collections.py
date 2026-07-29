@@ -13,10 +13,11 @@ from docsys.evidence import (
     EvidenceSource,
     check_last_edited_staged,
     check_staged,
+    promote_staged,
 )
 from docsys.impact import detect_impact
 from docsys.freshness import CURRENT, Freshness
-from docsys.debt import analyse, build_report, measure
+from docsys.debt import _DEFAULT_POLICY, analyse, build_report, measure
 from docsys.model import ROOT, DocSet, resolve_docs_root
 from docsys.validate import all_findings
 
@@ -257,6 +258,44 @@ class CollectionModelTests(unittest.TestCase):
             self.assertNotEqual(first.digest, evidence_changed.digest)
             self.assertEqual(first.files, (code_rel,))
 
+    def test_promote_can_stage_only_the_selected_document(self) -> None:
+        project_knowledge = ROOT / "docs" / "project-knowledge"
+        with tempfile.TemporaryDirectory(dir=project_knowledge) as temporary:
+            doc_path = Path(temporary) / "promote.md"
+            doc_path.write_text(
+                _document("Promote", body="Reviewed claim.").replace(
+                    "related_code: []",
+                    'related_code: ["../../../AGENTS.md"]',
+                )
+            )
+            rel = doc_path.relative_to(ROOT).as_posix()
+            source = EvidenceSource(
+                {"AGENTS.md": EvidenceEntry("AGENTS.md", "100644", "a" * 40)},
+                "staged",
+            )
+
+            with patch(
+                "docsys.evidence.EvidenceSource.from_index",
+                return_value=source,
+            ), patch(
+                "docsys.evidence._git_bytes",
+                return_value=b"",
+            ) as git_bytes, patch(
+                "docsys.evidence._today",
+                return_value="2026-07-29",
+            ):
+                result = promote_staged([rel], stage=True)
+
+            self.assertEqual(result, 0)
+            git_bytes.assert_called_once_with(["add", "--", rel])
+            promoted = doc_path.read_text()
+            self.assertIn("status: verified", promoted)
+            self.assertIn("last_edited: 2026-07-29", promoted)
+            self.assertRegex(
+                promoted,
+                r"verified_evidence_digest: sha256:[0-9a-f]{64}",
+            )
+
     def test_active_docs_root_is_canonical_tree(self) -> None:
         self.assertEqual(resolve_docs_root(), (ROOT / "docs").resolve())
         with patch.dict("os.environ", {"FLOWFORM_DOCS_ROOT": "docs"}):
@@ -275,6 +314,15 @@ class CollectionModelTests(unittest.TestCase):
         claude_verification_skill = (
             ROOT / ".claude/skills/flowform-doc-verification/SKILL.md"
         ).read_text()
+        codex_commit_skill = (
+            ROOT / ".agents/skills/commit/SKILL.md"
+        ).read_text()
+        claude_commit_skill = (
+            ROOT / ".claude/skills/commit/SKILL.md"
+        ).read_text()
+        claude_commit_command = (
+            ROOT / ".claude/commands/commit.md"
+        ).read_text()
         codex_agent = tomllib.loads(
             (ROOT / ".codex/agents/docs-maintainer.toml").read_text()
         )
@@ -284,6 +332,11 @@ class CollectionModelTests(unittest.TestCase):
 
         self.assertEqual(codex_skill, claude_skill)
         self.assertEqual(codex_verification_skill, claude_verification_skill)
+        self.assertEqual(codex_commit_skill, claude_commit_skill)
+        self.assertIn(
+            ".claude/skills/commit/SKILL.md",
+            claude_commit_command,
+        )
         self.assertEqual(codex_agent["name"], "docs-maintainer")
         self.assertEqual(codex_agent["model"], "gpt-5.6-terra")
         self.assertIn("name: docs-maintainer", claude_agent)
@@ -495,6 +548,53 @@ class CollectionModelTests(unittest.TestCase):
                     "large-overview/large-overview-index.md"
                 )
             )
+
+    def test_debt_defaults_to_project_knowledge(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "docs"
+            project = docs_root / "project-knowledge"
+            workspace = docs_root / "development-workspace"
+            project.mkdir(parents=True)
+            workspace.mkdir()
+            (docs_root / "docs-index.md").write_text(_document("Root"))
+            (project / "project-knowledge-index.md").write_text(
+                _document("Project Knowledge")
+            )
+            (workspace / "development-workspace-index.md").write_text(
+                _document("Development workspace", authority="working")
+            )
+            docset = DocSet.load(docs_root)
+
+            default_report = build_report(docset)
+            self.assertEqual(default_report["document_count"], 1)
+            self.assertEqual(
+                default_report["documents"][0]["metrics"]["collection"],
+                "project-knowledge",
+            )
+
+            root_arg = docs_root.relative_to(ROOT).as_posix()
+            mcp_report = mcp_server._tool_debt({"docs_root": root_arg})
+            self.assertEqual(mcp_report["document_count"], 1)
+            explicit_workspace = mcp_server._tool_debt(
+                {
+                    "docs_root": root_arg,
+                    "collection": "development-workspace",
+                }
+            )
+            self.assertEqual(explicit_workspace["document_count"], 1)
+
+    def test_default_debt_policy_remains_moderately_strict(self) -> None:
+        self.assertEqual(
+            _DEFAULT_POLICY,
+            {
+                "max_words": 1600,
+                "max_major_sections": 6,
+                "large_section_words": 300,
+                "large_section_count": 2,
+                "max_code_ratio": 0.4,
+                "max_code_roots": 4,
+            },
+        )
 
     def test_workspace_optional_metadata_stays_advisory_in_ci(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:

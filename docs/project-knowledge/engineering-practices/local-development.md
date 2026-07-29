@@ -2,14 +2,15 @@
 title: Local development
 aliases: ["Local development"]
 document_type: workflow
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:535b1dde6dcea6d952ca454c42134177de28f254be0e9f2599dac51f84e7205e
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-29
 tags: [tooling, infrastructure]
 related_code:
   - "../../../infra/containers/strategies/dev/compose/compose.yml"
   - "../../../infra/env/dev/"
+  - "../../../scripts/dev/start-dev-stack.sh"
   - "../../../scripts/secrets/fetch-dev-secrets.sh"
   - "../../../scripts/dev/load-*-mock-data.sh"
   - "../../../frontend/package.json"
@@ -21,8 +22,8 @@ related_docs: ["Engineering practices", "Local infrastructure", "Secrets and con
 Local development is the workstation workflow for running and changing the
 backend, split PostgreSQL databases, Studio, and public site. It combines a
 backend/database Compose project with separate frontend development servers.
-The exact setup remains draft until commands and secret-delivery assumptions
-are rechecked against the current checkout.
+Exact commands and secret-delivery details live with the scripts and
+infrastructure pages that own them rather than being restated here.
 
 ```text
 source + local configuration + runtime secrets
@@ -40,10 +41,13 @@ source + local configuration + runtime secrets
 
 ## Working model
 
-Legacy workflow first obtains an AWS login and assembles required development
+The workflow first obtains an AWS login and assembles required development
 values into a runtime secret directory, then render-checks and starts
-`infra/containers/strategies/dev/compose/compose.yml`. Disposable mock data may
-be loaded into fresh databases. Frontend dependencies are installed from
+`infra/containers/strategies/dev/compose/compose.yml`. A repository script
+drives that sequence end to end, so the secret directory is always established
+before Compose starts; starting Compose directly without it leaves the
+databases unable to initialise. Disposable mock data may be loaded into fresh
+databases. Frontend dependencies are installed from
 `frontend/`, and Studio/public-site servers run separately. Backend source is
 bind-mounted into the development container while frontend tools watch their
 application and shared-package sources.

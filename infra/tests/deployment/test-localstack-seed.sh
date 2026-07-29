@@ -3,26 +3,26 @@ set -Eeuo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CONTRACT="${REPO_ROOT}/infra/deployment/config/runtime-parameter-contract.json"
-SEED_SCRIPT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/localstack/seed-localstack.sh"
-SYNC_SCRIPT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/localstack/sync-secrets-into-localstack.sh"
-TLS_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.tls-shim.yml"
-PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/proxy.override.yml"
+SEED_SCRIPT="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/services/localstack/seed-localstack.sh"
+SYNC_SCRIPT="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/services/localstack/sync-secrets-into-localstack.sh"
+TLS_COMPOSE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/fixtures/compose.tls-shim.yml"
+PROXY_OVERRIDE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/compose/proxy.override.yml"
 APP_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/app.yaml.tftpl"
-APP_REHEARSAL_OVERRIDE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/app.override.yml"
-APP_COMPOSE="${REPO_ROOT}/infra/containers/runtime/compose/app.yml"
+APP_REHEARSAL_OVERRIDE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/compose/app.override.yml"
+APP_COMPOSE="${REPO_ROOT}/infra/containers/runtime/aws/common/compose/app.yml"
 PROXMOX_VARIABLES="${REPO_ROOT}/infra/deployment/proxmox/terraform/variables.tf"
 PROXY_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/proxy.yaml.tftpl"
 LOCALSTACK_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/localstack.yaml.tftpl"
 DB_CLOUD_INIT="${REPO_ROOT}/infra/deployment/proxmox/cloud-init/templates/db.yaml.tftpl"
-DB_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/db.yml"
+DB_COMPOSE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/compose/db.yml"
 DB_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-db.sh"
-APP_BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-app.sh"
+APP_BOOTSTRAP="${REPO_ROOT}/infra/machine-images/definitions/app/host-assets/bin/bootstrap-app.sh"
 BUILD_COMMAND="${REPO_ROOT}/infra/deployment/proxmox/scripts/lib/cmd_build.sh"
 VERIFY_COMMAND="${REPO_ROOT}/infra/deployment/proxmox/scripts/lib/cmd_verify.sh"
-TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/tls-shim/Caddyfile"
-REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.registry.yml"
-LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/strategies/rehearsal/fixtures/compose.localstack.yml"
-REHEARSAL_ALLOWED_DOMAINS="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt"
+TLS_SHIM_CADDYFILE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/services/tls-shim/Caddyfile"
+REGISTRY_COMPOSE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/fixtures/compose.registry.yml"
+LOCALSTACK_COMPOSE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/fixtures/compose.localstack.yml"
+REHEARSAL_ALLOWED_DOMAINS="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/services/squid/allowed-domains.txt"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "${TEST_DIR}"' EXIT
 
@@ -206,7 +206,7 @@ if grep -F 'insecure-registries' "${APP_CLOUD_INIT}" >/dev/null; then
   printf 'app cloud-init still declares insecure-registries\n' >&2; exit 1
 fi
 # The shared daemon proxy drop-in no longer exempts private CIDRs (pulls ride Squid).
-if grep -E 'NO_PROXY=.*10\.0\.0\.0/8' "${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-app.sh" >/dev/null; then
+if grep -E 'NO_PROXY=.*10\.0\.0\.0/8' "${APP_BOOTSTRAP}" >/dev/null; then
   printf 'bootstrap-app.sh daemon NO_PROXY still exempts 10.0.0.0/8\n' >&2; exit 1
 fi
 

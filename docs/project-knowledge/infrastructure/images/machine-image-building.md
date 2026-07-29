@@ -5,7 +5,7 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-28
+last_edited: 2026-07-29
 tags: [infrastructure]
 related_code:
   - "../../../../infra/images/scripts/"
@@ -71,10 +71,27 @@ workstation's detected public address, derives the `source_commit` tag from
 Git, and verifies its AMI and snapshot before it completes. When the selected
 AWS CLI profile uses a login session, the dispatcher supplies Packer with a
 refreshable credential-process bridge without persisting credentials.
+The golden image carries the deployment bootstrap scripts, shared Compose
+definitions, their referenced Alloy and Squid service configuration, and the
+AWS strategy overrides. Image verification fails if any of those runtime
+assets are absent.
 Publication accepts only `dev`, `staging`, or `prod`, checks that the caller
 account matches the CDK configuration, verifies the AMI again, and writes the
 AMI ID to the environment's configured SSM parameter. `--dry-run` performs the
 prechecks without the SSM write. Publication does not run CDK deployment.
+
+When an AWS builder repeatedly stops at `Waiting for SSH`, rerun the build in
+diagnostic mode:
+
+```sh
+infra/images/scripts/image build aws --diagnose-ssh
+```
+
+This retains normal Packer cleanup while recording the live builder identity,
+EC2 status checks, boot console, temporary security-group rules, subnet
+routing, network ACL, workstation public address, repeated TCP/22 probes, and
+Packer's internal log in permission-restricted files under `/tmp`. Review the
+reported paths before retrying or changing the connection design.
 
 ## Validation boundary
 

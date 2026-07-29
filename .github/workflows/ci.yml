@@ -36,7 +36,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  COMPOSE_FILE: infra/containers/strategies/dev/compose/compose.test.yml
+  COMPOSE_FILE: infra/containers/runtime/development/compose/compose.test.yml
   BACKEND_CONTAINER: flowform-backend-test
   NODE_VERSION: "22"
   PNPM_VERSION: "10.24.0"
@@ -270,7 +270,7 @@ jobs:
 
       - name: Prepare CI Compose file
         run: |
-          COMPOSE_FILE_RUNTIME="$GITHUB_WORKSPACE/infra/containers/strategies/dev/compose/compose.test.ci.runtime.yml"
+          COMPOSE_FILE_RUNTIME="$GITHUB_WORKSPACE/infra/containers/runtime/development/compose/compose.test.ci.runtime.yml"
           cp "$COMPOSE_FILE" "$COMPOSE_FILE_RUNTIME"
           sed -i '\|flowform_backend_test_venv:/opt/flowform/backend-test-venv|d' "$COMPOSE_FILE_RUNTIME"
           sed -i '/^  flowform_backend_test_venv:$/d' "$COMPOSE_FILE_RUNTIME"
@@ -286,7 +286,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: infra/containers/strategies/dev/services/backend/backend.test.Dockerfile
+          file: infra/containers/runtime/development/services/backend/backend.test.Dockerfile
           tags: flowform-backend-test:ci
           load: true
           cache-from: type=gha,scope=flowform-backend-test

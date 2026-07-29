@@ -12,7 +12,7 @@ env:
   AWS_REGION: ap-southeast-2
   AWS_ACCOUNT_ID: "908123139858"
   IMAGE_PUBLISHER_ROLE: arn:aws:iam::908123139858:role/flowform-staging-image-publisher
-  SOURCE_MANIFEST: infra/containers/strategies/aws/image-sources.json
+  SOURCE_MANIFEST: infra/contracts/image-sources.json
   RELEASE_MANIFEST_PATH: staging-image-release.json
 
 concurrency:
@@ -46,12 +46,12 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Validate immutable source manifest
-        run: ./infra/deployment/aws/scripts/publish-staging-images.sh validate
+        run: ./infra/deployment/aws/operations/container-releases/publish-staging.sh validate
 
       - name: Build and publish staging images
         env:
           RELEASE_COMMIT_SHA: ${{ github.sha }}
-        run: ./infra/deployment/aws/scripts/publish-staging-images.sh publish
+        run: ./infra/deployment/aws/operations/container-releases/publish-staging.sh publish
 
       - name: Upload digest release manifest
         uses: actions/upload-artifact@v4

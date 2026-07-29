@@ -19,8 +19,12 @@ changes.
 3. For explanation-only questions, answer directly from verified, current
    primary documents when they cover the question. Do not inspect code merely
    because implementation locations were returned.
-4. After behavioural or architectural changes, call `get_impacted_docs`.
-   Update only documents whose meaning actually changed.
+4. Do not call `get_impacted_docs` after each prompt or ordinary follow-up
+   turn. After behavioural or architectural changes have settled, review
+   impact once near task completion. Call `get_impacted_docs` only when
+   actively updating affected documentation, when scope materially changes
+   after the review, or when the user asks for it. Update only documents whose
+   meaning actually changed.
 
 Do not scan the full documentation tree.
 

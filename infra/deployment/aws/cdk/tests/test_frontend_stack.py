@@ -23,7 +23,7 @@ _FAKE_AUTH0 = Auth0PublicConfig(
 )
 
 # env_dir with no .env.* files, so get_env_config never picks up real
-# local config (e.g. an actual infra/platforms/aws/cdk/.env.staging).
+# local config (e.g. an actual infra/deployment/aws/cdk/.env.staging).
 _EMPTY_ENV_DIR = Path(__file__).parent
 
 
@@ -55,12 +55,8 @@ def _synth_staging(env_config: EnvConfig | None = None) -> tuple[Template, Templ
             **_hosted_zone_context(env_config.account, "us-east-1"),
         }
     )
-    security = SecurityStack(
-        app, "TestSecurity", scope_config=get_security_scope(env_config), env=app_env
-    )
-    cert = FrontendCertStack(
-        app, "TestFrontendCert", env_config=env_config, env=cert_env, cross_region_references=True
-    )
+    security = SecurityStack(app, "TestSecurity", scope_config=get_security_scope(env_config), env=app_env)
+    cert = FrontendCertStack(app, "TestFrontendCert", env_config=env_config, env=cert_env, cross_region_references=True)
     frontend = FrontendStack(
         app,
         "TestFrontend",
@@ -166,9 +162,7 @@ def test_caching_policies_shared_across_apps():
                 "ResponseHeadersPolicyConfig": Match.object_like(
                     {
                         "CustomHeadersConfig": {
-                            "Items": [
-                                {"Header": "Cache-Control", "Override": True, "Value": cache_control}
-                            ]
+                            "Items": [{"Header": "Cache-Control", "Override": True, "Value": cache_control}]
                         }
                     }
                 )
@@ -185,11 +179,7 @@ def test_immutable_behavior_matches_each_apps_hashed_assets_dir():
             "AWS::CloudFront::Distribution",
             {
                 "DistributionConfig": Match.object_like(
-                    {
-                        "CacheBehaviors": Match.array_with(
-                            [Match.object_like({"PathPattern": app_pattern})]
-                        )
-                    }
+                    {"CacheBehaviors": Match.array_with([Match.object_like({"PathPattern": app_pattern})])}
                 )
             },
         )

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Proves that image promotion writes exactly the five runtime image parameters
-# the contract declares, pinned by digest rather than tag.
+# Proves that image promotion writes one complete manifest per host role,
+# pinned by digest rather than tag.
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
 SCRIPT="${REPO_ROOT}/infra/deployment/aws/scripts/publish-staging-images.sh"
-CONTRACT="${REPO_ROOT}/infra/deployment/config/runtime-parameter-contract.json"
+HOST_CONTRACT="${REPO_ROOT}/infra/contracts/runtime-hosts.json"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "${TEST_DIR}"' EXIT
 
@@ -16,7 +16,7 @@ write_manifest() {
   cat > "${TEST_DIR}/release.json" <<'EOF'
 {
   "schema_version": 1,
-  "commit_sha": "testsha",
+  "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "generated_at": "2026-07-28T00:00:00Z",
   "aws": {"account_id": "000000000000", "region": "ap-southeast-2"},
   "platform": "linux/amd64",
@@ -31,59 +31,57 @@ EOF
 }
 
 run_promote() {
-  DRY_RUN=1 RELEASE_MANIFEST_PATH="${TEST_DIR}/release.json" FLOWFORM_SCOPE=nonprod \
+  DRY_RUN=1 RELEASE_MANIFEST_PATH="${TEST_DIR}/release.json" FLOWFORM_ENVIRONMENT=staging \
     bash "${SCRIPT}" promote
 }
 
 write_manifest
 output="$(run_promote)" || fail "promote exited non-zero"
 
-# Every image reference must be digest-pinned; a tag reference would let the
-# same parameter resolve to different bytes over time.
-while IFS= read -r line; do
-  value="${line#*=}"
-  [[ "${value}" == *"@sha256:"* ]] || fail "not digest-pinned: ${line}"
-  [[ "${value}" != *"@sha256@sha256:"* ]] || fail "digest qualifier was duplicated: ${line}"
-  [[ "${value}" != *":t@"* ]] || fail "tag was not stripped: ${line}"
-done < <(grep 'DRY_RUN: would set' <<<"${output}")
-
-# Exactly the five parameters the contract declares, no more and no fewer.
-declare -a expected=(
-  "/flowform/nonprod/backend/BACKEND_IMAGE"
-  "/flowform/nonprod/backend/ALLOY_IMAGE"
-  "/flowform/nonprod/proxy/CADDY_IMAGE"
-  "/flowform/nonprod/proxy/SQUID_IMAGE"
-  "/flowform/nonprod/proxy/ALLOY_IMAGE"
-)
-for name in "${expected[@]}"; do
-  grep -q "would set ${name}=" <<<"${output}" || fail "missing parameter: ${name}"
-done
-
+# Exactly the two role parameters declared by the host contract.
+app_parameter="/flowform/staging/app/release"
+proxy_parameter="/flowform/staging/proxy/release"
+grep -q "would set ${app_parameter}=" <<<"${output}" \
+  || fail "missing App release parameter"
+grep -q "would set ${proxy_parameter}=" <<<"${output}" \
+  || fail "missing Proxy release parameter"
 actual_count="$(grep -c 'DRY_RUN: would set' <<<"${output}")"
-(( actual_count == ${#expected[@]} )) \
-  || fail "expected ${#expected[@]} parameters, got ${actual_count}"
+(( actual_count == 2 )) || fail "expected two role manifests, got ${actual_count}"
 
-# The promoted names must exist in the shared contract, or bootstrap would
-# never render them into its env file.
-for name in "${expected[@]}"; do
-  group="$(cut -d/ -f4 <<<"${name}")"
-  env_name="$(cut -d/ -f5 <<<"${name}")"
-  jq -e --arg g "${group}" --arg n "${env_name}" \
-    '.runtime_groups[$g].parameters | to_entries | map(select(.value.name == $n)) | length == 1' \
-    "${CONTRACT}" >/dev/null \
-    || fail "${env_name} is not declared in the ${group} runtime group"
+for role in app proxy; do
+  expected="$(
+    jq -r --arg role "${role}" '.roles[$role].release_parameter' "${HOST_CONTRACT}"
+  )"
+  expected="${expected//\{environment\}/staging}"
+  grep -q "would set ${expected}=" <<<"${output}" \
+    || fail "${role} parameter does not match the host contract"
 done
 
-# Alloy runs on both hosts and must resolve to the same digest in both groups.
-backend_alloy="$(grep -o '/flowform/nonprod/backend/ALLOY_IMAGE=.*' <<<"${output}")"
-proxy_alloy="$(grep -o '/flowform/nonprod/proxy/ALLOY_IMAGE=.*' <<<"${output}")"
-[[ "${backend_alloy#*=}" == "${proxy_alloy#*=}" ]] \
-  || fail "alloy digest differs between the backend and proxy groups"
+app_value="$(sed -n "s|^DRY_RUN: would set ${app_parameter}=||p" <<<"${output}")"
+proxy_value="$(sed -n "s|^DRY_RUN: would set ${proxy_parameter}=||p" <<<"${output}")"
+
+jq -e '
+  .schema_version == 1
+  and .source_commit == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  and (.images | keys | sort) == ["alloy", "backend"]
+  and ([.images[] | contains("@sha256:")] | all)
+' <<<"${app_value}" >/dev/null || fail "App release manifest is invalid"
+jq -e '
+  .schema_version == 1
+  and .source_commit == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  and (.images | keys | sort) == ["alloy", "caddy", "squid"]
+  and ([.images[] | contains("@sha256:")] | all)
+' <<<"${proxy_value}" >/dev/null || fail "Proxy release manifest is invalid"
+
+app_alloy="$(jq -r '.images.alloy' <<<"${app_value}")"
+proxy_alloy="$(jq -r '.images.alloy' <<<"${proxy_value}")"
+[[ "${app_alloy}" == "${proxy_alloy}" ]] \
+  || fail "Alloy digest differs between the App and Proxy manifests"
 
 # A malformed digest must stop promotion rather than publish a bad reference.
 sed 's/sha256:1111111111111111111111111111111111111111111111111111111111111111/not-a-digest/' \
   "${TEST_DIR}/release.json" > "${TEST_DIR}/bad.json"
-if DRY_RUN=1 RELEASE_MANIFEST_PATH="${TEST_DIR}/bad.json" FLOWFORM_SCOPE=nonprod \
+if DRY_RUN=1 RELEASE_MANIFEST_PATH="${TEST_DIR}/bad.json" FLOWFORM_ENVIRONMENT=staging \
      bash "${SCRIPT}" promote >/dev/null 2>&1; then
   fail "promote accepted an invalid digest"
 fi
@@ -91,9 +89,9 @@ fi
 # A digest-qualified target must agree with the separately recorded digest.
 sed '0,/sha256:1111111111111111111111111111111111111111111111111111111111111111/s//sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/' \
   "${TEST_DIR}/release.json" > "${TEST_DIR}/mismatch.json"
-if DRY_RUN=1 RELEASE_MANIFEST_PATH="${TEST_DIR}/mismatch.json" FLOWFORM_SCOPE=nonprod \
+if DRY_RUN=1 RELEASE_MANIFEST_PATH="${TEST_DIR}/mismatch.json" FLOWFORM_ENVIRONMENT=staging \
      bash "${SCRIPT}" promote >/dev/null 2>&1; then
   fail "promote accepted a target/digest mismatch"
 fi
 
-printf 'PASS: image promotion writes 5 digest-pinned contract parameters\n'
+printf 'PASS: image promotion writes two digest-pinned role manifests\n'

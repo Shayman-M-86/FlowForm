@@ -33,6 +33,16 @@ def test_full_deployments_define_private_dns_and_flow_log_retention():
     assert prod.vpc_flow_log_retention == logs.RetentionDays.THREE_MONTHS
 
 
+def test_full_deployments_use_distinct_role_ami_parameters():
+    staging = get_env_config("staging", env_dir=_EMPTY_ENV_DIR)
+    prod = get_env_config("prod", env_dir=_EMPTY_ENV_DIR)
+
+    assert staging.ec2_app_ami_ssm_parameter == "/flowform/staging/ec2/appAmiId"
+    assert staging.ec2_proxy_ami_ssm_parameter == "/flowform/staging/ec2/proxyAmiId"
+    assert prod.ec2_app_ami_ssm_parameter == "/flowform/prod/ec2/appAmiId"
+    assert prod.ec2_proxy_ami_ssm_parameter == "/flowform/prod/ec2/proxyAmiId"
+
+
 def test_database_lifecycle_and_capacity_are_environment_specific():
     staging = get_env_config("staging", env_dir=_EMPTY_ENV_DIR)
     prod = get_env_config("prod", env_dir=_EMPTY_ENV_DIR)

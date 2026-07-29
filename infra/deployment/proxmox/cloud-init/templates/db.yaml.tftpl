@@ -14,19 +14,17 @@ write_files:
     permissions: '0755'
     owner: root:root
     content: ${BOOTSTRAP_DB_SH_B64}
-  - path: /opt/flowform/repo/infra/deployment/bootstrap/aws-cli-retry.sh
+  - path: /opt/flowform/host/bin/aws-cli-retry.sh
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${AWS_CLI_RETRY_SH_B64}
-  # shared bootstrap library; sourced by bootstrap-db.sh and the retry shim,
-  # so it must sit beside them in this same directory.
-  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-common.sh
+  - path: /opt/flowform/host/bin/bootstrap-common.sh
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${BOOTSTRAP_COMMON_SH_B64}
-  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/db.yml
+  - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/compose/db.yml
     encoding: b64
     permissions: '0644'
     owner: root:root
@@ -45,7 +43,8 @@ ${DB_INIT_WRITE_FILES}
       AWS_REGION=ap-southeast-2
       DB_PRIVATE_IP=10.10.10.40
       PROXY_PRIVATE_IP=10.10.10.10
-      COMPOSE_FILE=/opt/flowform/repo/infra/containers/strategies/rehearsal/compose/db.yml
+      COMPOSE_FILE=/opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/compose/db.yml
+      FLOWFORM_SHARED_SCRIPT_DIR=/opt/flowform/host/bin
       BOOTSTRAP_ENDPOINT_URL=https://secretsmanager.localstack.test
       AWS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
       AWS_ACCESS_KEY_ID=test
@@ -101,7 +100,7 @@ ${DB_INIT_WRITE_FILES}
       Type=oneshot
       RemainAfterExit=yes
       ExecStart=/opt/flowform/scripts/run-bootstrap-db.sh
-      ExecStop=/usr/bin/docker compose -f /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/db.yml down
+      ExecStop=/usr/bin/docker compose -f /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/compose/db.yml down
       [Install]
       WantedBy=multi-user.target
 

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Commit FlowForm Changes"
+  short_description: "Validate and commit the current intended changes"
+  default_prompt: "Use $commit to validate and commit the current intended changes."
+policy:
+  allow_implicit_invocation: false

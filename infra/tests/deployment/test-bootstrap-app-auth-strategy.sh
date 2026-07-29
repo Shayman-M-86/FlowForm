@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-BOOTSTRAP="${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-app.sh"
+BOOTSTRAP="${REPO_ROOT}/infra/machine-images/definitions/app/host-assets/bin/bootstrap-app.sh"
+export FLOWFORM_SHARED_SCRIPT_DIR="${REPO_ROOT}/infra/machine-images/shared/host-assets/bin"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "${TEST_DIR}"' EXIT
 
@@ -25,7 +26,7 @@ run_valid_case() {
     export AWS_REGION=ap-southeast-2
     export BOOTSTRAP_BACKEND_ENV="${TEST_DIR}/backend.env"
     export BOOTSTRAP_DRY_RUN=0
-    # shellcheck source=../../deployment/bootstrap/bootstrap-app.sh
+    # shellcheck source=../../machine-images/definitions/app/host-assets/bin/bootstrap-app.sh
     source "${BOOTSTRAP}"
     validate_database_auth_strategy
     [[ "${DATABASE_AUTH_STRATEGY}" == "${expected}" ]]
@@ -46,7 +47,7 @@ run_invalid_case() {
     export AWS_REGION=ap-southeast-2
     export BOOTSTRAP_BACKEND_ENV="${TEST_DIR}/backend.env"
     export BOOTSTRAP_DRY_RUN=0
-    # shellcheck source=../../deployment/bootstrap/bootstrap-app.sh
+    # shellcheck source=../../machine-images/definitions/app/host-assets/bin/bootstrap-app.sh
     source "${BOOTSTRAP}"
     validate_database_auth_strategy
   ) >/dev/null 2>&1; then
@@ -116,8 +117,8 @@ grep -Fx 'Environment="no_proxy=169.254.169.254"' \
 [[ "$(grep -c '^restart amazon-ssm-agent$' "${ssm_agent_systemctl_log}")" == "1" ]]
 
 (
-  # shellcheck source=../../deployment/bootstrap/bootstrap-common.sh
-  source "${REPO_ROOT}/infra/deployment/bootstrap/bootstrap-common.sh"
+  # shellcheck source=../../machine-images/shared/host-assets/bin/bootstrap-common.sh
+  source "${REPO_ROOT}/infra/machine-images/shared/host-assets/bin/bootstrap-common.sh"
   wait_call=""
   retry_with_backoff() {
     wait_call="$*"
@@ -145,7 +146,7 @@ run_materialise_case() {
     export BOOTSTRAP_BACKEND_ENV="${TEST_DIR}/backend.env"
     export BOOTSTRAP_DRY_RUN=0
     export FLOWFORM_SECRET_DIR="${case_dir}/secrets"
-    # shellcheck source=../../deployment/bootstrap/bootstrap-app.sh
+    # shellcheck source=../../machine-images/definitions/app/host-assets/bin/bootstrap-app.sh
     source "${BOOTSTRAP}"
     findmnt() { return 0; }
     fetch_secret_string() {

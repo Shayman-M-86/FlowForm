@@ -68,6 +68,9 @@ python3 -m docsys freshness
 # After semantic review, record the exact staged implementation evidence.
 python3 -m docsys evidence promote --staged docs/path.md
 
+# Agent verification workflow: also stage the promoted documentation path.
+python3 -m docsys evidence promote --staged --stage docs/path.md
+
 # Repair dates in the working tree after a read-only pre-commit failure.
 python3 -m docsys evidence sync-last-edited
 
@@ -95,6 +98,17 @@ python3 -m docsys health
 python3 -m docsys propose --base origin/main --markdown
 ```
 
+Debt analysis defaults to Project Knowledge. The Development Workspace is
+excluded because active plans, investigations, and historical working material
+are expected to grow and change. Use `--collection development-workspace` only
+for a deliberate diagnostic of that collection.
+
+The baseline policy treats more than 1,600 words or six major sections as
+complexity signals. A section becomes large at 300 words; two large sibling
+sections, code occupying more than 40% of nonblank lines, or four related-code
+roots provide additional signals. Document-type policies may override these
+values, and a finding still requires at least three independent signals.
+
 > Note: because these are packaged modules, either run with the package on the
 > path (`PYTHONPATH=tools/docs python3 -m docsys ...`) or from within
 > `tools/docs/`. CI uses the `PYTHONPATH` form.
@@ -114,6 +128,8 @@ Tools exposed: `search_docs`, `get_document`, `get_related`,
 `documentation_debt`, and `doc_health`. Every tool accepts an optional
 `docs_root`. When omitted, Docsys selects `docs/`. Set
 `FLOWFORM_DOCS_ROOT` to override that process-wide default.
+`documentation_debt` defaults its collection to `project-knowledge`; callers
+must request another collection explicitly.
 
 `get_task_context` also returns `documentation_reliability`. This disclosure
 signal combines each primary document's status, verification baseline,

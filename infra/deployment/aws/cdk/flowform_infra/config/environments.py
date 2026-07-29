@@ -6,7 +6,9 @@ from typing import Literal, cast
 from aws_cdk import RemovalPolicy
 from aws_cdk import aws_logs as logs
 
-# infra/platforms/aws/cdk — where the per-env `.env.<env>` files live (gitignored).
+from flowform_infra.config.deployment_contract import ami_parameter_name
+
+# infra/deployment/aws/cdk — where the per-env `.env.<env>` files live (gitignored).
 _CDK_ROOT = Path(__file__).resolve().parents[2]
 
 EnvName = Literal["dev", "staging", "prod"]
@@ -50,8 +52,9 @@ class EnvConfig:
     removal_policy: RemovalPolicy
     deletion_protection: bool
     # When False (dev), only the Security stack is synthesized — the app and
-    # databases run locally via Docker Compose (infra/environments/development/compose/), and the
-    # frontends run on local Vite dev servers. Compute/hosting fields below
+    # databases run locally via Docker Compose
+    # (infra/containers/runtime/development/compose/), and the frontends run on
+    # local Vite dev servers. Compute/hosting fields below
     # (db_instance_class, auth0_public) are unused until this is True.
     full_deployment: bool
     vpc_flow_log_retention: logs.RetentionDays
@@ -78,22 +81,21 @@ class EnvConfig:
     # (e.g. ("www",) for prod).
     public_site_extra_prefixes: tuple[str, ...] = ()
     studio_domain: str | None = None
-    # VPC-only service discovery zone. ApplicationStack publishes the proxy and
-    # app instance addresses here so host replacement does not change the
+    # VPC-only service discovery zone. ProxyStack and AppStack publish their
+    # instance addresses here so host replacement does not change the
     # cross-host addressing contract.
     private_dns_zone: str | None = None
     tags: dict[str, str] = field(default_factory=dict)
     # Which security scope this env's stacks draw from — see
     # SecurityScopeConfig below. dev and staging share "nonprod".
     security_scope: str = "nonprod"
-    # Packer-built EC2 base image contract. CDK must consume this explicit AMI
-    # reference instead of selecting an unrelated latest base image. Prefer
-    # publishing infra/images/packer/manifests/packer-manifest.json output to this SSM
-    # parameter after an AWS image build.
-    ec2_base_ami_ssm_parameter: str | None = None
-    # Optional direct AMI ID override for tests/break-glass deployments. If set,
-    # ApplicationStack uses it instead of the SSM parameter.
-    ec2_base_ami_id: str | None = None
+    # Packer-built role images. CDK launches only these role AMIs; the base AMI
+    # is a build input and is never a deployable runtime image.
+    ec2_app_ami_ssm_parameter: str | None = None
+    ec2_proxy_ami_ssm_parameter: str | None = None
+    # Optional direct AMI ID overrides for tests and break-glass deployments.
+    ec2_app_ami_id: str | None = None
+    ec2_proxy_ami_id: str | None = None
     # Must match the root mapping of the Packer-built minimal AL2023 AMI. AWS
     # cannot launch an EBS root volume smaller than the AMI snapshot.
     ec2_root_volume_size_gib: int = 10
@@ -133,13 +135,14 @@ class SecurityScopeConfig:
 
 
 # Region matches the KMS key / Secrets Manager secret already in use for
-# dev (see infra/environments/development/compose/.backend.env FLOWFORM_ENCRYPTION_* ARNs).
+# dev (see infra/containers/runtime/development/compose/.backend.env
+# FLOWFORM_ENCRYPTION_* ARNs).
 _DEFAULT_REGION = "ap-southeast-2"
 
 # Route53 hosted zone + SES domain identity, already configured by hand in
 # AWS (matches FLOWFORM_EMAIL_FROM_ADDRESS=no-reply@flow-form.com.au in
-# infra/environments/development/compose/.backend.env). Same domain across all envs for now — revisit
-# if staging/prod end up on subdomains.
+# infra/containers/runtime/development/compose/.backend.env). Same domain
+# across all envs for now — revisit if staging/prod end up on subdomains.
 DOMAIN_NAME = "flow-form.com.au"
 
 # Source repo, used for the GitHub Actions OIDC trust condition on the
@@ -153,7 +156,7 @@ GITHUB_REPOSITORY = "FlowForm"
 # developer, AWS Organizations + member accounts was judged more operational
 # overhead than it's worth right now; revisit (prod in its own member
 # account) if/when the project grows. The account ID matches the ARNs
-# already in infra/environments/development/compose/.backend.env.
+# already in infra/containers/runtime/development/compose/.backend.env.
 _ACCOUNT = "908123139858"
 
 _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
@@ -177,7 +180,8 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         database_removal_policy=RemovalPolicy.DESTROY,
         tags={"flowform:env": "dev"},
         security_scope="nonprod",
-        ec2_base_ami_ssm_parameter="/flowform/dev/ec2/baseAmiId",
+        ec2_app_ami_ssm_parameter=ami_parameter_name("dev", "app"),
+        ec2_proxy_ami_ssm_parameter=ami_parameter_name("dev", "proxy"),
     ),
     # staging doubles as the shared integration environment — the one
     # non-prod cloud deployment. Anything that would want a "deployed dev"
@@ -203,7 +207,8 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         private_dns_zone=f"internal.staging.{DOMAIN_NAME}",
         tags={"flowform:env": "staging"},
         security_scope="nonprod",
-        ec2_base_ami_ssm_parameter="/flowform/staging/ec2/baseAmiId",
+        ec2_app_ami_ssm_parameter=ami_parameter_name("staging", "app"),
+        ec2_proxy_ami_ssm_parameter=ami_parameter_name("staging", "proxy"),
     ),
     "prod": EnvConfig(
         env_name="prod",
@@ -230,7 +235,8 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         private_dns_zone=f"internal.{DOMAIN_NAME}",
         tags={"flowform:env": "prod"},
         security_scope="prod",
-        ec2_base_ami_ssm_parameter="/flowform/prod/ec2/baseAmiId",
+        ec2_app_ami_ssm_parameter=ami_parameter_name("prod", "app"),
+        ec2_proxy_ami_ssm_parameter=ami_parameter_name("prod", "proxy"),
     ),
 }
 
