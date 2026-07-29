@@ -2,11 +2,13 @@ import logging
 import os
 import tomllib
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest  # type: ignore[import]
 from pydantic import SecretStr, ValidationError
 
+from app.core import config as config_module
 from app.core.config import (
     AppSettings,
     Auth0MgmtSettings,
@@ -55,6 +57,36 @@ def _production_flowform(tmp_path: Path, origins: list[str]) -> dict[str, Any]:
 def test_production_rejects_empty_or_wildcard_cors_origins(tmp_path: Path, origins: list[str]) -> None:
     with pytest.raises(ValidationError):
         FlowForm.model_validate(_production_flowform(tmp_path, origins))
+
+
+@pytest.mark.parametrize("origins", [[], [""], ["*"]])
+def test_staging_rejects_empty_or_wildcard_cors_origins(tmp_path: Path, origins: list[str]) -> None:
+    data = _production_flowform(tmp_path, origins)
+    data["env"] = "staging"
+
+    with pytest.raises(ValidationError):
+        FlowForm.model_validate(data)
+
+
+def test_staging_accepts_explicit_cors_origins(tmp_path: Path) -> None:
+    data = _production_flowform(tmp_path, ["https://studio.staging.example.test"])
+    data["env"] = "staging"
+
+    settings = FlowForm.model_validate(data)
+
+    assert settings.env == "staging"
+
+
+def test_get_settings_accepts_staging_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    expected = cast(Settings, SimpleNamespace(flowform=SimpleNamespace(env="staging")))
+    monkeypatch.setenv("FLOWFORM_ENV", "staging")
+    monkeypatch.setattr(config_module, "Settings", lambda: expected)
+    config_module.get_settings.cache_clear()
+
+    try:
+        assert config_module.get_settings() is expected
+    finally:
+        config_module.get_settings.cache_clear()
 
 
 def test_production_rejects_missing_cors_origins(tmp_path: Path) -> None:
@@ -395,7 +427,7 @@ def test_flowform_prefers_auth0_secret_file_outside_test(tmp_path: Path) -> None
     assert settings.auth0.mgmt.secret.get_secret_value() == "file-secret"
 
 
-@pytest.mark.parametrize("environment", ["dev", "prod"])
+@pytest.mark.parametrize("environment", ["dev", "staging", "prod"])
 def test_flowform_requires_auth0_startup_validation_outside_test(
     tmp_path: Path,
     environment: str,

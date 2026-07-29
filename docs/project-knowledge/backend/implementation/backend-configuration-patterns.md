@@ -4,8 +4,8 @@ aliases: ["Backend configuration patterns"]
 document_type: implementation
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:a9aefe4d26cc806c0488031b0094963bb370013777ca1b92814a9f93bfcf82dd
-last_edited: 2026-07-28
+verified_evidence_digest: sha256:31061852b3fdb13ae9486f6d432b8e3386e46336047580d7fe235750d818efa5
+last_edited: 2026-07-29
 tags: [backend, configuration]
 related_code:
   - "../../../../backend/app/core/config.py"

@@ -637,7 +637,7 @@ def test_proxy_runtime_parameters_include_domain_and_observability_routes():
     template = _synth_proxy_stack()
     expected = {
         "API_DOMAIN": "api.staging.flow-form.com.au",
-        "FLOWFORM_ENV": "prod",
+        "FLOWFORM_ENV": "staging",
         "GRAFANA_CLOUD_LOKI_URL": "https://logs.example.test/loki/api/v1/push",
         "GRAFANA_CLOUD_LOKI_USER": "loki-user",
         "GRAFANA_CLOUD_TEMPO_ENDPOINT": "tempo.example.test:443",
@@ -662,10 +662,10 @@ def test_published_backend_parameters_are_all_declared_in_the_contract():
     assert set(_backend_parameters()) <= contract_env_names
 
 
-def test_staging_backend_runs_as_prod_with_iam_database_auth():
-    """Staging is production-shaped, so FLOWFORM_ENV is prod."""
+def test_staging_backend_keeps_its_identity_with_production_shaped_database_auth():
+    """Staging keeps its name while using the deployed IAM database model."""
     published = _backend_parameters()
-    assert published["FLOWFORM_ENV"] == "prod"
+    assert published["FLOWFORM_ENV"] == "staging"
     assert published["DATABASE_CORE_APP_USER"] == "flowform_core_app"
     assert published["DATABASE_RESPONSE_APP_USER"] == "flowform_response_app"
     assert published["DATABASE_CORE_NAME"] == "flowform_core"
@@ -679,7 +679,7 @@ def test_no_database_password_parameter_is_published():
 
 
 def test_cors_origins_are_explicit_json_for_staging():
-    """The backend parses this as a JSON list; wildcards are rejected in prod."""
+    """The backend parses this as JSON; staging and prod both reject wildcards."""
     origins = _backend_parameters()["FLOWFORM_CORS_ORIGINS"]
     assert isinstance(origins, str)
     assert "*" not in origins

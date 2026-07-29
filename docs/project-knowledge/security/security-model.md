@@ -4,8 +4,8 @@ aliases: ["Security model"]
 document_type: architecture
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:b25ca5f68f06bf2dc62581e894dfc801404d668fd3ebc750cb4424f416155d83
-last_edited: 2026-07-28
+verified_evidence_digest: sha256:4ff138dd1ccd6f06117bf6afc7f24778b23bd9eac4f8a186b43df0ec5aeb9fba
+last_edited: 2026-07-29
 tags: [backend, infrastructure, security]
 related_code:
   - "../../../backend/app/middleware/auth/"

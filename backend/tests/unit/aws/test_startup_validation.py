@@ -41,8 +41,10 @@ def test_test_environment_skips_aws_startup_calls() -> None:
     clients.kms.decrypt.assert_not_called()
 
 
-def test_dev_environment_proves_secret_read_and_kms_round_trip(
+@pytest.mark.parametrize("environment", ["dev", "staging", "prod"])
+def test_deployed_environment_proves_secret_read_and_kms_round_trip(
     monkeypatch: pytest.MonkeyPatch,
+    environment: str,
 ) -> None:
     clients = _clients()
     probe = b"known-startup-probe"
@@ -52,7 +54,7 @@ def test_dev_environment_proves_secret_read_and_kms_round_trip(
     )
     clients.kms.decrypt.return_value = {"Plaintext": probe}
 
-    validate_aws_runtime_access(settings=_settings(), clients=clients)
+    validate_aws_runtime_access(settings=_settings(environment), clients=clients)
 
     clients.secretsmanager.get_secret_value.assert_called_once_with(
         SecretId="arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:test",
@@ -64,7 +66,7 @@ def test_dev_environment_proves_secret_read_and_kms_round_trip(
         CiphertextBlob=b"ciphertext",
         EncryptionContext={
             "flowform_purpose": "startup_validation",
-            "flowform_environment": "dev",
+            "flowform_environment": environment,
         },
     )
 

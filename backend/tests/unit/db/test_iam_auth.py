@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from app.core.config import AwsSettings, DatabaseSettings
 from app.core.errors import ConfigError
 from app.db import iam_auth
-from app.db.iam_auth import attach_iam_auth
+from app.db.iam_auth import RDS_CA_BUNDLE_PATH, attach_iam_auth
 
 
 class _FakeRdsClient:
@@ -82,12 +82,15 @@ def test_each_connection_gets_a_fresh_token(fake_rds_client: _FakeRdsClient) -> 
 
 
 def test_iam_connections_require_tls(fake_rds_client: _FakeRdsClient) -> None:
-    """RDS only accepts IAM authentication over TLS."""
+    """RDS IAM uses hostname verification against the pinned AWS CA bundle."""
     database = _iam_database()
     engine = create_engine(database.url)
     attach_iam_auth(engine, database=database, aws=AwsSettings())
 
-    assert _fire_do_connect(engine)["sslmode"] == "verify-full"
+    cparams = _fire_do_connect(engine)
+
+    assert cparams["sslmode"] == "verify-full"
+    assert cparams["sslrootcert"] == RDS_CA_BUNDLE_PATH
 
 
 def test_explicit_sslmode_is_preserved(fake_rds_client: _FakeRdsClient) -> None:
@@ -99,6 +102,17 @@ def test_explicit_sslmode_is_preserved(fake_rds_client: _FakeRdsClient) -> None:
     cparams = _fire_do_connect(engine, {"sslmode": "require"})
 
     assert cparams["sslmode"] == "require"
+
+
+def test_explicit_sslrootcert_is_preserved(fake_rds_client: _FakeRdsClient) -> None:
+    """A caller-provided trust bundle is not replaced."""
+    database = _iam_database()
+    engine = create_engine(database.url)
+    attach_iam_auth(engine, database=database, aws=AwsSettings())
+
+    cparams = _fire_do_connect(engine, {"sslrootcert": "/custom/rds-ca.pem"})
+
+    assert cparams["sslrootcert"] == "/custom/rds-ca.pem"
 
 
 def test_attach_requires_host_and_user(fake_rds_client: _FakeRdsClient) -> None:

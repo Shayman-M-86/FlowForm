@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+RDS_CA_BUNDLE_PATH = "/etc/ssl/certs/aws-rds-ap-southeast-2-bundle.pem"
+
 
 class RdsIamTokenProvider:
     """Generates RDS IAM authentication tokens for a single database target.
@@ -92,6 +94,7 @@ def attach_iam_auth(engine: Engine, *, database: DatabaseSettings, aws: AwsSetti
         cparams["password"] = provider.generate_token()
         # RDS IAM authentication is only accepted over TLS.
         cparams.setdefault("sslmode", "verify-full")
+        cparams.setdefault("sslrootcert", RDS_CA_BUNDLE_PATH)
 
     logger.info(
         "RDS IAM database authentication enabled for %s@%s:%s",

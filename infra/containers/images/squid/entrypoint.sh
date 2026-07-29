@@ -31,8 +31,8 @@ sed \
 squid -k parse -f "${rendered}"
 
 install -d -o proxy -g proxy -m 0755 /var/log/squid
-touch /var/log/squid/access.log
-chown proxy:proxy /var/log/squid/access.log
+su -s /bin/sh -c \
+  'touch /var/log/squid/access.log' proxy
 su -s /bin/sh -c \
   'exec tail -n 0 -F /var/log/squid/access.log' proxy &
 

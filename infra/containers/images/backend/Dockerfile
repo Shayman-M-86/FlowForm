@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM python:3.14.6-slim-trixie@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.31@sha256:ecd4de2f060c64bea0ff8ecb182ddf46ba3fcccdc8a60cfdbaf20d1a047d7437 /uv /uvx /bin/
@@ -12,6 +14,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 
 WORKDIR /app
+
+# RDS IAM authentication requires TLS. Pin the regional AWS trust bundle so
+# verify-full validates both the certificate chain and the RDS endpoint name.
+ADD --checksum=sha256:d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b \
+    https://truststore.pki.rds.amazonaws.com/ap-southeast-2/ap-southeast-2-bundle.pem \
+    /etc/ssl/certs/aws-rds-ap-southeast-2-bundle.pem
 
 COPY backend/pyproject.toml .
 COPY backend/uv.lock .
