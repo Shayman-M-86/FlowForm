@@ -13,6 +13,12 @@ from constructs import Construct
 
 from flowform_infra.config import (
     EnvConfig,
+    HostRole,
+    host_service_name,
+    instance_context_mode,
+    instance_context_path,
+    peer_context_key,
+    release_parameter_name,
     runtime_group_logical_names,
     runtime_parameter_name,
 )
@@ -20,70 +26,18 @@ from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.registry_stack import RegistryStack
 
-# Decided direction: TWO EC2 instances + Docker Compose (not ECS/ALB, no
-# NAT Gateway, no paid interface endpoints) — the "cheapest hardened"
-# shape in docs/cost-model.md, detailed in
-# docs/implementation-sketch/caddy-ec2-implementation-notes.md:
+# The stack owns the two EC2 resources and their AWS-facing contracts, not
+# runtime implementation. The public Proxy role provides Caddy ingress and
+# Squid egress; the isolated App role runs the backend and reaches approved
+# external services through Squid. Each instance launches a role AMI built
+# under infra/machine-images/definitions/. User data writes only the canonical
+# non-secret instance context and starts the baked role systemd unit.
 #
-#   - PUBLIC proxy EC2 (public subnet, Elastic IP): Caddy terminates TLS
-#     for api.<public_site_domain> and reverse proxies to the app
-#     instance's PRIVATE IP; Squid is the outbound forward proxy with a
-#     domain allow-list (Auth0 + the AWS service endpoints the app uses).
-#   - PRIVATE app EC2 (private subnet, no public IP, NO internet route):
-#     runs the Flask/Gunicorn backend via docker-compose. All external
-#     traffic — including AWS API calls — rides the proxy on 3128; ECR
-#     image LAYERS ride the free S3 gateway endpoint; RDS is local VPC.
-#
-# Postgres does NOT run on either instance; both logical databases
-# (core + response) live on RDS (database_stack, later milestone).
-#
-# TODO: build out
-#   - network_stack: private app subnet with NO 0.0.0.0/0 route, free S3
-#     gateway endpoint, RDS subnets — see the notes doc
-#   - proxy instance (t4g.small, public subnet, EIP): SG inbound 80/443
-#     from anywhere + 3128 from the app SG only; its own slim role
-#     (Route 53 zone-scoped changes for DNS-01, ECR pull, SSM core)
-#   - app instance (t4g.small, private subnet): SG inbound backend port
-#     from proxy SG only; instance profile wraps security_stack.task_role
-#     (secrets/KMS/SES/ECR)
-#   - IMDSv2 hop limit 2 on BOTH instances (containers need role creds)
-#   - proxy env plumbing on the app instance: HTTP(S)_PROXY for the
-#     Docker daemon and the backend container; NO_PROXY must include
-#     localhost,127.0.0.1,169.254.169.254 (IMDS), the VPC CIDR (RDS +
-#     S3 endpoint must not hairpin), and Docker service names
-#   - management path: both hosts via SSM; the private app host's SSM Agent
-#     uses the HTTP Squid proxy. The FREE EC2 Instance Connect Endpoint remains
-#     a direct emergency-management path that requires no public ingress.
-#   - Route 53 A record api.<public_site_domain> -> proxy Elastic IP
-#   - backend deploy job in .github/workflows/deploy.yml: build/push
-#     image to ECR, run migrations, then restart compose on the app
-#     instance via the management path (no SSH from CI)
-#
-# Secrets delivery (resolved): keep the existing *_FILE pattern from
-# docker-compose.dev.yml. The APP instance bootstrap (user data / deploy
-# command, re-run on every deploy) does two fetches using the instance
-# role, with the AWS calls riding the egress proxy — the app containers
-# never call Secrets Manager/SSM for config themselves:
-#   1. Secrets Manager -> /run/flowform/secrets/<NAME>.secret.txt
-#      (Flask secret key and Auth0 Management API client secret; tmpfs mount,
-#      root-owned 0600 — memory-backed, nothing rests on EBS, gone on reboot
-#      until bootstrap re-runs). AWS database connections use IAM auth and do
-#      not mount password files.
-#   2. SSM get-parameters-by-path /flowform/<scope>/backend/ ->
-#      /opt/flowform/backend.env (non-secret FLOWFORM_* config: Auth0
-#      IDs, KMS key ARN, linkage secret ARN, SES from-address, logging,
-#      DB hosts/names/users/auth modes, image refs, private IPs,
-#      HTTP(S)_PROXY/NO_PROXY).
-#      Compose is invoked with `--env-file /opt/flowform/backend.env`
-#      (interpolation) and the backend service also loads it via `env_file:`
-#      (container env).
-# See infra/runtime/compose/docker-compose.proxy.yml and docker-compose.app.yml for the
-# consuming side: the proxy instance runs Caddy+Squid, and the app instance
-# runs only the backend.
-#
-# Backend AWS calls (boto3 SESv2/KMS/Secrets Manager) use the instance
-# role via IMDS and honor HTTPS_PROXY from the environment — AwsSettings'
-# static keys are already optional (dev-only).
+# Container images own service binaries and configuration under
+# infra/containers/images/. Runtime Compose topology and release helpers live
+# under infra/containers/runtime/. Immutable container digests are promoted as
+# one complete role release through the external SSM release parameter; CDK
+# grants read access but deliberately does not own that mutable value.
 
 
 def _pascal_case(logical_name: str) -> str:
@@ -93,18 +47,6 @@ def _pascal_case(logical_name: str) -> str:
 
 class ApplicationStack(Stack):
     """Public proxy EC2 (Caddy+Squid) + private app EC2 (Flask/Gunicorn)."""
-
-    # Static private addresses. Each host's bootstrap needs the other's IP, so
-    # deriving them from the instances would make the two user-data blocks
-    # reference each other and form a circular CloudFormation dependency.
-    # AWS reserves the first four addresses in a subnet, so .4 is the first
-    # assignable one.
-    PROXY_PRIVATE_IP = "10.42.0.4"
-    APP_PRIVATE_IP = "10.42.1.4"
-
-    # Where the golden image installs the bootstrap scripts and Compose files.
-    # Must match install-runtime-assets.sh in the Packer provisioners.
-    RUNTIME_ASSET_ROOT = "/opt/flowform/repo"
 
     def __init__(
         self,
@@ -230,18 +172,14 @@ class ApplicationStack(Stack):
         )
 
         instance_type = ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.SMALL)
-        if env_config.ec2_base_ami_id:
-            machine_image = ec2.MachineImage.generic_linux({env_config.region: env_config.ec2_base_ami_id})
-        elif env_config.ec2_base_ami_ssm_parameter:
-            machine_image = ec2.MachineImage.from_ssm_parameter(
-                env_config.ec2_base_ami_ssm_parameter,
-                os=ec2.OperatingSystemType.LINUX,
-            )
-        else:
-            raise ValueError(
-                f"EnvConfig for '{env_config.env_name}' must provide a Packer-built EC2 base AMI "
-                "via ec2_base_ami_id or ec2_base_ami_ssm_parameter"
-            )
+        app_machine_image = self._role_machine_image("app")
+        proxy_machine_image = self._role_machine_image("proxy")
+        app_release_policy = self._attach_release_read_policy("AppReleaseReadPolicy", task_role, "app")
+        proxy_release_policy = self._attach_release_read_policy(
+            "ProxyReleaseReadPolicy",
+            cast(iam.IRole, self.proxy_role),
+            "proxy",
+        )
 
         root_block_devices = [
             ec2.BlockDevice(
@@ -262,22 +200,13 @@ class ApplicationStack(Stack):
             vpc_subnets=network_stack.proxy_subnets,
             instance_name=f"flowform-{env_config.env_name}-proxy",
             instance_type=instance_type,
-            machine_image=machine_image,
+            machine_image=proxy_machine_image,
             role=cast(iam.IRole, self.proxy_role),
             security_group=network_stack.proxy_security_group,
-            private_ip_address=self.PROXY_PRIVATE_IP,
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
             block_devices=root_block_devices,
-            user_data=self._build_user_data(
-                "proxy",
-                {
-                    "FLOWFORM_SCOPE": env_config.security_scope,
-                    "AWS_REGION": env_config.region,
-                    "PROXY_PRIVATE_IP": self.PROXY_PRIVATE_IP,
-                    "APP_PRIVATE_IP": self.APP_PRIVATE_IP,
-                },
-            ),
+            user_data=self._build_user_data("proxy", network_stack.app_private_dns_name),
         )
 
         self.proxy_elastic_ip = ec2.CfnEIP(
@@ -302,30 +231,20 @@ class ApplicationStack(Stack):
             vpc_subnets=network_stack.app_subnets,
             instance_name=f"flowform-{env_config.env_name}-app",
             instance_type=instance_type,
-            machine_image=machine_image,
+            machine_image=app_machine_image,
             role=task_role,
             security_group=network_stack.app_security_group,
             associate_public_ip_address=False,
-            private_ip_address=self.APP_PRIVATE_IP,
             http_tokens=ec2.HttpTokens.REQUIRED,
             http_put_response_hop_limit=2,
             block_devices=root_block_devices,
-            user_data=self._build_user_data(
-                "app",
-                {
-                    # Selects the credential strategy: IAM database auth, no
-                    # database passwords fetched or written.
-                    "FLOWFORM_DEPLOYMENT_TARGET": "aws",
-                    "FLOWFORM_SCOPE": env_config.security_scope,
-                    "AWS_REGION": env_config.region,
-                    "PROXY_PRIVATE_IP": self.PROXY_PRIVATE_IP,
-                    "APP_PRIVATE_IP": self.APP_PRIVATE_IP,
-                },
-            ),
+            user_data=self._build_user_data("app", network_stack.proxy_private_dns_name),
         )
         self.app_instance.node.add_dependency(self.proxy_instance)
         self.app_instance.node.add_dependency(app_ecr_policy)
+        self.app_instance.node.add_dependency(app_release_policy)
         self.proxy_instance.node.add_dependency(proxy_ecr_policy)
+        self.proxy_instance.node.add_dependency(proxy_release_policy)
         proxy_default_policy = self.proxy_role.node.try_find_child("DefaultPolicy")
         if proxy_default_policy is not None:
             self.proxy_instance.node.add_dependency(proxy_default_policy)
@@ -349,36 +268,74 @@ class ApplicationStack(Stack):
 
         self._publish_runtime_parameters()
 
-    def _build_user_data(self, host: str, bootstrap_env: dict[str, str]) -> ec2.UserData:
-        """Write the host's bootstrap inputs, then run its bootstrap script.
-
-        The bootstrap scripts and Compose files are baked into the golden AMI,
-        so user data only supplies the values the image cannot know: the
-        deployment target, scope, region, and the two private addresses. There
-        is no artifact fetch, so a host needs no network path to begin
-        converging.
-
-        Fails closed: `set -euo pipefail` means a host that cannot converge
-        stops rather than idling in a half-booted state that looks healthy.
-        """
-        env_file = f"/etc/flowform/bootstrap-{host}.env"
-        bootstrap = f"{self.RUNTIME_ASSET_ROOT}/infra/deployment/bootstrap/bootstrap-{host}.sh"
-
+    def _build_user_data(self, role: HostRole, peer_dns_name: str) -> ec2.UserData:
+        """Write non-secret instance identity and start the baked role service."""
+        context = {
+            "schema_version": 1,
+            "environment": self.env_config.env_name,
+            "role": role,
+            "region": self.env_config.region,
+            "parameter_root": f"/flowform/{self.env_config.env_name}",
+            "configuration_root": f"/flowform/{self.env_config.security_scope}",
+            peer_context_key(role): peer_dns_name,
+        }
+        context_path = instance_context_path()
+        context_json = json.dumps(context, indent=2, sort_keys=True)
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(
             "set -euo pipefail",
             "install -d -m 0755 /etc/flowform",
-            f"cat > {env_file} <<'FLOWFORM_ENV'",
-            *(f"{key}={value}" for key, value in bootstrap_env.items()),
-            "FLOWFORM_ENV",
-            f"chmod 0644 {env_file}",
-            # Fail with a clear cause if the AMI predates the baked assets,
-            # rather than a bare "no such file" from the exec below.
-            f"test -x {bootstrap} || {{ echo 'golden AMI has no {host} bootstrap' >&2; exit 1; }}",
-            f"set -a; . {env_file}; set +a",
-            f"exec {bootstrap}",
+            "umask 077",
+            f"cat > {context_path} <<'FLOWFORM_CONTEXT'",
+            context_json,
+            "FLOWFORM_CONTEXT",
+            f"chown root:root {context_path}",
+            f"chmod {instance_context_mode()} {context_path}",
+            f"systemctl enable --now {host_service_name(role)}",
         )
         return user_data
+
+    def _role_machine_image(self, role: HostRole) -> ec2.IMachineImage:
+        direct_ami_id = self.env_config.ec2_app_ami_id if role == "app" else self.env_config.ec2_proxy_ami_id
+        parameter = (
+            self.env_config.ec2_app_ami_ssm_parameter if role == "app" else self.env_config.ec2_proxy_ami_ssm_parameter
+        )
+        if direct_ami_id:
+            return ec2.MachineImage.generic_linux({self.env_config.region: direct_ami_id})
+        if parameter:
+            return ec2.MachineImage.from_ssm_parameter(
+                parameter,
+                os=ec2.OperatingSystemType.LINUX,
+            )
+        raise ValueError(f"EnvConfig for '{self.env_config.env_name}' must provide a Packer-built {role} AMI")
+
+    def _attach_release_read_policy(
+        self,
+        construct_id: str,
+        role: iam.IRole,
+        host_role: HostRole,
+    ) -> iam.Policy:
+        """Grant read-only access to the role's atomic release pointer."""
+        parameter_name = release_parameter_name(self.env_config.env_name, host_role)
+        policy = iam.Policy(
+            self,
+            construct_id,
+            statements=[
+                iam.PolicyStatement(
+                    actions=["ssm:GetParameter"],
+                    resources=[
+                        self.format_arn(
+                            service="ssm",
+                            resource="parameter",
+                            resource_name=parameter_name.removeprefix("/"),
+                            arn_format=ArnFormat.SLASH_RESOURCE_NAME,
+                        )
+                    ],
+                )
+            ],
+        )
+        policy.attach_to_role(role)
+        return policy
 
     def _publish_runtime_parameters(self) -> None:
         """Publish the backend runtime group to SSM.

@@ -42,6 +42,16 @@ early until the environment's `.env.<env>` file provides its Auth0 public
 config (`AUTH0_DOMAIN` / `AUTH0_CLIENT_ID` / `AUTH0_AUDIENCE`) — this is
 deliberate, so a deploy can't go out with missing Auth0 config.
 
+Before deploying Application, publish verified role AMI IDs to
+`/flowform/<environment>/ec2/appAmiId` and
+`/flowform/<environment>/ec2/proxyAmiId`. CDK launches only these role images,
+never the base image used to build them.
+
+Container promotion separately owns `/flowform/<environment>/app/release` and
+`/flowform/<environment>/proxy/release`. CDK grants read access to these
+complete release manifests but deliberately does not create or update their
+mutable values.
+
 ## Deploy order
 
 For full deployments (staging/prod), `app.py` wires explicit stack
@@ -52,6 +62,11 @@ role. `cdk deploy` (no stack name) respects this order automatically. Note
 `FrontendCert` lives in **us-east-1** (a CloudFront requirement) while
 everything else is in `ap-southeast-2`; CDK handles the cross-region wiring.
 For dev only the Security stack exists.
+
+Application user data only writes root-owned
+`/etc/flowform/instance-context.json` and starts the baked
+`flowform-app.service` or `flowform-proxy.service`. Package installation,
+configuration rendering, and container deployment belong to the role AMIs.
 
 ## Verifying a deploy
 

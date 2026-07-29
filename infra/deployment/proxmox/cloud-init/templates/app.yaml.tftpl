@@ -63,30 +63,28 @@ write_files:
     owner: root:root
     content: ${REHEARSAL_CA_CRT_B64}
 
-  # --- the REAL bootstrap script (rendered from infra/deployment/bootstrap/) ---
-  - path: /opt/flowform/scripts/bootstrap/bootstrap-app.sh
+  # --- App host assets from the role-image definition -------------------------
+  - path: /opt/flowform/role/bin/bootstrap-app.sh
     encoding: b64
     permissions: '0755'
     owner: root:root
     content: ${BOOTSTRAP_APP_SH_B64}
-  - path: /opt/flowform/scripts/bootstrap/aws-cli-retry.sh
+  - path: /opt/flowform/host/bin/aws-cli-retry.sh
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${AWS_CLI_RETRY_SH_B64}
-  # shared bootstrap library; sourced by bootstrap-app.sh and the retry shim,
-  # so it must sit beside them in this same directory.
-  - path: /opt/flowform/scripts/bootstrap/bootstrap-common.sh
+  # Shared host helper installed into every role image.
+  - path: /opt/flowform/host/bin/bootstrap-common.sh
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${BOOTSTRAP_COMMON_SH_B64}
 
   # --- the shared app compose file ----------------------------------------------
-  # bootstrap-app.sh's REPO_ROOT math is scripts/bootstrap → ../../.. , so the
-  # compose file must sit at <root>/infra/containers/runtime/compose/app.yml
-  # relative to the script. We reproduce that layout under /opt/flowform/repo.
-  - path: /opt/flowform/repo/infra/containers/runtime/compose/app.yml
+  # Preserve the repository-relative runtime layout because Compose resolves
+  # every overlay bind mount from the first file's project directory.
+  - path: /opt/flowform/repo/infra/containers/runtime/aws/common/compose/app.yml
     encoding: b64
     permissions: '0644'
     owner: root:root
@@ -97,19 +95,11 @@ write_files:
   # base app.yml stays free of static creds/endpoints (prod uses the instance
   # role against real AWS). Path mirrors the repo layout under /opt/flowform/repo
   # so the override's project dir resolves against the base compose dir.
-  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/app.override.yml
+  - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/compose/app.override.yml
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${DOCKER_COMPOSE_APP_REHEARSAL_B64}
-  # Observability agent config, bind-mounted by the alloy service in app.yml.
-  # Must exist as a FILE before compose up, or Docker auto-creates the path as a
-  # directory and the :/etc/alloy/config.alloy mount fails (learned on the proxy).
-  - path: /opt/flowform/repo/infra/containers/runtime/services/alloy-app/config.alloy
-    encoding: b64
-    permissions: '0644'
-    owner: root:root
-    content: ${CONFIG_ALLOY_APP_B64}
   # --- trust the fake-ECR registry's TLS (mirrors prod ECR-over-HTTPS) ---------
   # bootstrap-app.sh pulls BACKEND_IMAGE as https://registry.localstack.test
   # through Squid → TLS shim → registry, exactly as prod pulls ECR over HTTPS —
@@ -147,13 +137,14 @@ write_files:
       # explicit compose path: the script is baked at /opt/flowform/scripts/... so
       # its own REPO_ROOT math (../../..) would look under /opt, not where we put
       # the compose file. Point at the baked location directly.
-      COMPOSE_FILE=/opt/flowform/repo/infra/containers/runtime/compose/app.yml
+      COMPOSE_FILE=/opt/flowform/repo/infra/containers/runtime/aws/common/compose/app.yml
       # Rehearsal app override layered on with a second -f. It carries the fake-AWS
       # deltas for the backend CONTAINER (per-service LocalStack endpoints, harmless
       # creds, rehearsal CA, IMDS disabled). Prod leaves this unset. The env vars
       # below in THIS file are for the bootstrap's own AWS CLI calls, a separate
       # process from the container the override configures.
-      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/strategies/rehearsal/compose/app.override.yml
+      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/compose/app.override.yml
+      FLOWFORM_SHARED_SCRIPT_DIR=/opt/flowform/host/bin
       COMPOSE_FORCE_RECREATE=1
       # per-service fake-AWS endpoints (each = its own SNI → own Squid tunnel)
       AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
@@ -199,7 +190,7 @@ write_files:
       fi
       # Load the rehearsal env (endpoints, IPs, scope) then run the REAL script.
       set -a; . /etc/flowform/bootstrap-app.env; set +a
-      exec /opt/flowform/scripts/bootstrap/bootstrap-app.sh
+      exec /opt/flowform/role/bin/bootstrap-app.sh
   - path: /etc/systemd/system/flowform-app.service
     permissions: '0644'
     owner: root:root

@@ -7,8 +7,8 @@
 # select runtime SSM parameters, bootstrap hosts, or deploy infrastructure.
 #
 # Promotion is the separate, deliberate act of pointing an environment at an
-# already-published release: it reads a release manifest and writes the five
-# image-reference parameters the runtime groups declare. Keeping the two apart
+# already-published release: it reads the publication manifest and writes one
+# complete App manifest and one complete Proxy manifest. Keeping the two apart
 # means republishing an image never moves a running environment, and promoting
 # never rebuilds anything.
 
@@ -16,8 +16,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../../.." && pwd)"
-SOURCE_MANIFEST="${SOURCE_MANIFEST:-${REPO_ROOT}/infra/containers/strategies/aws/image-sources.json}"
+SOURCE_MANIFEST="${SOURCE_MANIFEST:-${REPO_ROOT}/infra/contracts/image-sources.json}"
 RELEASE_MANIFEST_PATH="${RELEASE_MANIFEST_PATH:-${REPO_ROOT}/staging-image-release.json}"
+HOST_CONTRACT="${HOST_CONTRACT:-${REPO_ROOT}/infra/contracts/runtime-hosts.json}"
 PUBLISH_TEMP_DIR=""
 
 cleanup_temp_dir() {
@@ -96,10 +97,7 @@ validate_manifest() {
       "flowform-staging-caddy",
       "flowform-staging-squid"
     ])
-    and (.images.backend.kind == "build")
-    and (.images.caddy.kind == "build")
-    and (.images.squid.kind == "mirror")
-    and (.images.alloy.kind == "mirror")
+    and ([.images[].kind == "build" or .images[].kind == "mirror"] | all)
   ' "${SOURCE_MANIFEST}" >/dev/null \
     || die "source manifest structure or staging repository set is invalid"
 
@@ -312,37 +310,36 @@ publish_images() {
   printf 'Published four immutable staging images.\nRelease manifest: %s\n' "${RELEASE_MANIFEST_PATH}"
 }
 
-# Map each published image to the runtime-group parameters that reference it.
-# Alloy runs on both hosts, so it is promoted into both groups.
-image_parameter_targets() { # $1 image name -> "<group>/<ENV_NAME>" lines
-  case "$1" in
-    backend) printf 'backend/BACKEND_IMAGE\n' ;;
-    alloy)   printf 'backend/ALLOY_IMAGE\nproxy/ALLOY_IMAGE\n' ;;
-    caddy)   printf 'proxy/CADDY_IMAGE\n' ;;
-    squid)   printf 'proxy/SQUID_IMAGE\n' ;;
-    *)       die "no runtime parameter mapping for image: $1" ;;
-  esac
-}
-
 promote_images() {
   require_command jq
   require_command aws
 
-  local scope="${FLOWFORM_SCOPE:-nonprod}"
+  local environment="${FLOWFORM_ENVIRONMENT:-staging}"
   local manifest="${RELEASE_MANIFEST_PATH}"
   [[ -f "${manifest}" ]] \
     || die "release manifest not found: ${manifest} (publish first, or set RELEASE_MANIFEST_PATH)"
+  [[ -f "${HOST_CONTRACT}" ]] \
+    || die "runtime host contract not found: ${HOST_CONTRACT}"
+  [[ "${environment}" =~ ^(dev|staging|prod)$ ]] \
+    || die "FLOWFORM_ENVIRONMENT must be dev, staging, or prod"
 
   jq -e '.schema_version == 1' "${manifest}" >/dev/null \
     || die "unsupported release manifest schema: ${manifest}"
+  jq -e '.schema_version == 1' "${HOST_CONTRACT}" >/dev/null \
+    || die "unsupported runtime host contract: ${HOST_CONTRACT}"
 
-  local commit_sha
+  local commit_sha region
   commit_sha="$(jq -er '.commit_sha' "${manifest}")" \
     || die "release manifest has no commit_sha"
+  [[ "${commit_sha}" =~ ^[0-9a-f]{40}$ ]] \
+    || die "release manifest commit_sha must be a lowercase 40-character commit SHA"
+  region="$(jq -er '.aws.region' "${manifest}")" \
+    || die "release manifest has no AWS region"
 
-  printf 'Promoting release %s into /flowform/%s/\n' "${commit_sha}" "${scope}"
+  printf 'Promoting release %s into the %s role manifests.\n' "${commit_sha}" "${environment}"
 
-  local image_name target digest target_digest repository reference entry parameter group env_name
+  local image_name target digest target_digest repository reference entry
+  local normalized_images='{}'
   while IFS= read -r entry; do
     image_name="$(jq -er '.name' <<<"${entry}")"
     target="$(jq -er '.target' <<<"${entry}")"
@@ -365,26 +362,61 @@ promote_images() {
     [[ -n "${repository}" && "${repository}" != "${target}" ]] \
       || die "${image_name} target is not tag- or digest-qualified"
     reference="${repository}@${digest}"
-
-    while IFS= read -r parameter; do
-      group="${parameter%%/*}"
-      env_name="${parameter##*/}"
-      if [[ "${DRY_RUN:-0}" == "1" ]]; then
-        printf 'DRY_RUN: would set /flowform/%s/%s/%s=%s\n' \
-          "${scope}" "${group}" "${env_name}" "${reference}"
-        continue
-      fi
-      aws ssm put-parameter \
-        --name "/flowform/${scope}/${group}/${env_name}" \
-        --value "${reference}" \
-        --type String \
-        --overwrite >/dev/null \
-        || die "failed to write /flowform/${scope}/${group}/${env_name}"
-      printf 'set /flowform/%s/%s/%s\n' "${scope}" "${group}" "${env_name}"
-    done < <(image_parameter_targets "${image_name}")
+    normalized_images="$(
+      jq --arg name "${image_name}" --arg reference "${reference}" \
+        '. + {($name): $reference}' <<<"${normalized_images}"
+    )"
   done < <(jq -c '.images[]' "${manifest}")
 
-  printf 'Promotion complete. Hosts pick this up on their next bootstrap.\n'
+  local role parameter_template parameter value
+  for role in app proxy; do
+    parameter_template="$(
+      jq -er --arg role "${role}" '.roles[$role].release_parameter' "${HOST_CONTRACT}"
+    )" || die "runtime host contract has no release parameter for ${role}"
+    parameter="${parameter_template//\{environment\}/${environment}}"
+
+    if [[ "${role}" == "app" ]]; then
+      value="$(
+        jq -cn \
+          --arg source_commit "${commit_sha}" \
+          --arg backend "$(jq -er '.backend' <<<"${normalized_images}")" \
+          --arg alloy "$(jq -er '.alloy' <<<"${normalized_images}")" \
+          '{
+            schema_version: 1,
+            source_commit: $source_commit,
+            images: {backend: $backend, alloy: $alloy}
+          }'
+      )"
+    else
+      value="$(
+        jq -cn \
+          --arg source_commit "${commit_sha}" \
+          --arg caddy "$(jq -er '.caddy' <<<"${normalized_images}")" \
+          --arg squid "$(jq -er '.squid' <<<"${normalized_images}")" \
+          --arg alloy "$(jq -er '.alloy' <<<"${normalized_images}")" \
+          '{
+            schema_version: 1,
+            source_commit: $source_commit,
+            images: {caddy: $caddy, squid: $squid, alloy: $alloy}
+          }'
+      )"
+    fi
+
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+      printf 'DRY_RUN: would set %s=%s\n' "${parameter}" "${value}"
+      continue
+    fi
+    aws ssm put-parameter \
+      --region "${region}" \
+      --name "${parameter}" \
+      --value "${value}" \
+      --type String \
+      --overwrite >/dev/null \
+      || die "failed to write ${parameter}"
+    printf 'set %s\n' "${parameter}"
+  done
+
+  printf 'Promotion complete. Each host reads one complete role manifest on its next convergence.\n'
 }
 
 case "${1:-}" in

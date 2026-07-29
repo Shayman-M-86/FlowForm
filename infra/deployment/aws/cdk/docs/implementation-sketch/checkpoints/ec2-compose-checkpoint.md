@@ -16,23 +16,23 @@ intended edits in this pass are this file and a small link from
 
 Runtime Compose files:
 
-- `infra/containers/runtime/compose/proxy.yml` - public proxy EC2 runtime.
-- `infra/containers/runtime/compose/app.yml` - private app EC2 runtime.
-- `infra/containers/strategies/rehearsal/compose/*.yml` - the rehearsal proxy
+- `infra/containers/runtime/aws/common/compose/proxy.yml` - public proxy EC2 runtime.
+- `infra/containers/runtime/aws/common/compose/app.yml` - private app EC2 runtime.
+- `infra/containers/runtime/proxmox/rehearsal/compose/*.yml` - the rehearsal proxy
   override and dedicated DB strategy; the app uses the shared runtime Compose unchanged.
 
 Proxy/app support files:
 
-- `infra/containers/strategies/aws/services/caddy/Caddyfile.proxy` - production proxy Caddyfile using
+- `infra/containers/images/caddy/Caddyfile` - production proxy Caddyfile using
   Route 53 DNS-01 and the app private IP as upstream.
-- `infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy` - rehearsal proxy Caddyfile,
+- `infra/containers/runtime/proxmox/rehearsal/services/caddy/Caddyfile.proxy` - rehearsal proxy Caddyfile,
   paired with the rehearsal TLS shim for local certificate issuance.
-- `infra/containers/runtime/services/squid/squid.conf` - fail-closed CONNECT proxy policy rendered
+- `infra/containers/images/squid/squid.conf.template` - fail-closed CONNECT proxy policy rendered
   with the exact app source CIDR.
-- `infra/containers/strategies/aws/services/squid/allowed-domains.txt` - strict starting allow-list for
+- `infra/containers/images/squid/allowed-domains.txt` - strict starting allow-list for
   Auth0 and the required regional AWS service hosts.
 - Rehearsal PostgreSQL runs on dedicated VM `240` from
-  `infra/containers/strategies/rehearsal/compose/db.yml`, using the maintained
+  `infra/containers/runtime/proxmox/rehearsal/compose/db.yml`, using the maintained
   `infra/database/init/` and `infra/database/config/pg_hba.conf` paths.
 
 Design and hardening docs:
@@ -71,7 +71,7 @@ proxy EC2:
 - The container is read-only with tmpfs for `/tmp` and `/app/logs`, no Linux
   capabilities, `no-new-privileges`, a PID limit, and json-file log rotation.
 
-The rehearsal stack (`infra/containers/strategies/rehearsal/compose/*.yml`, layered on
+The rehearsal stack (`infra/containers/runtime/proxmox/rehearsal/compose/*.yml`, layered on
 the shared runtime compose files) is the local/VM proof harness:
 
 - Runs local Caddy, Squid, LocalStack, and a local registry instead of pulling
@@ -137,7 +137,7 @@ env CADDY_IMAGE=example.com/flowform-caddy:test \
   PROXY_PRIVATE_IP=10.0.1.10 \
   APP_PRIVATE_IP=10.0.11.10 \
   SQUID_APP_SOURCE_CIDR=10.0.11.10/32 \
-  docker compose -f infra/containers/runtime/compose/proxy.yml config -q
+  docker compose -f infra/containers/runtime/aws/common/compose/proxy.yml config -q
 ```
 
 ```bash
@@ -145,14 +145,14 @@ env BACKEND_IMAGE=example.com/flowform-backend:test \
   APP_PRIVATE_IP=10.0.11.10 \
   PROXY_PRIVATE_IP=10.0.1.10 \
   FLOWFORM_SECRET_DIR=/tmp/flowform-compose-check-secrets \
-  docker compose -f infra/containers/runtime/compose/app.yml \
+  docker compose -f infra/containers/runtime/aws/common/compose/app.yml \
     config --no-env-resolution -q
 ```
 
 ```bash
 env FLOWFORM_SECRET_DIR=/tmp/flowform-compose-check-secrets \
   docker compose \
-    -f infra/containers/strategies/rehearsal/compose/db.yml config -q
+    -f infra/containers/runtime/proxmox/rehearsal/compose/db.yml config -q
 ```
 
 The checks prove the Compose files still render under the expected variable

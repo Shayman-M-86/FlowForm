@@ -27,20 +27,22 @@ flowform_infra/
 tests/                     # synth-time assertions (aws_cdk.assertions)
 ```
 
-Security, Registry, Network, and frontend hosting have substantive resources.
-Application is partial; Database and Observability remain structural stubs. See
-`aws-overview.md` for the current boundary.
+Security, Registry, Network, Database, Application, and frontend hosting have
+substantive resources. Observability remains a structural boundary. See
+`aws-overview.md` for the current stack map.
 
-The app and proxy consume the Packer-built minimal AL2023 AMI and explicitly
-request a 10 GiB encrypted gp3 root volume. This must match
-`aws_root_volume_size` in the Packer variables because AWS cannot launch a
-root volume smaller than the AMI snapshot.
+The app and proxy consume distinct role AMIs published through
+`/flowform/<environment>/ec2/appAmiId` and `proxyAmiId`. Both descend from the
+shared base built under `infra/machine-images/definitions/`, but CDK never
+launches that base directly. Each instance requests a 10 GiB encrypted gp3
+root volume, which cannot be smaller than its role AMI snapshot.
 
 ## Environment model
 
 - **dev** deploys the Security stack only (KMS, secrets, SES send access).
   The app, both databases, and the frontends run locally
-  (`infra/containers/strategies/dev/compose/` + Vite dev servers) — no VPC, RDS, ECS, or Amplify.
+  (`infra/containers/runtime/development/compose/` + Vite dev servers) — no
+  VPC, RDS, ECS, or Amplify.
 - **staging** is the one shared non-prod cloud environment: full stack set,
   doubles as the integration environment.
 - **prod** is the same stack set as staging with retention/protection

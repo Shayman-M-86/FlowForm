@@ -1,0 +1,15 @@
+[Unit]
+Description=FlowForm application role convergence
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/flowform/instance-context.json
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/flowform/runtime/common/scripts/run-role.sh app
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=multi-user.target

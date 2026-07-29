@@ -15,11 +15,12 @@ BOOTSTRAP_NAME="bootstrap-db"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
+SHARED_SCRIPT_DIR="${FLOWFORM_SHARED_SCRIPT_DIR:-${REPO_ROOT}/infra/machine-images/shared/host-assets/bin}"
 
 # Pull in the shared library before any log/die call. The db-secret EXIT trap is
 # installed below (close_bootstrap_egress) and coexists with common's ERR trap.
-# shellcheck source=bootstrap-common.sh
-source "${SCRIPT_DIR}/bootstrap-common.sh"
+# shellcheck source=../../machine-images/shared/host-assets/bin/bootstrap-common.sh
+source "${SHARED_SCRIPT_DIR}/bootstrap-common.sh"
 install_err_trap
 
 : "${FLOWFORM_SCOPE:?set FLOWFORM_SCOPE}"
@@ -27,7 +28,7 @@ install_err_trap
 : "${DB_PRIVATE_IP:?set DB_PRIVATE_IP}"
 : "${AWS_REGION:?set AWS_REGION}"
 
-COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/strategies/rehearsal/compose/db.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/compose/db.yml}"
 SECRET_DIR="${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}"
 BOOTSTRAP_CHAIN="bootstrap_egress"
 EGRESS_OPEN=0

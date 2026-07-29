@@ -18,11 +18,8 @@
 # exists to prove. The proxy box is the ONLY VM with an internet route (net0 on
 # vmbr0), which it needs for its own SSM reads — not for serving images.
 #
-# Repo layout on the box mirrors the real tree so relative bind-mounts and
-# bootstrap-proxy.sh's REPO_ROOT math (scripts/bootstrap → ../../..) both work:
-#   /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
-#   /opt/flowform/repo/infra/containers/runtime/{compose/,services/squid/}
-#   /opt/flowform/repo/infra/containers/strategies/rehearsal/{compose/,services/caddy/,services/squid/}
+# Runtime files on the box mirror their repository layout so Compose overlay
+# bind mounts resolve from the AWS-common project directory.
 #
 # Shape note: this is the proxy analogue of the future CDK ec2.UserData.
 
@@ -58,69 +55,53 @@ write_files:
     owner: root:root
     content: ${REHEARSAL_CA_CRT_B64}
 
-  # --- real bootstrap script (rendered from infra/deployment/bootstrap/) -------
-  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
+  # --- Proxy host assets from the role-image definition -----------------------
+  - path: /opt/flowform/role/bin/bootstrap-proxy.sh
     encoding: b64
     permissions: '0755'
     owner: root:root
     content: ${BOOTSTRAP_PROXY_SH_B64}
-  - path: /opt/flowform/repo/infra/deployment/bootstrap/aws-cli-retry.sh
+  - path: /opt/flowform/host/bin/aws-cli-retry.sh
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${AWS_CLI_RETRY_SH_B64}
-  # shared bootstrap library; sourced by bootstrap-proxy.sh and the retry shim,
-  # so it must sit beside them in this same directory.
-  - path: /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-common.sh
+  - path: /opt/flowform/host/bin/bootstrap-common.sh
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${BOOTSTRAP_COMMON_SH_B64}
 
   # --- shared proxy Compose base and strategy-neutral service config -----------
-  - path: /opt/flowform/repo/infra/containers/runtime/compose/proxy.yml
+  - path: /opt/flowform/repo/infra/containers/runtime/aws/common/compose/proxy.yml
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${DOCKER_COMPOSE_PROXY_B64}
-  - path: /opt/flowform/repo/infra/containers/runtime/services/squid/squid.conf
-    encoding: b64
-    permissions: '0644'
-    owner: root:root
-    content: ${SQUID_CONF_B64}
-  # Observability agent config, bind-mounted by the alloy service in the base
-  # proxy compose. Must exist as a FILE before compose up, or Docker auto-creates
-  # the path as a directory and the :/etc/alloy/config.alloy mount fails.
-  - path: /opt/flowform/repo/infra/containers/runtime/services/alloy/config.alloy
-    encoding: b64
-    permissions: '0644'
-    owner: root:root
-    content: ${CONFIG_ALLOY_B64}
-
   # --- rehearsal override + the two rehearsal configs it swaps in --------------
-  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/compose/proxy.override.yml
+  - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/compose/proxy.override.yml
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${DOCKER_COMPOSE_PROXY_REHEARSAL_B64}
-  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/caddy/Caddyfile.proxy
+  - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/services/caddy/Caddyfile.proxy
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${CADDYFILE_PROXY_REHEARSAL_B64}
   # TLS leaf for the API domain, signed by the committed rehearsal CA — the
   # stable trust anchor operators install once (see generate-api-cert.sh).
-  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/caddy/certs/api.crt
+  - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/services/caddy/certs/api.crt
     encoding: b64
     permissions: '0644'
     owner: root:root
     content: ${PROXY_API_CRT_B64}
-  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/caddy/certs/api.key
+  - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/services/caddy/certs/api.key
     encoding: b64
     permissions: '0600'
     owner: root:root
     content: ${PROXY_API_KEY_B64}
-  - path: /opt/flowform/repo/infra/containers/strategies/rehearsal/services/squid/allowed-domains.txt
+  - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/services/squid/allowed-domains.txt
     encoding: b64
     permissions: '0644'
     owner: root:root
@@ -148,10 +129,11 @@ write_files:
       API_DOMAIN=api.localstack.test
       # run the shared proxy Compose base PLUS the rehearsal override, each
       # as its own -f (bootstrap-proxy.sh assembles them). docker compose resolves
-      # relative mounts against the first/base file's dir = infra/containers/runtime/compose/,
+      # relative mounts against the first/base file's directory,
       # which is why the override's paths are written ../../rehearsal/... .
-      COMPOSE_FILE=/opt/flowform/repo/infra/containers/runtime/compose/proxy.yml
-      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/strategies/rehearsal/compose/proxy.override.yml
+      COMPOSE_FILE=/opt/flowform/repo/infra/containers/runtime/aws/common/compose/proxy.yml
+      COMPOSE_OVERRIDE_FILE=/opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/compose/proxy.override.yml
+      FLOWFORM_SHARED_SCRIPT_DIR=/opt/flowform/host/bin
       # per-service fake-AWS endpoints (each = its own SNI)
       AWS_ENDPOINT_URL_SECRETS_MANAGER=https://secretsmanager.localstack.test
       AWS_ENDPOINT_URL_SSM=https://ssm.localstack.test
@@ -170,7 +152,7 @@ write_files:
       #!/usr/bin/env bash
       set -Eeuo pipefail
       set -a; . /etc/flowform/bootstrap-proxy.env; set +a
-      exec /opt/flowform/repo/infra/deployment/bootstrap/bootstrap-proxy.sh
+      exec /opt/flowform/role/bin/bootstrap-proxy.sh
   - path: /etc/systemd/system/flowform-proxy.service
     permissions: '0644'
     owner: root:root

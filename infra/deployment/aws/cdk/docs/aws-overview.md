@@ -33,7 +33,8 @@ past it.
 ## What's NOT in CDK
 
 - **Local development** — Flask, React, Postgres, PgBouncer all run in
-  Docker Compose (`infra/containers/strategies/dev/compose/`), untouched by this.
+  Docker Compose (`infra/containers/runtime/development/compose/`), untouched
+  by this.
 - **Sentry / PostHog** — external SaaS, not AWS resources.
 - **Everything hand-done that CDK assumes exists** (domain/hosted zone,
   SES identity + sandbox exit, Auth0, secret seeding, bootstrap) — the

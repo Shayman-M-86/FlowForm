@@ -1,4 +1,5 @@
 import dataclasses
+import json
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -12,6 +13,7 @@ from flowform_infra.config import (
     Auth0PublicConfig,
     RuntimePublicConfig,
     get_env_config,
+    release_parameter_name,
     runtime_group_logical_names,
     runtime_parameter_name,
 )
@@ -506,7 +508,7 @@ def test_application_ecr_pulls_are_scoped_to_exact_host_repositories():
     assert "BackendRepository" not in str(proxy_resources)
 
 
-def test_application_instances_use_packer_ami_ssm_parameter_not_latest_base_image():
+def test_application_instances_use_distinct_role_ami_parameters_and_never_the_base():
     template = _synth_application_stack()
     rendered = template.to_json()
     ami_parameters = {
@@ -515,16 +517,24 @@ def test_application_instances_use_packer_ami_ssm_parameter_not_latest_base_imag
         if value.get("Type") == "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
     }
 
-    assert len(ami_parameters) == 1
-    parameter_logical_id, parameter = next(iter(ami_parameters.items()))
-    assert parameter["Default"] == "/flowform/staging/ec2/baseAmiId"
+    assert {parameter["Default"] for parameter in ami_parameters.values()} == {
+        "/flowform/staging/ec2/appAmiId",
+        "/flowform/staging/ec2/proxyAmiId",
+    }
+    assert "baseAmiId" not in str(rendered)
 
-    instance_image_ids = [
-        resource["Properties"]["ImageId"]
-        for resource in rendered["Resources"].values()
+    defaults_by_logical_id = {logical_id: parameter["Default"] for logical_id, parameter in ami_parameters.items()}
+    instances = {
+        logical_id: resource["Properties"]
+        for logical_id, resource in rendered["Resources"].items()
         if resource["Type"] == "AWS::EC2::Instance"
-    ]
-    assert instance_image_ids == [{"Ref": parameter_logical_id}] * 2
+    }
+    app_image_ref = next(value["ImageId"]["Ref"] for key, value in instances.items() if key.startswith("AppInstance"))
+    proxy_image_ref = next(
+        value["ImageId"]["Ref"] for key, value in instances.items() if key.startswith("ProxyInstance")
+    )
+    assert defaults_by_logical_id[app_image_ref] == "/flowform/staging/ec2/appAmiId"
+    assert defaults_by_logical_id[proxy_image_ref] == "/flowform/staging/ec2/proxyAmiId"
 
 
 def test_application_instances_use_ten_gib_gp3_encrypted_root_volumes():
@@ -636,48 +646,76 @@ def _user_data(instance_logical_prefix: str) -> str:
     raise AssertionError(f"no instance matching {instance_logical_prefix}")
 
 
-def test_app_user_data_selects_the_aws_deployment_target():
-    """Bootstrap branches its credential strategy on this value."""
-    assert "FLOWFORM_DEPLOYMENT_TARGET=aws" in _user_data("AppInstance")
+def _instance_context(instance_logical_prefix: str) -> dict[str, object]:
+    script = _user_data(instance_logical_prefix)
+    context = script.split("<<'FLOWFORM_CONTEXT'\n", 1)[1].split("\nFLOWFORM_CONTEXT", 1)[0]
+    parsed: dict[str, object] = json.loads(context)
+    return parsed
 
 
-def test_proxy_user_data_does_not_set_a_deployment_target():
-    """Only the app bootstrap consumes the deployment target."""
-    assert "FLOWFORM_DEPLOYMENT_TARGET" not in _user_data("ProxyInstance")
-
-
-def test_user_data_execs_the_baked_bootstrap_without_fetching_anything():
-    """The scripts are baked into the AMI, so nothing is downloaded at boot."""
-    for prefix, host in (("AppInstance", "app"), ("ProxyInstance", "proxy")):
+def test_user_data_writes_root_owned_context_and_starts_the_baked_role_service():
+    for prefix, role in (("AppInstance", "app"), ("ProxyInstance", "proxy")):
         script = _user_data(prefix)
-        assert f"{ApplicationStack.RUNTIME_ASSET_ROOT}/infra/deployment/bootstrap/bootstrap-{host}.sh" in script
+        context = _instance_context(prefix)
+        assert context["schema_version"] == 1
+        assert context["environment"] == "staging"
+        assert context["role"] == role
+        assert context["region"] == "ap-southeast-2"
+        assert context["parameter_root"] == "/flowform/staging"
+        assert context["configuration_root"] == "/flowform/nonprod"
         assert "set -euo pipefail" in script
+        assert "chown root:root /etc/flowform/instance-context.json" in script
+        assert "chmod 0600 /etc/flowform/instance-context.json" in script
+        assert f"systemctl enable --now flowform-{role}.service" in script
         assert "aws s3 cp" not in script
         assert "tar -xzf" not in script
+        assert "bootstrap-" not in script
 
 
-def test_user_data_passes_both_static_private_ips():
-    """Each host needs the other's address; static IPs avoid a CFN cycle."""
-    for prefix in ("AppInstance", "ProxyInstance"):
-        script = _user_data(prefix)
-        assert f"PROXY_PRIVATE_IP={ApplicationStack.PROXY_PRIVATE_IP}" in script
-        assert f"APP_PRIVATE_IP={ApplicationStack.APP_PRIVATE_IP}" in script
+def test_instance_context_uses_stable_private_dns_for_cross_host_addressing():
+    assert _instance_context("AppInstance")["proxy_dns_name"] == "proxy.internal.staging.flow-form.com.au"
+    assert _instance_context("ProxyInstance")["app_dns_name"] == "app.internal.staging.flow-form.com.au"
 
 
-def test_instances_use_the_static_private_addresses():
-    """The two hosts must hold exactly the addresses user data hardcodes."""
+def test_instances_do_not_pin_private_addresses():
     resources = _synth_application_stack().find_resources("AWS::EC2::Instance")
-    assigned = set()
     for resource in resources.values():
         properties = resource["Properties"]
-        if "PrivateIpAddress" in properties:
-            assigned.add(properties["PrivateIpAddress"])
-        else:
-            # Suppressing a public IP forces the address onto an explicit
-            # network interface instead of the top-level property.
-            assigned.add(properties["NetworkInterfaces"][0]["PrivateIpAddress"])
+        assert "PrivateIpAddress" not in properties
+        assert "10.42.0.4" not in str(properties)
+        assert "10.42.1.4" not in str(properties)
 
-    assert assigned == {
-        ApplicationStack.PROXY_PRIVATE_IP,
-        ApplicationStack.APP_PRIVATE_IP,
+
+def test_release_parameter_paths_are_read_only_external_promotion_contracts():
+    template = _synth_application_stack()
+    rendered = template.to_json()
+    parameter_names = {
+        resource["Properties"]["Name"]
+        for resource in rendered["Resources"].values()
+        if resource["Type"] == "AWS::SSM::Parameter"
     }
+    policies = {
+        resource["Properties"]["PolicyName"]: resource["Properties"]["PolicyDocument"]["Statement"]
+        for resource in rendered["Resources"].values()
+        if resource["Type"] == "AWS::IAM::Policy"
+        and resource["Properties"]["PolicyName"].startswith(("AppReleaseReadPolicy", "ProxyReleaseReadPolicy"))
+    }
+
+    assert len(policies) == 2
+    for role, policy_prefix in (("app", "AppReleaseReadPolicy"), ("proxy", "ProxyReleaseReadPolicy")):
+        release_path = release_parameter_name("staging", role)
+        assert release_path not in parameter_names
+        statements = next(value for key, value in policies.items() if key.startswith(policy_prefix))
+        assert len(statements) == 1
+        assert statements[0]["Action"] == "ssm:GetParameter"
+        assert statements[0]["Effect"] == "Allow"
+        assert statements[0]["Resource"] == {
+            "Fn::Join": [
+                "",
+                [
+                    "arn:",
+                    {"Ref": "AWS::Partition"},
+                    f":ssm:ap-southeast-2:908123139858:parameter{release_path}",
+                ],
+            ]
+        }

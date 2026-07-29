@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "instance_context": {
+    "path": "/etc/flowform/instance-context.json",
+    "owner": "root",
+    "group": "root",
+    "mode": "0600"
+  },
+  "roles": {
+    "app": {
+      "service": "flowform-app.service",
+      "ami_parameter": "/flowform/{environment}/ec2/appAmiId",
+      "release_parameter": "/flowform/{environment}/app/release",
+      "runtime_group": "backend",
+      "private_dns_record": "app",
+      "peer_context_key": "proxy_dns_name",
+      "peer_private_dns_record": "proxy",
+      "release_schema": "app-release.schema.json"
+    },
+    "proxy": {
+      "service": "flowform-proxy.service",
+      "ami_parameter": "/flowform/{environment}/ec2/proxyAmiId",
+      "release_parameter": "/flowform/{environment}/proxy/release",
+      "runtime_group": "proxy",
+      "private_dns_record": "proxy",
+      "peer_context_key": "app_dns_name",
+      "peer_private_dns_record": "app",
+      "release_schema": "proxy-release.schema.json"
+    }
+  }
+}

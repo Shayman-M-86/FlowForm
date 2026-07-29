@@ -74,8 +74,9 @@ two backend SSM params under `/flowform/<scope>/backend/`:
   omitted, the mgmt client falls back to `FLOWFORM_AUTH0_DOMAIN` (correct
   only for tenants without a custom domain).
 
-The egress allow-list (`infra/containers/strategies/aws/services/squid/allowed-domains.txt`) must admit
-both hosts for the same reason.
+The egress allow-list
+(`infra/containers/images/squid/allowed-domains.txt`) must admit both hosts for
+the same reason.
 
 Per environment, before its first frontend deploy:
 

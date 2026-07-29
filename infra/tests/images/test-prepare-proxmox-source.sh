@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-script="${repo_root}/images/scripts/lib/actions/proxmox-source.sh"
-example_env="${repo_root}/images/config/proxmox-source.env.example"
+infra_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+script="${infra_root}/machine-images/tooling/lib/actions/proxmox-source.sh"
+example_env="${infra_root}/machine-images/config/proxmox-source.env.example"
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 

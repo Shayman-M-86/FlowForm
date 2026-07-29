@@ -48,6 +48,10 @@ objective --> scope --> sequence --> validation --> implementation
 
 ## Active plans
 
+- [[three-level-ami-reorganization-checkpoint|Three-level AMI reorganization
+  checkpoint]] records the paused, uncommitted infrastructure reorganization,
+  its provisional ownership decisions, integration gaps, and safe resume
+  boundary.
 - [[aws-staging-runtime-convergence|AWS staging runtime convergence]] is the
   current execution plan. It tracks app-host access, backend startup, public
   TLS, recovery access, host replacement, and final runtime proof after the

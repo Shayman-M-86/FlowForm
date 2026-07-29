@@ -26,7 +26,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
-COMPOSE_FILE="${REPO_ROOT}/infra/containers/strategies/dev/compose/compose.yml"
+COMPOSE_FILE="${REPO_ROOT}/infra/containers/runtime/development/compose/compose.yml"
 GENERATE_SCRIPT="${REPO_ROOT}/scripts/secrets/generate-secrets.sh"
 FETCH_SCRIPT="${REPO_ROOT}/scripts/secrets/fetch-dev-secrets.sh"
 

@@ -39,7 +39,7 @@ cmd_verify_main() {
 
   local REPO_ROOT CA_CRT
   REPO_ROOT="${REPO_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../../../.." && pwd)}"
-  CA_CRT="${REPO_ROOT}/infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt"
+  CA_CRT="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.crt"
   rehearsal_preflight
   [[ -f "${CA_CRT}" ]] || die "rehearsal CA not found at ${CA_CRT}"
 

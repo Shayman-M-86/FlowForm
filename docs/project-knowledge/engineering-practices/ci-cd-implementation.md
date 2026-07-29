@@ -2,10 +2,10 @@
 title: CI/CD implementation
 aliases: ["CI/CD implementation"]
 document_type: implementation
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:1f9f4758900158a187ab532018a521224521a0e57e2958cdceab1567c24cd6b3
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-29
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"

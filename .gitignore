@@ -127,17 +127,17 @@ packer-manifest.json
 **/packer-manifest.json
 *.pem
 *.key.local
-infra/images/*/manifests/*.json
-!infra/images/*/manifests/README.md
+infra/machine-images/packer/manifests/*.json
+!infra/machine-images/packer/manifests/README.md
 
 # Docsys documentation hook per-session state (transient)
 .docsys/
-infra/containers/strategies/rehearsal/services/caddy/certs/api.crt
-infra/containers/strategies/rehearsal/services/caddy/certs/api.key
-infra/containers/strategies/rehearsal/services/tls-shim/ca/localstack.crt
-infra/containers/strategies/rehearsal/services/tls-shim/ca/localstack.key
-infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt
-infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.key
-infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.srl
+infra/containers/runtime/proxmox/rehearsal/services/caddy/certs/api.crt
+infra/containers/runtime/proxmox/rehearsal/services/caddy/certs/api.key
+infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/localstack.crt
+infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/localstack.key
+infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.crt
+infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.key
+infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.srl
 !infra/deployment/proxmox/scripts/lib
-!infra/images/scripts/lib
+!infra/machine-images/tooling/lib

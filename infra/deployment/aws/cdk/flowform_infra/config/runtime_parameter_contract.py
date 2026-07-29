@@ -8,7 +8,7 @@ from typing import Any
 
 @lru_cache(maxsize=1)
 def _contract() -> dict[str, Any]:
-    contract_path = Path(__file__).resolve().parents[4] / "config" / "runtime-parameter-contract.json"
+    contract_path = Path(__file__).resolve().parents[5] / "contracts" / "runtime-parameters.json"
     with contract_path.open(encoding="utf-8") as contract_file:
         contract: dict[str, Any] = json.load(contract_file)
     if contract.get("schema_version") != 1:

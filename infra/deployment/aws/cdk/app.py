@@ -41,8 +41,9 @@ security_stack = SecurityStack(
 cdk.Tags.of(security_stack).add("flowform:env", scope_config.scope_name)
 
 # dev stops here: the app, both databases, and the frontends all run
-# locally (infra/environments/development/compose/ + Vite dev servers), so dev's AWS footprint is the
-# Security stack only. staging/prod get the full compute/hosting set.
+# locally (infra/containers/runtime/development/compose/ + Vite dev servers),
+# so dev's AWS footprint is the Security stack only. staging/prod get the full
+# compute/hosting set.
 if env_config.full_deployment:
     registry_stack = RegistryStack(
         app,
