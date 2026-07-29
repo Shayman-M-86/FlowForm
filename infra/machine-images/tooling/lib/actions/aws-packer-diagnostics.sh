@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 usage() {
   printf '%s\n' \
-    'Usage: aws-packer-ssh-diagnostics.sh REGION SOURCE_COMMIT IMAGE_ROLE REPORT_PATH' \
+    'Usage: aws-packer-diagnostics.sh REGION SOURCE_COMMIT IMAGE_ROLE REPORT_PATH' \
     '       [FAILURE_REQUEST_PATH FAILURE_COMPLETE_PATH]'
 }
 
@@ -39,14 +39,16 @@ diagnostic_log() {
 }
 
 instance_id=""
+private_ip=""
 public_ip=""
+instance_profile_arn=""
 security_group_id=""
 subnet_id=""
 vpc_id=""
 launch_time=""
 record=""
 console_fingerprint=""
-ssh_handshake_recorded=0
+ssm_online_recorded=0
 
 discover_builder() {
   local state_values="${1:-pending,running}"
@@ -59,14 +61,24 @@ discover_builder() {
         "Name=tag:image_role,Values=${image_role}" \
         "Name=instance-state-name,Values=${state_values}" \
       --query \
-        'sort_by(Reservations[].Instances[], &LaunchTime)[-1].[InstanceId,PublicIpAddress,LaunchTime,SecurityGroups[0].GroupId,SubnetId,VpcId]' \
+        'sort_by(Reservations[].Instances[], &LaunchTime)[-1].[InstanceId,PrivateIpAddress,PublicIpAddress,IamInstanceProfile.Arn,LaunchTime,SecurityGroups[0].GroupId,SubnetId,VpcId]' \
       --output text 2>/dev/null || true
   )"
   [[ -n "${record}" && "${record}" != None* ]] || return 1
   IFS=$'\t' read -r \
-    instance_id public_ip launch_time security_group_id subnet_id vpc_id \
+    instance_id private_ip public_ip instance_profile_arn launch_time security_group_id subnet_id vpc_id \
     <<<"${record}"
   [[ -n "${instance_id}" && "${instance_id}" != None ]]
+}
+
+capture_ssm_status() {
+  [[ -n "${instance_id}" ]] || return 0
+  aws ssm describe-instance-information \
+    --region "${region}" \
+    --filters "Key=InstanceIds,Values=${instance_id}" \
+    --query \
+      'InstanceInformationList[0].{PingStatus:PingStatus,AgentVersion:AgentVersion,LastPingDateTime:LastPingDateTime,PlatformName:PlatformName,PlatformVersion:PlatformVersion}' \
+    --output json 2>&1 || true
 }
 
 capture_console_output() {
@@ -110,6 +122,13 @@ capture_failure_snapshot() {
       --include-all-instances \
       --region "${region}" \
       --output json 2>&1 || true
+    diagnostic_log "final Systems Manager managed-instance status"
+    capture_ssm_status
+    diagnostic_log "final Systems Manager connection status"
+    aws ssm get-connection-status \
+      --target "${instance_id}" \
+      --region "${region}" \
+      --output json 2>&1 || true
     capture_console_output 1
   fi
   if [[ -n "${failure_complete_path}" ]]; then
@@ -149,12 +168,8 @@ diagnostic_log \
 for _ in {1..90}; do
   process_failure_request
   if discover_builder; then
-    if [[ ! "${public_ip}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      sleep 2
-      continue
-    fi
     diagnostic_log \
-      "builder discovered instance=${instance_id} public_ip=${public_ip} launch=${launch_time} security_group=${security_group_id} subnet=${subnet_id} vpc=${vpc_id}"
+      "builder discovered instance=${instance_id} private_ip=${private_ip} public_ip=${public_ip} instance_profile=${instance_profile_arn} launch=${launch_time} security_group=${security_group_id} subnet=${subnet_id} vpc=${vpc_id}"
     break
   fi
   sleep 2
@@ -164,9 +179,6 @@ if [[ -z "${instance_id}" ]]; then
   diagnostic_log "no active Packer builder appeared within 180 seconds"
   exit 0
 fi
-
-diagnostic_log "workstation public IPv4 as observed by AWS"
-curl --fail --silent --show-error --max-time 10 https://checkip.amazonaws.com 2>&1 || true
 
 diagnostic_log "effective temporary security-group rules"
 aws ec2 describe-security-groups \
@@ -205,15 +217,15 @@ while true; do
   diagnostic_log "attempt=${attempt} EC2 state/status=${status:-unavailable}"
   capture_console_output
 
-  if nc -z -w 3 "${public_ip}" 22 >/dev/null 2>&1; then
-    diagnostic_log "TCP/22 reachable from this workstation"
-    if (( ssh_handshake_recorded == 0 )); then
-      diagnostic_log "SSH host-key handshake"
-      ssh-keyscan -T 5 "${public_ip}" 2>&1 || true
-      ssh_handshake_recorded=1
+  ssm_status="$(capture_ssm_status)"
+  if [[ -n "${ssm_status}" && "${ssm_status}" != null ]]; then
+    diagnostic_log "Systems Manager managed-instance status=${ssm_status}"
+    if [[ "${ssm_status}" == *'"PingStatus": "Online"'* ]] && (( ssm_online_recorded == 0 )); then
+      diagnostic_log "Session Manager transport is online; no inbound SSH path is used"
+      ssm_online_recorded=1
     fi
   else
-    diagnostic_log "TCP/22 timed out or was refused from this workstation"
+    diagnostic_log "Systems Manager has not registered the builder yet"
   fi
 
   sleep 7

@@ -1,7 +1,12 @@
 source "amazon-ebs" "amazon_linux_2023_base" {
-  region        = var.aws_region
-  instance_type = var.aws_instance_type
-  ssh_username  = var.ssh_username
+  region                    = var.aws_region
+  instance_type             = var.aws_instance_type
+  communicator              = "ssh"
+  ssh_username              = var.ssh_username
+  ssh_interface             = "session_manager"
+  pause_before_ssm          = "30s"
+  ssh_timeout               = "15m"
+  ssh_clear_authorized_keys = true
 
   source_ami_filter {
     filters = {
@@ -14,14 +19,20 @@ source "amazon-ebs" "amazon_linux_2023_base" {
     most_recent = true
   }
 
-  subnet_id                                 = var.aws_subnet_id != "" ? var.aws_subnet_id : null
-  security_group_id                         = var.aws_security_group_id != "" ? var.aws_security_group_id : null
-  temporary_security_group_source_public_ip = true
-  user_data_file                            = "${var.image_root}/packer/user-data/aws-builder-diagnostics.sh"
-  iam_instance_profile                      = var.aws_iam_instance_profile != "" ? var.aws_iam_instance_profile : null
-  associate_public_ip_address               = var.aws_subnet_id == "" ? true : null
-  ami_name                                  = "${var.aws_ami_name_prefix}-${local.build_timestamp}"
-  ami_description                           = "FlowForm base ${var.os_name} image built by Packer"
+  subnet_id                   = var.aws_subnet_id
+  user_data_file              = "${var.image_root}/packer/user-data/aws-builder-diagnostics.sh"
+  iam_instance_profile        = var.aws_iam_instance_profile
+  associate_public_ip_address = true
+  ami_name                    = "${var.aws_ami_name_prefix}-${local.build_timestamp}"
+  ami_description             = "FlowForm base ${var.os_name} image built by Packer"
+  imds_support                = "v2.0"
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+    instance_metadata_tags      = "disabled"
+  }
 
   launch_block_device_mappings {
     device_name           = "/dev/xvda"
@@ -37,19 +48,30 @@ source "amazon-ebs" "amazon_linux_2023_base" {
 }
 
 source "amazon-ebs" "flowform_role" {
-  region        = var.aws_region
-  instance_type = var.aws_instance_type
-  ssh_username  = var.ssh_username
-  source_ami    = var.aws_base_ami_id
+  region                    = var.aws_region
+  instance_type             = var.aws_instance_type
+  communicator              = "ssh"
+  ssh_username              = var.ssh_username
+  ssh_interface             = "session_manager"
+  pause_before_ssm          = "30s"
+  ssh_timeout               = "15m"
+  ssh_clear_authorized_keys = true
+  source_ami                = var.aws_base_ami_id
 
-  subnet_id                                 = var.aws_subnet_id != "" ? var.aws_subnet_id : null
-  security_group_id                         = var.aws_security_group_id != "" ? var.aws_security_group_id : null
-  temporary_security_group_source_public_ip = true
-  user_data_file                            = "${var.image_root}/packer/user-data/aws-builder-diagnostics.sh"
-  iam_instance_profile                      = var.aws_iam_instance_profile != "" ? var.aws_iam_instance_profile : null
-  associate_public_ip_address               = var.aws_subnet_id == "" ? true : null
-  ami_name                                  = "flowform-${var.image_role}-al2023-${local.build_timestamp}"
-  ami_description                           = "FlowForm ${var.image_role} AMI derived from exact base ${var.aws_base_ami_id}"
+  subnet_id                   = var.aws_subnet_id
+  user_data_file              = "${var.image_root}/packer/user-data/aws-builder-diagnostics.sh"
+  iam_instance_profile        = var.aws_iam_instance_profile
+  associate_public_ip_address = true
+  ami_name                    = "flowform-${var.image_role}-al2023-${local.build_timestamp}"
+  ami_description             = "FlowForm ${var.image_role} AMI derived from exact base ${var.aws_base_ami_id}"
+  imds_support                = "v2.0"
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+    instance_metadata_tags      = "disabled"
+  }
 
   launch_block_device_mappings {
     device_name           = "/dev/xvda"

@@ -19,18 +19,22 @@ variable "aws_instance_type" {
 }
 
 variable "aws_subnet_id" {
-  type    = string
-  default = ""
-}
+  type = string
 
-variable "aws_security_group_id" {
-  type    = string
-  default = ""
+  validation {
+    condition     = can(regex("^subnet-[0-9a-f]+$", var.aws_subnet_id))
+    error_message = "AWS Packer builds require an explicit subnet ID."
+  }
 }
 
 variable "aws_iam_instance_profile" {
   type    = string
-  default = ""
+  default = "FlowFormPackerBuildProfile"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,128}$", var.aws_iam_instance_profile))
+    error_message = "AWS Packer builds require a valid SSM-enabled IAM instance profile name."
+  }
 }
 
 variable "aws_ami_name_prefix" {

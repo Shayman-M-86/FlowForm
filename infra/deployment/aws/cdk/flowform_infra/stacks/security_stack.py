@@ -228,10 +228,31 @@ class SecurityStack(Stack):
         # Role names keep the ENV name (flowform-staging-...), not the scope
         # name, so the GitHub workflows never change.
         #
-        # The OIDC identity provider is an account-level singleton (one per
-        # provider URL), so exactly one scope creates it (nonprod); prod
-        # imports it by its deterministic ARN and deploys after nonprod.
+        # Account-foundation resources are singletons: nonprod creates them
+        # once for the shared AWS account, while prod references or uses
+        # them without trying to create colliding copies.
         if scope_config.creates_oidc_provider:
+            # Packer needs an EC2 instance profile only for the temporary
+            # image-build host. Keep it separate from AppTaskRole so a build
+            # can register with SSM without gaining any application secret,
+            # KMS, SES, or runtime-parameter permissions.
+            self.packer_build_role = iam.Role(
+                self,
+                "PackerBuildRole",
+                assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+                description="EC2 role for FlowForm Packer image builds",
+                managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")],
+            )
+            iam.CfnInstanceProfile(
+                self,
+                "PackerBuildInstanceProfile",
+                instance_profile_name="FlowFormPackerBuildProfile",
+                roles=[self.packer_build_role.role_name],
+            )
+
+            # The OIDC identity provider is one-per-provider URL. Prod
+            # imports the nonprod-owned provider by its deterministic ARN
+            # and deploys after nonprod.
             oidc_provider_arn = iam.OpenIdConnectProvider(
                 self,
                 "GitHubOidcProvider",

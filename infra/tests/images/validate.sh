@@ -69,6 +69,14 @@ grep -Fq 'docker pull' \
 grep -Fq 'die()' "${image_root}/definitions/base/provisioners/lib.sh"
 grep -Fq 'al2023-ami-minimal-' "${image_root}/packer/variables/aws.pkr.hcl"
 grep -Fq 'default = 10' "${image_root}/packer/variables/aws.pkr.hcl"
+[[ "$(grep -Fc 'ssh_interface             = "session_manager"' \
+  "${image_root}/packer/sources/aws.pkr.hcl")" == 2 ]]
+[[ "$(grep -Fc 'ssh_clear_authorized_keys = true' \
+  "${image_root}/packer/sources/aws.pkr.hcl")" == 2 ]]
+[[ "$(grep -Fc 'http_tokens                 = "required"' \
+  "${image_root}/packer/sources/aws.pkr.hcl")" == 2 ]]
+! grep -Fq 'temporary_security_group_source_public_ip' \
+  "${image_root}/packer/sources/aws.pkr.hcl"
 grep -Fq '_image_build_proxmox_target golden' "${image_root}/tooling/lib/cmd_build.sh"
 grep -Fq '_image_build_proxmox_target localstack' "${image_root}/tooling/lib/cmd_build.sh"
 grep -Fq '_image_build_proxmox_target db' "${image_root}/tooling/lib/cmd_build.sh"

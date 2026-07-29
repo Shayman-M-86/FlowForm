@@ -6,17 +6,57 @@ source "${IMAGE_SCRIPT_DIR}/lib/packer-project.sh"
 source "${IMAGE_SCRIPT_DIR}/lib/cmd_verify.sh"
 
 _image_validate_aws_vars() {
-  local vars_file="$1" source_name owner architecture size
+  local vars_file="$1" source_name owner architecture size subnet_id instance_profile
   source_name="$(awk -F '"' '$1 ~ /^[[:space:]]*aws_source_ami_name[[:space:]]*=/ { print $2; exit }' "${vars_file}")"
   owner="$(awk -F '"' '$1 ~ /^[[:space:]]*aws_source_ami_owner[[:space:]]*=/ { print $2; exit }' "${vars_file}")"
   architecture="$(awk -F '"' '$1 ~ /^[[:space:]]*aws_architecture[[:space:]]*=/ { print $2; exit }' "${vars_file}")"
   size="$(awk -F '=' '$1 ~ /^[[:space:]]*aws_root_volume_size[[:space:]]*$/ { gsub(/[[:space:]]/, "", $2); print $2; exit }' "${vars_file}")"
+  subnet_id="$(awk -F '"' '$1 ~ /^[[:space:]]*aws_subnet_id[[:space:]]*=/ { print $2; exit }' "${vars_file}")"
+  instance_profile="$(
+    awk -F '"' '$1 ~ /^[[:space:]]*aws_iam_instance_profile[[:space:]]*=/ { print $2; exit }' \
+      "${vars_file}"
+  )"
   [[ "${owner}" == amazon ]] || die "aws_source_ami_owner must be the verified Amazon owner alias"
   [[ "${source_name}" == al2023-ami-minimal-2023.*-kernel-6.1-x86_64 ]] \
     || die "aws_source_ami_name must select the x86_64 AL2023 minimal kernel-6.1 AMI"
   [[ "${architecture}" == x86_64 ]] || die "aws_architecture must be x86_64"
   [[ "${size}" =~ ^[0-9]+$ ]] || die "aws_root_volume_size must be an integer GiB value"
   (( size >= 8 && size <= 12 )) || die "aws_root_volume_size must be between 8 and 12 GiB"
+  [[ "${subnet_id}" =~ ^subnet-[0-9a-f]+$ ]] \
+    || die "aws_subnet_id must pin an explicit AWS subnet"
+  [[ "${instance_profile}" =~ ^[A-Za-z0-9+=,.@_-]{1,128}$ ]] \
+    || die "aws_iam_instance_profile must name the deployed SSM-enabled Packer profile"
+}
+
+_image_aws_builder_preflight() {
+  local vars_file="$1" region subnet_id instance_profile profile_details subnet_details
+  require_command session-manager-plugin
+  region="$(awk -F '"' '$1 ~ /^[[:space:]]*aws_region[[:space:]]*=/ { print $2; exit }' "${vars_file}")"
+  subnet_id="$(awk -F '"' '$1 ~ /^[[:space:]]*aws_subnet_id[[:space:]]*=/ { print $2; exit }' "${vars_file}")"
+  instance_profile="$(
+    awk -F '"' '$1 ~ /^[[:space:]]*aws_iam_instance_profile[[:space:]]*=/ { print $2; exit }' \
+      "${vars_file}"
+  )"
+  profile_details="$(
+    aws iam get-instance-profile \
+      --instance-profile-name "${instance_profile}" \
+      --query 'InstanceProfile.[Arn,Roles[0].Arn]' \
+      --output text \
+      --no-cli-pager
+  )" || die "Packer instance profile ${instance_profile} is unavailable; deploy the Security stack first"
+  [[ "${profile_details}" != *None* ]] \
+    || die "Packer instance profile ${instance_profile} has no EC2 role"
+  subnet_details="$(
+    aws ec2 describe-subnets \
+      --region "${region}" \
+      --subnet-ids "${subnet_id}" \
+      --query 'Subnets[0].[State,VpcId,AvailabilityZone]' \
+      --output text \
+      --no-cli-pager
+  )" || die "Packer subnet ${subnet_id} is unavailable in ${region}"
+  [[ "${subnet_details}" == available$'\t'* ]] \
+    || die "Packer subnet ${subnet_id} is not available: ${subnet_details}"
+  log "Session Manager transport ready: profile=${instance_profile} subnet=${subnet_id} region=${region}"
 }
 
 _image_build_proxmox_target() { # target verify-after
@@ -52,11 +92,11 @@ _image_build_proxmox_target() { # target verify-after
 }
 
 cmd_build_main() {
-  local platform="${1:-}" target="" validate_only=0 syntax_only=0 diagnose_ssh=0
+  local platform="${1:-}" target="" validate_only=0 syntax_only=0 diagnostics=0
   local diagnostics_mode="auto"
   local on_error="cleanup"
   if [[ "${platform}" == -h || "${platform}" == --help ]]; then
-    printf '%s\n' 'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]' \
+    printf '%s\n' 'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnostics|--no-diagnostics] [--on-error MODE]' \
       '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]'
     return
   fi
@@ -67,11 +107,11 @@ cmd_build_main() {
   fi
   if [[ "${target}" == -h || "${target}" == --help ]]; then
     printf '%s\n' \
-      'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]' \
+      'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnostics|--no-diagnostics] [--on-error MODE]' \
       '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
       '' \
-      '  --diagnose-ssh  Explicitly enable the diagnostics used by default for live AWS builds.' \
-      '  --no-diagnostics  Disable live AWS EC2, boot, network, SSH, and Packer debug diagnostics.' \
+      '  --diagnostics  Explicitly enable the diagnostics used by default for live AWS builds.' \
+      '  --no-diagnostics  Disable live AWS EC2, boot, Session Manager, and Packer debug diagnostics.' \
       '  --on-error MODE Packer failure handling: cleanup (default), abort, or ask.'
     return
   fi
@@ -79,7 +119,7 @@ cmd_build_main() {
     case "$1" in
       --validate-only) validate_only=1; shift ;;
       --syntax-only) syntax_only=1; validate_only=1; shift ;;
-      --diagnose-ssh) diagnostics_mode="enabled"; shift ;;
+      --diagnostics|--diagnose-ssh) diagnostics_mode="enabled"; shift ;;
       --no-diagnostics) diagnostics_mode="disabled"; shift ;;
       --on-error)
         [[ $# -ge 2 ]] || die "--on-error requires cleanup, abort, or ask"
@@ -92,11 +132,11 @@ cmd_build_main() {
         ;;
       -h|--help)
         printf '%s\n' \
-          'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]' \
+          'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnostics|--no-diagnostics] [--on-error MODE]' \
           '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
           '' \
-          '  --diagnose-ssh  Explicitly enable the diagnostics used by default for live AWS builds.' \
-          '  --no-diagnostics  Disable live AWS EC2, boot, network, SSH, and Packer debug diagnostics.' \
+          '  --diagnostics  Explicitly enable the diagnostics used by default for live AWS builds.' \
+          '  --no-diagnostics  Disable live AWS EC2, boot, Session Manager, and Packer debug diagnostics.' \
           '  --on-error MODE Packer failure handling: cleanup (default), abort, or ask.'
         return
         ;;
@@ -106,24 +146,27 @@ cmd_build_main() {
   [[ "${on_error}" =~ ^(cleanup|abort|ask)$ ]] \
     || die "--on-error must be cleanup, abort, or ask"
   if [[ "${platform}" == aws && "${validate_only}" == 0 && "${diagnostics_mode}" != disabled ]]; then
-    diagnose_ssh=1
+    diagnostics=1
   elif [[ "${diagnostics_mode}" == enabled ]]; then
-    diagnose_ssh=1
+    diagnostics=1
   fi
   export PACKER_VALIDATE_ONLY="${validate_only}"
   export PACKER_SYNTAX_ONLY="${syntax_only}"
-  export PACKER_DIAGNOSE_SSH="${diagnose_ssh}"
+  export PACKER_DIAGNOSTICS="${diagnostics}"
   export PACKER_ON_ERROR="${on_error}"
   case "${platform}" in
     aws)
-      (( diagnose_ssh == 0 || validate_only == 0 )) \
-        || die "--diagnose-ssh cannot be combined with validation-only modes"
+      (( diagnostics == 0 || validate_only == 0 )) \
+        || die "--diagnostics cannot be combined with validation-only modes"
       (( validate_only == 0 )) || [[ "${on_error}" == cleanup ]] \
         || die "--on-error is available only for live builds"
       local vars_file="${PACKER_DIR}/variables/aws.auto.pkrvars.hcl"
       require_vars_file "${vars_file}" "aws.auto.pkrvars.hcl.example"
       _image_validate_aws_vars "${vars_file}"
-      (( validate_only == 1 )) || image_aws_session_preflight
+      if (( validate_only == 0 )); then
+        image_aws_session_preflight
+        _image_aws_builder_preflight "${vars_file}"
+      fi
       case "${target}" in
         base)
           phase "build AWS base AMI"
@@ -167,11 +210,11 @@ cmd_build_main() {
             (( validate_only == 1 )) || _image_verify_aws "${target}" --vars-file "${vars_file}" --parent-ami-id "${built_base}"
           done
           ;;
-        *) die "usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnose-ssh|--no-diagnostics] [--on-error MODE]" ;;
+        *) die "usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnostics|--no-diagnostics] [--on-error MODE]" ;;
       esac
       ;;
     proxmox)
-      (( diagnose_ssh == 0 )) || die "--diagnose-ssh is available only for AWS builds"
+      (( diagnostics == 0 )) || die "--diagnostics is available only for AWS builds"
       [[ "${on_error}" == cleanup ]] || die "--on-error is available only for AWS builds"
       case "${target}" in
         golden|localstack|db) _image_build_proxmox_target "${target}" 1 ;;

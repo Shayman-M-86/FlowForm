@@ -7,7 +7,7 @@ packer {
       source  = "github.com/hashicorp/proxmox"
     }
     amazon = {
-      version = ">= 1.3.3"
+      version = ">= 1.8.1, < 2.0.0"
       source  = "github.com/hashicorp/amazon"
     }
   }

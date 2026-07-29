@@ -9,6 +9,16 @@ exec > >(tee -a "${diagnostic_log}" /dev/console) 2>&1
 printf '\n=== FlowForm Packer boot diagnostics: %s ===\n' \
   "$(date --iso-8601=seconds)"
 
+printf '\n--- Systems Manager transport ---\n'
+if systemctl list-unit-files amazon-ssm-agent.service >/dev/null 2>&1; then
+  systemctl enable --now amazon-ssm-agent.service
+  systemctl --no-pager --full status amazon-ssm-agent.service
+  systemctl is-enabled amazon-ssm-agent.service
+  systemctl is-active amazon-ssm-agent.service
+else
+  printf 'amazon-ssm-agent.service is missing; Packer cannot establish its Session Manager tunnel\n'
+fi
+
 printf '\n--- system identity ---\n'
 uname -a
 cat /etc/os-release
@@ -40,6 +50,7 @@ fi
 printf '\n--- cloud-init ---\n'
 cloud-init status --long
 journalctl --boot --no-pager --output=short-iso \
+  --unit=amazon-ssm-agent.service \
   --unit=sshd.service \
   --unit=nftables.service \
   --unit=cloud-init.service \
