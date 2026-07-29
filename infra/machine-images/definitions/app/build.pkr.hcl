@@ -17,17 +17,17 @@ build {
   }
 
   provisioner "file" {
-    source      = "${var.image_root}/shared/host-assets/."
+    source      = "${var.image_root}/shared/host-assets/"
     destination = "/tmp/flowform-role-assets/shared-host/"
   }
 
   provisioner "file" {
-    source      = "${var.image_root}/definitions/app/host-assets/."
+    source      = "${var.image_root}/definitions/app/host-assets/"
     destination = "/tmp/flowform-role-assets/role-host/"
   }
 
   provisioner "file" {
-    source      = "${var.repo_root}/infra/containers/runtime/common/."
+    source      = "${var.repo_root}/infra/containers/runtime/common/"
     destination = "/tmp/flowform-role-assets/runtime-common/"
   }
 
