@@ -67,7 +67,13 @@ def test_bootstrap_stack_has_one_operator_invoked_vpc_lambda():
                     ),
                     "DATABASE_PORT": "5432",
                     "DATABASE_SECRET_ARN": Match.any_value(),
+                    "FLOWFORM_ENVIRONMENT": "staging",
                 }
+            },
+            "LoggingConfig": {
+                "ApplicationLogLevel": "INFO",
+                "LogFormat": "JSON",
+                "SystemLogLevel": "INFO",
             },
             "VpcConfig": {
                 "SecurityGroupIds": [Match.any_value()],

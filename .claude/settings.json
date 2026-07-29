@@ -146,19 +146,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/post_tool_python_quality.py",
+            "command": "python3 tools/docs/hooks/post_tool_python_quality.py",
             "statusMessage": "py_compile + ruff --fix"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 /home/shayman86/my-repos/FlowForm/tools/docs/hooks/session_start_doc_suggestion.py",
-            "statusMessage": "docsys: suggest focused context"
           }
         ]
       }

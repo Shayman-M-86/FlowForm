@@ -44,7 +44,8 @@ run_packer_build() (
   shift 3
   local project_dir original_aws_config original_aws_profile packer_aws_config
   local credential_helper aws_region source_commit diagnostic_report="" diagnostic_role
-  local diagnostics_pid="" packer_log_path=""
+  local diagnostic_dir="" diagnostics_pid="" packer_log_path=""
+  local failure_snapshot_request="" failure_snapshot_complete=""
   local -a validate_args
   local -a extra_args=("$@")
 
@@ -66,14 +67,36 @@ run_packer_build() (
       kill "${diagnostics_pid}" >/dev/null 2>&1 || true
       wait "${diagnostics_pid}" >/dev/null 2>&1 || true
     fi
+    [[ -z "${failure_snapshot_request}" ]] \
+      || rm -f "${failure_snapshot_request}" "${failure_snapshot_complete}"
     if [[ -n "${diagnostic_report}" ]]; then
-      log "AWS SSH diagnostic report: ${diagnostic_report}"
-      log "Packer internal log: ${packer_log_path}"
+      log "Packer diagnostics directory: ${diagnostic_dir}"
+      log "AWS builder diagnostic report: ${diagnostic_report}"
+      if (( status == 0 )); then
+        rm -f -- "${packer_log_path}"
+        log "Packer debug log discarded after successful build; it is retained only for failures"
+      else
+        log "Packer debug log: ${packer_log_path}"
+      fi
     fi
     rm -rf "${project_dir}"
     exit "${status}"
   }
   trap cleanup_packer_project EXIT
+
+  request_failure_snapshot() {
+    [[ -n "${diagnostics_pid}" ]] || return 0
+    log "Packer failed; requesting a final EC2 status and console-output snapshot"
+    : >"${failure_snapshot_request}"
+    chmod 0600 "${failure_snapshot_request}"
+    local attempt
+    for attempt in {1..30}; do
+      [[ ! -e "${failure_snapshot_complete}" ]] || return 0
+      kill -0 "${diagnostics_pid}" >/dev/null 2>&1 || break
+      sleep 0.5
+    done
+    warn "the final diagnostic snapshot did not acknowledge within 15 seconds; the live report collected all preceding builder state"
+  }
 
   # AWS CLI login sessions are understood by the CLI but not yet by the AWS
   # SDK bundled with Packer's Amazon plugin. Bridge that supported CLI session
@@ -160,30 +183,64 @@ run_packer_build() (
     esac
     [[ "${diagnostic_role}" =~ ^(base|app|proxy)$ ]] \
       || die "invalid image role for SSH diagnostics: ${diagnostic_role}"
-    diagnostic_report="$(
-      mktemp "${TMPDIR:-/tmp}/flowform-packer-ssh-${diagnostic_role}-${source_commit:0:12}-XXXXXX.log"
-    )"
-    packer_log_path="${diagnostic_report%.log}.packer.log"
-    chmod 0600 "${diagnostic_report}"
+    local diagnostic_root operation_slug="standalone" diagnostic_stem
+    diagnostic_root="${FLOWFORM_OPERATION_ARTIFACT_DIR:-${FLOWFORM_OPERATION_LOG_DIR:-}}"
+    if [[ -n "${diagnostic_root}" ]]; then
+      [[ "${diagnostic_root}" == /* ]] \
+        || die "operation artifact directory must be an absolute path: ${diagnostic_root}"
+      diagnostic_dir="${diagnostic_root}/packer"
+      [[ ! -L "${diagnostic_dir}" ]] \
+        || die "refusing to write Packer diagnostics through a symbolic link: ${diagnostic_dir}"
+      mkdir -p "${diagnostic_dir}"
+      chmod 0700 "${diagnostic_dir}"
+    else
+      diagnostic_dir="$(
+        umask 077
+        mktemp -d "${TMPDIR:-/tmp}/flowform-packer-diagnostics-XXXXXX"
+      )"
+    fi
+    if [[ "${FLOWFORM_OPERATION_ID:-}" =~ ^[[:alnum:]][[:alnum:]._-]{0,127}$ ]]; then
+      operation_slug="${FLOWFORM_OPERATION_ID}"
+    fi
+    diagnostic_stem="${diagnostic_dir}/packer-${diagnostic_role}-${source_commit:0:12}-${operation_slug}-$(date -u '+%Y%m%dT%H%M%SZ')-${BASHPID}"
+    diagnostic_report="${diagnostic_stem}.diagnostics.log"
+    packer_log_path="${diagnostic_stem}.debug.log"
+    failure_snapshot_request="${diagnostic_stem}.failure-request"
+    failure_snapshot_complete="${diagnostic_stem}.failure-complete"
+    umask 077
+    : >"${diagnostic_report}"
     : >"${packer_log_path}"
-    chmod 0600 "${packer_log_path}"
+    chmod 0600 "${diagnostic_report}" "${packer_log_path}"
     export PACKER_LOG=1
     export PACKER_LOG_PATH="${packer_log_path}"
-    log "SSH diagnostics enabled; live report: ${diagnostic_report}"
+    log "AWS builder diagnostics enabled; pre-cleanup state streams to ${diagnostic_report}"
+    log "Packer debug log will be retained locally and is not shipped: ${packer_log_path}"
     bash "${IMAGE_SCRIPT_DIR}/lib/actions/aws-packer-ssh-diagnostics.sh" \
-      "${aws_region}" "${source_commit}" "${diagnostic_role}" "${diagnostic_report}" &
+      "${aws_region}" "${source_commit}" "${diagnostic_role}" \
+      "${diagnostic_report}" "${failure_snapshot_request}" \
+      "${failure_snapshot_complete}" &
     diagnostics_pid=$!
   fi
 
   log "building Packer target ${only_target}"
-  packer build \
-    -timestamp-ui \
-    -on-error="${PACKER_ON_ERROR:-cleanup}" \
-    -only="${only_target}" \
-    -var "image_root=${IMAGE_ROOT}" \
-    -var "repo_root=${REPO_ROOT}" \
-    -var-file="${vars_file}" \
-    -var "source_commit=${source_commit}" \
-    "${extra_args[@]}" \
-    "${project_dir}"
+  local packer_status
+  if packer build \
+      -timestamp-ui \
+      -on-error="${PACKER_ON_ERROR:-cleanup}" \
+      -only="${only_target}" \
+      -var "image_root=${IMAGE_ROOT}" \
+      -var "repo_root=${REPO_ROOT}" \
+      -var-file="${vars_file}" \
+      -var "source_commit=${source_commit}" \
+      "${extra_args[@]}" \
+      "${project_dir}"; then
+    packer_status=0
+  else
+    packer_status=$?
+  fi
+  if (( packer_status != 0 )); then
+    request_failure_snapshot
+    error "Packer build failed; diagnostics were preserved before this command returned"
+    return "${packer_status}"
+  fi
 )

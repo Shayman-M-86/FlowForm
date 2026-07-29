@@ -14,7 +14,50 @@ for command in --help 'build --help' 'prepare --help' 'verify --help' \
 done
 infra_build_help="$("${image}" build aws --help)"
 grep -Fq -- '--diagnose-ssh' <<<"${infra_build_help}"
+grep -Fq -- '--no-diagnostics' <<<"${infra_build_help}"
 grep -Fq -- '--on-error MODE' <<<"${infra_build_help}"
+
+diagnostic_mode="$(
+  INFRA_ROOT="${infra_root}" bash <<'BUILD_MODE_PROBE'
+set -Eeuo pipefail
+IMAGE_SCRIPT_DIR="${INFRA_ROOT}/machine-images/tooling"
+# shellcheck source=../../machine-images/tooling/image-common.sh
+source "${IMAGE_SCRIPT_DIR}/image-common.sh"
+# shellcheck source=../../machine-images/tooling/lib/cmd_build.sh
+source "${IMAGE_SCRIPT_DIR}/lib/cmd_build.sh"
+require_vars_file() { :; }
+_image_validate_aws_vars() { :; }
+image_aws_session_preflight() { :; }
+_image_verify_aws() { :; }
+run_packer_build() { printf '%s\n' "${PACKER_DIAGNOSE_SSH}"; }
+cmd_build_main aws base
+BUILD_MODE_PROBE
+)"
+[[ "${diagnostic_mode}" == 1 ]]
+
+diagnostic_mode="$(
+  INFRA_ROOT="${infra_root}" bash <<'BUILD_MODE_PROBE'
+set -Eeuo pipefail
+IMAGE_SCRIPT_DIR="${INFRA_ROOT}/machine-images/tooling"
+# shellcheck source=../../machine-images/tooling/image-common.sh
+source "${IMAGE_SCRIPT_DIR}/image-common.sh"
+# shellcheck source=../../machine-images/tooling/lib/cmd_build.sh
+source "${IMAGE_SCRIPT_DIR}/lib/cmd_build.sh"
+require_vars_file() { :; }
+_image_validate_aws_vars() { :; }
+image_aws_session_preflight() { :; }
+_image_verify_aws() { :; }
+run_packer_build() { printf '%s\n' "${PACKER_DIAGNOSE_SSH}"; }
+cmd_build_main aws base --no-diagnostics
+BUILD_MODE_PROBE
+)"
+[[ "${diagnostic_mode}" == 0 ]]
+
+FLOWFORM_OPERATION_ID=test-operation IMAGE_SUBCOMMAND='image test' \
+  bash -c 'source "$1"; log "correlated"' _ \
+  "${infra_root}/machine-images/tooling/image-common.sh" \
+  2>"${tmp}/operation-id.log"
+grep -Fq 'operation_id=test-operation' "${tmp}/operation-id.log"
 
 if "${image}" build aws app --on-error invalid \
     >"${tmp}/bad-on-error.out" 2>"${tmp}/bad-on-error.err"; then
@@ -82,5 +125,84 @@ if PATH="${tmp}/bin:${PATH}" AWS_PROFILE=role-profile IMAGE_SUBCOMMAND='image te
   exit 1
 fi
 grep -Fq "aws login --profile login-profile" "${tmp}/aws.err"
+
+mkdir -p "${tmp}/packer-bin" "${tmp}/packer-artifacts"
+cat >"${tmp}/packer-bin/packer" <<'FAKE_PACKER'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+case "${1:-}" in
+  init|validate) exit 0 ;;
+  build)
+    printf 'live Packer output\n'
+    printf 'Packer debug detail\n' >> "${PACKER_LOG_PATH}"
+    exit 17
+    ;;
+  *) exit 2 ;;
+esac
+FAKE_PACKER
+cat >"${tmp}/packer-bin/aws" <<'FAKE_AWS'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+case "$*" in
+  *"ec2 describe-instances"*)
+    printf 'i-testbuilder\t203.0.113.10\t2026-07-30T00:00:00Z\tsg-test\tsubnet-test\tvpc-test\n'
+    ;;
+  *"ec2 get-console-output"*) printf 'FlowForm builder console output\n' ;;
+  *"ec2 describe-instance-status"*) printf 'running\tok\tok\tok\n' ;;
+  *) printf '{}\n' ;;
+esac
+FAKE_AWS
+cat >"${tmp}/packer-bin/curl" <<'FAKE_CURL'
+#!/usr/bin/env bash
+printf '198.51.100.20\n'
+FAKE_CURL
+cat >"${tmp}/packer-bin/nc" <<'FAKE_NC'
+#!/usr/bin/env bash
+exit 1
+FAKE_NC
+cat >"${tmp}/packer-bin/ssh-keyscan" <<'FAKE_SSH_KEYSCAN'
+#!/usr/bin/env bash
+exit 0
+FAKE_SSH_KEYSCAN
+chmod +x "${tmp}/packer-bin/"*
+cat >"${tmp}/aws-test.pkrvars.hcl" <<'TEST_VARS'
+aws_region = "ap-southeast-2"
+TEST_VARS
+
+set +e
+PATH="${tmp}/packer-bin:${PATH}" \
+  FLOWFORM_OPERATION_ARTIFACT_DIR="${tmp}/packer-artifacts" \
+  FLOWFORM_OPERATION_ID="test-packer-operation" \
+  INFRA_ROOT="${infra_root}" \
+  TEST_VARS_FILE="${tmp}/aws-test.pkrvars.hcl" \
+  bash <<'PACKER_FAILURE_PROBE' >"${tmp}/packer-failure.out" 2>&1
+set -Eeuo pipefail
+IMAGE_SCRIPT_DIR="${INFRA_ROOT}/machine-images/tooling"
+# shellcheck source=../../machine-images/tooling/image-common.sh
+source "${IMAGE_SCRIPT_DIR}/image-common.sh"
+# shellcheck source=../../machine-images/tooling/lib/packer-project.sh
+source "${IMAGE_SCRIPT_DIR}/lib/packer-project.sh"
+PACKER_DIAGNOSE_SSH=1 run_packer_build \
+  "${INFRA_ROOT}/machine-images/definitions/base/build.pkr.hcl" \
+  flowform-base.amazon-ebs.amazon_linux_2023_base \
+  "${TEST_VARS_FILE}" \
+  -var image_role=base
+PACKER_FAILURE_PROBE
+packer_failure_status=$?
+set -e
+[[ "${packer_failure_status}" == 17 ]]
+grep -Fq 'live Packer output' "${tmp}/packer-failure.out"
+grep -Fq 'requesting a final EC2 status and console-output snapshot' \
+  "${tmp}/packer-failure.out"
+grep -Fq 'Packer debug log:' "${tmp}/packer-failure.out"
+diagnostic_report="$(find "${tmp}/packer-artifacts/packer" -type f -name '*.diagnostics.log' -print -quit)"
+debug_report="$(find "${tmp}/packer-artifacts/packer" -type f -name '*.debug.log' -print -quit)"
+[[ -n "${diagnostic_report}" && -n "${debug_report}" ]]
+[[ "$(stat -c '%a' "${tmp}/packer-artifacts/packer")" == 700 ]]
+[[ "$(stat -c '%a' "${diagnostic_report}")" == 600 ]]
+[[ "$(stat -c '%a' "${debug_report}")" == 600 ]]
+grep -Fq 'operation_id=test-packer-operation' "${diagnostic_report}"
+grep -Fq 'final failure snapshot complete' "${diagnostic_report}"
+grep -Fq 'Packer debug detail' "${debug_report}"
 
 echo 'image dispatcher tests OK'

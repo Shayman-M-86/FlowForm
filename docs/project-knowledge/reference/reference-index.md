@@ -2,46 +2,46 @@
 title: Reference documentation
 aliases: ["Reference documentation"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:0e56bffb4647b991f2856f38201bd9673d49a7ebe9ac090b7f683d8d5273f821
-last_edited: 2026-07-28
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [meta]
-related_code:
+related_code: []
+change_triggers:
   - "../../../backend/"
   - "../../../frontend/"
   - "../../../infra/"
   - "../../../tools/docs/"
 related_docs:
   - "Glossary"
-  - "Repository map"
+  - "Repository ownership and entry points"
   - "Component map"
 ---
 
 # Reference documentation
 
-This branch is the repository's factual lookup layer. It complements the
-explanatory Project Knowledge branches without replacing their ownership of
-behaviour, architecture, or workflows. Use it to orient yourself, identify
-exact locations and names, and find reproducible generated inventories.
+This branch is the repository's orientation layer. It complements the domain,
+architecture, and operations branches; it does not duplicate their workflows
+or implementation detail.
 
-The orientation set has three roles. [[glossary|Glossary]] stabilises shared
-product and technical vocabulary; [[repository-map|Repository map]] gives a
-maintained map from a responsibility to its repository area; and
-[[component-map|Component map]] identifies the principal logical components and
-their dependencies. [[technology-stack|Technology stack]] inventories the
-languages, frameworks, services, and tooling each area depends on. Catalogue
-pages provide exact commands, configuration, environment, ports, and scripts.
-Generated pages are reproducible snapshots, not hand-authored authority.
+Start with the [[glossary|Glossary]] for shared language and [[repository-map|
+Repository ownership and entry points]] to find the area that owns a concern.
+[[component-map|Component map]] gives the durable logical boundaries, while
+[[technology-stack|Technology stack]] names the major technology families.
+[[configuration-catalogue|Configuration and generated output]] explains how to
+locate a setting or derived artifact without copying values, commands, or
+machine-specific inventories. Reproducible detail belongs in the generated
+reference branch.
 
 ```text
                          Reference documentation
                                    |
           +------------------------+------------------------+
           |                        |                        |
-     orientation               catalogues               generated
- glossary / repo map     commands / config / ports    reproducible snapshots
-   / component map         / scripts / variables      from repository sources
+     orientation                ownership                 generated
+ glossary / component map   repository / configuration  reproducible snapshots
+       / stack                 and entry points          from repository sources
 ```
 
 When reference entries conflict with code, tests, configuration, or regenerated
@@ -54,3 +54,4 @@ until checked against staged implementation evidence.
 - [[repository-map|Repository map]]
 - [[component-map|Component map]]
 - [[technology-stack|Technology stack]]
+- [[configuration-catalogue|Configuration and generated output]]

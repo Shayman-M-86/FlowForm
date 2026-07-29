@@ -37,35 +37,12 @@ More specific `AGENTS.md` files override this guide within their directories.
 
 ## Documentation
 
-At the start of a task, the session hook suggests the
-`flowform-doc-context` skill when focused context from `docs/` would help with
-non-trivial work involving existing behaviour or project boundaries. Use it
-once when relevant; do not reload documentation on later prompts unless the
-task's scope materially changes or the user asks for another documentation
-check. For explanation-only questions, verified and current documents are
-sufficient when they directly cover the answer; do not inspect implementation
-merely to reconfirm them. Treat reliability per document used, so unrelated
-draft candidates do not weaken verified sources. Inspect the repository when
-implementing, diagnosing, explicitly verifying, or resolving a material gap or
-contradiction.
-
-After behavioural or architectural changes have settled, review documentation
-impact once near task completion. Do not call `get_impacted_docs` after each
-prompt or ordinary follow-up turn. Call it only when actively updating affected
-documentation, when the task scope materially changes after the review, or when
-the user asks for it. Update only pages whose meaning changed, and regenerate
-generated documentation instead of editing it manually.
-After reviewing implementation-backed claims, use
-`docsys evidence promote --staged` to record staged evidence for Project
-Knowledge; Development Workspace is not verified. The pre-commit hook enforces
-verification drift and checks document `last_edited` dates without modifying
-or staging files. Treat `old-docs/` as historical material.
-
-Codex and Claude provide a `docs-maintainer` specialist for bounded
-documentation work. The parent agent remains responsible for integration and
-final validation. Use the shared `flowform-doc-verification` skill when the
-user wants to select, review, approve, and promote specific Project Knowledge
-pages.
+Documentation is optional context, not a task-start requirement. Use
+`flowform-doc-context` only for explicit documentation work or after finding a
+material documentation gap. Implementation and tests remain authoritative.
+Review documentation impact once after relevant behaviour settles, and use
+`flowform-doc-verification` only when the user explicitly approves promotion
+and staging.
 
 ## Handoff
 

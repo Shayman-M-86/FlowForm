@@ -2,16 +2,17 @@
 title: Data flows
 aliases: ["Data flows"]
 document_type: architecture
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:ab96f8630c4a9115d7db3c1d0246750f07f29f9e7b6c9861956145f10b3fbaf0
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, frontend, security]
 related_code:
-  - "../../../backend/app/api/v1/"
   - "../../../backend/app/services/surveys.py"
-  - "../../../backend/app/services/public_submissions/"
   - "../../../backend/app/services/results.py"
+change_triggers:
+  - "../../../backend/app/api/v1/"
+  - "../../../backend/app/services/public_submissions/"
   - "../../../backend/app/crypto/"
   - "../../../backend/app/schema/orm/"
 related_docs:

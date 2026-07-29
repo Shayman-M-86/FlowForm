@@ -2,12 +2,13 @@
 title: Security knowledge
 aliases: ["Security knowledge"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:2d6865b01232733ae5fd45c0875fb2e6d97618713567058dff409af88679cacb
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [security]
-related_code:
+related_code: []
+change_triggers:
   - "../../../backend/app/middleware/auth/"
   - "../../../backend/app/crypto/"
   - "../../../backend/app/services/access/"

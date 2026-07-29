@@ -1,27 +1,28 @@
 ---
-title: Repository map
-aliases: ["Repository map"]
+title: Repository ownership and entry points
+aliases: ["Repository map", "Repository ownership and entry points"]
 document_type: reference
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:9cd8e27b595f0250f2dec02f17ae950f8fd81250056e562cd2dc6fc95166fdfd
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [meta]
-related_code:
+related_code: []
+change_triggers:
   - "../../../backend/"
   - "../../../frontend/"
   - "../../../infra/"
   - "../../../scripts/"
   - "../../../tools/mcp/"
   - "../../../.github/workflows/"
-related_docs:
-  - "Reference documentation"
-  - "Component map"
+related_docs: ["Reference documentation", "Component map", "Configuration and generated output"]
 ---
 
-# Repository map
+# Repository ownership and entry points
 
-This draft is an orientation map, not a runtime or deployment specification.
+This is an orientation map, not a runtime, deployment, or command reference.
+Follow the owner of a concern; its maintained entry points define the available
+operations and their preconditions.
 
 ```text
 FlowForm/
@@ -32,33 +33,29 @@ FlowForm/
 |-- infra/
 |   |-- containers/     runtime composition
 |   |-- database/       schemas and initialization
-|   |-- images/         reusable machine images
+|   |-- machine-images/ reusable machine images
 |   `-- deployment/     AWS, Proxmox, and bootstrap
 |-- scripts/            repository automation
 |-- docs/               maintained knowledge and workspace
 `-- tools/              development integrations
 ```
 
-| Area | Responsibility | Useful entry points |
+| Area | Responsibility |
 | --- | --- | --- |
-| `backend/` | Python/Flask application, API, services, persistence mappings, tests, and OpenAPI contract | `wsgi.py`, `app/core/factory.py`, `app/api/v1/`, `tests/` |
-| `frontend/apps/` | Astro public site and React/Vite Studio application | each application's `src/` and package configuration |
-| `frontend/packages/` | Shared builder, schema, site-shell, styles, and UI packages | package `src/` entry points |
-| `infra/containers/` | Images, runtime containers, and dev/rehearsal strategies | ownership-specific subdirectories |
-| `infra/database/` | Database initialisation, schemas, configuration, and mock data | `init/` and `init/schema/` |
-| `infra/images/` | Packer image construction and image contracts | `README.md`, `packer/`, `IMAGE-CONTRACT.md` |
-| `infra/deployment/` | AWS CDK, Proxmox, and bootstrap deployment material | `aws/cdk/`, `proxmox/`, `bootstrap/` |
-| `infra/env/` | Environment-specific configuration and secrets layout | environment directories |
-| `scripts/` | CI, development, docs, secret-management, and utility scripts | category directories |
-| `tools/mcp/` | Development MCP server and helpers | `flowform_dev.py`, README |
-| `.github/workflows/` | CI and deployment workflows | workflow YAML files |
+| `backend/` | Application API, policy, persistence, tests, and contract production. |
+| `frontend/` | Browser applications and shared UI, builder, schema, and style packages. |
+| `infra/` | Container runtime, data setup, environment delivery, machine images, and deployment systems. |
+| `scripts/` | Repository-wide development, CI, and local-configuration coordination. |
+| `tools/` | Development integrations and documentation tooling. |
+| `.github/` | Hosted automation definitions. |
 
-Frontend workspace membership is defined by `frontend/pnpm-workspace.yaml`.
-Generated contracts and types are derived artifacts; use their generator rather
-than editing them directly. `old-docs/` is historical material and not a source
-of current implementation facts.
+Application and platform subdirectories retain their own ownership. Generated
+contracts, documentation, and build artifacts are derived output: change their
+source or generator, then regenerate. Historical material is not a source of
+current implementation facts.
 
 ## Related documents
 
 - [[reference-index|Reference documentation]]
 - [[component-map|Component map]]
+- [[configuration-catalogue|Configuration and generated output]]

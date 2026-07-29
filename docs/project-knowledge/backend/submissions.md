@@ -2,18 +2,19 @@
 title: Submissions
 aliases: ["Submissions"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:b5c0528d921b131c22eb45ae84ee05a6feaf61d1016992a02d645a03a5071855
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend]
 related_code:
-  - "../../../backend/app/services/public_submissions/"
   - "../../../backend/app/schema/orm/core/submission_session.py"
   - "../../../backend/app/schema/orm/core/submission_answer_slot.py"
   - "../../../backend/app/api/v1/respondent/submission_sessions.py"
   - "../../../backend/tests/e2e/test_submission_session_flows.py"
   - "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
+change_triggers:
+  - "../../../backend/app/services/public_submissions/"
 related_docs:
   - "Backend knowledge"
   - "Respondent access and continuity"

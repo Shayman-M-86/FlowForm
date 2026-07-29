@@ -113,6 +113,33 @@ def test_app_role_can_register_as_an_ssm_managed_instance():
     )
 
 
+def test_app_role_can_send_with_the_identity_configuration_set():
+    template = _synth_security_stack("dev")
+    template.has_resource_properties(
+        "AWS::IAM::Policy",
+        {
+            "PolicyDocument": {
+                "Statement": Match.array_with(
+                    [
+                        Match.object_like(
+                            {
+                                "Action": [
+                                    "ses:SendEmail",
+                                    "ses:SendRawEmail",
+                                ],
+                                "Resource": [
+                                    ("arn:aws:ses:ap-southeast-2:908123139858:identity/flow-form.com.au"),
+                                    ("arn:aws:ses:ap-southeast-2:908123139858:configuration-set/default_set"),
+                                ],
+                            }
+                        )
+                    ]
+                )
+            }
+        },
+    )
+
+
 def test_nonprod_creates_staging_named_ci_roles():
     # Role names keep the env name (not the scope name) so the GitHub
     # workflows reference stable ARNs.

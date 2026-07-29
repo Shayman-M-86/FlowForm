@@ -2,12 +2,13 @@
 title: Glossary
 aliases: ["Glossary"]
 document_type: reference
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:d579367a810cb068729743e871e6c7c143760350e04c52e48c13d4ac09e5d0eb
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [backend, frontend, security]
-related_code:
+related_code: []
+change_triggers:
   - "../../../backend/app/schema/orm/core/"
   - "../../../backend/app/schema/orm/response/"
   - "../../../backend/app/services/public_submissions/"

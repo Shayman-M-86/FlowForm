@@ -6,6 +6,7 @@ from constructs import Construct
 
 from flowform_infra.config import (
     DOMAIN_NAME,
+    EMAIL_CONFIGURATION_SET_NAME,
     GITHUB_OWNER,
     GITHUB_REPOSITORY,
     SecurityScopeConfig,
@@ -71,6 +72,7 @@ class SecurityStack(Stack):
             account=scope_config.account,
             region=scope_config.region,
             domain_name=DOMAIN_NAME,
+            configuration_set_name=EMAIL_CONFIGURATION_SET_NAME,
         )
 
         # App boot-time config, always read together by the running Flask

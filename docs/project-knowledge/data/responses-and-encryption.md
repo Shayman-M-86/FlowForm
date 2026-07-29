@@ -2,23 +2,24 @@
 title: Responses and encryption
 aliases: ["Responses and encryption"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:a71c5c5bf01977b1fa927a9c3c522c1fb1eb6d2942ac6810fc87cab431e424e5
-last_edited: 2026-07-28
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [security]
 related_code:
-  - "../../../backend/app/crypto/"
   - "../../../backend/app/cache/crypto.py"
-  - "../../../backend/app/repositories/response/"
   - "../../../backend/app/schema/orm/core/submission_answer_slot.py"
   - "../../../backend/app/schema/orm/core/submission_session.py"
-  - "../../../backend/app/schema/orm/response/"
-  - "../../../backend/app/services/public_submissions/core/actions/"
   - "../../../backend/app/services/public_submissions/core/session_loader.py"
-  - "../../../backend/app/services/admin_results/"
   - "../../../backend/app/db/manager.py"
   - "../../../infra/database/init/schema/flowform_response_db_schema_v4.sql"
+change_triggers:
+  - "../../../backend/app/crypto/"
+  - "../../../backend/app/repositories/response/"
+  - "../../../backend/app/schema/orm/response/"
+  - "../../../backend/app/services/public_submissions/core/actions/"
+  - "../../../backend/app/services/admin_results/"
 related_docs:
   - "Data knowledge"
   - "Respondent access and continuity"

@@ -154,6 +154,9 @@ class DatabaseBootstrapStack(Stack):
             timeout=Duration.minutes(10),
             role=self.bootstrap_role,
             log_group=self.bootstrap_log_group,
+            logging_format=lambda_.LoggingFormat.JSON,
+            application_log_level_v2=lambda_.ApplicationLogLevel.INFO,
+            system_log_level_v2=lambda_.SystemLogLevel.INFO,
             vpc=network_stack.vpc,
             vpc_subnets=network_stack.app_subnets,
             security_groups=[self.bootstrap_security_group],
@@ -163,6 +166,7 @@ class DatabaseBootstrapStack(Stack):
                 "DATABASE_HOST": database_stack.endpoint_address,
                 "DATABASE_PORT": DatabaseStack.POSTGRES_PORT,
                 "DATABASE_SECRET_ARN": database_stack.instance.attr_master_user_secret_secret_arn,
+                "FLOWFORM_ENVIRONMENT": environment,
             },
             description="Idempotently creates and verifies FlowForm PostgreSQL databases and baseline schemas",
         )

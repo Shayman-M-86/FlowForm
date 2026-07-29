@@ -25,7 +25,7 @@ _image_colour_enabled() {
 }
 
 _image_emit() { # fd LEVEL message...
-  local fd="$1" level="$2" colour="" reset=""; shift 2
+  local fd="$1" level="$2" colour="" reset="" operation_id=""; shift 2
   if _image_colour_enabled "${fd}"; then
     reset=$'\033[0m'
     case "${level}" in
@@ -36,8 +36,18 @@ _image_emit() { # fd LEVEL message...
       ERROR) colour=$'\033[1;31m' ;;
     esac
   fi
-  printf '%s | %b%-7s%b | %-22s | %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
-    "${colour}" "${level}" "${reset}" "${IMAGE_SUBCOMMAND}" "$*" >&"${fd}"
+  if [[ "${FLOWFORM_OPERATION_ID:-}" =~ ^[[:alnum:]][[:alnum:]._-]{0,127}$ ]]; then
+    operation_id="${FLOWFORM_OPERATION_ID}"
+  fi
+  if [[ -n "${operation_id}" ]]; then
+    printf '%s | %b%-7s%b | %-22s | operation_id=%s | %s\n' \
+      "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+      "${colour}" "${level}" "${reset}" "${IMAGE_SUBCOMMAND}" \
+      "${operation_id}" "$*" >&"${fd}"
+  else
+    printf '%s | %b%-7s%b | %-22s | %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+      "${colour}" "${level}" "${reset}" "${IMAGE_SUBCOMMAND}" "$*" >&"${fd}"
+  fi
 }
 
 log() { _image_emit 2 INFO "$*"; }

@@ -1,49 +1,40 @@
 from __future__ import annotations
 
-import io
-import sys
+import json
 import unittest
-from contextlib import redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
-
-HOOKS_DIR = Path(__file__).resolve().parents[1] / "hooks"
-sys.path.insert(0, str(HOOKS_DIR))
-
-import session_start_doc_suggestion as session_start   # type: ignore
 
 
-class SessionStartHookTests(unittest.TestCase):
-    def test_documentation_context_is_suggested_once_per_session(self) -> None:
-        state: dict = {}
+ROOT = Path(__file__).resolve().parents[3]
 
-        def load_state(_session_id: str) -> dict:
-            return dict(state)
 
-        def save_state(_session_id: str, new_state: dict) -> None:
-            state.clear()
-            state.update(new_state)
+class DocumentationHookConfigTests(unittest.TestCase):
+    def test_documentation_session_start_hook_is_absent(self) -> None:
+        codex = json.loads((ROOT / ".codex/hooks.json").read_text())
+        claude = json.loads((ROOT / ".claude/settings.json").read_text())
 
-        with (
-            patch.object(
-                session_start,
-                "read_hook_input",
-                return_value={"session_id": "test-session", "source": "startup"},
-            ),
-            patch.object(session_start, "load_state", side_effect=load_state),
-            patch.object(session_start, "save_state", side_effect=save_state),
+        self.assertNotIn("SessionStart", codex.get("hooks", {}))
+        self.assertNotIn("SessionStart", claude.get("hooks", {}))
+
+    def test_unrelated_post_edit_hook_is_preserved(self) -> None:
+        codex = json.loads((ROOT / ".codex/hooks.json").read_text())
+        claude = json.loads((ROOT / ".claude/settings.json").read_text())
+
+        self.assertEqual(
+            codex["hooks"].get("PostToolUse"),
+            claude["hooks"].get("PostToolUse"),
+        )
+        command = codex["hooks"]["PostToolUse"][0]["hooks"][0]["command"]
+        self.assertIn("post_tool_python_quality.py", command)
+
+    def test_removed_documentation_hooks_are_not_present(self) -> None:
+        hooks = ROOT / "tools/docs/hooks"
+        for name in (
+            "session_start_doc_suggestion.py",
+            "stop_doc_impact_review.py",
+            "record_doc_review.py",
         ):
-            first_output = io.StringIO()
-            with redirect_stdout(first_output):
-                self.assertEqual(session_start.main(), 0)
-
-            second_output = io.StringIO()
-            with redirect_stdout(second_output):
-                self.assertEqual(session_start.main(), 0)
-
-        self.assertIn("consider loading that context once now", first_output.getvalue())
-        self.assertEqual(second_output.getvalue(), "")
-        self.assertTrue(state["doc_context_suggested"])
+            self.assertFalse((hooks / name).exists())
 
 
 if __name__ == "__main__":

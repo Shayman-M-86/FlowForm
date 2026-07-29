@@ -5,16 +5,17 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-29
+last_edited: 2026-07-30
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"
   - "../../../.github/workflows/deploy.yml"
   - "../../../.github/workflows/publish-staging-images.yml"
-  - "../../../scripts/ci/"
   - "../../../tools/docs/docsys/ci.py"
+change_triggers:
+  - "../../../scripts/ci/"
   - "../../../infra/deployment/aws/"
-related_docs: ["Engineering practices", "Continuous integration", "Cloud deployment", "CI workflows"]
+related_docs: ["Engineering practices", "Continuous integration", "Deployment architecture", "CI workflows"]
 ---
 
 # CI/CD implementation
@@ -72,5 +73,5 @@ production. This remains a draft investigation point, not a current guarantee.
 
 - [[engineering-practices-index|Engineering practices]]
 - [[continuous-integration|Continuous integration]]
-- [[cloud-deployment|Cloud deployment]]
+- [[deployment-index|Deployment architecture]]
 - [[ci-workflows|CI workflows]]

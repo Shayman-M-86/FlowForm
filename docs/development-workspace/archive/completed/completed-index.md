@@ -5,7 +5,7 @@ document_type: archive-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-07-30
 tags: [meta]
 related_code: []
 related_docs: ["Engineering archive"]
@@ -27,4 +27,4 @@ tests, tooling, or Project Knowledge.
 - [[archive-index|Engineering archive]]
 - [[image-script-consolidation|Image script consolidation plan]]
 - [[docs-restructure-plan|Documentation restructure plan]]
-- [[documentation-system-migration|Documentation system migration]]
+- [[aws-staging-planning-history|AWS staging planning history]]

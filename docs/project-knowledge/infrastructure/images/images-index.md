@@ -1,57 +1,44 @@
 ---
 title: Machine images
-aliases: ["Machine images"]
-document_type: overview
-status: verified
+aliases: ["Machine images", "Machine image building", "Packer implementation"]
+document_type: architecture
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:6edb8e53bd6d66bc3c6250d53886468059c68db982477cde030d4d8581801ef3
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [infrastructure]
 related_code:
-  - "../../../../infra/images/"
-related_docs:
-  - "Infrastructure knowledge"
-  - "Machine image building"
-  - "Packer implementation"
+  - "../../../../infra/machine-images/README.md"
+change_triggers:
+  - "../../../../infra/machine-images/"
+  - "../../../../infra/contracts/runtime-hosts.json"
+related_docs: ["Infrastructure knowledge", "Deployment architecture", "Proxmox rehearsal"]
 ---
 
 # Machine images
 
-Owns the reusable operating-system image boundary. Packer builds completed AWS
-AMIs and Proxmox templates; deployment tooling consumes their identifiers and
-does not invoke Packer. The `image` dispatcher under `infra/images/scripts/`
-is the operator entry point for preparation, builds, verification, artifacts,
-and AWS publication.
+Machine images are reusable host artifacts, distinct from container images and
+runtime topology. Packer produces role-specific AWS images and Proxmox
+templates; deployment tooling consumes their published identity rather than
+building hosts during environment creation.
 
 ```text
-source image
-    |
-    v
-shared golden build
-    |
-    +--> AWS AMI --------------------> SSM image identifier
-    |
-    +--> Proxmox golden template ----> runtime host clones
-              |
-              +--> LocalStack fixture template
-              +--> PostgreSQL fixture template
+base host capability
+       |
+       +--> application role image
+       +--> proxy role image
+       |
+       +--> Proxmox templates and fixtures
 ```
 
-The shared golden image is an Amazon Linux 2023 runtime host with Docker,
-Docker Compose, AWS CLI, common host configuration, verification, and cleanup.
-It excludes application code, runtime configuration, secrets, and runtime
-container images. AWS and Proxmox use different source-image and disk policies;
-the Proxmox LocalStack and PostgreSQL templates are separate fixture images.
-
-## Documents
-
-- [[machine-image-building|Machine image building]] describes operator commands,
-  build order, and validation scope.
-- [[packer|Packer implementation]] maps that workflow to HCL, provisioners,
-  manifests, and dispatcher code.
+The image boundary installs host capabilities and role bootstrap assets. It
+does not own application secrets, mutable release selection, or the source
+Compose topology. Image lineage, publication, retention, and validation are
+operator concerns implemented by the machine-image tooling; use that tooling's
+documentation for exact workflows.
 
 ## Related documents
 
 - [[infrastructure-index|Infrastructure knowledge]]
-- [[machine-image-building|Machine image building]]
-- [[packer|Packer implementation]]
+- [[deployment-index|Deployment architecture]]
+- [[proxmox-index|Proxmox rehearsal]]

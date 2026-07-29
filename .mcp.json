@@ -6,7 +6,7 @@
     },
     "flowform-docs": {
       "command": "/usr/bin/bash",
-      "args": ["/home/shayman86/my-repos/FlowForm/tools/mcp/docsys_run.sh"]
+      "args": ["tools/mcp/docsys_run.sh"]
     }
   }
 }

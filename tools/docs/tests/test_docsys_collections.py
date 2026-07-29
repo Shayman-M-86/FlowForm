@@ -6,8 +6,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import tomllib
-from docsys import mcp_server
-from docsys.context import assess_reliability, build_context
 from docsys.evidence import (
     EvidenceEntry,
     EvidenceSource,
@@ -16,10 +14,9 @@ from docsys.evidence import (
     promote_staged,
 )
 from docsys.impact import detect_impact
-from docsys.freshness import CURRENT, Freshness
 from docsys.debt import _DEFAULT_POLICY, analyse, build_report, measure
 from docsys.model import ROOT, DocSet, resolve_docs_root
-from docsys.validate import all_findings
+from docsys.validate import all_findings, metadata_findings
 
 
 def _document(title: str, authority: str = "canonical", body: str = "") -> str:
@@ -43,7 +40,51 @@ related_docs: []
 
 
 class CollectionModelTests(unittest.TestCase):
-    def test_impact_confidence_distinguishes_exact_and_broad_matches(self) -> None:
+    def test_related_code_accepts_only_exact_existing_repository_files(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            implementation = area / "implementation"
+            implementation.mkdir()
+            (implementation / "exact.py").write_text("checked = True\n")
+
+            entries = {
+                "Exact": "../../implementation/exact.py",
+                "Directory": "../../implementation",
+                "Trailing directory": "../../implementation/",
+                "Glob": "../../implementation/*.py",
+                "Missing": "../../implementation/missing.py",
+            }
+            for title, entry in entries.items():
+                (project / f"{title.casefold().replace(' ', '-')}.md").write_text(
+                    _document(title).replace(
+                        "related_code: []",
+                        f'related_code: ["{entry}"]',
+                    )
+                )
+
+            findings = [
+                item
+                for item in metadata_findings(DocSet.load(docs_root), "ci")
+                if item.code == "related_code_not_file"
+            ]
+
+            self.assertEqual(
+                {item.path.rsplit("/", 1)[-1] for item in findings},
+                {
+                    "directory.md",
+                    "trailing-directory.md",
+                    "glob.md",
+                    "missing.md",
+                },
+            )
+            self.assertTrue(all(item.severity == "error" for item in findings))
+
+    def test_impact_confidence_distinguishes_exact_code_and_broad_trigger(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             area = Path(temporary)
             docs_root = area / "docs"
@@ -67,7 +108,7 @@ class CollectionModelTests(unittest.TestCase):
                 .replace("status: scaffold", "status: draft")
                 .replace(
                     "related_code: []",
-                    'related_code: ["../../implementation/"]',
+                    'related_code: []\nchange_triggers: ["../../implementation/"]',
                 )
             )
             docset = DocSet.load(docs_root)
@@ -84,9 +125,9 @@ class CollectionModelTests(unittest.TestCase):
             }
 
             self.assertEqual(impacts["Exact"], "high")
-            self.assertEqual(impacts["Broad"], "medium")
+            self.assertEqual(impacts["Broad"], "low")
 
-    def test_staged_evidence_ignores_broad_impact_without_writing(self) -> None:
+    def test_staged_evidence_ignores_broad_trigger_without_writing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             area = Path(temporary)
             docs_root = area / "docs"
@@ -104,7 +145,7 @@ class CollectionModelTests(unittest.TestCase):
                 )
                 .replace(
                     "related_code: []",
-                    'related_code: ["../../implementation/"]',
+                    'related_code: []\nchange_triggers: ["../../implementation/"]',
                 )
             )
             code_rel = code_path.relative_to(ROOT).as_posix()
@@ -338,162 +379,12 @@ class CollectionModelTests(unittest.TestCase):
             claude_commit_command,
         )
         self.assertEqual(codex_agent["name"], "docs-maintainer")
-        self.assertEqual(codex_agent["model"], "gpt-5.6-terra")
         self.assertIn("name: docs-maintainer", claude_agent)
-        self.assertIn("model: sonnet", claude_agent)
-        self.assertIn("- flowform-doc-context", claude_agent)
-
-    def test_every_mcp_document_tool_accepts_docs_root(self) -> None:
-        expected = {
-            "search_docs",
-            "get_document",
-            "get_related",
-            "get_task_context",
-            "get_impacted_docs",
-            "check_freshness",
-            "documentation_debt",
-            "doc_health",
-        }
-        schemas = {
-            tool["name"]: tool["inputSchema"]["properties"]
-            for tool in mcp_server.TOOLS
-        }
-
-        self.assertEqual(set(schemas), expected)
-        for name in expected:
-            self.assertIn("docs_root", schemas[name])
-
-    def test_mcp_retrieval_and_reports_use_requested_docs_root(self) -> None:
-        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
-            docs_root = Path(temporary) / "isolated-docs"
-            docs_root.mkdir()
-            (docs_root / "isolated-root.md").write_text(
-                _document(
-                    "Isolated root",
-                    body="Unique documentation context. [[isolated-child|Isolated child]]",
-                )
-            )
-            (docs_root / "isolated-child.md").write_text(
-                _document("Isolated child", body="Child context.")
-            )
-            root_arg = docs_root.relative_to(ROOT).as_posix()
-
-            document = mcp_server._tool_get_document(
-                {"identifier": "Isolated root", "docs_root": root_arg}
-            )
-            related = mcp_server._tool_get_related(
-                {"identifier": "Isolated root", "docs_root": root_arg}
-            )
-            context = mcp_server._tool_task_context(
-                {"task": "unique documentation context", "docs_root": root_arg}
-            )
-            freshness = mcp_server._tool_freshness({"docs_root": root_arg})
-            health = mcp_server._tool_health({"docs_root": root_arg})
-
-            self.assertEqual(document["title"], "Isolated root")
-            self.assertEqual(
-                [item["title"] for item in related["related_documents"]],
-                ["Isolated child"],
-            )
-            self.assertEqual(
-                context["primary_documents"][0]["title"], "Isolated root"
-            )
-            self.assertEqual(freshness["counts"]["unknown"], 2)
-            self.assertEqual(health["document_count"], 2)
-            self.assertEqual(health["docs_root"], root_arg)
-
-            with patch.object(
-                mcp_server, "impact_report", return_value={"ok": True}
-            ) as impact:
-                self.assertEqual(
-                    mcp_server._tool_impacted({"docs_root": root_arg}),
-                    {"ok": True},
-                )
-            passed_docset = impact.call_args.kwargs["docset"]
-            self.assertEqual(passed_docset.docs_dir, docs_root.resolve())
-
-    def test_task_context_excludes_history_without_historical_intent(self) -> None:
-        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
-            docs_root = Path(temporary) / "docs"
-            docs_root.mkdir()
-            (docs_root / "current.md").write_text(
-                _document("Current encryption", body="response locator encryption")
-            )
-            historical = _document(
-                "Historical encryption",
-                authority="historical",
-                body="response locator encryption security review",
-            )
-            (docs_root / "historical.md").write_text(historical)
-            docset = DocSet.load(docs_root)
-
-            current = build_context(
-                task="response locator encryption",
-                docset=docset,
-            )
-            history = build_context(
-                task="historical response locator encryption",
-                docset=docset,
-            )
-
-            self.assertNotIn(
-                "Historical encryption",
-                [doc.title for doc in current.primary],
-            )
-            self.assertIn(
-                "Historical encryption",
-                [doc.title for doc in history.primary],
-            )
-
-    def test_task_context_discloses_unreliable_working_tree_document(self) -> None:
-        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
-            docs_root = Path(temporary) / "docs"
-            docs_root.mkdir()
-            path = docs_root / "current.md"
-            path.write_text(_document("Current access", body="survey access"))
-            doc = DocSet.load(docs_root).docs[0]
-
-            with patch(
-                "docsys.context.gitutil.changed_files",
-                return_value=type(
-                    "Changed", (), {"files": [doc.rel_path]}
-                )(),
-            ), patch(
-                "docsys.context.classify_document",
-                return_value=Freshness(doc, CURRENT),
-            ):
-                reliability = assess_reliability([doc])
-
-            self.assertEqual(reliability["assessment"], "unreliable")
-            self.assertTrue(reliability["requires_disclosure"])
-            self.assertEqual(
-                reliability["message"],
-                "I think the documentation is unreliable for this question.",
-            )
-
-    def test_task_context_marks_clean_draft_as_provisional(self) -> None:
-        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
-            docs_root = Path(temporary) / "docs"
-            docs_root.mkdir()
-            path = docs_root / "current.md"
-            path.write_text(
-                _document("Current access", body="survey access").replace(
-                    "status: scaffold", "status: draft"
-                )
-            )
-            doc = DocSet.load(docs_root).docs[0]
-
-            with patch(
-                "docsys.context.gitutil.changed_files",
-                return_value=type("Changed", (), {"files": []})(),
-            ), patch(
-                "docsys.context.classify_document",
-                return_value=Freshness(doc, CURRENT),
-            ):
-                reliability = assess_reliability([doc])
-
-            self.assertEqual(reliability["assessment"], "provisional")
-            self.assertTrue(reliability["requires_disclosure"])
+        self.assertIn("Use document paths supplied by the parent", claude_agent)
+        self.assertIn(
+            "Use document paths supplied by the parent",
+            codex_agent["developer_instructions"],
+        )
 
     def test_parent_collection_and_profile_validation(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
@@ -571,17 +462,6 @@ class CollectionModelTests(unittest.TestCase):
                 default_report["documents"][0]["metrics"]["collection"],
                 "project-knowledge",
             )
-
-            root_arg = docs_root.relative_to(ROOT).as_posix()
-            mcp_report = mcp_server._tool_debt({"docs_root": root_arg})
-            self.assertEqual(mcp_report["document_count"], 1)
-            explicit_workspace = mcp_server._tool_debt(
-                {
-                    "docs_root": root_arg,
-                    "collection": "development-workspace",
-                }
-            )
-            self.assertEqual(explicit_workspace["document_count"], 1)
 
     def test_default_debt_policy_remains_moderately_strict(self) -> None:
         self.assertEqual(

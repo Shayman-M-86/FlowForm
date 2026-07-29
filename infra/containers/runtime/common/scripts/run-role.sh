@@ -19,4 +19,10 @@ source "${runtime_script_dir}/load-release-manifest.sh"
 flowform_load_instance_context "${role}"
 flowform_load_release_manifest "${role}"
 
+printf 'timestamp=%s level=info component=flowform-role operation=converge environment=%s host_role=%s source_commit=%s message="loaded role release; starting convergence"\n' \
+  "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+  "${FLOWFORM_ENV}" \
+  "${role}" \
+  "${FLOWFORM_RELEASE_SOURCE_COMMIT}"
+
 exec "${role_root}/bin/bootstrap-${role}.sh"

@@ -9,6 +9,7 @@ from .deployment_contract import (
 )
 from .environments import (
     DOMAIN_NAME,
+    EMAIL_CONFIGURATION_SET_NAME,
     GITHUB_OWNER,
     GITHUB_REPOSITORY,
     Auth0PublicConfig,
@@ -28,6 +29,7 @@ from .runtime_parameter_contract import (
 
 __all__ = [
     "DOMAIN_NAME",
+    "EMAIL_CONFIGURATION_SET_NAME",
     "GITHUB_OWNER",
     "GITHUB_REPOSITORY",
     "Auth0PublicConfig",

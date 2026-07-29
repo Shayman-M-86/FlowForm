@@ -2,21 +2,21 @@
 title: Engineering practices
 aliases: ["Engineering practices"]
 document_type: overview
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:964e640f650b0b48240fc19c5af5c7eb76037cc75e62351f87c0b61ba8564b20
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [tooling]
 related_code:
+  - "../../../frontend/package.json"
+change_triggers:
   - "../../../tools/docs/"
   - "../../../.github/workflows/"
   - "../../../backend/scripts/"
-  - "../../../frontend/package.json"
   - "../../../infra/env/dev/"
 related_docs:
   - "Project Knowledge"
   - "Documentation practice"
-  - "Architecture principles"
   - "Local development"
   - "Testing workflow"
   - "Continuous integration"
@@ -55,8 +55,7 @@ convention.
 
 [[documentation-index|Documentation practice]] defines the collection model,
 evidence-based authoring process, and boundary between structural automation
-and human review. [[architecture-principles|Architecture principles]] retains
-cross-cutting observations without converting them into accepted decisions.
+and human review.
 
 [[local-development|Local development]] describes the workstation loop and its
 stateful runtime boundary. [[testing|Testing workflow]] selects and interprets
@@ -74,7 +73,6 @@ checked against staged implementation evidence.
 
 - [[project-knowledge-index|Project Knowledge]]
 - [[documentation-index|Documentation practice]]
-- [[architecture-principles|Architecture principles]]
 - [[local-development|Local development]]
 - [[testing|Testing workflow]]
 - [[continuous-integration|Continuous integration]]

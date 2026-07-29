@@ -5,15 +5,16 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-29
+last_edited: 2026-07-30
 tags: [tooling]
 related_code:
   - "../../../backend/scripts/run-tests.sh"
   - "../../../backend/scripts/run-tests.py"
-  - "../../../backend/tests/"
   - "../../../backend/pyproject.toml"
-  - "../../../frontend/apps/*/package.json"
   - "../../../.github/workflows/ci.yml"
+change_triggers:
+  - "../../../backend/tests/"
+  - "../../../frontend/apps/*/package.json"
 related_docs: ["Engineering practices", "Local development", "Continuous integration", "Backend implementation documentation", "Frontend implementation"]
 ---
 

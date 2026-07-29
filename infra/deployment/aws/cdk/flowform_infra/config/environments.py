@@ -144,6 +144,7 @@ _DEFAULT_REGION = "ap-southeast-2"
 # infra/containers/runtime/development/compose/.backend.env). Same domain
 # across all envs for now — revisit if staging/prod end up on subdomains.
 DOMAIN_NAME = "flow-form.com.au"
+EMAIL_CONFIGURATION_SET_NAME = "default_set"
 
 # Source repo, used for the GitHub Actions OIDC trust condition on the
 # frontend-deploy role (security_stack.py).

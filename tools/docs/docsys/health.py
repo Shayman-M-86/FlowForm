@@ -11,26 +11,47 @@ Produces two artefacts in the active tree's generated-document directory:
 The dashboard reports: stale documents, verification-status breakdown, orphan
 documents (no inbound or outbound links), heavily connected documents,
 unresolved questions, invalid metadata, and broken links. It is generated
-output — do not edit it by hand; regenerate with ``python3 -m docsys health``.
+output — do not edit it by hand; regenerate with
+``tools/docs/bin/docsys health --write``.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
 
 from . import gitutil
 from .config import Config
-from .context import _open_questions
 from .freshness import CURRENT, REVIEW, STALE, UNKNOWN, check_all
-from .model import ROOT, DocSet, generated_dir_for, resolve_docs_root
+from .model import ROOT, DocSet, Document, generated_dir_for, resolve_docs_root
 from .validate import all_findings
 
 # Documents that are prose-navigation / index pages are expected to have few
 # links; only content documents are judged as potential orphans.
 _ORPHAN_EXEMPT_TYPES = {"generated"}
+_OPEN_QUESTION_HEADING = re.compile(r"open questions?|unresolved|todo", re.I)
+
+
+def _open_questions(doc: Document) -> list[str]:
+    """Return question/TODO entries from explicitly labelled sections."""
+    questions: list[str] = []
+    capturing = False
+    for line in doc.body.splitlines():
+        heading = re.match(r"^(#{1,6})\s+(.*)$", line)
+        if heading:
+            capturing = bool(_OPEN_QUESTION_HEADING.search(heading.group(2)))
+            continue
+        if not capturing:
+            continue
+        value = line.strip()
+        if value.startswith("TODO"):
+            questions.append(value)
+        elif value.startswith(("-", "*")):
+            questions.append(value.lstrip("-* ").strip())
+    return questions
 
 
 def _connectivity(docset: DocSet) -> dict[str, dict]:
@@ -179,19 +200,20 @@ def render_dashboard(health: dict) -> str:
         "verified_evidence_digest: null",
         f"last_edited: {date.today().isoformat()}",
         "tags: [meta]",
-        "related_code:",
+        "related_code: []",
+        "change_triggers:",
         '  - "../../../../tools/docs/docsys/"',
         "related_docs:",
         '  - "Generated reference documentation"',
         '  - "Documentation model"',
-        '  - "Documentation validation and review"',
+        '  - "Documentation workflow"',
         "---",
         "",
         "# Documentation health dashboard",
         "",
         "Generated snapshot of documentation health. Do not edit by hand; "
         "regenerate with "
-        "`PYTHONPATH=tools/docs python3 -m docsys health`.",
+        "`tools/docs/bin/docsys health --write`.",
         "",
         "> Generated-document scaffold: this file is reproducible from repository "
         "contents via `tools/docs/docsys/health.py`.",
@@ -208,7 +230,7 @@ def render_dashboard(health: dict) -> str:
         "",
         "## Regeneration",
         "",
-        "Run `PYTHONPATH=tools/docs python3 -m docsys health` from the "
+        "Run `tools/docs/bin/docsys health --write` from the "
         "repository root.",
         "",
         "## Manual editing policy",
@@ -288,7 +310,7 @@ def render_dashboard(health: dict) -> str:
         "",
         "- [[generated-index|Generated reference documentation]]",
         "- [[documentation-model|Documentation model]]",
-        "- [[validation-and-review|Documentation validation and review]]",
+        "- [[documentation-workflow|Documentation workflow]]",
         "",
     ]
     return "\n".join(parts)
@@ -318,28 +340,73 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(prog="docsys health")
-    parser.add_argument("--json", action="store_true", help="print JSON, do not write")
+    parser.add_argument("--write", action="store_true", help="write generated health artifacts")
+    parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument("--all", action="store_true", dest="show_all")
+    parser.add_argument("--details", action="store_true")
+    parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument(
         "--docs-root",
         default=None,
         help="documentation root (default: active root)",
     )
     args = parser.parse_args(argv)
+    if args.limit < 1:
+        parser.error("--limit must be at least 1")
 
     docset = DocSet.load(args.docs_root)
     health = build_health(docset)
-    if args.json:
-        print(json.dumps(health, indent=2))
+    if args.write:
+        if args.format == "json":
+            parser.error("--write cannot be combined with --format json")
+        json_path, dash_path = write_health(health, docset.docs_dir)
+        print(f"wrote {json_path.relative_to(ROOT)}")
+        print(f"wrote {dash_path.relative_to(ROOT)}")
         return 0
-    json_path, dash_path = write_health(health, docset.docs_dir)
-    print(f"wrote {json_path.relative_to(ROOT)}")
-    print(f"wrote {dash_path.relative_to(ROOT)}")
+
+    issues = (
+        [
+            {"kind": "broken_link", **item}
+            for item in health["broken_links"]
+        ]
+        + [
+            {"kind": "invalid_metadata", **item}
+            for item in health["invalid_metadata"]
+        ]
+        + [
+            {"kind": "orphan", "path": path}
+            for path in health["orphan_documents"]
+        ]
+    )
+    shown = issues if args.show_all else issues[: args.limit]
     fc = health["freshness_counts"]
+    if args.format == "json":
+        print(
+            json.dumps(
+                {
+                    "schema": health["schema"],
+                    "freshness_counts": fc,
+                    "total": len(issues),
+                    "returned": len(shown),
+                    "truncated": len(shown) < len(issues),
+                    "items": shown,
+                },
+                separators=(",", ":"),
+            )
+        )
+        return 0
+
     print(
-        f"  {fc['likely stale']} likely stale, {fc['review suggested']} review, "
+        f"Documentation health: {fc['likely stale']} likely stale, "
+        f"{fc['review suggested']} review, "
         f"{len(health['broken_links'])} broken links, "
         f"{len(health['invalid_metadata'])} metadata issues"
     )
+    if args.details:
+        for item in shown:
+            print(f"  [{item['kind']}] {item['path']}")
+        if len(shown) < len(issues):
+            print(f"  … {len(issues) - len(shown)} more; use --all")
     return 0
 
 

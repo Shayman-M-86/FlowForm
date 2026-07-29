@@ -1,78 +1,28 @@
 #!/usr/bin/env python3
-"""Deterministic documentation query engine.
-
-Ranks documents against a free-text query using explainable, weighted field
-matches — no embeddings, no network, no non-determinism. Semantic search can be
-layered on later, but deterministic retrieval is preferred first so results are
-reproducible and debuggable.
-
-Signals and their weights (a hit in a higher-signal field outranks a body hit):
-
-    title match             5.0 per term (x2 for a whole-phrase title hit)
-    heading match           3.0 per term
-    tag match               2.5 per term
-    related_code match      2.0 per term (path/basename tokens)
-    body match              1.0 per term (log-damped by frequency)
-    document_type / author  1.5 when a term equals the type/authority
-
-Verification status and authority act as tie-breaking multipliers: a
-``verified`` canonical document ranks above a ``scaffold`` on equal text
-evidence, because it carries real claims. Wiki-link relationships contribute a
-small boost when a matched document is linked from other matched documents
-(central documents surface first).
-
-    python3 -m docsys query "response encryption locator"
-"""
+"""Narrow, deterministic documentation discovery for ``docsys find``."""
 
 from __future__ import annotations
 
+import argparse
 import json
-import math
-import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any
 
-from .model import DocSet, Document, resolve_docs_root, strip_code
-
-_TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
-
-_STATUS_MULT = {"verified": 1.25, "draft": 1.05, "scaffold": 0.7}
-_AUTHORITY_MULT = {"canonical": 1.15, "reference": 1.05}
-_COLLECTION_MULT = {
-    "project-knowledge": 1.12,
-    "legacy": 1.0,
-    "development-workspace": 0.94,
-}
-
-W_TITLE = 5.0
-W_HEADING = 3.0
-W_TAG = 2.5
-W_TYPE = 1.5
-W_CODE = 2.0
-W_BODY = 1.0
+from .contracts import FindRequest, execute_find
+from .model import DocSet, Document
 
 
-def tokenize(text: str) -> list[str]:
-    return [t.lower() for t in _TOKEN_RE.findall(text or "")]
-
-
-def _path_tokens(patterns: list[str]) -> set[str]:
-    toks: set[str] = set()
-    for p in patterns:
-        for seg in re.split(r"[/._\-]", p):
-            if seg and not any(ch in seg for ch in "*?["):
-                toks.add(seg.lower())
-    return toks
-
-
-@dataclass
+@dataclass(frozen=True)
 class ScoredDoc:
+    """Compatibility projection for internal callers being retired."""
+
     doc: Document
     score: float
-    matched_terms: set[str] = field(default_factory=set)
-    reasons: list[str] = field(default_factory=list)
-    snippet: str = ""
+    matched_terms: set[str]
+    reasons: list[str]
+    snippet: str
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "path": self.doc.rel_path,
             "title": self.doc.title,
@@ -81,7 +31,7 @@ class ScoredDoc:
             "collection": self.doc.collection,
             "status": self.doc.status,
             "tags": sorted(self.doc.tags),
-            "score": round(self.score, 3),
+            "score": self.score,
             "matched_terms": sorted(self.matched_terms),
             "reasons": self.reasons,
             "snippet": self.snippet,
@@ -89,51 +39,14 @@ class ScoredDoc:
 
 
 class QueryEngine:
-    """Precomputes per-document token frequencies for fast repeated queries."""
+    """Legacy in-process adapter over the canonical find contract.
+
+    The public agent-facing command is ``docsys find``. This adapter remains
+    only so non-exposed internal modules can be changed independently.
+    """
 
     def __init__(self, docset: DocSet):
         self.docset = docset
-        self._body_tokens: dict[str, dict[str, int]] = {}
-        self._title_tokens: dict[str, set[str]] = {}
-        self._heading_tokens: dict[str, set[str]] = {}
-        self._code_tokens: dict[str, set[str]] = {}
-        self._backlink_count: dict[str, int] = {}
-        for d in docset.docs:
-            body = strip_code(d.body).lower()
-            freqs: dict[str, int] = {}
-            for tok in tokenize(body):
-                freqs[tok] = freqs.get(tok, 0) + 1
-            self._body_tokens[d.rel_path] = freqs
-            self._title_tokens[d.rel_path] = set(tokenize(d.title))
-            htoks: set[str] = set()
-            for h in d.headings:
-                htoks.update(tokenize(h))
-            self._heading_tokens[d.rel_path] = htoks
-            self._code_tokens[d.rel_path] = _path_tokens(
-                d.related_patterns + d.trigger_patterns
-            )
-        for d in docset.docs:
-            for n in docset.neighbours(d):
-                self._backlink_count[n.rel_path] = (
-                    self._backlink_count.get(n.rel_path, 0) + 1
-                )
-
-    def _snippet(self, doc: Document, terms: set[str]) -> str:
-        text = strip_code(doc.body)
-        lowered = text.lower()
-        for term in terms:
-            i = lowered.find(term)
-            if i != -1:
-                start = max(0, i - 60)
-                end = min(len(text), i + 80)
-                frag = " ".join(text[start:end].split())
-                return ("…" if start else "") + frag + ("…" if end < len(text) else "")
-        # Fallback: first non-empty prose line.
-        for line in text.splitlines():
-            s = line.strip()
-            if s and not s.startswith("#"):
-                return " ".join(s.split())[:140]
-        return ""
 
     def search(
         self,
@@ -146,154 +59,160 @@ class QueryEngine:
         authority: str | None = None,
         status: str | None = None,
     ) -> list[ScoredDoc]:
-        terms = set(tokenize(query))
-        phrase = query.strip().lower()
-        results: list[ScoredDoc] = []
         status_rank = {"scaffold": 0, "draft": 1, "verified": 2}
-
-        for doc in self.docset.docs:
-            if doc_type and doc.document_type != doc_type:
-                continue
-            if tag and tag not in doc.tags:
-                continue
-            if collection and doc.collection != collection:
-                continue
-            if authority and doc.authority != authority:
-                continue
-            if status and doc.status != status:
-                continue
-            if min_status and status_rank.get(doc.status, 0) < status_rank.get(
-                min_status, 0
-            ):
-                continue
-
-            rel = doc.rel_path
-            score = 0.0
-            matched: set[str] = set()
-            reasons: list[str] = []
-
-            title_toks = self._title_tokens[rel]
-            head_toks = self._heading_tokens[rel]
-            code_toks = self._code_tokens[rel]
-            body_freqs = self._body_tokens[rel]
-            tag_set = {t.lower() for t in doc.tags}
-
-            for term in terms:
-                if term in title_toks:
-                    score += W_TITLE
-                    matched.add(term)
-                if term in head_toks:
-                    score += W_HEADING
-                    matched.add(term)
-                if term in tag_set:
-                    score += W_TAG
-                    matched.add(term)
-                if term in code_toks:
-                    score += W_CODE
-                    matched.add(term)
-                if term == doc.document_type.lower() or term == doc.authority.lower():
-                    score += W_TYPE
-                    matched.add(term)
-                freq = body_freqs.get(term, 0)
-                if freq:
-                    score += W_BODY * (1 + math.log(freq))
-                    matched.add(term)
-
-            if not matched:
-                continue
-
-            # Whole-phrase title hit is a strong exact-match signal.
-            if phrase and phrase == doc.title.lower():
-                score += W_TITLE * 2
-                reasons.append("exact title match")
-            elif title_toks & terms:
-                reasons.append("title term match")
-            if head_toks & terms:
-                reasons.append("heading match")
-            if tag_set & terms:
-                reasons.append("tag match")
-            if code_toks & terms:
-                reasons.append("related_code term match")
-
-            # Coverage bonus: matching more of the query is better.
-            coverage = len(matched) / max(1, len(terms))
-            score *= 0.5 + 0.5 * coverage
-
-            # Status/authority multipliers reward documents with real claims.
-            score *= _STATUS_MULT.get(doc.status, 1.0)
-            score *= _AUTHORITY_MULT.get(doc.authority, 1.0)
-            score *= _COLLECTION_MULT.get(doc.collection, 1.0)
-
-            # Small centrality boost for well-connected documents.
-            backlinks = self._backlink_count.get(rel, 0)
-            score *= 1 + min(0.15, 0.03 * backlinks)
-
-            results.append(
-                ScoredDoc(
-                    doc,
-                    score,
-                    matched,
-                    reasons,
-                    self._snippet(doc, matched),
-                )
+        docs = [
+            doc
+            for doc in self.docset.docs
+            if (authority is None or doc.authority == authority)
+            and (
+                min_status is None
+                or status_rank.get(doc.status, 0) >= status_rank.get(min_status, 0)
             )
+        ]
+        filtered = DocSet(docs, self.docset.docs_dir, self.docset.unparsed_paths)
+        response = execute_find(
+            FindRequest(
+                query=query,
+                match="any",
+                limit=min(limit, 20),
+                collections=(collection,) if collection else (),
+                types=(doc_type,) if doc_type else (),
+                statuses=(status,) if status else (),
+                tags=(tag,) if tag else (),
+                explain=True,
+                unbounded=limit > 20,
+            ),
+            filtered,
+        )
+        by_path = {doc.rel_path: doc for doc in docs}
+        return [
+            ScoredDoc(
+                doc=by_path[item.path],
+                score=item.score or 0.0,
+                matched_terms=set(item.matched_terms),
+                reasons=list(item.reasons),
+                snippet=item.snippet or "",
+            )
+            for item in response.items[:limit]
+        ]
 
-        results.sort(key=lambda r: (-r.score, r.doc.rel_path))
-        return results[:limit]
+
+def search(query: str, limit: int = 10, **kwargs: Any) -> list[ScoredDoc]:
+    return QueryEngine(DocSet.load()).search(query, limit=limit, **kwargs)
 
 
-def search(query: str, limit: int = 10, **kwargs) -> list[ScoredDoc]:
-    engine = QueryEngine(DocSet.load())
-    return engine.search(query, limit=limit, **kwargs)
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="docsys find",
+        description="Find a small, relevant set of documentation.",
+    )
+    parser.add_argument("terms", nargs="*", help="discriminating search terms")
+    parser.add_argument(
+        "--match",
+        choices=["all", "any", "phrase"],
+        default="all",
+        help="term matching mode (default: all)",
+    )
+    parser.add_argument("--scope", help="documentation path prefix")
+    parser.add_argument(
+        "--code",
+        action="append",
+        default=[],
+        help="exact related_code repository file (repeatable)",
+    )
+    parser.add_argument("--collection", action="append", default=[])
+    parser.add_argument("--type", dest="types", action="append", default=[])
+    parser.add_argument(
+        "--status",
+        action="append",
+        choices=["scaffold", "draft", "verified"],
+        default=[],
+    )
+    parser.add_argument("--tag", action="append", default=[])
+    parser.add_argument(
+        "--in",
+        dest="fields",
+        action="append",
+        choices=["title", "path", "heading", "tag", "related-code", "body"],
+        default=[],
+        help="search only selected fields (repeatable)",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=3,
+        metavar="N",
+        help="maximum results, 1-20 (default: 3)",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="unbounded",
+        help="return every match",
+    )
+    parser.add_argument(
+        "--explain",
+        action="store_true",
+        help="include scores, match reasons, and snippets",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="output format (default: text)",
+    )
+    return parser
+
+
+def _print_text(response) -> None:
+    if not response.items:
+        print("no matching documents")
+        return
+    for item in response.items:
+        print(f"[{item.status}] {item.path} — {item.title} — {item.summary}")
+        if response.explain:
+            print(f"  score: {item.score}")
+            if item.matched_terms:
+                print(f"  terms: {', '.join(item.matched_terms)}")
+            if item.reasons:
+                print(f"  reasons: {', '.join(item.reasons)}")
+            if item.snippet:
+                print(f"  snippet: {item.snippet}")
+    if response.warning:
+        print(f"warning: {response.warning}")
+    if response.truncated:
+        print(
+            f"showing {response.returned} of {response.total}; "
+            "use --all for all matches"
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
-    import argparse
-
-    parser = argparse.ArgumentParser(prog="docsys query")
-    parser.add_argument("query", nargs="+", help="search terms")
-    parser.add_argument("--limit", type=int, default=10)
-    parser.add_argument("--type", dest="doc_type", help="filter by document_type")
-    parser.add_argument("--tag", help="filter by tag")
-    parser.add_argument(
-        "--collection",
-        choices=["project-knowledge", "development-workspace", "legacy", "root"],
-    )
-    parser.add_argument("--authority")
-    parser.add_argument("--status", choices=["scaffold", "draft", "verified"])
-    parser.add_argument("--docs-root", default="docs")
-    parser.add_argument(
-        "--min-status",
-        choices=["scaffold", "draft", "verified"],
-        help="minimum status",
-    )
-    parser.add_argument("--json", action="store_true")
+    parser = _parser()
     args = parser.parse_args(argv)
+    try:
+        request = FindRequest(
+            query=" ".join(args.terms),
+            scope=args.scope,
+            code_paths=tuple(args.code),
+            match=args.match,
+            limit=args.limit,
+            collections=tuple(args.collection),
+            types=tuple(args.types),
+            statuses=tuple(args.status),
+            tags=tuple(args.tag),
+            fields=tuple(args.fields),
+            explain=args.explain,
+            unbounded=args.unbounded,
+        )
+        response = execute_find(request)
+    except ValueError as error:
+        parser.error(str(error))
 
-    engine = QueryEngine(DocSet.load(resolve_docs_root(args.docs_root)))
-    results = engine.search(
-        " ".join(args.query),
-        limit=args.limit,
-        doc_type=args.doc_type,
-        tag=args.tag,
-        min_status=args.min_status,
-        collection=args.collection,
-        authority=args.authority,
-        status=args.status,
-    )
-    if args.json:
-        print(json.dumps([r.as_dict() for r in results], indent=2))
-        return 0
-    if not results:
-        print("no matching documents")
-        return 0
-    for r in results:
-        print(f"{r.score:6.2f}  {r.doc.title}  [{r.doc.status}]")
-        print(f"        {r.doc.rel_path}")
-        if r.reasons:
-            print(f"        {', '.join(r.reasons)}")
-        if r.snippet:
-            print(f"        {r.snippet}")
+    if args.format == "json":
+        print(json.dumps(response.as_dict(), indent=2, ensure_ascii=False))
+    else:
+        _print_text(response)
     return 0
 
 

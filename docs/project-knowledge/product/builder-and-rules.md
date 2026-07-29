@@ -2,17 +2,18 @@
 title: Builder and rules
 aliases: ["Builder and rules"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:56a11a8be2ab2fa05669b962d4d1c785f072c813abe5b7d85aad46be55276a9d
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-07-30
 tags: [frontend]
 related_code:
-  - "../../../frontend/packages/builder/src/"
-  - "../../../frontend/packages/schema/src/generated/"
   - "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/useSurveyBuilderController.ts"
   - "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
   - "../../../backend/app/services/content.py"
+change_triggers:
+  - "../../../frontend/packages/builder/src/"
+  - "../../../frontend/packages/schema/src/generated/"
   - "../../../backend/app/schema/api/requests/content/"
 related_docs: ["Product knowledge", "Frontend implementation"]
 ---

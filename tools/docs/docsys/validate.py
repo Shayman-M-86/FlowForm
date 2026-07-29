@@ -16,8 +16,9 @@ from .model import (
     TAG_VOCABULARY,
     DocSet,
     folder_head_path,
-    strip_code,
+    related_code_file_error,
     resolve_docs_root,
+    strip_code,
 )
 from .model import _MD_LINK_RE, _WIKI_LINK_RE
 
@@ -215,6 +216,29 @@ def metadata_findings(
                     profile,
                 )
             )
+        related_code = doc.front_matter.get("related_code")
+        if related_code is not None and not isinstance(related_code, list):
+            findings.append(
+                _finding(
+                    doc,
+                    "metadata",
+                    "invalid_related_code",
+                    "related_code must be a list of exact repository files",
+                    profile,
+                )
+            )
+        elif isinstance(related_code, list):
+            for entry in related_code:
+                if error := related_code_file_error(doc.path, entry):
+                    findings.append(
+                        _finding(
+                            doc,
+                            "metadata",
+                            "related_code_not_file",
+                            f"related_code '{entry}' {error}",
+                            profile,
+                        )
+                    )
         if not doc.title:
             findings.append(
                 _finding(

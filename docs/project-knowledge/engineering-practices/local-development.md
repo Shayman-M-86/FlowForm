@@ -5,16 +5,17 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-29
+last_edited: 2026-07-30
 tags: [tooling, infrastructure]
 related_code:
-  - "../../../infra/containers/strategies/dev/compose/compose.yml"
-  - "../../../infra/env/dev/"
   - "../../../scripts/dev/start-dev-stack.sh"
   - "../../../scripts/secrets/fetch-dev-secrets.sh"
-  - "../../../scripts/dev/load-*-mock-data.sh"
   - "../../../frontend/package.json"
-related_docs: ["Engineering practices", "Local infrastructure", "Secrets and configuration", "Testing workflow"]
+change_triggers:
+  - "../../../infra/containers/runtime/development/compose/compose.yml"
+  - "../../../infra/env/dev/"
+  - "../../../scripts/dev/load-*-mock-data.sh"
+related_docs: ["Engineering practices", "Local infrastructure", "Configuration and secrets", "Testing workflow"]
 ---
 
 # Local development
@@ -41,16 +42,11 @@ source + local configuration + runtime secrets
 
 ## Working model
 
-The workflow first obtains an AWS login and assembles required development
-values into a runtime secret directory, then render-checks and starts
-`infra/containers/strategies/dev/compose/compose.yml`. A repository script
-drives that sequence end to end, so the secret directory is always established
-before Compose starts; starting Compose directly without it leaves the
-databases unable to initialise. Disposable mock data may be loaded into fresh
-databases. Frontend dependencies are installed from
-`frontend/`, and Studio/public-site servers run separately. Backend source is
-bind-mounted into the development container while frontend tools watch their
-application and shared-package sources.
+The repository development entry point prepares the required local identity,
+configuration, and secrets before starting the backend and database runtime.
+Frontend development servers run separately against that runtime, and optional
+fixtures can populate disposable local data. The owning scripts and Compose
+definitions document the exact sequence, mounts, and prerequisites.
 
 ## Inputs, state, and recovery
 
@@ -76,5 +72,5 @@ Use [[testing|Testing workflow]] for broader component checks.
 
 - [[engineering-practices-index|Engineering practices]]
 - [[local-infrastructure|Local infrastructure]]
-- [[secrets-and-configuration|Secrets and configuration]]
+- [[configuration|Configuration and secrets]]
 - [[testing|Testing workflow]]
