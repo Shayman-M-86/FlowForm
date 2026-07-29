@@ -113,6 +113,77 @@ def test_app_role_can_register_as_an_ssm_managed_instance():
     )
 
 
+def test_account_foundation_packer_profile_uses_a_dedicated_ec2_role_with_only_ssm():
+    template = _synth_security_stack("dev")
+    resources = template.to_json()["Resources"]
+
+    profiles = {
+        logical_id: resource
+        for logical_id, resource in resources.items()
+        if resource["Type"] == "AWS::IAM::InstanceProfile"
+        and resource["Properties"].get("InstanceProfileName") == "FlowFormPackerBuildProfile"
+    }
+    assert len(profiles) == 1
+    profile = next(iter(profiles.values()))
+    assert len(profile["Properties"]["Roles"]) == 1
+
+    packer_role_logical_id = profile["Properties"]["Roles"][0]["Ref"]
+    packer_role = resources[packer_role_logical_id]
+    assert packer_role["Type"] == "AWS::IAM::Role"
+    assert packer_role["Properties"]["AssumeRolePolicyDocument"] == {
+        "Statement": [
+            {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {"Service": "ec2.amazonaws.com"},
+            }
+        ],
+        "Version": "2012-10-17",
+    }
+    assert packer_role["Properties"]["ManagedPolicyArns"] == [
+        {
+            "Fn::Join": [
+                "",
+                [
+                    "arn:",
+                    {"Ref": "AWS::Partition"},
+                    ":iam::aws:policy/AmazonSSMManagedInstanceCore",
+                ],
+            ]
+        }
+    ]
+    assert "Policies" not in packer_role["Properties"]
+
+    app_role_logical_id = next(
+        logical_id
+        for logical_id, resource in resources.items()
+        if resource["Type"] == "AWS::IAM::Role"
+        and resource["Properties"].get("Description") == "App role for the FlowForm API (nonprod)"
+    )
+    assert packer_role_logical_id != app_role_logical_id
+
+    # Secret/KMS/runtime grants synthesize as inline AWS::IAM::Policy
+    # resources on AppTaskRole. The build role must not be attached to any
+    # of them.
+    for resource in resources.values():
+        if resource["Type"] == "AWS::IAM::Policy":
+            assert {"Ref": packer_role_logical_id} not in resource["Properties"].get("Roles", [])
+
+
+def test_prod_does_not_recreate_the_account_foundation_packer_role_or_profile():
+    resources = _synth_security_stack("prod").to_json()["Resources"]
+    assert not any(
+        resource["Type"] == "AWS::IAM::InstanceProfile"
+        and resource["Properties"].get("InstanceProfileName") == "FlowFormPackerBuildProfile"
+        for resource in resources.values()
+    )
+    assert not any(
+        resource["Type"] == "AWS::IAM::Role"
+        and resource["Properties"].get("Description") == "EC2 role for FlowForm Packer image builds"
+        for resource in resources.values()
+    )
+
+
 def test_app_role_can_send_with_the_identity_configuration_set():
     template = _synth_security_stack("dev")
     template.has_resource_properties(

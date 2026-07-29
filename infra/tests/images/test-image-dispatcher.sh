@@ -13,7 +13,7 @@ for command in --help 'build --help' 'prepare --help' 'verify --help' \
   grep -Fq 'Usage:' "${tmp}/help.out"
 done
 infra_build_help="$("${image}" build aws --help)"
-grep -Fq -- '--diagnose-ssh' <<<"${infra_build_help}"
+grep -Fq -- '--diagnostics' <<<"${infra_build_help}"
 grep -Fq -- '--no-diagnostics' <<<"${infra_build_help}"
 grep -Fq -- '--on-error MODE' <<<"${infra_build_help}"
 
@@ -28,8 +28,9 @@ source "${IMAGE_SCRIPT_DIR}/lib/cmd_build.sh"
 require_vars_file() { :; }
 _image_validate_aws_vars() { :; }
 image_aws_session_preflight() { :; }
+_image_aws_builder_preflight() { :; }
 _image_verify_aws() { :; }
-run_packer_build() { printf '%s\n' "${PACKER_DIAGNOSE_SSH}"; }
+run_packer_build() { printf '%s\n' "${PACKER_DIAGNOSTICS}"; }
 cmd_build_main aws base
 BUILD_MODE_PROBE
 )"
@@ -46,8 +47,9 @@ source "${IMAGE_SCRIPT_DIR}/lib/cmd_build.sh"
 require_vars_file() { :; }
 _image_validate_aws_vars() { :; }
 image_aws_session_preflight() { :; }
+_image_aws_builder_preflight() { :; }
 _image_verify_aws() { :; }
-run_packer_build() { printf '%s\n' "${PACKER_DIAGNOSE_SSH}"; }
+run_packer_build() { printf '%s\n' "${PACKER_DIAGNOSTICS}"; }
 cmd_build_main aws base --no-diagnostics
 BUILD_MODE_PROBE
 )"
@@ -145,25 +147,21 @@ cat >"${tmp}/packer-bin/aws" <<'FAKE_AWS'
 set -Eeuo pipefail
 case "$*" in
   *"ec2 describe-instances"*)
-    printf 'i-testbuilder\t203.0.113.10\t2026-07-30T00:00:00Z\tsg-test\tsubnet-test\tvpc-test\n'
+    printf 'i-testbuilder\t10.0.0.10\t203.0.113.10\tarn:aws:iam::123456789012:instance-profile/FlowFormPackerBuildProfile\t2026-07-30T00:00:00Z\tsg-test\tsubnet-test\tvpc-test\n'
     ;;
   *"ec2 get-console-output"*) printf 'FlowForm builder console output\n' ;;
   *"ec2 describe-instance-status"*) printf 'running\tok\tok\tok\n' ;;
+  *"ssm describe-instance-information"*)
+    printf '{"PingStatus":"Online","AgentVersion":"3.3.0"}\n'
+    ;;
+  *"ssm get-connection-status"*) printf '{"Status":"connected"}\n' ;;
   *) printf '{}\n' ;;
 esac
 FAKE_AWS
-cat >"${tmp}/packer-bin/curl" <<'FAKE_CURL'
+cat >"${tmp}/packer-bin/session-manager-plugin" <<'FAKE_SESSION_MANAGER_PLUGIN'
 #!/usr/bin/env bash
-printf '198.51.100.20\n'
-FAKE_CURL
-cat >"${tmp}/packer-bin/nc" <<'FAKE_NC'
-#!/usr/bin/env bash
-exit 1
-FAKE_NC
-cat >"${tmp}/packer-bin/ssh-keyscan" <<'FAKE_SSH_KEYSCAN'
-#!/usr/bin/env bash
-exit 0
-FAKE_SSH_KEYSCAN
+printf '1.2.707.0\n'
+FAKE_SESSION_MANAGER_PLUGIN
 chmod +x "${tmp}/packer-bin/"*
 cat >"${tmp}/aws-test.pkrvars.hcl" <<'TEST_VARS'
 aws_region = "ap-southeast-2"
@@ -182,7 +180,7 @@ IMAGE_SCRIPT_DIR="${INFRA_ROOT}/machine-images/tooling"
 source "${IMAGE_SCRIPT_DIR}/image-common.sh"
 # shellcheck source=../../machine-images/tooling/lib/packer-project.sh
 source "${IMAGE_SCRIPT_DIR}/lib/packer-project.sh"
-PACKER_DIAGNOSE_SSH=1 run_packer_build \
+PACKER_DIAGNOSTICS=1 run_packer_build \
   "${INFRA_ROOT}/machine-images/definitions/base/build.pkr.hcl" \
   flowform-base.amazon-ebs.amazon_linux_2023_base \
   "${TEST_VARS_FILE}" \

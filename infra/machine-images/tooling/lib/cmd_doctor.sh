@@ -10,6 +10,7 @@ _image_doctor_aws() {
   require_vars_file "${PACKER_DIR}/variables/aws.auto.pkrvars.hcl" "aws.auto.pkrvars.hcl.example"
   _image_validate_aws_vars "${PACKER_DIR}/variables/aws.auto.pkrvars.hcl"
   image_aws_session_preflight
+  _image_aws_builder_preflight "${PACKER_DIR}/variables/aws.auto.pkrvars.hcl"
   for environment in dev staging prod; do
     log "CDK ${environment} app AMI parameter: $(image_cdk_ami_parameter "${environment}" app)"
     log "CDK ${environment} proxy AMI parameter: $(image_cdk_ami_parameter "${environment}" proxy)"

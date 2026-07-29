@@ -51,6 +51,10 @@ run_packer_build() (
 
   require_command packer
   require_command git
+  if [[ "${only_target}" == *.amazon-ebs.* ]] \
+      && [[ "${PACKER_VALIDATE_ONLY:-0}" != "1" ]]; then
+    require_command session-manager-plugin
+  fi
   [[ -f "${build_file}" ]] || die "Packer build file not found: ${build_file}"
   [[ -f "${vars_file}" ]] || die "Packer variable file not found: ${vars_file}"
   build_file="$(realpath -- "${build_file}")"
@@ -159,16 +163,13 @@ run_packer_build() (
     exit 0
   fi
 
-  if [[ "${PACKER_DIAGNOSE_SSH:-0}" == "1" ]]; then
+  if [[ "${PACKER_DIAGNOSTICS:-0}" == "1" ]]; then
     require_command aws
-    require_command curl
-    require_command nc
-    require_command ssh-keyscan
     aws_region="$(
       awk -F'"' '$1 ~ /^[[:space:]]*aws_region[[:space:]]*=/ { print $2; exit }' \
         "${vars_file}"
     )"
-    [[ -n "${aws_region}" ]] || die "could not resolve aws_region for SSH diagnostics"
+    [[ -n "${aws_region}" ]] || die "could not resolve aws_region for AWS builder diagnostics"
     case "${only_target}" in
       *amazon_linux_2023_base) diagnostic_role="base" ;;
       *flowform_role)
@@ -179,10 +180,10 @@ run_packer_build() (
           esac
         done
         ;;
-      *) die "could not resolve image role for SSH diagnostics from ${only_target}" ;;
+      *) die "could not resolve image role for AWS builder diagnostics from ${only_target}" ;;
     esac
     [[ "${diagnostic_role}" =~ ^(base|app|proxy)$ ]] \
-      || die "invalid image role for SSH diagnostics: ${diagnostic_role}"
+      || die "invalid image role for AWS builder diagnostics: ${diagnostic_role}"
     local diagnostic_root operation_slug="standalone" diagnostic_stem
     diagnostic_root="${FLOWFORM_OPERATION_ARTIFACT_DIR:-${FLOWFORM_OPERATION_LOG_DIR:-}}"
     if [[ -n "${diagnostic_root}" ]]; then
@@ -215,7 +216,7 @@ run_packer_build() (
     export PACKER_LOG_PATH="${packer_log_path}"
     log "AWS builder diagnostics enabled; pre-cleanup state streams to ${diagnostic_report}"
     log "Packer debug log will be retained locally and is not shipped: ${packer_log_path}"
-    bash "${IMAGE_SCRIPT_DIR}/lib/actions/aws-packer-ssh-diagnostics.sh" \
+    bash "${IMAGE_SCRIPT_DIR}/lib/actions/aws-packer-diagnostics.sh" \
       "${aws_region}" "${source_commit}" "${diagnostic_role}" \
       "${diagnostic_report}" "${failure_snapshot_request}" \
       "${failure_snapshot_complete}" &
