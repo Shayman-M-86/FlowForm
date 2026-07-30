@@ -42,7 +42,10 @@ export function Modal({ open, onClose, title, children, footer, className, bodyC
     >
       <div
         className={`ui-modal-panel${className ? ` ${className}` : ""}`}
-        style={{ maxWidth: width, ...(height !== undefined && { height }) }}
+        style={{
+          maxWidth: `min(${width}px, calc(100vw - 1.5rem))`,
+          ...(height !== undefined && { height }),
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

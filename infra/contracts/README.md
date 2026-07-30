@@ -17,6 +17,5 @@ mutable app or proxy release parameters. Release tooling validates a complete
 manifest against the corresponding schema and promotes it atomically to the
 parameter path declared in `runtime-hosts.json`.
 
-The compatibility link at
-`infra/deployment/config/runtime-parameter-contract.json` exists only while
-the Proxmox rehearsal is migrated to this canonical location.
+Proxmox rehearsal and AWS deployment consumers read this canonical contract
+directly.

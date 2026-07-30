@@ -91,7 +91,6 @@ function ProjectLayout() {
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h2 className="leading-tight">{project.name}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{project.slug}</p>
           </div>
         </div>
         <TabSelector

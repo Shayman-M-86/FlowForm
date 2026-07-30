@@ -63,7 +63,7 @@ function SurveyLayout() {
 
   return (
     <main className={isBuilderTab ? 'page-main page-main-builder' : 'page-main'}>
-      <div className={isBuilderTab ? 'px-6 pt-14 md:px-16' : undefined}>
+      <div className={isBuilderTab ? 'page-main-builder-header' : undefined}>
         <Breadcrumb segments={[
           { label: 'Projects', to: '/projects' },
           { label: projectLabel, to: `/projects/${slug}` },
@@ -71,7 +71,7 @@ function SurveyLayout() {
           { label: surveyTitle, current: true },
         ]} />
 
-        <div className="flex min-h-34 flex-col justify-between">
+        <div className="flex min-h-20 flex-col justify-between">
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <h2 className="leading-tight">{surveyTitle}</h2>

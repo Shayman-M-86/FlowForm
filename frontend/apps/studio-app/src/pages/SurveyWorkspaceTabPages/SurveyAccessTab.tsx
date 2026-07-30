@@ -105,6 +105,77 @@ function createDefaultLinkForm(type: CreatableLinkType): CreateLinkFormState {
   return { type, name: '', assignedParticipantId: null, expiresAt: '' }
 }
 
+function AccessLinkTypeSelector({
+  types,
+  value,
+  onChange,
+}: {
+  types: CreatableLinkType[]
+  value: CreatableLinkType
+  onChange: (type: CreatableLinkType) => void
+}) {
+  const columnsClass = types.length > 2
+    ? 'sm:grid-cols-3'
+    : types.length === 2
+      ? 'sm:grid-cols-2'
+      : ''
+
+  return (
+    <fieldset className="grid min-w-0 gap-3 border-0 p-0">
+      <legend>
+        <span className="block text-sm font-semibold text-foreground">Choose an access method</span>
+        <span className="mt-0.5 block text-xs font-normal leading-5 text-muted-foreground">
+          This controls who can use the link and whether sign-in is required.
+        </span>
+      </legend>
+
+      <div className={`grid gap-2 ${columnsClass}`}>
+        {types.map((type) => {
+          const definition = SURVEY_ACCESS_ENTRIES[type]
+          const Icon = definition.icon
+          const selected = type === value
+
+          return (
+            <button
+              key={type}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(type)}
+              className={`flex h-full min-w-0 items-start gap-2 rounded-md border p-2.5 text-left transition-colors ${
+                selected
+                  ? 'border-accent bg-accent/10'
+                  : 'border-border bg-card hover:bg-muted/60'
+              }`}
+            >
+              <span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-sm ${
+                selected ? 'bg-accent/15 text-accent' : 'bg-muted text-muted-foreground'
+              }`}>
+                <Icon size={14} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-start justify-between gap-1.5">
+                  <span className="text-sm font-semibold leading-5 text-foreground">{definition.label}</span>
+                  {selected && (
+                    <CheckCircle2
+                      size={15}
+                      strokeWidth={2}
+                      aria-hidden="true"
+                      className="mt-0.5 shrink-0 text-accent"
+                    />
+                  )}
+                </span>
+                <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
+                  {definition.shortDescription}
+                </span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
+
 function publicLinkStatus(link: SurveyAccessLinkOut): 'active' | 'disabled' | 'expired' {
   if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) return 'expired'
   return link.is_active ? 'active' : 'disabled'
@@ -268,7 +339,7 @@ function AccessSidebarSummary({
           <p className="text-sm leading-6 text-muted-foreground">
             Choose who can open and complete the survey. The sharing controls adapt to the saved model.
           </p>
-          <SurveyAccessModeSelector value={draftMode} onChange={setDraftMode} />
+          <SurveyAccessModeSelector value={draftMode} onChange={setDraftMode} showAccessGuide />
           <Input
             label="Public URL slug"
             value={draftPublicSlug}
@@ -283,20 +354,6 @@ function AccessSidebarSummary({
               setDraftPublicSlug(toUrlSafeName(event.target.value))
             }}
           />
-          <div className="rounded-md border border-border bg-muted/20 p-3">
-            <p className="text-xs font-semibold text-foreground">{SURVEY_ACCESS_MODES[draftMode].label}</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">{SURVEY_ACCESS_MODES[draftMode].description}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Allowed:</span>{' '}
-              {SURVEY_ACCESS_MODES[draftMode].allowedEntries.map((e) => SURVEY_ACCESS_ENTRIES[e].label).join(', ')}
-            </p>
-            {SURVEY_ACCESS_MODES[draftMode].blockedEntries.length > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Blocked:</span>{' '}
-                {SURVEY_ACCESS_MODES[draftMode].blockedEntries.map((e) => SURVEY_ACCESS_ENTRIES[e].label).join(', ')}
-              </p>
-            )}
-          </div>
         </div>
       </Modal>
     </>
@@ -592,7 +649,6 @@ function LinksSection({
   const participantsQuery = useParticipants(projectId, { search: participantSearch.trim() || undefined, page_size: 50 })
   const createParticipant = useCreateParticipant(projectId)
 
-  const selectedLinkDef = SURVEY_ACCESS_ENTRIES[form.type]
   const requiresParticipant = form.type !== 'general_link'
   const requiresAuth = form.type === 'authenticated_assigned_link'
   const canCreate = form.name.trim().length > 0 && (!requiresParticipant || form.assignedParticipantId != null)
@@ -601,6 +657,7 @@ function LinksSection({
   function openModal() {
     const type = allowedCreateLinkTypes[0]
     if (!type) return
+    setLinkError(null)
     setForm(createDefaultLinkForm(type))
     setParticipantSearch('')
     setShowNewParticipant(false)
@@ -637,9 +694,6 @@ function LinksSection({
 
   return (
     <div className="grid gap-4">
-      {linkError && (
-        <Toast variant="error" onClose={() => setLinkError(null)}>{linkError}</Toast>
-      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionLabel
           label="Sharing"
@@ -743,7 +797,7 @@ function LinksSection({
         onClose={() => setCreateLinkOpen(false)}
         title="Create access link"
         className="max-h-[90dvh]"
-        width={640}
+        width={700}
         footer={
           <>
             <Button variant="secondary" onClick={() => setCreateLinkOpen(false)}>Cancel</Button>
@@ -757,16 +811,11 @@ function LinksSection({
           </>
         }
       >
-        <div className="grid gap-4">
-          <Select
-            label="Link type"
+        <div className="mx-auto grid w-full max-w-2xl gap-6">
+          <AccessLinkTypeSelector
+            types={allowedCreateLinkTypes}
             value={form.type}
-            options={allowedCreateLinkTypes.map((type) => ({
-              value: type,
-              label: SURVEY_ACCESS_ENTRIES[type].label,
-            }))}
-            onValueChange={(value) => {
-              const nextType = value as CreatableLinkType
+            onChange={(nextType) => {
               setForm((current) => ({
                 ...current,
                 type: nextType,
@@ -775,51 +824,69 @@ function LinksSection({
             }}
           />
 
-          <div className="rounded-md border border-border bg-muted/20 p-3">
-            <p className="text-sm font-semibold text-foreground">{selectedLinkDef.label}</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">{selectedLinkDef.shortDescription}</p>
-            <ul className="mt-2 grid gap-1 text-xs leading-5 text-muted-foreground">
-              {selectedLinkDef.details.map((detail) => (
-                <li key={detail}>{detail}</li>
-              ))}
-            </ul>
-          </div>
-
-          <Input
-            label="Link name"
-            value={form.name}
-            placeholder="Participant A, Batch invite, Pilot group"
-            onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
-          />
+          <section className="grid gap-3 border-t border-border pt-5">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Link details</h3>
+              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                Give the link a recognizable Studio name and optionally set an expiry.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
+              <Input
+                label="Internal link name"
+                hint="Only shown to project members in Studio."
+                required
+                value={form.name}
+                placeholder="Pilot group"
+                onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
+              />
+              <Input
+                label="Expires"
+                hint="Optional"
+                type="date"
+                value={form.expiresAt}
+                onChange={(e) => setForm((current) => ({ ...current, expiresAt: e.target.value }))}
+              />
+            </div>
+          </section>
 
           {requiresParticipant && (
-            <div className="grid gap-3">
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
+            <section className="grid gap-3 border-t border-border pt-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Participant assignment</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                    Choose the person whose response will be associated with this link.
+                  </p>
+                </div>
+                <Button variant="secondary" size="sm" icon="plus" className="shrink-0 self-start" onClick={() => setShowNewParticipant(true)}>
+                  New participant
+                </Button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
                   <Input
-                    label="Search participants"
+                    label="Find participant"
                     placeholder="Filter by email or code…"
                     value={participantSearch}
                     onChange={(e) => setParticipantSearch(e.target.value)}
                   />
                 </div>
-                <Button variant="secondary" size="md" onClick={() => setShowNewParticipant(true)}>
-                  New participant
-                </Button>
-              </div>
 
-              <Select
-                label="Assign to participant"
-                value={form.assignedParticipantId ?? ''}
-                onValueChange={(value) => setForm((current) => ({ ...current, assignedParticipantId: value || null }))}
-                options={[
-                  { value: '', label: 'Select a participant…' },
-                  ...(participantsQuery.data?.participants ?? []).map((p) => ({
-                    value: p.id,
-                    label: `${p.email ?? 'No email'} — ${p.subject_code}`,
-                  })),
-                ]}
-              />
+                <Select
+                  label="Assign link to"
+                  value={form.assignedParticipantId ?? ''}
+                  onValueChange={(value) => setForm((current) => ({ ...current, assignedParticipantId: value || null }))}
+                  options={[
+                    { value: '', label: 'Select a participant…' },
+                    ...(participantsQuery.data?.participants ?? []).map((p) => ({
+                      value: p.id,
+                      label: `${p.email ?? 'No email'} — ${p.subject_code}`,
+                    })),
+                  ]}
+                />
+              </div>
 
               <Modal
                 open={showNewParticipant}
@@ -877,21 +944,23 @@ function LinksSection({
               </Modal>
 
               {form.assignedParticipantId && (
-                <p className="text-xs text-muted-foreground">
-                  {requiresAuth
-                    ? 'The participant must sign in with their email before using the link.'
-                    : 'Assigned to this participant but does not require sign-in.'}
-                </p>
+                <div className="flex items-start gap-2 rounded-md border border-border bg-muted/20 px-3 py-2.5">
+                  <CheckCircle2 size={14} strokeWidth={2} aria-hidden="true" className="mt-0.5 shrink-0 text-accent" />
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {requiresAuth
+                      ? 'Sign-in is required. The signed-in email must match the selected participant.'
+                      : 'Sign-in is not required. Responses will still be assigned to the selected participant.'}
+                  </p>
+                </div>
               )}
-            </div>
+            </section>
           )}
 
-          <Input
-            label="Expiry date"
-            type="date"
-            value={form.expiresAt}
-            onChange={(e) => setForm((current) => ({ ...current, expiresAt: e.target.value }))}
-          />
+          {linkError && (
+            <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {linkError}
+            </div>
+          )}
         </div>
       </Modal>
 

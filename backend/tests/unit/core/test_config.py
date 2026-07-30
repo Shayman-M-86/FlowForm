@@ -43,6 +43,7 @@ def _production_flowform(tmp_path: Path, origins: list[str]) -> dict[str, Any]:
             "audience": "https://api.example.test",
             "mgmt": {"id": "management-client-id", "secret_file": str(auth0_secret_file)},
         },
+        "server": {"site_url": "https://studio.example.test"},
         "cors": {"origins": origins},
         "aws": {},
         "encryption": {
@@ -75,6 +76,22 @@ def test_staging_accepts_explicit_cors_origins(tmp_path: Path) -> None:
     settings = FlowForm.model_validate(data)
 
     assert settings.env == "staging"
+
+
+@pytest.mark.parametrize(
+    "site_url",
+    [
+        "http://studio.example.test",
+        "http://localhost:5174",
+        "https://localhost:5174",
+    ],
+)
+def test_deployed_environments_reject_insecure_or_local_site_url(tmp_path: Path, site_url: str) -> None:
+    data = _production_flowform(tmp_path, ["https://studio.example.test"])
+    data["server"] = {"site_url": site_url}
+
+    with pytest.raises(ValidationError, match="FLOWFORM_SERVER_SITE_URL"):
+        FlowForm.model_validate(data)
 
 
 def test_get_settings_accepts_staging_environment(monkeypatch: pytest.MonkeyPatch) -> None:

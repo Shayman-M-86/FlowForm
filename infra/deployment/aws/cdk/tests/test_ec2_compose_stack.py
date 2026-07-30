@@ -672,6 +672,12 @@ def test_staging_backend_keeps_its_identity_with_production_shaped_database_auth
     assert published["DATABASE_RESPONSE_NAME"] == "flowform_response"
 
 
+def test_staging_backend_site_url_targets_the_studio_frontend():
+    published = _backend_parameters()
+
+    assert published["FLOWFORM_SERVER_SITE_URL"] == "https://studio.staging.flow-form.com.au"
+
+
 def test_no_database_password_parameter_is_published():
     """Under IAM auth no database credential exists to publish."""
     published = _backend_parameters()
