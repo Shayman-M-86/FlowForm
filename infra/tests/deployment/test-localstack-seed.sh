@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-CONTRACT="${REPO_ROOT}/infra/deployment/config/runtime-parameter-contract.json"
+CONTRACT="${REPO_ROOT}/infra/contracts/runtime-parameters.json"
 SEED_SCRIPT="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/services/localstack/seed-localstack.sh"
 SYNC_SCRIPT="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/services/localstack/sync-secrets-into-localstack.sh"
 TLS_COMPOSE="${REPO_ROOT}/infra/containers/runtime/proxmox/rehearsal/fixtures/compose.tls-shim.yml"

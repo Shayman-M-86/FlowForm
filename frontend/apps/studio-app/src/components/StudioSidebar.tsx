@@ -408,12 +408,14 @@ export function StudioSidebar() {
   useRenderDebug("StudioSidebar");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
+  const [desktopCollapsed, setDesktopCollapsed] = useState(
+    () => localStorage.getItem('sidebar-collapsed') === 'true',
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const toggleCollapsed = () => {
-    setCollapsed((c) => {
-      const next = !c
+  const toggleDesktopCollapsed = () => {
+    setDesktopCollapsed((collapsed) => {
+      const next = !collapsed
       localStorage.setItem('sidebar-collapsed', String(next))
       return next
     })
@@ -470,25 +472,10 @@ export function StudioSidebar() {
           size="md"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
-          onClick={() => {
-            setMobileOpen((o) => !o);
-          
-            setTimeout(() => {
-              toggleCollapsed();
-            }, 200);
-          }}
+          onClick={() => setMobileOpen((open) => !open)}
         >
           {mobileOpen ? <IconX /> : <IconMenu />}
         </Button>
-        {/* <Button
-          variant="icon"
-          size="md"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-expanded={collapsed}
-          onClick={toggleCollapsed}
-        >
-          {mobileOpen ? <IconX /> : <IconMenu />}
-        </Button> */}
       </header>
 
       {/* Backdrop — mobile only */}
@@ -500,7 +487,7 @@ export function StudioSidebar() {
         />
       )}
 
-    <aside className="sidebar" data-collapsed={collapsed} data-mobile-open={mobileOpen} onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMobileOpen(false); }}>
+    <aside className="sidebar" data-collapsed={desktopCollapsed} data-mobile-open={mobileOpen} onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMobileOpen(false); }}>
     <div className="sidebar-content px-2">
         {/* Brand */}
         <Link to="/projects" className="site-header__brand w-fit cursor-pointer mb-2 ml-2">
@@ -508,13 +495,13 @@ export function StudioSidebar() {
             <div className="site-header__logo" aria-hidden="true">
               <img src={BRAND.logoSrc} alt="" className="site-header__logo-image" />
             </div>
-            {!collapsed && <span className="site-header__wordmark">{BRAND.name}</span>}
-            {!collapsed && <span className="site-header__badge">Studio</span>}
+            <span className="site-header__wordmark sidebar-brand__detail">{BRAND.name}</span>
+            <span className="site-header__badge sidebar-brand__detail">Studio</span>
           </div>
         </Link>
 
         {/* Project badge + collapse button */}
-        <div className={`mt-4 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
+        <div className={`mt-4 flex items-center justify-between ${desktopCollapsed ? "md:justify-center" : ""}`}>
             <div className="sidebar-project-badge">
             {projectSlug && (
               <Badge
@@ -532,11 +519,11 @@ export function StudioSidebar() {
           <Button
             variant="icon"
             size="md"
-            onClick={toggleCollapsed}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={toggleDesktopCollapsed}
+            aria-label={desktopCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className="hidden md:flex"
           >
-            {collapsed ? <IconExpand /> : <IconCollapse />}
+            {desktopCollapsed ? <IconExpand /> : <IconCollapse />}
           </Button>
         </div>
 
@@ -583,7 +570,7 @@ export function StudioSidebar() {
       <div className="flex-1" />
 
       <div className="px-2">
-        <SidebarNotifications collapsed={collapsed} />
+        <SidebarNotifications collapsed={desktopCollapsed} />
       </div>
 
       <div aria-hidden="true" className="sidebar-user-divider" />

@@ -12,7 +12,7 @@ locals {
     ])
   ])
   ssh_authorized_keys        = indent(2, join("\n", [for key in var.ssh_public_keys : "- ${key}"]))
-  runtime_parameter_contract = jsondecode(file("${path.module}/../../config/runtime-parameter-contract.json"))
+  runtime_parameter_contract = jsondecode(file("${path.module}/../../../contracts/runtime-parameters.json"))
   # Runtime-parameter seed keys become plaintext SSM parameters. Terraform no
   # longer supplies ANY secret values: real secrets (the Auth0 management secret,
   # the Grafana Cloud token, the application key, both database passwords, and the
@@ -67,7 +67,7 @@ locals {
     DOCKER_COMPOSE_LOCALSTACK_B64       = base64encode(file("${path.module}/../../../containers/runtime/proxmox/rehearsal/fixtures/compose.localstack.yml"))
     LOCALSTACK_SEED_SH_B64              = base64encode(file("${path.module}/../../../containers/runtime/proxmox/rehearsal/services/localstack/seed-localstack.sh"))
     LOCALSTACK_SYNC_SECRETS_SH_B64      = base64encode(file("${path.module}/../../../containers/runtime/proxmox/rehearsal/services/localstack/sync-secrets-into-localstack.sh"))
-    RUNTIME_PARAMETER_CONTRACT_B64      = base64encode(file("${path.module}/../../config/runtime-parameter-contract.json"))
+    RUNTIME_PARAMETER_CONTRACT_B64      = base64encode(file("${path.module}/../../../contracts/runtime-parameters.json"))
     DOCKER_COMPOSE_REGISTRY_B64         = base64encode(file("${path.module}/../../../containers/runtime/proxmox/rehearsal/fixtures/compose.registry.yml"))
     DOCKER_COMPOSE_TLS_SHIM_B64         = base64encode(file("${path.module}/../../../containers/runtime/proxmox/rehearsal/fixtures/compose.tls-shim.yml"))
     TLS_SHIM_CADDYFILE_B64              = base64encode(file("${path.module}/../../../containers/runtime/proxmox/rehearsal/services/tls-shim/Caddyfile"))
@@ -100,6 +100,6 @@ check "localstack_seed_values_match_contract" {
       length(setsubtract(local.required_localstack_seed_keys, local.configured_localstack_seed_keys)) == 0 &&
       length(setsubtract(local.configured_localstack_seed_keys, local.required_localstack_seed_keys)) == 0
     )
-    error_message = "localstack_seed_values keys must exactly match seed_value_key entries in infra/deployment/config/runtime-parameter-contract.json."
+    error_message = "localstack_seed_values keys must exactly match seed_value_key entries in infra/contracts/runtime-parameters.json."
   }
 }

@@ -101,6 +101,7 @@ class AppStack(RoleHostStack):
             "tracing_otlp_endpoint": "http://alloy:4317",
             "tracing_sample_ratio": "1.0",
             "tracing_service_name": "backend",
+            "site_url": f"https://{env_config.studio_domain}",
             "aws_region": env_config.region,
             "kms_key_arn": self.kms_key.key_arn,
             "cors_supports_credentials": "true",

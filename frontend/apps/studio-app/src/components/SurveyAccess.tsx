@@ -13,63 +13,42 @@ type SurveyAccessModeSelectorProps = {
   value: SurveyAccessMode
   onChange: (mode: SurveyAccessMode) => void
   compact?: boolean
+  showAccessGuide?: boolean
 }
 
 function accessEntryLabels(entries: SurveyAccessEntry[]): string {
   return entries.map((entry) => SURVEY_ACCESS_ENTRIES[entry].label).join(', ')
 }
 
-function AccessModeTooltipContent({ mode }: { mode: SurveyAccessMode }) {
-  const definition = SURVEY_ACCESS_MODES[mode]
-  const Icon = definition.icon
-
+function AccessModesGuideContent() {
   return (
-    <div className="grid max-w-80 gap-4 p-1 text-left">
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
-          <Icon size={14} strokeWidth={2} aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{definition.label}</p>
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{definition.description}</p>
-        </div>
+    <div className="grid max-w-80 gap-3 p-1 text-left">
+      <div>
+        <p className="text-sm font-semibold text-foreground">Survey access guide</p>
+        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+          The access mode controls which ways respondents can open the survey.
+        </p>
       </div>
-      <div className="grid gap-2 text-xs leading-5">
-        <div>
-          <p className="font-semibold text-foreground">Allowed link types</p>
-          <ul className="mt-1 grid gap-2 text-muted-foreground">
-            {definition.allowedEntries.map((entry) => (
-              <li key={entry} className="flex gap-2">
-                {(() => {
-                  const entryDefinition = SURVEY_ACCESS_ENTRIES[entry]
-                  const EntryIcon = entryDefinition.icon
-                  return (
-                    <>
-                      <EntryIcon size={13} strokeWidth={2} aria-hidden="true" className="mt-1 shrink-0" />
-                      <span>
-                        <span className="block font-medium text-foreground">{entryDefinition.label}</span>
-                        <span className="block">{entryDefinition.shortDescription}</span>
-                      </span>
-                    </>
-                  )
-                })()}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="font-semibold text-foreground">Not allowed in this mode</p>
-          {definition.blockedEntries.length > 0 ? (
-            <ul className="mt-1 grid gap-0.5 text-muted-foreground">
-              {definition.blockedEntries.map((entry) => (
-                <li key={entry}>{SURVEY_ACCESS_ENTRIES[entry].label}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-1 text-muted-foreground">None</p>
-          )}
-        </div>
-      </div>
+      <ul className="grid gap-3">
+        {SURVEY_ACCESS_MODE_IDS.map((mode) => {
+          const definition = SURVEY_ACCESS_MODES[mode]
+          const Icon = definition.icon
+
+          return (
+            <li key={mode} className="flex items-start gap-2">
+              <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
+                <Icon size={14} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-foreground">{definition.label}</span>
+                <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+                  {definition.shortDescription}
+                </span>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
@@ -78,15 +57,29 @@ export function SurveyAccessModeSelector({
   value,
   onChange,
   compact = false,
+  showAccessGuide = false,
 }: SurveyAccessModeSelectorProps) {
   return (
     <div className="grid gap-2">
-      <div>
-        <p className="text-sm font-medium text-foreground">How can people access this survey?</p>
-        {!compact && (
-          <p className="text-xs text-muted-foreground">
-            Respondent access controls who can open and complete the survey.
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">How can people access this survey?</p>
+          {!compact && (
+            <p className="text-xs text-muted-foreground">
+              Respondent access controls who can open and complete the survey.
+            </p>
+          )}
+        </div>
+        {showAccessGuide && (
+          <Tooltip content={<AccessModesGuideContent />} size="sm" pinOnClick>
+            <button
+              type="button"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Info size={13} strokeWidth={2} aria-hidden="true" />
+              Access guide
+            </button>
+          </Tooltip>
         )}
       </div>
       <div className={compact ? 'grid gap-2' : 'grid gap-2 sm:grid-cols-3'}>
@@ -107,28 +100,13 @@ export function SurveyAccessModeSelector({
                   : 'border-border bg-card text-foreground hover:bg-muted'
               }`}
             >
-              <span className="flex w-full items-start justify-between gap-2">
-                <span className="flex min-w-0 items-center gap-2">
-                  <Icon size={15} strokeWidth={2} aria-hidden="true" />
-                  <span className="text-sm font-semibold">{definition.label}</span>
-                </span>
-                <Tooltip content={<AccessModeTooltipContent mode={mode} />} size="sm" pinOnClick>
-                  <span
-                    className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                  >
-                    <Info size={13} strokeWidth={2} aria-hidden="true" />
-                    <span className="sr-only">About {definition.label} access</span>
-                  </span>
-                </Tooltip>
+              <span className="flex min-w-0 items-center gap-2">
+                <Icon size={15} strokeWidth={2} aria-hidden="true" />
+                <span className="text-sm font-semibold">{definition.label}</span>
               </span>
               <span className="mt-1 block text-xs leading-5 text-muted-foreground">
                 {definition.shortDescription}
               </span>
-              {!compact && definition.blockedEntries.length > 0 && (
-                <span className="mt-2 block text-[0.7rem] leading-4 text-muted-foreground">
-                  Blocks {accessEntryLabels(definition.blockedEntries)}
-                </span>
-              )}
             </button>
           )
         })}

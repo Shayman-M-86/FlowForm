@@ -196,6 +196,7 @@ variable "localstack_seed_values" {
     FLOWFORM_ENV                            = "prod"
     FLOWFORM_LOGGING_LEVEL                  = "INFO"
     FLOWFORM_LOGGING_LOG_JSON               = "true"
+    FLOWFORM_SERVER_SITE_URL                = "https://studio.localstack.test"
     FLOWFORM_TRACING_ENABLED                = "true"
     FLOWFORM_TRACING_OTLP_ENDPOINT          = "http://alloy:4317"
     FLOWFORM_TRACING_SAMPLE_RATIO           = "1.0"

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Badge, Button, Card, Input, Modal, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
+import { Badge, Button, ButtonGroup, Card, Input, Modal, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
 import { useSubjects, useParticipants, useCreateParticipant, useUpdateParticipant, useDeleteParticipant } from '@/api/hooks/subjects'
 import type { SubjectOut, ParticipantOut } from '@/api/hooks/subjects'
 
@@ -8,6 +8,9 @@ type Props = { projectId: number }
 type View = 'subjects' | 'participants'
 
 const PAGE_SIZE = 20
+const COMPACT_TABLE_CLASS = 'min-w-0 max-w-full [&_.ui-table-th]:py-2 [&_.ui-table-td]:py-2 sm:[&_.ui-table-th]:py-3 sm:[&_.ui-table-td]:py-3'
+const COMPACT_HEADER_CLASS = 'px-1 text-[0.625rem] tracking-normal sm:pl-2 sm:pr-0 sm:text-xs sm:tracking-wider'
+const COMPACT_CELL_CLASS = 'min-w-0 overflow-hidden px-1 sm:pl-2 sm:pr-0'
 
 export function SubjectsTab({ projectId }: Props) {
   const [view, setView] = useState<View>('subjects')
@@ -63,36 +66,63 @@ export function SubjectsTab({ projectId }: Props) {
     {
       key: 'subject_code',
       header: 'Subject code',
-      minWidth: 160,
-      cell: (row) => <span className="text-sm font-medium text-foreground">{row.subject_code}</span>,
+      minWidth: 112,
+      targetWidth: 160,
+      headerClassName: COMPACT_HEADER_CLASS,
+      cellClassName: COMPACT_CELL_CLASS,
+      cell: (row) => (
+        <span className="block truncate text-xs font-medium text-foreground sm:text-sm" title={row.subject_code}>
+          {row.subject_code}
+        </span>
+      ),
     },
     {
       key: 'status',
       header: 'Status',
-      minWidth: 120,
+      minWidth: 108,
+      targetWidth: 120,
+      headerClassName: COMPACT_HEADER_CLASS,
+      cellClassName: COMPACT_CELL_CLASS,
       cell: (row) => (
-        <div className="flex items-center gap-2">
-          <Badge variant={row.is_participant ? 'success' : 'default'} size="xs">
+        <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+          <Badge
+            variant={row.is_participant ? 'success' : 'default'}
+            size="xs"
+            className="max-w-full px-1.5 text-[0.65rem] sm:px-2 sm:text-xs"
+          >
             {row.is_participant ? 'Participant' : 'Subject only'}
           </Badge>
           {row.canonical_subject_id && (
-            <Badge variant="warning" size="xs">Alias</Badge>
+            <Badge variant="warning" size="xs" className="px-1.5 text-[0.65rem] sm:px-2 sm:text-xs">
+              Alias
+            </Badge>
           )}
         </div>
       ),
     },
     {
       key: 'identities',
-      header: 'Identities',
-      minWidth: 80,
-      cell: (row) => <span className="text-sm text-muted-foreground">{row.active_identity_count}</span>,
+      header: (
+        <>
+          <span className="sm:hidden">IDs</span>
+          <span className="hidden sm:inline">Identities</span>
+        </>
+      ),
+      minWidth: 72,
+      targetWidth: 80,
+      headerClassName: COMPACT_HEADER_CLASS,
+      cellClassName: COMPACT_CELL_CLASS,
+      cell: (row) => <span className="text-xs text-muted-foreground sm:text-sm">{row.active_identity_count}</span>,
     },
     {
       key: 'created_at',
       header: 'Created',
-      minWidth: 120,
+      minWidth: 96,
+      targetWidth: 120,
+      headerClassName: COMPACT_HEADER_CLASS,
+      cellClassName: COMPACT_CELL_CLASS,
       cell: (row) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="whitespace-nowrap text-xs text-muted-foreground sm:text-sm">
           {new Date(row.created_at).toLocaleDateString()}
         </span>
       ),
@@ -104,21 +134,38 @@ export function SubjectsTab({ projectId }: Props) {
     {
       key: 'subject_code',
       header: 'Subject code',
-      minWidth: 160,
-      cell: (row) => <span className="text-sm font-medium text-foreground">{row.subject_code}</span>,
+      minWidth: 104,
+      targetWidth: 160,
+      headerClassName: COMPACT_HEADER_CLASS,
+      cellClassName: COMPACT_CELL_CLASS,
+      cell: (row) => (
+        <span className="block truncate text-xs font-medium text-foreground sm:text-sm" title={row.subject_code}>
+          {row.subject_code}
+        </span>
+      ),
     },
     {
       key: 'email',
       header: 'Email',
-      minWidth: 200,
-      cell: (row) => <span className="text-sm text-muted-foreground">{row.email ?? '—'}</span>,
+      minWidth: 144,
+      targetWidth: 200,
+      headerClassName: COMPACT_HEADER_CLASS,
+      cellClassName: COMPACT_CELL_CLASS,
+      cell: (row) => (
+        <span className="block truncate text-xs text-muted-foreground sm:text-sm" title={row.email ?? undefined}>
+          {row.email ?? '—'}
+        </span>
+      ),
     },
     {
       key: 'created_at',
       header: 'Created',
-      minWidth: 120,
+      minWidth: 96,
+      targetWidth: 120,
+      headerClassName: COMPACT_HEADER_CLASS,
+      cellClassName: COMPACT_CELL_CLASS,
       cell: (row) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="whitespace-nowrap text-xs text-muted-foreground sm:text-sm">
           {new Date(row.created_at).toLocaleDateString()}
         </span>
       ),
@@ -126,19 +173,32 @@ export function SubjectsTab({ projectId }: Props) {
     {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
-      minWidth: 120,
-      maxWidth: 120,
-      headerClassName: 'flex justify-end pr-2',
-      cellClassName: 'flex justify-end gap-1 px-0',
+      minWidth: 44,
+      maxWidth: 44,
+      headerClassName: 'flex justify-center px-0',
+      cellClassName: 'flex justify-center px-0',
       cell: (row) => (
-        <>
-          <Button variant="ghost" size="sm" onClick={() => { setEditing(row); setEditEmail(row.email ?? ''); setEditCode(row.subject_code) }}>
-            Edit
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setToDelete(row)}>
-            Delete
-          </Button>
-        </>
+        <ButtonGroup
+          size="xs"
+          overflow="always"
+          items={[
+            {
+              key: 'edit',
+              label: 'Edit',
+              onClick: () => {
+                setEditing(row)
+                setEditEmail(row.email ?? '')
+                setEditCode(row.subject_code)
+              },
+            },
+            {
+              key: 'delete',
+              label: 'Delete',
+              variant: 'destructive',
+              onClick: () => setToDelete(row),
+            },
+          ]}
+        />
       ),
     },
   ], [])
@@ -188,7 +248,7 @@ export function SubjectsTab({ projectId }: Props) {
   }
 
   return (
-    <section className="grid gap-4">
+    <section className="grid min-w-0 gap-4">
       {errorMsg && (
         <Toast variant="error" onClose={() => setErrorMsg(null)}>
           {errorMsg}
@@ -237,12 +297,14 @@ export function SubjectsTab({ projectId }: Props) {
         <div className="flex justify-center py-10"><Spinner size={24} /></div>
       ) : view === 'subjects' ? (
         <Table
+          className={COMPACT_TABLE_CLASS}
           columns={subjectColumns}
           rows={subjectsQuery.data?.subjects ?? []}
           getRowKey={(row) => row.id}
         />
       ) : (
         <Table
+          className={COMPACT_TABLE_CLASS}
           columns={participantColumns}
           rows={participantsQuery.data?.participants ?? []}
           getRowKey={(row) => row.id}

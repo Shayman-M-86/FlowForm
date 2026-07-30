@@ -39,6 +39,10 @@
           "name": "FLOWFORM_ENV",
           "seed_value_key": "FLOWFORM_ENV"
         },
+        "site_url": {
+          "name": "FLOWFORM_SERVER_SITE_URL",
+          "seed_value_key": "FLOWFORM_SERVER_SITE_URL"
+        },
         "cors_origins": {
           "name": "FLOWFORM_CORS_ORIGINS",
           "seed_value_key": "FLOWFORM_CORS_ORIGINS"

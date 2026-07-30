@@ -29,13 +29,14 @@ export function RoleBadgePreview({
 
   return (
     <>
-      <span ref={triggerRef} className="inline-flex">
+      <span ref={triggerRef} className="inline-flex min-w-0 max-w-full">
         <Badge
           variant={variant}
           size="xs"
+          className="max-w-full"
           onClick={() => setOpen((current) => !current)}
         >
-          {displayLabel}
+          <span className="min-w-0 truncate">{displayLabel}</span>
         </Badge>
       </span>
       <DropdownMenu

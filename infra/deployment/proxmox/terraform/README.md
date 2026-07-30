@@ -70,7 +70,7 @@ units, TLS material, and startup actions; none of those are baked by Packer.
 LocalStack remains reachable only on the isolated `vmbr10` network. Terraform
 does not use the AWS provider against LocalStack and does not expose port 4566
 to the development LAN. Instead, Terraform validates `localstack_seed_values`
-against `infra/deployment/config/runtime-parameter-contract.json`, renders the
+against `infra/contracts/runtime-parameters.json`, renders the
 non-secret values into cloud-init, and uploads them with the LocalStack VM
 snippet.
 

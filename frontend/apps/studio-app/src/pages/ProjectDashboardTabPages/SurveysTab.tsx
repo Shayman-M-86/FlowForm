@@ -56,7 +56,7 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
   const surveyList = surveys.data ?? []
 
   return (
-    <section className="grid gap-4">
+    <section className="grid min-w-0 gap-4">
       {createdProjectName && (
         <Toast variant="success" onClose={() => setCreatedProjectName(null)}>
           Project &ldquo;{createdProjectName}&rdquo; created.
@@ -88,7 +88,7 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
       )}
 
       {!surveys.isLoading && !surveys.isError && (
-        <div className="grid gap-3 mx-auto w-3xl min-w-2">
+        <div className="mx-auto grid w-full max-w-3xl gap-3">
           {surveyList.map((survey) => {
             const status = surveyStatus(survey)
             return (

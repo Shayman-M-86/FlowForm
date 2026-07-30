@@ -169,7 +169,9 @@ export function MembersTab({ projectId }: Props) {
     {
       key: 'member',
       header: 'Member',
-      minWidth: 200,
+      minWidth: 120,
+      targetWidth: 200,
+      cellClassName: 'min-w-0 overflow-hidden pr-1',
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">
@@ -182,7 +184,9 @@ export function MembersTab({ projectId }: Props) {
     {
       key: 'role',
       header: 'Role',
-      minWidth: 100,
+      minWidth: 80,
+      targetWidth: 100,
+      cellClassName: 'min-w-0 overflow-hidden pr-1',
       cell: (row) => {
         const role = roleById.get(String(row.role_id ?? ''))
         const variant = role?.isSystemRole ? 'accent' : 'default'
@@ -198,7 +202,9 @@ export function MembersTab({ projectId }: Props) {
     {
       key: 'status',
       header: 'Status',
-      minWidth: 100,
+      minWidth: 80,
+      targetWidth: 100,
+      cellClassName: 'min-w-0 overflow-hidden pr-1',
       cell: (row) => (
         <Badge variant={row.status === 'active' ? 'success' : 'warning'} size="xs">
           {row.status === 'active' ? 'Active' : 'Suspended'}
@@ -208,8 +214,8 @@ export function MembersTab({ projectId }: Props) {
     {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
-      minWidth: 50,
-      maxWidth: 50,
+      minWidth: 44,
+      maxWidth: 44,
       headerClassName: 'flex justify-center text-right pr-2',
       cellClassName: 'flex justify-center px-0',
       cell: (row) => {
@@ -276,7 +282,7 @@ export function MembersTab({ projectId }: Props) {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <section className="grid gap-4">
+    <section className="grid min-w-0 gap-4">
       {inviteSentTo && (
         <Toast variant="success" onClose={() => setInviteSentTo(null)}>
           Invitation sent to {inviteSentTo}.
@@ -303,6 +309,7 @@ export function MembersTab({ projectId }: Props) {
             <div className="flex justify-center py-10"><Spinner size={24} /></div>
           ) : (
             <Table
+              className="min-w-0 max-w-full"
               columns={memberColumns}
               rows={members}
               getRowKey={(row) => row.id}
