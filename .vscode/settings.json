@@ -1,11 +1,3 @@
 {
-    "python.testing.pytestEnabled": false,
-    "python.testing.unittestEnabled": false,
-    "python-envs.pythonProjects": [
-        {
-            "path": ".",
-            "envManager": "ms-python.python:venv",
-            "packageManager": "ms-python.python:pip"
-        }
-    ]
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python"
 }
