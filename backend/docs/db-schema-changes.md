@@ -39,9 +39,10 @@ Things to consider when editing:
   expression-based invariants → CHECK. State-machine guards that depend on
   other rows or current state → trigger function with a stable
   `RAISE EXCEPTION` message (matched via `message_rule`).
-- **Response-DB isolation.** The response schema must never carry a real
-  `user_id` — only the pseudonymous subject UUID. Apply this to any new
-  column on a response-DB table.
+- **Cryptographic linkage boundary.** The response schema must not carry user,
+  subject, session, project, survey, or question identifiers from core. It uses
+  only secret-derived opaque session and answer locators. Apply this rule to any
+  new response-DB column.
 
 ### 2. ORM models (`app/schema/orm/`)
 
@@ -61,8 +62,9 @@ Things to consider:
   non-FK-referenced UNIQUEs live in the SQL schema only (the source of
   truth). Adding a CHECK or a standalone UNIQUE does **not** require an
   `__table_args__` entry.
-- **No cross-DB relationships.** Core and response models share only the
-  integer link `core.survey_submissions.id ↔ response.submissions.core_submission_id`.
+- **No cross-DB relationships.** Core and response models do not share direct
+  identifiers or ORM relationships. Services derive response-side locators
+  from core UUIDs using the appropriate versioned linkage key.
 - **No business logic in models.** Hybrid properties for read-only derived
   values are acceptable; mutation logic belongs in services.
 

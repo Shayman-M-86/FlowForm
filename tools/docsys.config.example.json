@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to docsys.config.json to override docsys defaults. Only keys present here are overridden. See tools/flowform_tools/docsys/config.py.",
+  "_comment": "Copy to tools/docsys.config.json to override Docsys defaults. Only keys present here are overridden.",
   "critical_doc_globs": [
     "docs/10-architecture/security-model.md",
     "docs/20-domains/responses-and-encryption.md"

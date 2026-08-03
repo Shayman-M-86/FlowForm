@@ -5,7 +5,10 @@ __pycache__/
 
 # Compiled extensions
 *.so
+
+# Editor-local state
 docs/.obsidian/
+
 # Distribution / packaging
 .Python
 build/
@@ -68,6 +71,7 @@ nosetests.xml
 .hypothesis/
 .pytest_cache/
 pytest_cache/
+.mypy_cache/
 .ruff_cache/
 .cache/
 cover/
@@ -82,13 +86,10 @@ cover/
 # Python version manager
 .python-version
 
-# Project-specific docs / generated files
+# Retired documentation generators may still emit these local work products.
 /docs/doc_dis
 /docs/plans/doc_dis
 /docs/plans/overview/architecture/DataStructure/Ideas/Schema_Decision_Documents
-
-# Project-specific caches
-/backend/.pytest_cache
 
 # Claude Code ephemeral cache
 .claude/project-status.md
@@ -98,11 +99,9 @@ cover/
 *prod.secret.txt
 *dev.secret.txt
 
-# NOTE: the rehearsal TLS-shim CA (infra/containers/rehearsal/services/tls-shim/ca/*.crt/.key) is a
-# DELIBERATELY COMMITTED THROWAWAY — it only signs *.localstack.test on an
-# un-routed private net and is trusted only inside the rehearsal. See
-# infra/containers/rehearsal/services/tls-shim/README.md. It is NOT ignored so a fresh checkout can
-# build template 9001 and render the app user-data without regenerating certs.
+# Rehearsal TLS material is machine-local and explicitly ignored below. The
+# Proxmox runtime consumes it while rendering cloud-init, so preserve a working
+# local set unless it is being deliberately regenerated.
 
 # Terraform working directories, state, plans, and local values
 **/.terraform/
@@ -122,16 +121,16 @@ infra/deployment/proxmox/cloud-init/generated/*
 !*.pkrvars.hcl.example
 .packer.d/
 packer_cache/
-**/packer_cache/
 packer-manifest.json
-**/packer-manifest.json
 *.pem
 *.key.local
 infra/machine-images/packer/manifests/*.json
 !infra/machine-images/packer/manifests/README.md
 
-# Docsys documentation hook per-session state (transient)
+# Docsys per-session state (transient)
 .docsys/
+
+# Machine-local Proxmox rehearsal TLS material
 infra/containers/runtime/proxmox/rehearsal/services/caddy/certs/api.crt
 infra/containers/runtime/proxmox/rehearsal/services/caddy/certs/api.key
 infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/localstack.crt
@@ -141,4 +140,3 @@ infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.key
 infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.srl
 !infra/deployment/proxmox/scripts/lib
 !infra/machine-images/tooling/lib
-.docsys/hook-state

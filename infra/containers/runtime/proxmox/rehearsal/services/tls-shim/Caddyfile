@@ -7,10 +7,10 @@
 # terminate TLS → LocalStack :4566 (services) or the registry :5000.
 #
 # The ONLY deltas from prod are the hostnames (*.localstack.test) and a
-# rehearsal-only CA (ca/rehearsal-ca.crt, a throwaway committed for the local
-# rehearsal). Never mistake this for real AWS proof.
+# rehearsal-only CA (ca/rehearsal-ca.crt, generated and ignored for the local
+# machine). Never mistake this for real AWS proof.
 #
-# Uses a PRE-GENERATED cert (ca/localstack.crt signed by ca/rehearsal-ca.crt) so
+# Uses a generated cert (ca/localstack.crt signed by ca/rehearsal-ca.crt) so
 # the app box can trust the CA root baked at build time — no fetch-from-shim
 # chicken-and-egg. The app box only needs ca/rehearsal-ca.crt in its trust store.
 

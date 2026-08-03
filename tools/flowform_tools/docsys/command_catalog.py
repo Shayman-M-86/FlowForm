@@ -23,6 +23,11 @@ DOCSYS_COMMANDS = {
         "description": "find documentation affected by code changes",
         "access": "read-only",
     },
+    "review": {
+        "module": "flowform_tools.docsys.commands.review",
+        "description": "correlate staged documentation drift signals",
+        "access": "read-only",
+    },
     "freshness": {
         "module": "flowform_tools.docsys.commands.freshness",
         "description": "check implementation evidence freshness",

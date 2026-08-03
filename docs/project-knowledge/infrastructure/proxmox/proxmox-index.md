@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [infrastructure]
 related_code:
   - "../../../../infra/deployment/proxmox/README.md"
@@ -42,6 +42,10 @@ configuration cannot prove delivery to an external observability service.
 
 Exact provisioning, secret handling, log access, verification, and destructive
 replacement procedures live with the rehearsal command and platform scripts.
+The rehearsal's private CA and leaf certificates are ignored machine-local
+inputs. `rehearsal tls` creates or validates them, and the shared build and
+Terraform preparation runs that check automatically. It preserves a valid CA,
+can repair its leaves, and does not silently rotate an invalid trust anchor.
 
 ## Related documents
 

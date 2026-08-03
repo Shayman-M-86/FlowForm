@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-08-03
+last_edited: 2026-08-04
 tags: [backend, infrastructure, security]
 related_code:
   - "../../../backend/app/core/extensions.py"
@@ -62,11 +62,12 @@ browser-security guarantee.
 
 The core store holds identity, access, survey, and session metadata. The
 response store holds encrypted envelopes and answers addressed by opaque
-locators rather than direct core identifiers. The backend crosses this boundary
-to coordinate writes, reads, deletion, and decryption. It also calls the
-configured KMS and secrets services for cryptographic operations and linkage
-material. Therefore the split limits a database-only disclosure but does not
-remove backend, key-service, host, or runtime-memory trust.
+locators rather than direct core identifiers. This cryptographic linkage
+boundary uses separately managed linkage material to connect the stores. The
+backend crosses it to coordinate writes, reads, deletion, and decryption. It
+also calls the configured KMS and secrets services for cryptographic operations
+and linkage material. Therefore the split limits a database-only disclosure but
+does not remove backend, key-service, host, or runtime-memory trust.
 
 ## Runtime and deployment boundaries
 

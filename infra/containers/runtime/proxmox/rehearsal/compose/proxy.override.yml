@@ -27,8 +27,8 @@ name: flowform-proxy
 services:
   caddy:
     volumes:
-      # select the rehearsal Caddyfile and its pre-generated leaf signed by the
-      # committed rehearsal CA — see Caddyfile.proxy.
+      # select the rehearsal Caddyfile and its generated leaf signed by the
+      # machine-local rehearsal CA — see Caddyfile.proxy.
       # Paths are relative to the project directory:
       # infra/containers/runtime/aws/common/compose/.
       - ../../../proxmox/rehearsal/services/caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro

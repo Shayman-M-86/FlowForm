@@ -16,7 +16,12 @@ from __future__ import annotations
 
 import re
 
-from flowform_tools.docsys.core.model import DOCS, body_after_front_matter, strip_code
+from flowform_tools.docsys.core.model import (
+    DOCS,
+    body_after_front_matter,
+    is_inert_archive_path,
+    strip_code,
+)
 from flowform_tools.paths import ROOT
 
 MD_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -29,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Match Obsidian's shortest-path convention: a unique filename stem is
     # enough; duplicate stems use their path relative to docs/ (without .md).
-    paths = sorted(DOCS.rglob("*.md"))
+    paths = sorted(path for path in DOCS.rglob("*.md") if not is_inert_archive_path(path))
     stem_counts: dict[str, int] = {}
     for path in paths:
         key = path.stem.casefold()

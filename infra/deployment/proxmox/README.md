@@ -1,15 +1,16 @@
 # Proxmox platform orchestration
 
 This directory owns Proxmox rehearsal deployment. Packer image construction
-lives under `infra/images`; Terraform owns the cloned VMs and cloud-init
+lives under `infra/machine-images`; Terraform owns the cloned VMs and cloud-init
 snippets here.
 
-Build the shared golden template and then its two offline fixtures:
+From the repository root, build the shared golden template and then its two
+offline fixtures:
 
 ```bash
-infra/images/scripts/image prepare proxmox
-infra/images/scripts/image prepare proxmox --apply
-infra/images/scripts/image build proxmox all
+infra/machine-images/tooling/image prepare proxmox
+infra/machine-images/tooling/image prepare proxmox --apply
+infra/machine-images/tooling/image build proxmox all
 ```
 
 The source and Packer templates default to the official AL2023 image's native
@@ -19,20 +20,22 @@ existing larger clones must be deliberately replaced to adopt it.
 Then create and converge the rehearsal topology from the local checkout:
 
 ```bash
-host/setup-host.sh # one-time bootstrap, run on the PVE host
-terraform -chdir=terraform init
-scripts/rehearsal build
+infra/deployment/proxmox/host/setup-host.sh # one-time bootstrap, run on the PVE host
+infra/deployment/proxmox/scripts/rehearsal tls
+infra/deployment/proxmox/scripts/rehearsal terraform init
+infra/deployment/proxmox/scripts/rehearsal build
 ```
 
 `rehearsal` is the workstation entrypoint. Its `build` subcommand applies
 Terraform, synchronises the PVE-host secret bundle, converges proxy and database,
 publishes the two app images, and finally converges the app. Use
-`scripts/rehearsal --help` for `verify`, `logs`, `sync`, and `rotate` commands.
+`scripts/rehearsal --help` for `tls`, `verify`, `logs`, `sync`, and `rotate`
+commands.
 Direct Terraform operations use `scripts/rehearsal terraform <arguments...>`.
 
 The full from-scratch order of operations (fresh Proxmox host, nothing built)
 is documented in
-[docs/40-implementation/proxmox-rehearsal.md](../../../docs/40-implementation/proxmox-rehearsal.md).
+[Proxmox rehearsal](../../../docs/project-knowledge/infrastructure/proxmox/proxmox-index.md).
 
 Terraform renders no repository files on the Proxmox host. It renders the
 checked-in cloud-init templates and uploads the resulting snippets before
@@ -40,7 +43,7 @@ cloning golden template `9000` for proxy/app, fixture template `9001` for
 LocalStack, and fixture template `9002` for PostgreSQL.
 Environment-specific values and
 fixtures remain under
-`infra/containers/strategies/rehearsal`; the rendered cloud-init starts shared runtime
+`infra/containers/runtime/proxmox/rehearsal`; the rendered cloud-init starts shared runtime
 bootstrap and Compose files.
 
 Template `9001` contains only image layers referenced by the maintained
@@ -56,11 +59,16 @@ Packer build and live apply before it can be called proven. The proxy remains at
 the static LAN address `192.168.70.63` (`proxy_lan_ip` — keep it excluded from
 the router's DHCP pool).
 
-Operator TLS trust is anchored on the committed rehearsal CA
-(`infra/containers/strategies/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`): the proxy
-Caddy serves a pre-generated leaf for `api.localstack.test` signed by it, so
+Operator TLS trust is anchored on the machine-local rehearsal CA
+(`infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.crt`): the proxy
+Caddy serves a generated leaf for `api.localstack.test` signed by it, so
 installing that one CA file in a workstation trust store survives all VM
-rebuilds. Tail service logs with `infra/deployment/proxmox/scripts/rehearsal logs`.
+rebuilds. The ignored CA and leaf files are created by `rehearsal tls`; both
+`rehearsal build` and `rehearsal terraform` run that check automatically before
+Terraform reads them. A valid CA is preserved while missing or invalid leaves
+are repaired; an invalid CA stops with an error instead of silently replacing a
+trust anchor already installed on workstations. Tail service logs with
+`infra/deployment/proxmox/scripts/rehearsal logs`.
 
 LocalStack `230` has no default route by design. Its Packer fixture preloads the
 third-party images it needs before isolation, while Terraform cloud-init still
@@ -76,7 +84,7 @@ order. To publish only the backend image manually from a WSL checkout with
 Docker available, run:
 
 ```bash
-infra/containers/strategies/rehearsal/services/registry/build-and-push-backend.sh
+infra/containers/runtime/proxmox/rehearsal/services/registry/build-and-push-backend.sh
 ```
 
 The helper builds the production-runtime backend image and pushes it as

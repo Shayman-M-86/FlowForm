@@ -29,6 +29,7 @@ from ..core.model import (
     ROOT,
     DocSet,
     Document,
+    is_inert_archive_repo_path,
     load_document,
     load_document_text,
     pattern_matches,
@@ -184,7 +185,7 @@ def _repo_path(value: str) -> Path:
     return path
 
 
-def _load_index_document(doc: Document) -> Document:
+def load_index_document(doc: Document) -> Document:
     """Return the exact indexed version when the worktree has later edits."""
     try:
         text = _git_text(["show", f":{doc.rel_path}"])
@@ -259,7 +260,7 @@ def check_staged() -> int:
     mismatches: list[Document] = []
 
     for worktree_doc in docset.docs:
-        doc = _load_index_document(worktree_doc)
+        doc = load_index_document(worktree_doc)
         impact = impact_by_doc.get(doc.rel_path)
         if doc.rel_path not in staged_docs and impact is None:
             continue
@@ -328,6 +329,7 @@ def sync_last_edited_staged() -> int:
         line
         for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
         if line.startswith("docs/") and line.endswith(".md")
+        and not is_inert_archive_repo_path(line)
     )
     updated: list[str] = []
     for rel in staged_paths:
@@ -350,6 +352,7 @@ def check_last_edited_staged() -> int:
         line
         for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
         if line.startswith("docs/") and line.endswith(".md")
+        and not is_inert_archive_repo_path(line)
     )
     stale: list[str] = []
     for rel in staged_paths:

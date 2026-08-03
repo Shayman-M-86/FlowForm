@@ -1,0 +1,5 @@
+{
+  "_comment": "Repository policy for documentation impact and drift review.",
+  "critical_doc_globs": [],
+  "trigger_weight": 0.6
+}

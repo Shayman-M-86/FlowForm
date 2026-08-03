@@ -59,7 +59,7 @@ Identifies where data or authority crosses between users, external services, run
 
 ## Data-store boundary
 
-The core database owns identity, authorization, survey structure, link access, subject/session metadata, answer slots, and wrapped survey branch keys. The response database owns anonymous envelopes and encrypted current answers. It has no schema-level foreign keys to core and receives opaque locators rather than core identifiers. This limits the meaning of a response-database-only disclosure.
+The core database owns identity, authorization, survey structure, link access, subject/session metadata, answer slots, and wrapped survey branch keys. The response database owns encrypted envelopes and current answers addressed through opaque locators. It has no schema-level foreign keys to core and receives opaque locators rather than core identifiers. This limits the meaning of a response-database-only disclosure.
 
 The boundary is intentionally crossed inside the backend through non-atomic,
 application-coordinated writes and reads. Transaction order, compensation,

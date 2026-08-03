@@ -6,8 +6,8 @@ Key labels (all NewType over bytes — type-checker only, no runtime validation)
     WrappedSurveyKey     — KMS-encrypted survey key, stored in DB
     PlaintextSessionKey  — unwrapped session DEK, usable for answer encryption
     WrappedSessionKey    — survey-key-encrypted session DEK, stored in DB
-    SessionLocator       — pseudonymous session locator, stored in response DB
-    AnswerLocator        — pseudonymous answer locator, stored in response DB
+    SessionLocator       — opaque secret-derived session locator, stored in response DB
+    AnswerLocator        — opaque secret-derived answer locator, stored in response DB
 """
 
 from __future__ import annotations

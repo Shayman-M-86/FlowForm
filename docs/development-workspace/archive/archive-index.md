@@ -5,7 +5,7 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-08-04
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]
@@ -41,6 +41,9 @@ understanding in Project Knowledge.
 - [[security-review-1|Historical security review 1]] and
   [[security-review-2|Historical security review 2]] are inert snapshots of
   abandoned audits, not current security assessments.
+- `old-docs/` retains the previous documentation trees verbatim. It is inert
+  historical source material and is deliberately excluded from Docsys
+  metadata, structure, link, indexing, and evidence checks.
 
 ## Related documents
 

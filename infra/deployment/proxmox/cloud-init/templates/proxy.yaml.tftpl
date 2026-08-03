@@ -89,8 +89,8 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: ${CADDYFILE_PROXY_REHEARSAL_B64}
-  # TLS leaf for the API domain, signed by the committed rehearsal CA — the
-  # stable trust anchor operators install once (see generate-api-cert.sh).
+  # TLS leaf for the API domain, signed by the machine-local rehearsal CA — the
+  # stable trust anchor operators install once (see `rehearsal tls`).
   - path: /opt/flowform/repo/infra/containers/runtime/proxmox/rehearsal/services/caddy/certs/api.crt
     encoding: b64
     permissions: '0644'

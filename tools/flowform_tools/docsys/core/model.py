@@ -33,6 +33,29 @@ from flowform_tools.paths import ROOT
 DOCS = ROOT / "docs"
 GENERATED_DIR = DOCS / "90-generated"
 COLLECTIONS = {"project-knowledge", "development-workspace"}
+INERT_ARCHIVE_RELATIVE_ROOT = Path("development-workspace/archive/old-docs")
+INERT_ARCHIVE_REPO_ROOT = f"docs/{INERT_ARCHIVE_RELATIVE_ROOT.as_posix()}"
+
+
+def is_inert_archive_repo_path(path: str) -> bool:
+    """Return whether a repository-relative path is in the legacy archive."""
+    normalised = path.rstrip("/")
+    return normalised == INERT_ARCHIVE_REPO_ROOT or normalised.startswith(
+        f"{INERT_ARCHIVE_REPO_ROOT}/"
+    )
+
+
+def is_inert_archive_path(path: Path, docs_dir: Path = DOCS) -> bool:
+    """Return whether ``path`` belongs to the ungoverned legacy archive.
+
+    Files below this boundary are retained verbatim as historical source
+    material. They are intentionally outside Docsys metadata, structure, link,
+    indexing, and evidence rules even though they physically live under
+    ``docs/``.
+    """
+    resolved = path.resolve()
+    archive_root = (docs_dir / INERT_ARCHIVE_RELATIVE_ROOT).resolve()
+    return resolved == archive_root or archive_root in resolved.parents
 
 # Front-matter vocabulary shared with the validators.
 REQUIRED_KEYS = (
@@ -457,6 +480,8 @@ class DocSet:
         docs = []
         unparsed_paths = []
         for path in sorted(docs_dir.rglob("*.md")):
+            if is_inert_archive_path(path, docs_dir):
+                continue
             doc = load_document(path, docs_dir)
             if doc is not None:
                 docs.append(doc)

@@ -25,12 +25,19 @@ From the repository root:
 cd infra/deployment/proxmox/terraform
 cp terraform.tfvars.example terraform.tfvars
 # Set the Proxmox endpoint, API token, node, storage, and SSH public key.
-terraform init
+../scripts/rehearsal tls
+../scripts/rehearsal terraform init
 ../scripts/rehearsal terraform plan
 ../scripts/rehearsal terraform apply
 # Or run the complete apply/sync/converge workflow:
 ../scripts/rehearsal build
 ```
+
+The ignored machine-local CA and leaf certificates do not need to exist before
+`rehearsal tls`; the command creates and validates them without committing
+private keys. Every supported `rehearsal terraform` and `rehearsal build` call
+runs the same check before Terraform evaluates its TLS `file(...)` inputs.
+Direct `terraform` calls therefore are not the fresh-checkout entrypoint.
 
 Terraform renders `../cloud-init/templates/*.yaml.tftpl` directly from the
 checked-in bootstrap, Compose, and TLS sources, then uploads the snippets to

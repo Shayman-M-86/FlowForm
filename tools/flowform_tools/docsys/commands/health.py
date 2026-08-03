@@ -63,7 +63,7 @@ def _open_questions(doc: Document) -> list[str]:
     return questions
 
 
-def _connectivity(docset: DocSet) -> dict[str, dict]:
+def connectivity(docset: DocSet) -> dict[str, dict]:
     """Compute inbound/outbound link degree per document."""
     outbound: dict[str, int] = {}
     inbound: dict[str, int] = {d.rel_path: 0 for d in docset.docs}
@@ -92,28 +92,28 @@ def build_health(docset: DocSet | None = None, config: Config | None = None) -> 
     for f in freshness:
         fresh_by_class[f.classification].append(f)
 
-    connectivity = _connectivity(docset)
+    graph = connectivity(docset)
     orphans = [
         d.rel_path
         for d in docset.docs
         if d.document_type not in _ORPHAN_EXEMPT_TYPES
-        and connectivity[d.rel_path]["in"] == 0
-        and connectivity[d.rel_path]["out"] == 0
+        and graph[d.rel_path]["in"] == 0
+        and graph[d.rel_path]["out"] == 0
     ]
     connected = sorted(
         docset.docs,
-        key=lambda d: connectivity[d.rel_path]["in"] + connectivity[d.rel_path]["out"],
+        key=lambda d: graph[d.rel_path]["in"] + graph[d.rel_path]["out"],
         reverse=True,
     )
     heavily_connected = [
         {
             "title": d.title,
             "path": d.rel_path,
-            "in": connectivity[d.rel_path]["in"],
-            "out": connectivity[d.rel_path]["out"],
+            "in": graph[d.rel_path]["in"],
+            "out": graph[d.rel_path]["out"],
         }
         for d in connected[:10]
-        if connectivity[d.rel_path]["in"] + connectivity[d.rel_path]["out"] > 0
+        if graph[d.rel_path]["in"] + graph[d.rel_path]["out"] > 0
     ]
 
     open_questions = []

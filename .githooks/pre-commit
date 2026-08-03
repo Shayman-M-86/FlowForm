@@ -11,4 +11,5 @@ LC_ALL=C.utf8 LANG=C.utf8 bash scripts/ci/check-openapi-contracts.sh
 # retries the commit explicitly.
 tools/bin/docsys evidence check-last-edited
 tools/bin/docsys evidence check-staged
+tools/bin/docsys review --staged
 tools/bin/docsys validate --docs-root docs --profile commit

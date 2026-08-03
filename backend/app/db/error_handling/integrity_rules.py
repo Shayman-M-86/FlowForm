@@ -137,8 +137,8 @@ type RuleContext = (
 # server-controlled enum/bool descriptors that carry no internal identifier.
 #
 # Internal surrogate identifiers — auto-assigned integer primary keys and the
-# foreign keys referencing them (``*_id``), and the pseudonymous correlation
-# UUID — are intentionally excluded. They must never leak to clients, and per
+# foreign keys referencing them (``*_id``), and the internal correlation UUID
+# — are intentionally excluded. They must never leak to clients, and per
 # project policy they are kept out of the log summaries too. ``summarize_context``
 # in ``error_registry.py`` iterates this set, so dropping a name here removes it
 # from both the unmatched-fallback response body and the logger extras.

@@ -5,7 +5,7 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-08-03
+last_edited: 2026-08-04
 tags: [meta]
 related_code:
   - "../../../../tools/flowform_tools/docsys/core/model.py"
@@ -34,9 +34,12 @@ maintained model of responsibilities, boundaries, and durable behaviour.
   migrations, debt, and historical work. It may be incomplete and is never
   promoted as verified current behaviour.
 
-Historical material, including `old-docs/`, may explain intent but cannot
-establish present behaviour. When implementation contradicts Project Knowledge,
-correct the page, return it to `draft`, and clear its evidence digest.
+Historical material, including
+`docs/development-workspace/archive/old-docs/`, may explain intent but cannot
+establish present behaviour. That verbatim legacy tree is outside Docsys
+governance and does not require front matter or folder heads. When
+implementation contradicts Project Knowledge, correct the page, return it to
+`draft`, and clear its evidence digest.
 
 ## Shape of the tree
 

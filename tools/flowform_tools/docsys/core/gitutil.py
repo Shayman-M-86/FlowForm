@@ -117,6 +117,16 @@ def changed_files(base: str | None = None, head: str | None = None) -> DiffResul
     return DiffResult(list(seen), head, None, "working tree vs HEAD")
 
 
+def staged_files() -> DiffResult:
+    """Return the paths in the Git index compared with ``HEAD``."""
+    if not is_git_repo():
+        return DiffResult([], "HEAD", None, "not a git repository")
+    code, out, err = _run(["diff", "--cached", "--name-status", "HEAD"])
+    if code != 0:
+        return DiffResult([], "HEAD", None, f"git diff failed: {err.strip()}")
+    return DiffResult(_parse_name_status(out), "HEAD", None, "staged index vs HEAD")
+
+
 def files_changed_since(commit: str) -> DiffResult:
     """Files changed between ``commit`` and the current ``HEAD`` (committed).
 

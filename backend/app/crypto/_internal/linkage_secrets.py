@@ -1,7 +1,7 @@
 """Fetch linkage secrets from AWS Secrets Manager.
 
-Linkage secrets back the locator chain (pseudonymous IDs), which is
-separate from the survey-key/session-DEK wrapping hierarchy.
+Linkage secrets back the keyed-HMAC locator chain, which is separate from the
+survey-key/session-DEK wrapping hierarchy.
 """
 
 from __future__ import annotations

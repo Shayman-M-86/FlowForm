@@ -5,7 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [security]
 related_code:
   - "../../../backend/app/cache/crypto.py"
@@ -67,12 +67,16 @@ The browser receives a raw resume token for one submission session, while the
 core store retains only its hash. This token is a session credential; it is not
 a survey-link token, recognition token, linkage key, or encryption key.
 
-## Locator and key model
+## Cryptographic linkage boundary and key model
 
-A versioned linkage key derives deterministic, pseudonymous locators. A session
-locator is derived from the core session ID. An answer locator is derived from
-the corresponding core answer-slot ID. Existing sessions retain the linkage-key
-version needed to reproduce their locators after the active key changes.
+A versioned linkage key derives deterministic, opaque locators using keyed HMAC.
+A session locator is derived from the core session ID. An answer locator is
+derived from the corresponding core answer-slot ID. Existing sessions retain
+the linkage-key version needed to reproduce their locators after the active key
+changes. This cryptographic linkage boundary makes response records unlinkable
+without the required core identifiers and linkage material. It pseudonymises
+rather than anonymises the data because the trusted backend can perform the
+linkage.
 
 Locator derivation is separate from answer encryption:
 

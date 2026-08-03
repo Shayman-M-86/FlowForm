@@ -11,8 +11,8 @@ Most form builders are wrappers around simple input fields. FlowForm is built ar
 
 - **Five question types** — multiple choice, matching, rating, open-field, and logic rules
 - **Visual rule builder** — set branching and skip logic without writing code
-- **Pseudonymous by design** — response data is never stored alongside real user identities
-- **Dual-database isolation** — form structure and raw responses live in completely separate databases
+- **Cryptographic linkage boundary** — core records and encrypted responses are connected through secret-derived opaque locators
+- **Dual-database isolation** — identity-bearing application data and encrypted responses live in separate databases
 
 ## How it works
 
@@ -28,8 +28,8 @@ Builder (browser)
   └─ Produces a SurveyNode[] JSON schema
 
 Backend (Flask)
-  ├─ core DB   — survey structure, metadata, submission registry
-  └─ response DB — raw answer data, pseudonymous subject IDs
+  ├─ core DB     — identities, survey structure, and submission metadata
+  └─ response DB — encrypted answers addressed by opaque locators
 ```
 
 ```json
@@ -57,7 +57,7 @@ Backend (Flask)
 }
 ```
 
-The two databases share a single integer key (`core_submission_id`) but have no cross-database foreign keys. This means response data can be backed up, retained, or deleted completely independently of the survey structure.
+The databases do not share a direct identifier and have no cross-database foreign keys. FlowForm derives response-side session and answer locators from core UUIDs with a versioned linkage secret. This limits what a response-database-only disclosure reveals, but it is not anonymisation: the trusted backend can access the linkage and decryption material required for authorised results.
 
 ## Next steps
 

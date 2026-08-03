@@ -110,7 +110,7 @@ Creators can distribute surveys through public links. Public links resolve to pu
 
 ### Response review
 
-Submitted responses can be reviewed inside Studio. Core submission metadata is stored separately from raw response payloads to support privacy-focused data handling.
+Submitted responses can be reviewed inside Studio. Core submission metadata is stored separately from encrypted response payloads to support privacy-focused data handling.
 
 ### Role-based access control
 
@@ -153,7 +153,7 @@ A Flask REST API under `/api/v1/...`, including:
 * Auth0 JWT authentication
 * Project and survey RBAC
 * Two-database design
-* Pseudonymous respondent IDs
+* Cryptographic linkage boundary between core and response data
 * Runtime OpenAPI 3.1 generation
 * Centralised error handling
 * Pydantic request/response validation
@@ -254,16 +254,16 @@ The response database does not store real user IDs, project IDs, survey IDs, or 
 
 ```text
 core.submission_sessions  →  session_locator  →  response.response_envelopes
-core (question node)      →  answer_locator   →  response.response_answers
+core submission answer slot → answer_locator  →  response.response_answers
 ```
 
-Answer payloads are also encrypted at rest using a per-survey KMS-wrapped branch key that locally wraps a per-session data encryption key (AES-256-GCM), so no plaintext answer is ever visible to the response database. See [docs/session-encryption/](docs/session-encryption/) for the full design.
+Answer payloads are also encrypted at rest using a per-survey KMS-wrapped branch key that locally wraps a per-session data encryption key (AES-256-GCM), so no plaintext answer is ever visible to the response database. See [Responses and encryption](docs/project-knowledge/data/responses-and-encryption.md) for the full design.
 
-Cross-database orchestration lives in the service layer. This keeps privacy-sensitive writes explicit and avoids hidden coupling between the two databases.
+This cryptographic linkage boundary uses keyed HMAC locator derivation. The resulting response-side identifiers are opaque without the separately managed linkage material. Cross-database orchestration lives in the service layer, keeping privacy-sensitive writes explicit and avoiding hidden coupling between the two databases.
 
 ### Why this matters
 
-This design makes FlowForm better suited for sensitive data collection because identifying application data and raw answers are not stored together by default, and even a full compromise of the response database exposes only encrypted, unlinkable blobs.
+This design makes FlowForm better suited for sensitive data collection because identifying application data and encrypted answers are not stored together by default. A response-database-only disclosure does not provide the core identifiers or linkage material needed to associate ciphertext with a respondent. The data remains pseudonymised rather than anonymised because the trusted backend can access both stores and the required linkage and decryption material.
 
 ---
 
@@ -454,7 +454,7 @@ It fetches `/openapi.json` from the running backend and authenticates through Au
 * **Feature development** — plan and implement backend/frontend changes against the current API contract
 * **Wire-API skill** — sync OpenAPI changes into frontend `schema.ts`, `types.ts`, `requests.ts`, and `hooks.ts`
 * **Code review** — `/code-review` skill runs multi-agent review on pull requests
-* **Security review** — project-specific review of authentication, pseudonymity, and cross-database isolation
+* **Security review** — project-specific review of authentication, cryptographic linkage, and cross-database isolation
 * **Browser verification** — Chrome DevTools MCP for manual UI checks
 
 ### Other tooling

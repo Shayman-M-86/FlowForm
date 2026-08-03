@@ -88,7 +88,7 @@ The separately mapped database that holds encrypted response envelopes and respo
 
 ### Response envelope
 
-The anonymous response-side container for one submission session, persisted in `response_envelopes`. It is found by an opaque session locator and stores the wrapped session data-encryption key and crypto-version metadata; response answers are grouped beneath it. See [[responses-and-encryption|Responses and encryption]].
+The response-side encrypted container for one submission session, persisted in `response_envelopes`. It is found by an opaque session locator and stores the wrapped session data-encryption key and crypto-version metadata; response answers are grouped beneath it. See [[responses-and-encryption|Responses and encryption]].
 
 ### Response answer
 

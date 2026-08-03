@@ -9,6 +9,15 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class DocumentationHookConfigTests(unittest.TestCase):
+    def test_pre_commit_runs_correlated_staged_doc_review(self) -> None:
+        hook = (ROOT / ".githooks" / "pre-commit").read_text()
+        config = json.loads((ROOT / "tools" / "docsys.config.json").read_text())
+
+        self.assertIn("docsys review --staged", hook)
+        self.assertEqual(config["trigger_weight"], 0.6)
+        self.assertNotIn("substantial_change_file_count", config)
+        self.assertNotIn("substantial_change_line_count", config)
+
     def test_documentation_session_start_hook_is_absent(self) -> None:
         codex = json.loads((ROOT / ".codex/hooks.json").read_text())
         claude = json.loads((ROOT / ".claude/settings.json").read_text())

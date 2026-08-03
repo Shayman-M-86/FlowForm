@@ -5,7 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [backend, frontend, security]
 related_code: []
 change_triggers:
@@ -48,6 +48,7 @@ owning domain page and implementation evidence.
 | Submission session | Core attempt metadata, including lifecycle, selected version, access context, and response-store context. |
 | Submission answer slot | Core pointer for one session/question pair; it does not hold the plaintext answer. |
 | Response store | Project-scoped destination selection for response payloads. |
+| Cryptographic linkage boundary | Separation between core identifiers and response records, connected through keyed HMAC locators and separately managed linkage material. |
 | Response envelope | Response-side encrypted container identified through an opaque session locator. |
 | Session locator | Opaque response-side identifier derived from a core session ID and versioned linkage key. |
 | Answer locator | Opaque response-side identifier derived from a core answer-slot ID and versioned linkage key. |

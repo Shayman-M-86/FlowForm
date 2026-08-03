@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Shared Terraform preparation for `rehearsal terraform` and `rehearsal build`.
-# It loads the dev tenant's non-secret Auth0 identifiers, primes the SSH agent
-# used by the Proxmox provider, verifies the PVE host, then runs Terraform in the
-# maintained root. Secret values are deliberately handled by `rehearsal sync`.
+# It ensures the ignored machine-local TLS material exists, loads the dev
+# tenant's non-secret Auth0 identifiers, primes the SSH agent used by the
+# Proxmox provider, verifies the PVE host, then runs Terraform in the maintained
+# root. Secret values are deliberately handled by `rehearsal sync`.
 
 if [[ -n "${_REHEARSAL_TERRAFORM_SOURCED:-}" ]]; then
   return
@@ -27,6 +28,11 @@ _terraform_read_env_value() {
 
 rehearsal_prepare_terraform() {
   [[ "${_REHEARSAL_TERRAFORM_PREPARED:-0}" == 1 ]] && return 0
+  # Terraform evaluates file() calls for the CA and both leaves while loading
+  # locals, so every supported Terraform path shares this first-use bootstrap.
+  # shellcheck source=infra/deployment/proxmox/scripts/lib/rehearsal-tls.sh
+  source "${_TF_LIB_DIR}/rehearsal-tls.sh"
+  rehearsal_ensure_tls
   [[ -f "${DEV_BACKEND_ENV}" ]] || die "dev backend env not found: ${DEV_BACKEND_ENV} (set DEV_BACKEND_ENV=)"
   [[ -d "${TERRAFORM_DIR}" ]] || die "Terraform root not found: ${TERRAFORM_DIR}"
   command -v terraform >/dev/null 2>&1 || die "terraform not found on this box"

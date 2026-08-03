@@ -29,7 +29,7 @@ answers  (tier 3)
     decrypt_answer_current   — decrypt a stored answer for admin viewing
     Side effects: none (pure crypto)
 
-locators  (separate chain — pseudonymous IDs, not key wrapping)
+locators  (separate cryptographic linkage chain, not key wrapping)
     load_current_linkage_key         — load the active linkage key
     derive_session_locator           — derive with caller-provided linkage key
     resolve_new_session_locator      — load current key + derive session locator

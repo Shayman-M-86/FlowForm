@@ -40,6 +40,16 @@ infra/deployment/proxmox/scripts/rehearsal build -- -auto-approve
 - Provide the Auth0 management secret through `AUTH0_MGMT_SECRET_FILE`,
   `AUTH0_MGMT_SECRET`, or an authenticated AWS CLI session (`aws login`).
 - The PVE SSH key defaults to `~/.ssh/proxmox_codex`.
+- Bootstrap or validate the ignored machine-local rehearsal TLS material when
+  preparing a fresh checkout:
+
+  ```bash
+  infra/deployment/proxmox/scripts/rehearsal tls
+  ```
+
+  `build` and `terraform` run the same check automatically. The command keeps a
+  valid existing CA, repairs missing or invalid leaf certificates, and refuses
+  to overwrite an invalid CA because it may already be trusted by operators.
 - Run Terraform initialization once if this checkout has not been initialized:
 
   ```bash
@@ -98,6 +108,9 @@ Squid stopped temporarily.
 # Synchronise secrets without rebuilding.
 infra/deployment/proxmox/scripts/rehearsal sync
 
+# Create or validate the ignored machine-local CA and leaf certificates.
+infra/deployment/proxmox/scripts/rehearsal tls
+
 # Rotate a managed secret family and reconverge its consumers.
 infra/deployment/proxmox/scripts/rehearsal rotate app
 infra/deployment/proxmox/scripts/rehearsal rotate database
@@ -112,5 +125,6 @@ infra/deployment/proxmox/scripts/rehearsal --help
 ```
 
 `build --fresh` rebuilds the deployed rehearsal, not the Packer templates. For
-a new base or fixture image, rebuild the templates first using the scripts under
-`infra/images/scripts/`, then run the full rebuild command above.
+a new base or fixture image, rebuild the templates first with
+`infra/machine-images/tooling/image build proxmox all`, then run the full
+rebuild command above.

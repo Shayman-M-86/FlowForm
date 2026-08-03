@@ -77,7 +77,8 @@ in [[surveys-and-versioning|Surveys and versioning]] and [[data-flows|Data flows
 ### Separated identifying context and response payloads
 
 Core storage owns application identities, survey structure, and submission
-metadata; response storage holds anonymous encrypted response data. The stores
+metadata; response storage holds encrypted response data addressed through
+opaque locators. The stores
 are connected by application-derived opaque locators rather than cross-database
 foreign keys. This is an observed data-minimisation and trust-boundary pattern,
 not a complete security claim. See

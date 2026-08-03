@@ -42,7 +42,7 @@ def tracked(prefix: str = "") -> list[Path]:
         path
         for path in paths
         if (ROOT / path).is_file()
-        and path.parts[0] != "old-docs"
+        and not path.is_relative_to(Path("docs/development-workspace/archive/old-docs"))
         and (not prefix or str(path).startswith(prefix))
     )
 

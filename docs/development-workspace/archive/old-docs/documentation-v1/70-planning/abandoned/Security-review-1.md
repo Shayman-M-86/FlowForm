@@ -12,7 +12,7 @@ No action below was performed.
 
 1. Treat the exposed linkage secret, 29 plaintext data-encryption keys, survey token, database passwords, Auth0 management secret, Grafana token, and Proxmox tokens as potentially compromised.
 2. Re-encrypt records protected by the exposed DEKs. Rotating the KMS master key alone does not invalidate leaked plaintext DEKs.
-3. Plan a versioned linkage-secret migration; blindly replacing it could destroy legitimate pseudonymous linkage.
+3. Plan a versioned linkage-secret migration; blindly replacing it could destroy legitimate cryptographic linkage.
 4. Revoke the exposed survey link and inventory the disclosed AWS access-key ID.
 5. Remove sensitive logs from active branch tips, then coordinate a full history rewrite, fork/cache cleanup, and credential rotation.
 6. Replace every committed rehearsal CA and leaf key. Do not continue trusting that CA globally.

@@ -480,6 +480,9 @@ jobs:
         run: uv sync --frozen --extra dev
       - name: Pytest (synth-time assertions)
         run: uv run pytest -q --show-capture=no
+      - name: Test Proxmox TLS bootstrap
+        working-directory: ${{ github.workspace }}
+        run: bash infra/tests/deployment/test-rehearsal-tls-bootstrap.sh
       - name: Ruff
         run: uv run ruff check flowform_infra tests app.py
       - name: Pyright

@@ -106,7 +106,7 @@ write_files:
   # so dockerd validates real TLS rather than trusting a plain-HTTP registry.
   # The rehearsal CA is in the system bundle (update-ca-trust, runcmd step 1),
   # and this explicit /etc/docker/certs.d anchor makes the registry-TLS trust
-  # deterministic and self-documenting. Same committed CA the app CLI trusts.
+  # deterministic and self-documenting. Same machine-local CA the app CLI trusts.
   - path: /etc/docker/certs.d/registry.localstack.test/ca.crt
     encoding: b64
     permissions: '0644'

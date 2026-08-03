@@ -5,10 +5,18 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-08-03
+last_edited: 2026-08-04
 tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
+  - "../../../../.githooks/pre-commit"
+  - "../../../../tools/docsys.config.json"
+  - "../../../../tools/flowform_tools/docsys/config.py"
+  - "../../../../tools/flowform_tools/docsys/commands/impact.py"
+  - "../../../../tools/flowform_tools/docsys/commands/review.py"
+  - "../../../../tools/flowform_tools/docsys/commands/debt.py"
+  - "../../../../tools/flowform_tools/docsys/commands/freshness.py"
+  - "../../../../tools/flowform_tools/docsys/commands/health.py"
   - "../../../../tools/flowform_tools/docsys/commands/research.py"
   - "../../../../tools/flowform_tools/docsys/research/mcp_server.py"
   - "../../../../tools/flowform_tools/docsys/research/session_pool.py"
@@ -133,8 +141,14 @@ calculate and stage the evidence digest. Development Workspace material remains
 draft working or historical context.
 
 The pre-commit hook checks document dates and exact-file evidence drift without
-rewriting or staging files. A failed check is a review request, not permission
-to refresh a digest without reading the page.
+rewriting or staging files. Exact drift in verified Project Knowledge remains a
+commit stop. A separate non-blocking staged review correlates impact confidence
+and match provenance with evidence freshness, document complexity findings,
+validation findings, and knowledge-graph connectivity. It recommends review
+only when those signals reinforce one another, such as independent direct
+evidence changes, cross-scope impact, stale evidence, or direct impact on an
+already complex page. Routine isolated changes remain silent. A failed check is
+a review request, not permission to refresh a digest without reading the page.
 
 ## Related documents
 

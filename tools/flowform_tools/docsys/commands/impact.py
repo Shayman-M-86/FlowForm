@@ -160,11 +160,15 @@ def impact_report(
     head: str | None = None,
     docset: DocSet | None = None,
     changed_files: list[str] | None = None,
+    staged: bool = False,
 ) -> dict:
     """Build a full impact report for a git range (or the working tree)."""
     if changed_files is not None:
         diff = None
         files = changed_files
+    elif staged:
+        diff = gitutil.staged_files()
+        files = diff.files
     else:
         diff = gitutil.changed_files(base, head)
         files = diff.files
@@ -201,6 +205,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base", help="base commit/ref to diff against")
     parser.add_argument("--head", help="head commit/ref (default HEAD)")
     parser.add_argument(
+        "--staged",
+        action="store_true",
+        help="analyse the staged index against HEAD",
+    )
+    parser.add_argument(
         "--changed",
         action="append",
         default=[],
@@ -210,8 +219,10 @@ def main(argv: list[str] | None = None) -> int:
     add_output_args(parser, default_limit=5)
     args = parser.parse_args(argv)
 
-    if args.changed and (args.base or args.head):
-        parser.error("--changed cannot be combined with --base or --head")
+    if args.changed and (args.base or args.head or args.staged):
+        parser.error("--changed cannot be combined with --base, --head, or --staged")
+    if args.staged and (args.base or args.head):
+        parser.error("--staged cannot be combined with --base or --head")
     if args.limit < 1:
         parser.error("--limit must be at least 1")
 
@@ -219,6 +230,7 @@ def main(argv: list[str] | None = None) -> int:
         args.base,
         args.head,
         changed_files=args.changed or None,
+        staged=args.staged,
     )
     documents = report["impacted_documents"]
     shown, total, _ = paginate(documents, limit=args.limit, show_all=args.show_all)

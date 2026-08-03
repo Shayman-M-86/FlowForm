@@ -48,4 +48,4 @@ Browser resume tokens and link tokens are not encrypted in the DB. They are rand
 
 So the simple version is:
 
-**Core DB knows who/session/status, and holds the KMS-wrapped survey branch key. Response DB only knows anonymous encrypted blobs. HMAC locators connect them. AWS KMS protects the per-survey branch key (one KMS call per survey, cached); that branch key locally wraps each session's DEK (no KMS call per session). AES-256-GCM encrypts the current answer row per question, with no revision history. Tokens are stored as hashes only.**
+**Core DB knows identity/session/status, and holds the KMS-wrapped survey branch key. Response DB holds encrypted blobs addressed through opaque locators. Keyed HMAC locators form the cryptographic linkage boundary between them. AWS KMS protects the per-survey branch key (one KMS call per survey, cached); that branch key locally wraps each session's DEK (no KMS call per session). AES-256-GCM encrypts the current answer row per question, with no revision history. Tokens are stored as hashes only.**

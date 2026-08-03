@@ -3,15 +3,15 @@
 # IDENTICAL to infra/containers/images/caddy/Caddyfile
 # EXCEPT the TLS mechanism: AWS gets a real certificate through Route 53 DNS-01
 # (`tls { dns route53 }`), which needs public DNS and ACME. Here we serve a
-# PRE-GENERATED leaf signed by the committed rehearsal CA
+# machine-local leaf generated from the ignored rehearsal CA
 # (tls-shim/ca/rehearsal-ca.crt) so reverse proxying and upstream health checks
 # are still exercised end-to-end.
 #
 # NOT `tls internal`: Caddy's internal CA lives in the VM's /data volume, so
 # every proxy rebuild minted a NEW root and invalidated whatever operators had
-# installed in their OS trust stores. The committed CA is the single, stable
+# installed in their OS trust stores. The machine-local CA is the single, stable
 # trust anchor — install rehearsal-ca.crt once, survives all rebuilds.
-# Regenerate the leaf with services/caddy/certs/generate-api-cert.sh.
+# Create or validate the material with the Proxmox `rehearsal tls` command.
 #
 # The ONLY effective delta from AWS is the TLS directive. Never read a green
 # rehearsal Caddy as proof of the real ACME/DNS-01 path — that is staging's job.
@@ -50,7 +50,7 @@
 	# line and its backend line share one request_id and can be joined in Loki.
 	log_append request_id {http.request.uuid}
 
-	# AWS: Route 53 DNS-01 — rehearsal: leaf signed by the committed CA.
+	# AWS: Route 53 DNS-01 — rehearsal: leaf signed by the machine-local CA.
 	tls /etc/caddy/certs/api.crt /etc/caddy/certs/api.key
 
 	header {

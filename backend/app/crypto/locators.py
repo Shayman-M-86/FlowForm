@@ -1,8 +1,8 @@
 """App-aware locator operations.
 
-Locators are deterministic pseudonymous identifiers derived from a session ID
-and a linkage key. They let the response database reference sessions and
-answers without storing real identifiers.
+Locators are deterministic opaque identifiers derived from core UUIDs and a
+linkage key. They let the response database address sessions and answers
+without storing core identifiers.
 """
 
 from __future__ import annotations

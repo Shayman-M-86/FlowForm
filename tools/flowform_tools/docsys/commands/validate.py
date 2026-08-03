@@ -16,6 +16,7 @@ from ..core.model import (
     TAG_VOCABULARY,
     DocSet,
     folder_head_path,
+    is_inert_archive_path,
     related_code_file_error,
     resolve_docs_root,
     strip_code,
@@ -342,7 +343,11 @@ def structural_findings(
     if not docset.uses_collection_model:
         return []
     findings: list[Finding] = []
-    markdown_dirs = {path.parent for path in docset.docs_dir.rglob("*.md")}
+    markdown_dirs = {
+        path.parent
+        for path in docset.docs_dir.rglob("*.md")
+        if not is_inert_archive_path(path, docset.docs_dir)
+    }
     for directory in sorted(markdown_dirs):
         expected_head = folder_head_path(directory)
         if not expected_head.exists():

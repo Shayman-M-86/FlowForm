@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class ResponseEnvelope(ResponseBase):
-    """Anonymous encrypted response envelope for one survey session."""
+    """Encrypted response envelope addressed by an opaque session locator."""
 
     __tablename__ = "response_envelopes"
 

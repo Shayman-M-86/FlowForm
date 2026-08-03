@@ -17,6 +17,8 @@ set -Eeuo pipefail
 #                       (the only path a real secret reaches it).
 #   rehearsal rotate <app|database|linkage>
 #                       rotate a managed secret and reconverge its consumers.
+#   rehearsal tls       create or validate the ignored machine-local rehearsal
+#                       CA and the LocalStack/proxy leaf certificates.
 #   rehearsal terraform <arguments...>
 #                       run Terraform directly with the same Auth0 identifier
 #                       loading and PVE SSH preflight used by `build`.
@@ -37,10 +39,12 @@ usage() {
 }
 
 sub="${1:-}"
-[[ $# -gt 0 ]] && shift || true
+if [[ $# -gt 0 ]]; then
+  shift
+fi
 
 case "${sub}" in
-  build|verify|logs|sync|rotate|terraform) ;;
+  build|verify|logs|sync|rotate|tls|terraform) ;;
   ""|-h|--help|help) usage; exit 0 ;;
   *) printf 'rehearsal: unknown subcommand: %s\n\n' "${sub}" >&2; usage >&2; exit 2 ;;
 esac
@@ -48,7 +52,7 @@ esac
 # log/die in common tag their output with this.
 export REHEARSAL_SUBCOMMAND="rehearsal ${sub}"
 
-# shellcheck source=rehearsal-common.sh
+# shellcheck source=infra/deployment/proxmox/scripts/rehearsal-common.sh
 source "${SCRIPT_DIR}/rehearsal-common.sh"
 
 lib_file="${LIB_DIR}/cmd_${sub}.sh"

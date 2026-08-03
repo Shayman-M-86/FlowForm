@@ -1,7 +1,8 @@
 # Docsys internals
 
-Docsys is FlowForm's documentation discovery, retrieval, impact, validation,
-health, and evidence library. Its hook-critical core stays dependency-free;
+Docsys is FlowForm's documentation discovery, retrieval, impact, staged review,
+validation, health, and evidence library. Its hook-critical core stays
+dependency-free;
 request contracts use the `docs` extra and agent research uses the separate
 `research` extra. The supported command entrypoint is:
 
@@ -23,8 +24,10 @@ This page records only the stable implementation boundaries.
   session pool, the one-tool MCP server, and the isolated Codex fallback.
 - `command_catalog.py` owns command effects and the spawned research CLI policy;
   `commands/capabilities.py` exposes that inventory as text or JSON.
-- Impact, freshness, health, debt, validation, indexing, and evidence remain
-  explicit command operations.
+- `review` correlates staged impact provenance with evidence freshness,
+  complexity debt, validation findings, and graph connectivity. Impact,
+  freshness, health, debt, validation, indexing, and evidence remain explicit
+  command operations.
 
 Document loading is lazy: displaying CLI help does not scan `docs/`.
 

@@ -1,8 +1,9 @@
 -- =========================================
 -- SESSION AND RESPONSE ENCRYPTION
 -- =========================================
--- Anonymous encrypted envelopes and current encrypted answer rows.
--- See docs/session-encryption/ for the broader design.
+-- Encrypted envelopes and current answer rows addressed by opaque locators.
+-- See docs/project-knowledge/data/responses-and-encryption.md for the broader
+-- design.
 --
 -- Notes:
 -- - No foreign keys back to the core database. session_locator and
@@ -60,7 +61,7 @@ CREATE TABLE response_answers (
     -- Opaque HMAC-derived lookup generated from the core answer slot UUID.
     answer_locator BYTEA NOT NULL,
 
-    -- Groups this current answer under one anonymous response envelope.
+    -- Groups this current answer under one opaque response envelope.
     envelope_id UUID NOT NULL,
 
     -- Encrypted payload containing the real question-node UUID, answer state

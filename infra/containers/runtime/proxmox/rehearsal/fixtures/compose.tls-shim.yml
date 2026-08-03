@@ -17,7 +17,7 @@ services:
       - "ssm.localstack.test:10.10.10.30"
     volumes:
       - /opt/flowform/tls-shim/Caddyfile:/etc/caddy/Caddyfile:ro
-      - /opt/flowform/tls-shim/certs:/etc/caddy/certs:ro   # pre-generated cert+key
+      - /opt/flowform/tls-shim/certs:/etc/caddy/certs:ro   # generated cert+key
       - tls_shim_data:/data
       - tls_shim_config:/config
     healthcheck:

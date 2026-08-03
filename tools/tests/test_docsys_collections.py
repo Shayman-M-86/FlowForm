@@ -19,10 +19,12 @@ from flowform_tools.docsys.commands.evidence import (
     promote_staged,
 )
 from flowform_tools.docsys.commands.impact import detect_impact
+from flowform_tools.docsys.commands.review import build_staged_review
 from flowform_tools.docsys.commands.validate import all_findings, metadata_findings
 from flowform_tools.docsys.core.model import (
     ROOT,
     DocSet,
+    is_inert_archive_repo_path,
     parse_front_matter,
     resolve_docs_root,
 )
@@ -146,6 +148,157 @@ class CollectionModelTests(unittest.TestCase):
 
             self.assertEqual(impacts["Exact"], "high")
             self.assertEqual(impacts["Broad"], "low")
+
+    def test_staged_review_uses_correlated_signals_not_change_size(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            code_dir = area / "implementation"
+            code_dir.mkdir()
+            first_code = code_dir / "first.py"
+            second_code = code_dir / "second.py"
+            first_code.write_text("first = True\n")
+            second_code.write_text("second = True\n")
+            first_doc = project / "first.md"
+            second_doc = project / "second.md"
+            first_doc.write_text(
+                _document("First")
+                .replace("status: scaffold", "status: draft")
+                .replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation/first.py"]',
+                )
+            )
+            second_doc.write_text(
+                _document("Second")
+                .replace("status: scaffold", "status: draft")
+                .replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation/second.py"]',
+                )
+            )
+            docset = DocSet.load(docs_root)
+            source = EvidenceSource({}, "test index")
+            first_rel = first_code.relative_to(ROOT).as_posix()
+            second_rel = second_code.relative_to(ROOT).as_posix()
+
+            small = build_staged_review(
+                staged_paths=[first_rel],
+                docset=docset,
+                source=source,
+            )
+            correlated = build_staged_review(
+                staged_paths=[first_rel, second_rel],
+                docset=docset,
+                source=source,
+            )
+
+            self.assertFalse(small.recommended)
+            self.assertEqual(len(small.candidates), 1)
+            self.assertTrue(correlated.recommended)
+            self.assertIn("direct-evidence", correlated.reasons[0])
+
+    def test_staged_review_escalates_impacted_complex_document(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            code_path = area / "implementation.py"
+            code_path.write_text("changed = True\n")
+            sections = "\n\n".join(
+                f"## Topic {number}\n\n" + "focused evidence " * 120
+                for number in range(1, 16)
+            )
+            doc_path = project / "complex.md"
+            doc_path.write_text(
+                _document("Complex", body=sections)
+                .replace("status: scaffold", "status: draft")
+                .replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation.py"]',
+                )
+            )
+            code_rel = code_path.relative_to(ROOT).as_posix()
+
+            review = build_staged_review(
+                staged_paths=[code_rel],
+                docset=DocSet.load(docs_root),
+                source=EvidenceSource({}, "test index"),
+            )
+
+            self.assertTrue(review.recommended)
+            self.assertIn("complexity debt", " ".join(review.reasons))
+            self.assertTrue(review.candidates[0].debt_findings)
+
+    def test_staged_review_escalates_broad_impact_with_stale_evidence(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            code_path = area / "implementation" / "changed.py"
+            code_path.parent.mkdir()
+            code_path.write_text("changed = True\n")
+            doc_path = project / "verified.md"
+            doc_path.write_text(
+                _document("Verified")
+                .replace("status: scaffold", "status: verified")
+                .replace(
+                    "verified_evidence_digest: null",
+                    f"verified_evidence_digest: sha256:{'a' * 64}",
+                )
+                .replace(
+                    "related_code: []",
+                    'related_code: []\nchange_triggers: ["../../implementation/"]',
+                )
+            )
+            code_rel = code_path.relative_to(ROOT).as_posix()
+            source = EvidenceSource(
+                {code_rel: EvidenceEntry(code_rel, "100644", "b" * 40)},
+                "test index",
+            )
+
+            review = build_staged_review(
+                staged_paths=[code_rel],
+                docset=DocSet.load(docs_root),
+                source=source,
+            )
+
+            self.assertTrue(review.recommended)
+            self.assertEqual(review.candidates[0].confidence, "low")
+            self.assertEqual(review.candidates[0].freshness, "likely stale")
+            self.assertIn("staged evidence snapshot", " ".join(review.reasons))
+
+    def test_staged_review_ignores_a_document_already_staged(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            area = Path(temporary)
+            docs_root = area / "docs"
+            project = docs_root / "project-knowledge"
+            project.mkdir(parents=True)
+            code_path = area / "implementation.py"
+            code_path.write_text("changed = True\n")
+            doc_path = project / "updated.md"
+            doc_path.write_text(
+                _document("Updated").replace(
+                    "related_code: []",
+                    'related_code: ["../../implementation.py"]',
+                )
+            )
+
+            review = build_staged_review(
+                staged_paths=[
+                    code_path.relative_to(ROOT).as_posix(),
+                    doc_path.relative_to(ROOT).as_posix(),
+                ],
+                docset=DocSet.load(docs_root),
+                source=EvidenceSource({}, "test index"),
+            )
+
+            self.assertFalse(review.recommended)
+            self.assertEqual(review.candidates, [])
 
     def test_staged_evidence_ignores_broad_trigger_without_writing(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
@@ -523,6 +676,36 @@ class CollectionModelTests(unittest.TestCase):
                 },
             )
             self.assertTrue(all(item.severity == "warning" for item in findings))
+
+    def test_verbatim_old_docs_archive_is_excluded_from_docsys(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            docs_root = Path(temporary) / "docs"
+            workspace = docs_root / "development-workspace"
+            archive = workspace / "archive" / "old-docs" / "nested"
+            archive.mkdir(parents=True)
+            (docs_root / "docs-index.md").write_text(_document("Root"))
+            (workspace / "development-workspace-index.md").write_text(
+                _document("Development workspace", authority="working")
+            )
+            (archive / "legacy.md").write_text("# No front matter\n\n[broken](missing.md)\n")
+
+            docset = DocSet.load(docs_root)
+
+            self.assertEqual(len(docset.unparsed_paths), 0)
+            self.assertFalse(any("old-docs" in doc.rel_path for doc in docset.docs))
+            self.assertFalse(
+                any(item.path.endswith("old-docs/nested") for item in all_findings(docset, "ci"))
+            )
+            self.assertTrue(
+                is_inert_archive_repo_path(
+                    "docs/development-workspace/archive/old-docs/nested/legacy.md"
+                )
+            )
+            self.assertFalse(
+                is_inert_archive_repo_path(
+                    "docs/development-workspace/archive/security-review-1.md"
+                )
+            )
 
     def test_workspace_verification_is_advisory_not_a_gate(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:

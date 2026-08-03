@@ -93,7 +93,7 @@ import {
                 alt: "Privacy lock",
                 label: "Isolate responses",
                 detail:
-                  "Separate core app data from raw response payloads by design.",
+                  "Separate core app data from encrypted response payloads by design.",
               },
             ].map(({ src, alt, label, detail }) => (
               <div class="rounded-xl border border-border/30 bg-card/30 p-4 shadow-md">
@@ -577,9 +577,9 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
           </h2>
           <p class="mb-7 text-base leading-loose text-muted-foreground">
             FlowForm uses a two-database model. Core application data lives in
-            one database, while raw response payloads live in a separate
-            response database. Responses link back to submission metadata
-            through a logical submission ID instead of direct user identifiers.
+            one database, while encrypted response payloads live in a separate
+            response database. A cryptographic linkage boundary connects them
+            through secret-derived opaque locators instead of shared identifiers.
           </p>
 
           <div class="flex flex-col gap-3.5">
@@ -593,12 +593,12 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
                 {
                   label: "Response payloads are isolated",
                   detail:
-                    "Raw answers live in the response database, linked through core_submission_id rather than cross-database foreign keys.",
+                    "Encrypted answers live in the response database without shared core identifiers or cross-database foreign keys.",
                 },
                 {
-                  label: "Pseudonymous respondent IDs",
+                  label: "Secret-derived response locators",
                   detail:
-                    "The response database avoids storing real user IDs, supporting a cleaner privacy boundary.",
+                    "Keyed HMAC locators connect encrypted responses to core session metadata without storing core or user IDs in the response database.",
                 },
                 {
                   label: "Explicit service orchestration",
@@ -664,13 +664,13 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
               <div
                 class="flex justify-center text-xs font-bold uppercase tracking-widest text-muted-foreground"
               >
-                linked by core_submission_id
+                linked by keyed HMAC locators
               </div>
               <div class="rounded-lg bg-card p-4 shadow-xs">
                 <p class="mb-1 font-bold text-foreground">Response database</p>
                 <p class="leading-relaxed text-muted-foreground">
-                  Raw answers and response payloads without direct real-user
-                  identifiers.
+                  Encrypted answers addressed by opaque locators without core
+                  or real-user identifiers.
                 </p>
               </div>
             </div>

@@ -8,7 +8,10 @@ Run this from the **project root**:
 
 ```bash
 export FLOWFORM_SECRET_DIR="$PWD/infra/env/test/secrets"
-docker compose --env-file infra/env/dev/.env -f infra/containers/strategies/dev/compose/compose.test.yml up -d --build
+docker compose --env-file infra/env/dev/.env \
+  -p flowform-test-environment \
+  -f infra/containers/runtime/development/compose/compose.test.yml \
+  up -d --build
 ```
 
 ## Attach VS Code to the test container

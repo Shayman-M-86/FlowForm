@@ -61,7 +61,7 @@ IMDSv2 hop limit 2.
 
 ## Phase 4 — GitHub Actions pipelines
 
-Keep [ci.yml](vscode-webview://1ivkklv2udi1n6o5t35hf5igi9oipbicioc5bipqn0rsgi3ld6up/.github/workflows/ci.yml) as the PR gate and extend it; add deploy workflows:
+Keep [ci.yml](../../../../../../.github/workflows/ci.yml) as the PR gate and extend it; add deploy workflows:
 
 - **`ci.yml` (PRs + pushes)** — existing security + tests, plus: frontend lint/typecheck/test/build for both apps, and `cdk synth` + `cdk diff` (diff posted to the PR). **No deploys from PRs.**
 - **`deploy.yml` (push to `main`, and `staging` for the staging env)** — job chain with `needs:` so the pipeline graph is visible: tests → `cdk deploy` → backend image build/push → migrations → backend restart via SSM → frontend builds → S3 sync + invalidation → smoke check (curl the API health endpoint and each frontend URL). Auth via OIDC roles from 1e.

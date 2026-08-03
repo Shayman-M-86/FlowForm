@@ -36,9 +36,11 @@ packages = ["flowform_tools"]
 
 [tool.pyright]
 extends = "../pyrightconfig.json"
+# The repository-wide tooling target uses the root Pyright configuration with
+# the docs and research extras installed. This project file is the deliberately
+# narrow OpenAPI target used by `scripts/tools/typecheck.sh openapi`.
 include = [
-    "flowform_tools",
-    "tests",
+    "flowform_tools/openapi",
 ]
 exclude = [
     "**/__pycache__",
