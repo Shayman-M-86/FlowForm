@@ -17,8 +17,8 @@
             "path": "../infra/deployment/aws/cdk/"
         },
         {
-            "name": "mcp",
-            "path": "../tools/mcp/"
+            "name": "tools",
+            "path": "../tools"
         }
     ],
     "settings": {

@@ -14,7 +14,7 @@ related_code:
   - "../../../scripts/ci/check-openapi-contracts.sh"
   - "../../../scripts/tools/typecheck.sh"
 change_triggers:
-  - "../../../tools/docs/"
+  - "../../../tools/"
 related_docs: ["Engineering practices", "Testing workflow", "CI/CD implementation", "CI workflows"]
 ---
 

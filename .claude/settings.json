@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(/path/to/FlowForm/tools/mcp/run.sh)",
       "Read(/home/shayman86/my-repos/FlowForm/**)",
       "Edit(/home/shayman86/my-repos/FlowForm/**)",
       "Write(/home/shayman86/my-repos/FlowForm/**)",
@@ -145,7 +144,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 tools/agents/hooks/post_tool_python_quality.py",
+            "command": "tools/bin/agent-hook-python-quality",
             "statusMessage": "py_compile + ruff --fix"
           }
         ]

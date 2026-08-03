@@ -1,18 +1,18 @@
 {
     "include": [
         "scripts/secrets",
-        "tools/agents",
-        "tools/docs"
+        "tools"
     ],
     "exclude": [
         "**/__pycache__",
         ".pytest_cache",
         ".ruff_cache",
         "**/node_modules",
-        "**/.*"
+        "**/.*",
+        "tools/flowform_tools/openapi"
     ],
     "extraPaths": [
-        "tools/docs"
+        "tools"
     ],
     "typeCheckingMode": "standard",
     "pythonVersion": "3.14",

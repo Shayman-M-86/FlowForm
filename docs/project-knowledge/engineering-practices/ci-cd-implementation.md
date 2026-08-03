@@ -5,13 +5,13 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"
   - "../../../.github/workflows/deploy.yml"
   - "../../../.github/workflows/publish-staging-images.yml"
-  - "../../../tools/docs/docsys/ci.py"
+  - "../../../tools/flowform_tools/docsys/ci.py"
 change_triggers:
   - "../../../scripts/ci/"
   - "../../../infra/deployment/aws/"

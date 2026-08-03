@@ -434,7 +434,7 @@ Claude Code is used as a primary development tool, supported by custom MCP serve
 
 ### Custom MCP servers
 
-A project-local MCP server lives in `tools/mcp/` and is registered in `.mcp.json`.
+A project-local MCP server lives in `tools/flowform_tools/openapi/` and is registered in `.mcp.json`.
 
 #### `flowform-openapi`
 

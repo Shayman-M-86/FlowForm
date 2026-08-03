@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 tools/agents/hooks/post_tool_python_quality.py",
+            "command": "tools/bin/agent-hook-python-quality",
             "statusMessage": "py_compile + ruff --fix"
           }
         ]

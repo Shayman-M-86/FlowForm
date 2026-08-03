@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Launch the Docsys documentation CLI.
+#
+# Self-contained: resolves its own location, changes to the repository root and
+# sets PYTHONPATH internally, so callers never need to supply either.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+TOOLS_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd -- "$TOOLS_DIR/.." && pwd)"
+
+cd "$REPO_ROOT"
+export PYTHONPATH="$TOOLS_DIR${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m flowform_tools.docsys "$@"

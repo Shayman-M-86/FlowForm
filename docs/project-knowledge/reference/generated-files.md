@@ -5,7 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [tooling]
 related_code:
   - "../../../backend/scripts/export-openapi.sh"
@@ -13,7 +13,7 @@ related_code:
   - "../../../scripts/ci/sync-openapi.sh"
   - "../../../scripts/secrets/generate-env-files.sh"
 change_triggers:
-  - "../../../tools/docs/"
+  - "../../../tools/"
   - "../../../infra/machine-images/"
 related_docs: ["Generated reference documentation", "Configuration and generated output", "Repository ownership and entry points"]
 ---

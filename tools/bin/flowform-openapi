@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Launch the FlowForm OpenAPI MCP server from anywhere.
+#
+# Optional: place a `.env` file in tools/ with KEY=VALUE lines
+# (e.g. FLOWFORM_DEV_TOKEN=...) and it will be sourced automatically.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TOOLS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ -f "$TOOLS_DIR/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$TOOLS_DIR/.env"
+    set +a
+fi
+
+cd "$TOOLS_DIR"
+
+UV_RUN=(uv run --project "$TOOLS_DIR" --extra openapi)
+
+# `flowform-openapi login` triggers a fresh device-flow login and exits. Useful
+# if the cached refresh token is revoked or you want to switch accounts.
+if [[ "${1:-}" == "login" ]]; then
+    exec "${UV_RUN[@]}" python -m flowform_tools.openapi.auth login
+fi
+
+# `flowform-openapi tools` lists the MCP tools exposed by this server. It starts
+# a child server through this same wrapper so .env loading stays identical to
+# normal use.
+if [[ "${1:-}" == "tools" || "${1:-}" == "list-tools" ]]; then
+    exec "${UV_RUN[@]}" fastmcp list --command "bash $SCRIPT_DIR/flowform-openapi"
+fi
+
+if [[ "${1:-}" == "tool-schemas" || "${1:-}" == "tools-schema" ]]; then
+    exec "${UV_RUN[@]}" fastmcp list --command "bash $SCRIPT_DIR/flowform-openapi" --input-schema
+fi
+
+exec "${UV_RUN[@]}" python -m flowform_tools.openapi "$@"

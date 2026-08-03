@@ -17,7 +17,7 @@ documentation means semantic review and does not authorize promotion or staging.
 3. Run the command immediately with all selected paths:
 
    ```sh
-   tools/docs/bin/docsys evidence promote --staged --stage \
+   tools/bin/docsys evidence promote --staged --stage \
      docs/project-knowledge/path.md
    ```
 

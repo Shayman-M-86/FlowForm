@@ -5,7 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [meta]
 related_code: []
 change_triggers:
@@ -13,7 +13,7 @@ change_triggers:
   - "../../../frontend/"
   - "../../../infra/"
   - "../../../scripts/"
-  - "../../../tools/mcp/"
+  - "../../../tools/flowform_tools/openapi/"
   - "../../../.github/workflows/"
 related_docs: ["Reference documentation", "Component map", "Configuration and generated output"]
 ---

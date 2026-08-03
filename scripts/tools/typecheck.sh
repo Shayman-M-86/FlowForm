@@ -6,7 +6,7 @@ PYRIGHT_VERSION="1.1.411"
 
 usage() {
     cat <<'EOF'
-Usage: scripts/tools/typecheck.sh [all|tooling|backend|cdk|mcp]
+Usage: scripts/tools/typecheck.sh [all|tooling|backend|cdk|openapi]
 
 Runs the repository-pinned Pyright version against one configured Python
 project, or against every project when no target is supplied.
@@ -35,9 +35,9 @@ check_cdk() {
     run_pyright "AWS CDK" "${REPOSITORY_ROOT}/infra/deployment/aws/cdk"
 }
 
-check_mcp() {
-    uv sync --project "${REPOSITORY_ROOT}/tools/mcp" --frozen
-    run_pyright "development MCP" "${REPOSITORY_ROOT}/tools/mcp"
+check_openapi() {
+    uv sync --project "${REPOSITORY_ROOT}/tools" --frozen --extra openapi
+    run_pyright "OpenAPI MCP server" "${REPOSITORY_ROOT}/tools"
 }
 
 main() {
@@ -49,7 +49,7 @@ main() {
     fi
 
     case "${target}" in
-        all|tooling|backend|cdk|mcp)
+        all|tooling|backend|cdk|openapi)
             ;;
         -h|--help)
             usage
@@ -67,7 +67,7 @@ main() {
             check_tooling
             check_backend
             check_cdk
-            check_mcp
+            check_openapi
             ;;
         tooling)
             check_tooling
@@ -78,8 +78,8 @@ main() {
         cdk)
             check_cdk
             ;;
-        mcp)
-            check_mcp
+        openapi)
+            check_openapi
             ;;
     esac
 }

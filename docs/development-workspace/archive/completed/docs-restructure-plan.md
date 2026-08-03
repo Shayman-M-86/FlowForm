@@ -5,11 +5,11 @@ document_type: historical-plan
 status: draft
 authority: historical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [meta]
 related_code: []
 change_triggers:
-  - "../../../../tools/docs/"
+  - "../../../../tools/"
 related_docs:
   - "Completed workspace material"
   - "Documentation model"

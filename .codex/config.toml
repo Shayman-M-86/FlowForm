@@ -7,4 +7,4 @@ network_access = true
 
 [mcp_servers.flowform-openapi]
 command = "/usr/bin/bash"
-args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]
+args = ["/home/shayman86/my-repos/FlowForm/tools/bin/flowform-openapi"]

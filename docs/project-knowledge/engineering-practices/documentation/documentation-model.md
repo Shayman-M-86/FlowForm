@@ -5,12 +5,12 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [meta]
 related_code:
-  - "../../../../tools/docs/docsys/model.py"
+  - "../../../../tools/flowform_tools/docsys/model.py"
 change_triggers:
-  - "../../../../tools/docs/"
+  - "../../../../tools/"
 related_docs:
   - "Documentation practice"
   - "Documentation workflow"

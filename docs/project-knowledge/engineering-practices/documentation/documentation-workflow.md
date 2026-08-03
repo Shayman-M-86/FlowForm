@@ -9,14 +9,14 @@ last_edited: 2026-08-03
 tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
-  - "../../../../tools/docs/docsys/research.py"
-  - "../../../../tools/docs/docsys/command_catalog.py"
-  - "../../../../tools/docs/docsys/capabilities.py"
-  - "../../../../tools/docs/docsys/validate.py"
-  - "../../../../tools/docs/docsys/evidence.py"
-  - "../../../../tools/docs/validate-doc-metadata.py"
+  - "../../../../tools/flowform_tools/docsys/research.py"
+  - "../../../../tools/flowform_tools/docsys/command_catalog.py"
+  - "../../../../tools/flowform_tools/docsys/capabilities.py"
+  - "../../../../tools/flowform_tools/docsys/validate.py"
+  - "../../../../tools/flowform_tools/docsys/evidence.py"
+  - "../../../../tools/flowform_tools/docsys/maintenance/validate_doc_metadata.py"
 change_triggers:
-  - "../../../../tools/docs/"
+  - "../../../../tools/"
   - "../../../../.agents/skills/flowform-doc-context/"
   - "../../../../.agents/skills/flowform-doc-verification/"
 related_docs:
@@ -49,7 +49,7 @@ instead of adding a cross-linked variation.
 ## Answer-oriented research
 
 Codex and Claude use the same `flowform-doc-context` skill and the same
-`tools/docs/bin/docsys` commands. Documentation has no MCP server, lifecycle
+`tools/bin/docsys` commands. Documentation has no MCP server, lifecycle
 hook, platform-specific command, rule, or specialist agent. The canonical skill
 lives under `.agents/skills/`; its Claude copy and the root documentation rule
 are checked and synchronized by `sync-agent-doc-config.py`.
@@ -94,7 +94,7 @@ README is useful orientation, but executable definitions remain authoritative.
 
 ## Validation and review
 
-Use `tools/docs/bin/docsys --help` and the relevant command help from the
+Use `tools/bin/docsys --help` and the relevant command help from the
 repository root. Exact flags stay with the executable interface rather than in
 Project Knowledge.
 

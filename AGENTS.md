@@ -20,7 +20,7 @@ Its main user-facing areas are:
 | `infra/` | Environments, deployment, runtime, and supporting resources | Follow nearby documentation and scripts |
 | `scripts/` | Repository-wide development and maintenance automation | Read each entry point before running it |
 | `docs/` | Current Project Knowledge and Development Workspace | Start with `docs/docs-index.md` |
-| `tools/` | Development integrations and supporting utilities | Keep changes within the tool's boundary |
+| `tools/` | Unified Python tooling package (docs, OpenAPI MCP, agent hooks) | `tools/README.md` |
 
 More specific `AGENTS.md` files override this guide within their directories.
 
@@ -39,7 +39,7 @@ More specific `AGENTS.md` files override this guide within their directories.
 
 Run `scripts/tools/typecheck.sh all` from the repository root for the complete
 Python type-check surface. Use `scripts/tools/typecheck.sh tooling`, `backend`,
-`cdk`, or `mcp` only when the change is confined to that project. Do not invoke
+`cdk`, or `openapi` only when the change is confined to that project. Do not invoke
 a global Pyright installation or add file paths to the Pyright command; the
 dispatcher owns the pinned checker version, project configuration, and
 environment setup.

@@ -5,12 +5,12 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [tooling]
 related_code:
   - "../../../frontend/package.json"
 change_triggers:
-  - "../../../tools/docs/"
+  - "../../../tools/"
   - "../../../.github/workflows/"
   - "../../../backend/scripts/"
   - "../../../infra/env/dev/"

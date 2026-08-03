@@ -9,7 +9,6 @@ LC_ALL=C.utf8 LANG=C.utf8 bash scripts/ci/check-openapi-contracts.sh
 # Documentation checks are read-only, like the OpenAPI contract check above.
 # Repair commands update the working tree; the author stages those changes and
 # retries the commit explicitly.
-PYTHONPATH=tools/docs python3 -m docsys evidence check-last-edited
-PYTHONPATH=tools/docs python3 -m docsys evidence check-staged
-PYTHONPATH=tools/docs python3 -m docsys validate \
-  --docs-root docs --profile commit
+tools/bin/docsys evidence check-last-edited
+tools/bin/docsys evidence check-staged
+tools/bin/docsys validate --docs-root docs --profile commit
