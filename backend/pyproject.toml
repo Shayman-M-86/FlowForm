@@ -47,7 +47,6 @@ dev = [
     "coverage[toml]>=7.10.0",
     "mypy-boto3-sesv2>=1.43.18",
     "pygments>=2.20.0",
-    "pyright>=1.1.408",
     "pytest>=9.0.3",
     "pytest-cov>=6.2.1",
     "pyyaml>=6.0.2",
@@ -127,6 +126,24 @@ quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 docstring-code-format = true
+
+[tool.pyright]
+extends = "../pyrightconfig.json"
+include = [
+    "app",
+    "tests",
+    "scripts",
+]
+exclude = [
+    "**/__pycache__",
+    ".venv",
+    ".pytest_cache",
+    ".ruff_cache",
+    "**/node_modules",
+    "**/.*",
+]
+venvPath = "."
+venv = ".venv"
 
 
 [tool.coverage.run]

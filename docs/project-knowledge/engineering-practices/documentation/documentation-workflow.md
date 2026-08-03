@@ -10,6 +10,8 @@ tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
   - "../../../../tools/docs/docsys/research.py"
+  - "../../../../tools/docs/docsys/command_catalog.py"
+  - "../../../../tools/docs/docsys/capabilities.py"
   - "../../../../tools/docs/docsys/validate.py"
   - "../../../../tools/docs/docsys/evidence.py"
   - "../../../../tools/docs/validate-doc-metadata.py"
@@ -54,10 +56,13 @@ are checked and synchronized by `sync-agent-doc-config.py`.
 
 For a separate compact briefing, `docsys research` launches a new ephemeral
 local Codex process with no prior session, user configuration, memories, project
-instructions, web, apps, or subagents. It runs the same repository commands in
-a read-only sandbox, preserves source line bounds, and returns a validated
-evidence packet instead of its search transcript. The installed Codex client
-retains ownership of account authentication.
+instructions, MCP servers, hooks, web, apps, or subagents. It starts in an empty
+temporary workspace and receives absolute repository paths instead of
+discovering project agent configuration. Its command inventory is owned by
+`docsys capabilities`; the prompt restricts command selection and the read-only
+sandbox enforces the worktree boundary. It preserves source line bounds and
+returns a validated evidence packet instead of its search transcript. The
+installed Codex client retains ownership of account authentication.
 
 Verified current documentation may directly support an explanation-only
 answer. For implementation work, draft or scaffold documentation, or a

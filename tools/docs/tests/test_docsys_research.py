@@ -7,6 +7,9 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
+from docsys.capabilities import inventory
+from docsys.command_catalog import RESEARCH_CLI_TOOLS
+from docsys.model import ROOT
 from docsys.research import (
     DEFAULT_QUICK_MODEL,
     DEFAULT_THOROUGH_MODEL,
@@ -65,6 +68,7 @@ class ResearchRuntimeTests(unittest.TestCase):
             self.assertIn(expected, joined)
         self.assertNotIn("mcp_servers.", joined)
         self.assertNotIn("docsys_research_tools", joined)
+        self.assertEqual(command[command.index("--cd") + 1], str(root))
         self.assertEqual(command[-1], "-")
 
     def test_prompt_json_encodes_untrusted_request_text(self) -> None:
@@ -79,6 +83,27 @@ class ResearchRuntimeTests(unittest.TestCase):
         self.assertIn(r"\u003c/research_request_json\u003e", prompt)
         self.assertIn(r"\"No\"", prompt)
         self.assertIn('"scope": "tools/docs"', prompt)
+        self.assertIn(f'"repository_root": "{ROOT}"', prompt)
+        for tool in RESEARCH_CLI_TOOLS:
+            self.assertIn(f"`{tool['executable']}`", prompt)
+
+    def test_capability_inventory_reports_exact_ready_research_tools(self) -> None:
+        with patch(
+            "docsys.capabilities._available",
+            return_value=(True, "/example/tool"),
+        ):
+            payload = inventory()
+        tools = payload["research_session"]["commands"]
+
+        self.assertEqual(
+            [tool["executable"] for tool in tools],
+            [tool["executable"] for tool in RESEARCH_CLI_TOOLS],
+        )
+        self.assertTrue(all(tool["available"] for tool in tools))
+        self.assertEqual(
+            tools[0]["allowed_subcommands"],
+            ["find", "read"],
+        )
 
     def test_clean_environment_forces_local_account_auth(self) -> None:
         with patch.dict(

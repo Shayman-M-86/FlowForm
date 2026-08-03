@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from .command_catalog import render_research_cli_policy
 from .model import ROOT
 
 DEFAULT_QUICK_MODEL = "gpt-5.6-terra"
@@ -138,13 +139,19 @@ class ResearchRequest:
 
 
 def _prompt(request: ResearchRequest) -> str:
-    instructions = _PROMPT_PATH.read_text().strip()
+    instructions = (
+        _PROMPT_PATH.read_text()
+        .strip()
+        .replace("{{RESEARCH_CLI_TOOLS}}", render_research_cli_policy())
+    )
     payload = (
         json.dumps(
             {
                 "scope": request.scope or "repository-wide",
                 "depth": request.depth,
                 "question": request.question,
+                "repository_root": str(ROOT),
+                "docsys_command": str(ROOT / "tools/docs/bin/docsys"),
             },
             ensure_ascii=False,
             indent=2,
@@ -371,7 +378,7 @@ def run_research(request: ResearchRequest) -> dict[str, Any]:
         schema_path.write_text(json.dumps(RESULT_SCHEMA, separators=(",", ":")))
         command = _codex_command(
             request,
-            workspace=ROOT,
+            workspace=workspace,
             schema_path=schema_path,
             output_path=output_path,
         )

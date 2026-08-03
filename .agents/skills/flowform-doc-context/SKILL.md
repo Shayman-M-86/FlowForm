@@ -7,6 +7,9 @@ description: Find, research, and maintain FlowForm documentation through the sha
 
 ## Workflow
 
+Use `tools/docs/bin/docsys capabilities --format json` only when the exact
+command inventory, local availability, or write boundary matters.
+
 1. Use supplied document paths directly. Otherwise run a narrow search:
 
    ```sh

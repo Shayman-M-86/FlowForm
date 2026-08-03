@@ -15,6 +15,10 @@
         {
             "name": "cdk",
             "path": "../infra/deployment/aws/cdk/"
+        },
+        {
+            "name": "mcp",
+            "path": "../tools/mcp/"
         }
     ],
     "settings": {
@@ -26,27 +30,9 @@
             "MD013": false,
             "MD060": false
         },
-        "python.analysis.exclude": [
-            "**/.git/**",
-            "**/.venv/**",
-            "**/venv/**",
-            "**/__pycache__/**",
-            "**/.pytest_cache/**",
-            "**/.mypy_cache/**",
-            "**/.ruff_cache/**",
-            "**/.tox/**",
-            "**/.nox/**",
-            "**/htmlcov/**",
-            "**/node_modules/**",
-            "**/tools/mcp/**",
-            "${workspaceFolder:frontend}/**",
-            "**/on_hold/**",
-            "**/cdk.out/**",
-        ],
-        "python.analysis.ignore": [
-            "**/on_hold/**",
-            "**/cdk.out/**",
-        ],
+        "python.analysis.diagnosticMode": "workspace",
+        "python.analysis.languageServerMode": "default",
+        "python.analysis.useNearestConfiguration": false,
         "python-hover.diagnostics.enabled": false,
         "python-hover.ui.showBadges": false,
         "python-hover.ui.showCallouts": false,

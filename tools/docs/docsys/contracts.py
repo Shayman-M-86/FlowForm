@@ -542,7 +542,7 @@ def _section_source(body: str, requested: str) -> tuple[str, int]:
                 start = index
                 level = current_level
             continue
-        if current_level <= int(level):
+        if level is not None and current_level <= level:
             return (
                 "".join(lines[start:index]).rstrip(),
                 sum(len(line) for line in lines[:start]),

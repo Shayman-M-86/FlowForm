@@ -2,6 +2,16 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Python: type check all",
+            "type": "shell",
+            "command": "scripts/tools/typecheck.sh all",
+            "options": {
+                "cwd": "${workspaceFolder:root}"
+            },
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
     "label": "Setup backend",
     "type": "shell",
     "group": {

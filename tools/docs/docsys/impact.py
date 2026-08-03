@@ -160,8 +160,12 @@ def impact_report(
     changed_files: list[str] | None = None,
 ) -> dict:
     """Build a full impact report for a git range (or the working tree)."""
-    diff = None if changed_files is not None else gitutil.changed_files(base, head)
-    files = changed_files if changed_files is not None else diff.files
+    if changed_files is not None:
+        diff = None
+        files = changed_files
+    else:
+        diff = gitutil.changed_files(base, head)
+        files = diff.files
     # Documentation edits themselves are reported separately so a reviewer can
     # see whether impacted docs were already touched in the same change.
     documentation_prefixes = ("docs/",)

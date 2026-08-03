@@ -7,6 +7,8 @@
 #     ├─ backend-test   (lint and tests in parallel)
 #     └─ cdk  (checks → synth → diff in one job)
 #
+#   repository-python-typecheck  repository tools + development MCP Pyright
+#
 #   frontend-security
 #     ├─ studio  (lint → test → build in one job)
 #     └─ public-site  (lint → build in one job)
@@ -17,6 +19,8 @@
 #   backend-security    pip-audit + Bandit (backend/scripts/run_backend_security.sh)
 #   frontend-security   pnpm audit, failing on any reported vulnerability
 #   backend-lint        Ruff + Pyright over backend/
+#   repository-python-typecheck
+#                       pinned Pyright over repository tooling and tools/mcp
 #   backend-test        pytest with coverage in the Docker test stack
 #   studio              studio-app ESLint + Vitest + production build
 #   public-site         public-site ESLint (astro plugin) + production build
@@ -70,6 +74,21 @@ jobs:
           python3 -m docsys debt
           --docs-root docs
           --format text
+
+  repository-python-typecheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/mcp/uv.lock
+      - name: Pyright (repository tooling)
+        run: scripts/tools/typecheck.sh tooling
+      - name: Pyright (development MCP)
+        run: scripts/tools/typecheck.sh mcp
 
   backend-security:
     runs-on: ubuntu-latest
@@ -184,11 +203,11 @@ jobs:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
       - name: Sync backend dependencies
-        run: uv sync --extra dev
+        run: uv sync --frozen --extra dev
       - name: Ruff
         run: uv run ruff check .
       - name: Pyright
-        run: uv run pyright
+        run: ../scripts/tools/typecheck.sh backend
 
   backend-test:
     runs-on: ubuntu-latest
@@ -470,7 +489,7 @@ jobs:
       - name: Ruff
         run: uv run ruff check flowform_infra tests app.py
       - name: Pyright
-        run: uv run pyright
+        run: ../../../../scripts/tools/typecheck.sh cdk
       - name: Write staging env config from repo variables
         run: |
           cat > .env.staging <<EOF

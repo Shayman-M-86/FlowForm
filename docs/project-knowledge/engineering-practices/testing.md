@@ -5,13 +5,15 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [tooling]
 related_code:
   - "../../../backend/scripts/run-tests.sh"
   - "../../../backend/scripts/run-tests.py"
   - "../../../backend/pyproject.toml"
   - "../../../.github/workflows/ci.yml"
+  - "../../../scripts/tools/typecheck.sh"
+  - "../../../pyrightconfig.json"
 change_triggers:
   - "../../../backend/tests/"
   - "../../../frontend/apps/*/package.json"
@@ -45,7 +47,10 @@ hosted CI or deployed verification where required
 
 - Backend tests run through `backend/scripts/run-tests.sh`, which prepares a
   Docker-backed PostgreSQL environment before pytest.
-- Backend lint, type, and security checks are owned beside the backend.
+- Repository Python type checking runs through
+  `scripts/tools/typecheck.sh all`; its project targets provide the same pinned
+  checker for focused work.
+- Backend lint and security checks are owned beside the backend.
 - Studio has lint, Vitest, and production-build checks; public-site checks use
   its defined package scripts.
 - OpenAPI contract changes use `scripts/ci/check-openapi-contracts.sh`.

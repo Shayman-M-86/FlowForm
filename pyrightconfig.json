@@ -1,20 +1,20 @@
 {
     "include": [
-        "app",
-        "tests",
-        "scripts"
+        "scripts/secrets",
+        "tools/agents",
+        "tools/docs"
     ],
     "exclude": [
         "**/__pycache__",
-        ".venv",
         ".pytest_cache",
         ".ruff_cache",
         "**/node_modules",
-        "**/.*",
+        "**/.*"
+    ],
+    "extraPaths": [
+        "tools/docs"
     ],
     "typeCheckingMode": "standard",
-    "venvPath": ".",
-    "venv": ".venv",
     "pythonVersion": "3.14",
     "reportMissingImports": true,
     "reportMissingTypeStubs": false

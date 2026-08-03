@@ -6,18 +6,7 @@ from __future__ import annotations
 import importlib
 import sys
 
-_COMMANDS = {
-    "find": ("docsys.query", "find a small set of relevant documents"),
-    "read": ("docsys.retrieve", "read one exact document or section"),
-    "research": ("docsys.research", "answer one question in a fresh Codex session"),
-    "impact": ("docsys.impact", "find documentation affected by code changes"),
-    "freshness": ("docsys.freshness", "check implementation evidence freshness"),
-    "health": ("docsys.health", "summarize documentation health"),
-    "debt": ("docsys.debt", "inspect documentation maintenance debt"),
-    "validate": ("docsys.validate", "validate documentation structure"),
-    "index": ("docsys.index", "regenerate the documentation index"),
-    "evidence": ("docsys.evidence", "check or promote verification evidence"),
-}
+from .command_catalog import DOCSYS_COMMANDS
 
 
 def _print_help() -> None:
@@ -26,9 +15,9 @@ def _print_help() -> None:
     print("Focused documentation discovery and maintenance.")
     print()
     print("commands:")
-    width = max(len(command) for command in _COMMANDS)
-    for command, (_, description) in _COMMANDS.items():
-        print(f"  {command:<{width}}  {description}")
+    width = max(len(command) for command in DOCSYS_COMMANDS)
+    for command, spec in DOCSYS_COMMANDS.items():
+        print(f"  {command:<{width}}  {spec['description']}")
     print()
     print("Run 'docsys COMMAND --help' for command options.")
 
@@ -40,13 +29,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     command, rest = args[0], args[1:]
-    target = _COMMANDS.get(command)
+    target = DOCSYS_COMMANDS.get(command)
     if target is None:
         print(f"unknown command: {command}", file=sys.stderr)
         print("Run 'docsys --help' for available commands.", file=sys.stderr)
         return 2
 
-    module = importlib.import_module(target[0])
+    module = importlib.import_module(target["module"])
     return module.main(rest)
 
 

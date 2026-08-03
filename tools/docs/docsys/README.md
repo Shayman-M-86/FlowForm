@@ -19,6 +19,8 @@ This page records only the stable implementation boundaries.
 - CLI commands construct those contracts and print compact text or JSON.
 - `research.py` starts a fresh Codex session that uses the same CLI commands
   and returns a schema-constrained cited answer.
+- `command_catalog.py` owns command effects and the spawned research CLI policy;
+  `capabilities.py` exposes that inventory as text or JSON.
 - Impact, freshness, health, debt, validation, indexing, and evidence remain
   explicit command operations.
 
@@ -38,14 +40,22 @@ responses include one-based repository source lines so a research agent can
 return checkable citations without rereading the document through a shell.
 
 Documentation has no MCP surface. `docsys research` is the answer-oriented
-entry point. Each call
-starts `codex exec` as a fresh ephemeral process with temporary result files. It
-ignores user config and rules, disables memory use and generation,
-does not persist a session, and cannot use web, apps, or subagents. It uses the
-same `docsys find` and `docsys read` commands as a normal agent, plus narrow
-read-only source inspection inside the repository sandbox. The installed Codex
-client owns authentication; Docsys never reads or copies its local authentication
-state. Docsys validates every returned citation against the current worktree.
+entry point. Each call starts `codex exec` as a fresh ephemeral process in an
+empty temporary workspace with temporary result files. Starting outside the
+repository prevents project configuration, MCP servers, hooks, rules, and
+skills from being discovered. The prompt supplies the absolute repository and
+Docsys paths instead. The process ignores user config and rules, disables
+memory use and generation, does not persist a session, and cannot use web,
+apps, or subagents. It uses only `docsys find`, `docsys read`, and the narrow
+read-only source tools defined by `command_catalog.py`. The prompt enforces that
+executable policy; the read-only sandbox is the hard worktree boundary. The
+installed Codex client owns authentication, and Docsys never reads or copies
+its local authentication state. Docsys validates every returned citation
+against the current worktree.
+
+Use `docsys capabilities --format json` for the exact command effects, approved
+research executables, allowed Docsys subcommands, local availability, and
+resolved executable paths.
 
 ## Evidence and linkage
 

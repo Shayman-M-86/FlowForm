@@ -8,6 +8,23 @@ from __future__ import annotations
 
 import importlib
 from types import ModuleType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import (
+        contracts,
+        debt,
+        evidence,
+        freshness,
+        gitutil,
+        health,
+        impact,
+        index,
+        model,
+        query,
+        retrieve,
+        validate,
+    )
 
 __all__ = [
     "contracts",

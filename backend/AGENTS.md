@@ -26,7 +26,7 @@ All secrets come from environment variables; never hardcode credentials.
 uv run flask run                        # dev server
 uv run ruff check .                     # lint
 uv run ruff format .                    # format
-uv run pyright                          # type check
+../scripts/tools/typecheck.sh backend   # type check with the repository-pinned Pyright
 ```
 
 ### Running tests

@@ -5,7 +5,7 @@ status: scaffold
 authority: canonical
 verified_evidence_digest: null
 last_edited: 2026-08-03
-related_code: ["generate-reference-docs.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/__main__.py", "docsys/research.py"]
+related_code: ["generate-reference-docs.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/__main__.py", "docsys/command_catalog.py", "docsys/capabilities.py", "docsys/research.py"]
 change_triggers: ["docsys/"]
 related_docs: ["../../docs/project-knowledge/engineering-practices/documentation/documentation-workflow.md", "../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md"]
 ---
@@ -32,10 +32,15 @@ returns a small candidate set and `read` loads only the selected outline,
 section, or bounded body with exact source line bounds. Exact flags and defaults
 live in command help rather than being duplicated here.
 
+`docsys capabilities --format json` is the canonical machine-readable inventory
+of Docsys command effects and the CLI tools exposed to a spawned researcher.
+
 `docsys research` launches one fresh, non-persistent local Codex process and
 returns a compact cited result. The process uses the existing Codex login,
-ignores agent-specific configuration and memories, and runs repository commands
-inside a read-only sandbox. Quick research defaults to `gpt-5.6-terra`;
+starts outside the repository so project configuration is not discovered,
+ignores agent-specific configuration and memories, and reads the repository
+through a prompt-bounded command set inside a read-only sandbox. Quick research
+defaults to `gpt-5.6-terra`;
 thorough research defaults to `gpt-5.6-sol`. Either model may be overridden.
 
 `validate-agent-setup.py` checks the shared documentation skills,

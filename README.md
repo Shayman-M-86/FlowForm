@@ -434,7 +434,7 @@ Claude Code is used as a primary development tool, supported by custom MCP serve
 
 ### Custom MCP servers
 
-Two project-local MCP servers live in `tools/mcp/` and are registered in `.mcp.json`.
+A project-local MCP server lives in `tools/mcp/` and is registered in `.mcp.json`.
 
 #### `flowform-openapi`
 
@@ -449,16 +449,9 @@ This allows the agent to:
 
 It fetches `/openapi.json` from the running backend and authenticates through Auth0 Device Authorization Flow.
 
-#### `flowform-repomap`
-
-Supports iterative codebase summarisation.
-
-It guides the agent through configured directories, saves summaries, and generates scoped rule files in `.claude/rules/repomap/` so relevant context loads only when needed.
-
 ### AI agent workflows
 
 * **Feature development** — plan and implement backend/frontend changes against the current API contract
-* **Repo summarisation** — keep directory-level summaries fresh across backend, frontend, tests, and shared packages
 * **Wire-API skill** — sync OpenAPI changes into frontend `schema.ts`, `types.ts`, `requests.ts`, and `hooks.ts`
 * **Code review** — `/code-review` skill runs multi-agent review on pull requests
 * **Security review** — project-specific review of authentication, pseudonymity, and cross-database isolation

@@ -35,6 +35,15 @@ More specific `AGENTS.md` files override this guide within their directories.
 - Keep proposals and unfinished work separate from descriptions of current
   behaviour.
 
+## Python type checking
+
+Run `scripts/tools/typecheck.sh all` from the repository root for the complete
+Python type-check surface. Use `scripts/tools/typecheck.sh tooling`, `backend`,
+`cdk`, or `mcp` only when the change is confined to that project. Do not invoke
+a global Pyright installation or add file paths to the Pyright command; the
+dispatcher owns the pinned checker version, project configuration, and
+environment setup.
+
 ## Documentation
 
 Documentation is optional context, not a task-start requirement. Use

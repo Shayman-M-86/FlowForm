@@ -160,26 +160,58 @@ def _validate_no_documentation_mcp(errors: list[str]) -> None:
 def _validate_commands(errors: list[str]) -> None:
     sys.path.insert(0, str(ROOT / "tools" / "docs"))
     try:
-        cli = importlib.import_module("docsys.__main__")
+        capabilities = importlib.import_module("docsys.capabilities")
+        catalog = importlib.import_module("docsys.command_catalog")
         research = importlib.import_module("docsys.research")
     except Exception as exc:
         errors.append(f"cannot load Docsys commands: {exc}")
         return
 
-    _require("research" in cli._COMMANDS, "docsys research command is missing", errors)
-    prompt = (ROOT / "tools/docs/docsys/prompts/research.md").read_text()
-    for command in ("docsys find", "docsys read", "rg -n"):
-        _require(command in prompt, f"research prompt is missing {command}", errors)
-    _require("MCP" not in prompt, "research prompt must not depend on MCP", errors)
+    expected_tools = (
+        "tools/docs/bin/docsys",
+        "rg",
+        "fd",
+        "ast-grep",
+        "jq",
+        "yq",
+        "sed",
+        "nl",
+    )
+    actual_tools = tuple(tool["executable"] for tool in catalog.RESEARCH_CLI_TOOLS)
+    _require(actual_tools == expected_tools, "research CLI inventory differs", errors)
 
     request = research.ResearchRequest(question="validation")
+    prompt = research._prompt(request)
+    for executable in expected_tools:
+        _require(
+            f"`{executable}`" in prompt,
+            f"research prompt is missing {executable}",
+            errors,
+        )
+    for excluded in ("git grep", "git log", "gh search", "fzf", "plocate", "recoll"):
+        _require(excluded not in prompt, f"research prompt contains {excluded}", errors)
+    _require("MCP" not in prompt, "research prompt must not depend on MCP", errors)
+
+    payload = capabilities.inventory()
+    _require(
+        all(tool["available"] for tool in payload["research_session"]["commands"]),
+        "one or more research CLI tools are unavailable",
+        errors,
+    )
+
+    isolated_workspace = Path("/tmp/flowform-research-validation")
     command = research._codex_command(
         request,
-        workspace=ROOT,
+        workspace=isolated_workspace,
         schema_path=Path("/tmp/flowform-research-schema.json"),
         output_path=Path("/tmp/flowform-research-output.json"),
     )
     command_text = " ".join(command)
+    _require(
+        command[command.index("--cd") + 1] == str(isolated_workspace),
+        "research command must start outside the repository",
+        errors,
+    )
     for required in (
         "--ephemeral",
         "--ignore-user-config",
