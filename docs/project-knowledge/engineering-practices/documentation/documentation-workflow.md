@@ -5,15 +5,19 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
+  - "../../../../tools/docs/docsys/mcp_server.py"
+  - "../../../../tools/docs/docsys/research.py"
+  - "../../../../tools/docs/docsys/research_mcp_server.py"
   - "../../../../tools/docs/docsys/validate.py"
   - "../../../../tools/docs/docsys/evidence.py"
   - "../../../../tools/docs/validate-doc-metadata.py"
 change_triggers:
   - "../../../../tools/docs/"
+  - "../../../../.codex/config.toml"
   - "../../../../.agents/skills/flowform-doc-context/"
   - "../../../../.agents/skills/flowform-doc-verification/"
 related_docs:
@@ -42,6 +46,28 @@ Exact procedures belong next to the scripts or configuration they operate.
 Plans, alternatives, and unresolved questions belong in the Development
 Workspace. If two pages explain the same owner or lifecycle, consolidate them
 instead of adding a cross-linked variation.
+
+## Answer-oriented research
+
+When an agent needs to know how existing FlowForm behaviour works, it calls the
+`flowform-research` MCP tool with the exact question. The service launches a new
+ephemeral local Codex process with no prior session, user configuration,
+memories, project instructions, shell, web, or subagents. The installed Codex
+client retains ownership of account authentication.
+
+The isolated process sees only bounded Docsys discovery, document reads, source
+search, and exact source-range reads. It preserves source line bounds and
+returns a validated evidence packet instead of its search transcript. Quick
+research uses the fast read-oriented model; thorough research uses the stronger
+model and higher reasoning effort, with an explicit per-request override.
+
+Verified current documentation may directly support an explanation-only
+answer. For implementation work, draft or scaffold documentation, or a
+contradiction, the researcher checks the smallest authoritative code, test,
+schema, configuration, CI, or infrastructure surface needed. It reports gaps
+and contradictions rather than editing documentation or guessing. The service
+validates cited paths and lines against the current worktree. Bounded
+documentation changes remain the `docs-maintainer` responsibility.
 
 ## Evidence-first update
 

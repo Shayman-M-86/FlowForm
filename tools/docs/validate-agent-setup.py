@@ -12,7 +12,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ("flowform-doc-context", "flowform-doc-verification")
-AGENT_NAME = "docs-maintainer"
+AGENT_NAMES = ("docs-maintainer",)
 
 
 def _require(condition: bool, message: str, errors: list[str]) -> None:
@@ -78,7 +78,9 @@ def _validate_skills(errors: list[str]) -> None:
         )
         if openai_yaml.is_file():
             text = openai_yaml.read_text()
-            _require(f"${name}" in text, f"{name} metadata must reference the skill", errors)
+            _require(
+                f"${name}" in text, f"{name} metadata must reference the skill", errors
+            )
             _require(
                 "dependencies:" not in text and "flowform-docs" not in text,
                 f"{name} must not preload MCP dependencies",
@@ -86,40 +88,48 @@ def _validate_skills(errors: list[str]) -> None:
             )
 
 
-def _validate_maintainers(errors: list[str]) -> None:
-    codex_path = ROOT / ".codex" / "agents" / f"{AGENT_NAME}.toml"
-    claude_path = ROOT / ".claude" / "agents" / f"{AGENT_NAME}.md"
-    _require(codex_path.is_file(), "missing Codex docs-maintainer", errors)
-    _require(claude_path.is_file(), "missing Claude docs-maintainer", errors)
-    if not codex_path.is_file() or not claude_path.is_file():
-        return
-    try:
-        codex = tomllib.loads(codex_path.read_text())
-        claude_metadata, claude_body = _front_matter(claude_path)
-    except (tomllib.TOMLDecodeError, ValueError) as exc:
-        errors.append(f"invalid docs-maintainer configuration: {exc}")
-        return
-    codex_body = str(codex.get("developer_instructions", "")).strip()
-    _require(codex.get("name") == AGENT_NAME, "invalid Codex docs-maintainer name", errors)
-    _require(
-        claude_metadata.get("name") == AGENT_NAME,
-        "invalid Claude docs-maintainer name",
-        errors,
-    )
-    required = (
-        "Use document paths supplied by the parent.",
-        "Do not rerun documentation discovery unless the assigned task is to locate or review documentation.",
-    )
-    for sentence in required:
-        _require(sentence in codex_body, f"Codex docs-maintainer missing: {sentence}", errors)
-        _require(sentence in claude_body, f"Claude docs-maintainer missing: {sentence}", errors)
-    forbidden = ("docs_root", "get_task_context", "preloaded", "skills:")
-    for token in forbidden:
+def _validate_agents(errors: list[str]) -> None:
+    for name in AGENT_NAMES:
+        codex_path = ROOT / ".codex" / "agents" / f"{name}.toml"
+        claude_path = ROOT / ".claude" / "agents" / f"{name}.md"
+        _require(codex_path.is_file(), f"missing Codex {name}", errors)
+        _require(claude_path.is_file(), f"missing Claude {name}", errors)
+        if not codex_path.is_file() or not claude_path.is_file():
+            continue
+        try:
+            codex = tomllib.loads(codex_path.read_text())
+            claude_metadata, claude_body = _front_matter(claude_path)
+        except (tomllib.TOMLDecodeError, ValueError) as exc:
+            errors.append(f"invalid {name} configuration: {exc}")
+            continue
+        codex_body = str(codex.get("developer_instructions", "")).strip()
+        _require(codex.get("name") == name, f"invalid Codex {name} name", errors)
         _require(
-            token not in codex_path.read_text() and token not in claude_path.read_text(),
-            f"docs-maintainer must not force discovery through {token!r}",
+            claude_metadata.get("name") == name,
+            f"invalid Claude {name} name",
             errors,
         )
+
+        required = (
+            "Use document paths supplied by the parent.",
+            "Do not rerun documentation discovery unless the assigned task is to locate or review documentation.",
+        )
+
+        for sentence in required:
+            _require(
+                sentence in codex_body, f"Codex {name} missing: {sentence}", errors
+            )
+            _require(
+                sentence in claude_body, f"Claude {name} missing: {sentence}", errors
+            )
+        forbidden = ("docs_root", "get_task_context", "preloaded", "skills:")
+        for token in forbidden:
+            _require(
+                token not in codex_path.read_text()
+                and token not in claude_path.read_text(),
+                f"{name} must not force discovery through {token!r}",
+                errors,
+            )
 
 
 def _validate_mcp(errors: list[str]) -> None:
@@ -131,12 +141,22 @@ def _validate_mcp(errors: list[str]) -> None:
         return
     codex_server = codex.get("mcp_servers", {}).get("flowform-docs", {})
     claude_server = claude.get("mcpServers", {}).get("flowform-docs", {})
+    codex_research = codex.get("mcp_servers", {}).get("flowform-research", {})
+    claude_research = claude.get("mcpServers", {}).get("flowform-research", {})
     _require(bool(codex_server), "Codex flowform-docs MCP is missing", errors)
     _require(bool(claude_server), "Claude flowform-docs MCP is missing", errors)
+    _require(bool(codex_research), "Codex flowform-research MCP is missing", errors)
+    _require(bool(claude_research), "Claude flowform-research MCP is missing", errors)
     _require(
         codex_server.get("command") == claude_server.get("command")
         and codex_server.get("args") == claude_server.get("args"),
         "Codex and Claude flowform-docs launchers differ",
+        errors,
+    )
+    _require(
+        codex_research.get("command") == claude_research.get("command")
+        and codex_research.get("args") == claude_research.get("args"),
+        "Codex and Claude flowform-research launchers differ",
         errors,
     )
     launcher = " ".join(
@@ -144,7 +164,21 @@ def _validate_mcp(errors: list[str]) -> None:
         + [str(item) for item in codex_server.get("args", [])]
     )
     _require("tools/mcp/docsys_run.sh" in launcher, "invalid Docsys launcher", errors)
-    for owner, server in (("Codex", codex_server), ("Claude", claude_server)):
+    research_launcher = " ".join(
+        [str(codex_research.get("command", ""))]
+        + [str(item) for item in codex_research.get("args", [])]
+    )
+    _require(
+        "tools/mcp/docsys_research_run.sh" in research_launcher,
+        "invalid FlowForm research launcher",
+        errors,
+    )
+    for owner, server in (
+        ("Codex", codex_server),
+        ("Claude", claude_server),
+        ("Codex research", codex_research),
+        ("Claude research", claude_research),
+    ):
         for argument in server.get("args", []):
             _require(
                 not Path(str(argument)).is_absolute(),
@@ -159,7 +193,11 @@ def _validate_mcp(errors: list[str]) -> None:
     except Exception as exc:
         errors.append(f"cannot load flowform-docs tool declarations: {exc}")
         return
-    _require([tool.get("name") for tool in tools] == ["find", "read"], "MCP must advertise only find and read", errors)
+    _require(
+        [tool.get("name") for tool in tools] == ["find", "read"],
+        "MCP must advertise only find and read",
+        errors,
+    )
     _require(
         len(json.dumps(tools, separators=(",", ":")).encode()) < 2_000,
         "combined MCP tool declarations must remain below 2 KB",
@@ -167,23 +205,100 @@ def _validate_mcp(errors: list[str]) -> None:
     )
     for tool in tools:
         schema = tool.get("inputSchema", {})
-        _require(schema.get("additionalProperties") is False, f"{tool.get('name')} must reject unknown properties", errors)
+        _require(
+            schema.get("additionalProperties") is False,
+            f"{tool.get('name')} must reject unknown properties",
+            errors,
+        )
         annotations = tool.get("annotations", {})
-        _require(annotations.get("readOnlyHint") is True, f"{tool.get('name')} must be marked read-only", errors)
-        _require("docs_root" not in schema.get("properties", {}), f"{tool.get('name')} must not expose docs_root", errors)
+        _require(
+            annotations.get("readOnlyHint") is True,
+            f"{tool.get('name')} must be marked read-only",
+            errors,
+        )
+        _require(
+            "docs_root" not in schema.get("properties", {}),
+            f"{tool.get('name')} must not expose docs_root",
+            errors,
+        )
     by_name = {tool["name"]: tool for tool in tools}
     if "find" in by_name:
         limit = by_name["find"]["inputSchema"]["properties"].get("limit", {})
-        _require(limit.get("maximum") == 5, "MCP find limit must be capped at 5", errors)
+        _require(
+            limit.get("maximum") == 5, "MCP find limit must be capped at 5", errors
+        )
     if "read" in by_name:
         max_chars = by_name["read"]["inputSchema"]["properties"].get("max_chars", {})
-        _require(max_chars.get("maximum") == 8_000, "MCP read max_chars must be capped at 8000", errors)
+        _require(
+            max_chars.get("maximum") == 8_000,
+            "MCP read max_chars must be capped at 8000",
+            errors,
+        )
+
+    try:
+        research_module = importlib.import_module("docsys.research_mcp_server")
+        private_module = importlib.import_module("docsys.research_tools_server")
+        runtime_module = importlib.import_module("docsys.research")
+    except Exception as exc:
+        errors.append(f"cannot load FlowForm research service: {exc}")
+        return
+    research_tools = research_module.TOOLS
+    private_tools = private_module.TOOLS
+    _require(
+        [tool.get("name") for tool in research_tools] == ["research"],
+        "flowform-research must advertise only research",
+        errors,
+    )
+    _require(
+        len(json.dumps(research_tools, separators=(",", ":")).encode()) < 4_000,
+        "research MCP declaration must remain below 4 KB",
+        errors,
+    )
+    _require(
+        [tool.get("name") for tool in private_tools]
+        == ["find", "read", "search_source", "read_source"],
+        "private research surface must expose exactly four tools",
+        errors,
+    )
+    for tool in (*research_tools, *private_tools):
+        _require(
+            tool.get("annotations", {}).get("readOnlyHint") is True,
+            f"{tool.get('name')} must be marked read-only",
+            errors,
+        )
+
+    request = runtime_module.ResearchRequest(question="validation")
+    command = runtime_module._codex_command(
+        request,
+        workspace=Path("/tmp/flowform-research-validation"),
+        schema_path=Path("/tmp/flowform-research-schema.json"),
+        output_path=Path("/tmp/flowform-research-output.json"),
+    )
+    command_text = " ".join(command)
+    for required_flag in (
+        "--ephemeral",
+        "--ignore-user-config",
+        "--ignore-rules",
+        "--sandbox read-only",
+        "project_doc_max_bytes=0",
+        "memories.use_memories=false",
+        "memories.generate_memories=false",
+        'shell_environment_policy.inherit="none"',
+        "docsys_research_tools_run.sh",
+    ):
+        _require(
+            required_flag in command_text,
+            f"isolated research command missing {required_flag}",
+            errors,
+        )
 
 
 def _validate_hooks(errors: list[str]) -> None:
     try:
         codex = json.loads((ROOT / ".codex/hooks.json").read_text()).get("hooks", {})
-        claude = json.loads((ROOT / ".claude/settings.json").read_text()).get("hooks", {})
+        claude = json.loads((ROOT / ".claude/settings.json").read_text()).get(
+            "hooks", {}
+        )
     except (OSError, json.JSONDecodeError) as exc:
         errors.append(f"invalid hook configuration: {exc}")
         return
@@ -201,13 +316,17 @@ def _validate_hooks(errors: list[str]) -> None:
         ROOT / ".claude/hooks/stop_doc_impact_review.py",
     )
     for path in removed:
-        _require(not path.exists(), f"obsolete hook remains: {path.relative_to(ROOT)}", errors)
+        _require(
+            not path.exists(),
+            f"obsolete hook remains: {path.relative_to(ROOT)}",
+            errors,
+        )
 
 
 def validate() -> list[str]:
     errors: list[str] = []
     _validate_skills(errors)
-    _validate_maintainers(errors)
+    _validate_agents(errors)
     _validate_mcp(errors)
     _validate_hooks(errors)
     _require(
@@ -229,7 +348,9 @@ def main() -> int:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
-    print("agent documentation workflow valid: on-demand skills, bounded MCP, and no startup documentation hook")
+    print(
+        "agent documentation workflow valid: on-demand skills, bounded MCP, and no startup documentation hook"
+    )
     return 0
 
 

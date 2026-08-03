@@ -17,7 +17,8 @@ This page records only the stable implementation boundaries.
   exact-file `related_code` conventions.
 - `contracts.py` owns bounded find/read requests and response projections.
 - CLI commands construct those contracts and print compact text or JSON.
-- `mcp_server.py` is a thin read-only adapter over the same contracts.
+- `mcp_server.py` is a thin read-only adapter over the same contracts and
+  returns source line bounds for retrieved content.
 - Impact, freshness, health, debt, validation, indexing, and evidence remain
   explicit CLI operations.
 
@@ -32,10 +33,26 @@ not load neighbours or document bodies. Title, path, heading, tag, and exact
 code-file matches outrank body-only matches.
 
 `read` accepts an exact documentation path. Its default response is metadata
-and headings; section and body content are explicit and bounded.
+and headings; section and body content are explicit and bounded. Content
+responses include one-based repository source lines so a research agent can
+return checkable citations without rereading the document through a shell.
 
 The MCP server advertises only `find` and `read`. Maintenance and mutation
 operations are CLI-only.
+
+The `flowform-research` MCP server is the answer-oriented entry point. Each call
+starts `codex exec` as a fresh ephemeral process in an empty temporary working
+directory. It ignores user config and rules, disables memory use and generation,
+does not persist a session, and cannot use shell, web, apps, or subagents. The
+installed Codex client owns authentication; Docsys never reads or copies its
+local authentication state.
+
+The private child-process MCP surface exposes only `find`, `read`,
+`search_source`, and `read_source`. Source retrieval is limited to bounded text
+ranges from tracked or visible non-ignored repository files and excludes secret
+files, agent instructions, local state, dependencies, build output, and
+historical documentation. The service validates every returned citation against
+the current worktree before returning the structured result to its caller.
 
 ## Evidence and linkage
 

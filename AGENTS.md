@@ -38,11 +38,13 @@ More specific `AGENTS.md` files override this guide within their directories.
 ## Documentation
 
 Documentation is optional context, not a task-start requirement. Use
-`flowform-doc-context` only for explicit documentation work or after finding a
-material documentation gap. Implementation and tests remain authoritative.
-Review documentation impact once after relevant behaviour settles, and use
-`flowform-doc-verification` only when the user explicitly approves promotion
-and staging.
+`flowform-doc-context` for explicit documentation work, answer-oriented research
+into established FlowForm behaviour, or after finding a material documentation
+gap. For a compact factual briefing, call the isolated `flowform-research` MCP
+tool; for bounded documentation edits, delegate to `docs-maintainer`.
+Implementation and tests remain authoritative. Review documentation impact once
+after relevant behaviour settles, and use `flowform-doc-verification` only when
+the user explicitly approves promotion and staging.
 
 ## Handoff
 

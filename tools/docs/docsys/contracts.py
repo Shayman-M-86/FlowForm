@@ -286,6 +286,8 @@ class ReadResponse:
     summary: str
     headings: tuple[str, ...]
     content: str | None = None
+    start_line: int | None = None
+    end_line: int | None = None
     truncated: bool = False
     next_offset: int | None = None
     related: tuple[str, ...] = ()
@@ -303,6 +305,8 @@ class ReadResponse:
             result.update(
                 {
                     "content": self.content,
+                    "start_line": self.start_line,
+                    "end_line": self.end_line,
                     "truncated": self.truncated,
                     "next_offset": self.next_offset,
                 }
@@ -516,7 +520,7 @@ def execute_find(
     )
 
 
-def _section_body(body: str, requested: str) -> str:
+def _section_source(body: str, requested: str) -> tuple[str, int]:
     target = requested.strip().casefold()
     lines = body.splitlines(keepends=True)
     start: int | None = None
@@ -539,10 +543,16 @@ def _section_body(body: str, requested: str) -> str:
                 level = current_level
             continue
         if current_level <= int(level):
-            return "".join(lines[start:index]).rstrip()
+            return (
+                "".join(lines[start:index]).rstrip(),
+                sum(len(line) for line in lines[:start]),
+            )
     if start is None:
         raise ValueError(f"section not found: {requested}")
-    return "".join(lines[start:]).rstrip()
+    return (
+        "".join(lines[start:]).rstrip(),
+        sum(len(line) for line in lines[:start]),
+    )
 
 
 def _direct_related_paths(doc: Document, docset: DocSet) -> tuple[str, ...]:
@@ -569,18 +579,25 @@ def execute_read(
         raise ValueError(f"document not found: {request.path}")
 
     content: str | None = None
+    start_line: int | None = None
+    end_line: int | None = None
     truncated = False
     next_offset: int | None = None
     if request.section is not None or request.include_body:
-        source = (
-            _section_body(doc.body, request.section)
+        source, source_offset = (
+            _section_source(doc.body, request.section)
             if request.section is not None
-            else doc.body
+            else (doc.body, 0)
         )
         content = source[request.offset : request.offset + request.max_chars]
         truncated = request.offset + len(content) < len(source)
         if truncated:
             next_offset = request.offset + len(content)
+        if content:
+            absolute_start = source_offset + request.offset
+            absolute_end = absolute_start + len(content) - 1
+            start_line = doc.body_start_line + doc.body[:absolute_start].count("\n")
+            end_line = doc.body_start_line + doc.body[:absolute_end].count("\n")
 
     return ReadResponse(
         path=doc.rel_path,
@@ -589,6 +606,8 @@ def execute_read(
         summary=_summary(doc),
         headings=tuple(doc.headings),
         content=content,
+        start_line=start_line,
+        end_line=end_line,
         truncated=truncated,
         next_offset=next_offset,
         related=_direct_related_paths(doc, docset) if request.include_related else (),

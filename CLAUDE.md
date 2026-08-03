@@ -37,14 +37,16 @@ More specific `CLAUDE.md` files override this guide within their directories.
 
 ## Documentation
 
-For non-trivial work where existing behaviour or project boundaries matter,
-use the `flowform-doc-context` skill and the `flowform-docs` MCP server to load
-focused context from `docs/`. For explanation-only questions, verified and
-current documents are sufficient when they directly cover the answer; do not
-inspect implementation merely to reconfirm them. Treat reliability per document
-used, so unrelated draft candidates do not weaken verified sources. Inspect the
-repository when implementing, diagnosing, explicitly verifying, or resolving a
-material gap or contradiction.
+Documentation is optional context, not a task-start requirement. Use the
+`flowform-doc-context` skill for explicit documentation work, answer-oriented
+research into established FlowForm behaviour, or after finding a material
+documentation gap. Call the isolated `flowform-research` MCP tool for compact
+factual briefings and delegate bounded documentation edits to `docs-maintainer`.
+The research service starts a fresh local Codex process and returns
+source-backed evidence without editing.
+Verified current documents may directly answer explanation-only questions;
+inspect implementation when implementing, diagnosing, explicitly verifying, or
+resolving a material gap or contradiction.
 
 After behavioural or architectural changes, review the impacted documentation.
 Update only pages whose meaning changed, and regenerate generated documentation
@@ -55,11 +57,11 @@ verification drift and checks document `last_edited` dates without modifying
 or staging files. Treat
 `old-docs/` as historical material.
 
-Codex and Claude provide a `docs-maintainer` specialist for bounded
-documentation work. The parent agent remains responsible for integration and
-final validation. Use the shared `flowform-doc-verification` skill when the
-user wants to select, review, approve, and promote specific Project Knowledge
-pages.
+Codex and Claude share `flowform-research` for isolated factual research and
+provide `docs-maintainer` for bounded documentation work. The parent agent
+remains responsible for integration and final validation. Use the shared
+`flowform-doc-verification` skill when the user wants to select, review,
+approve, and promote specific Project Knowledge pages.
 
 ## Handoff
 

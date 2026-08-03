@@ -118,6 +118,13 @@ def body_after_front_matter(text: str) -> str:
     return text
 
 
+def body_start_line(text: str) -> int:
+    """Return the one-based source line where the parsed body starts."""
+    if text.startswith("---") and (end := text.find("\n---", 3)) != -1:
+        return text[: end + 4].count("\n") + 1
+    return 1
+
+
 def strip_code(body: str) -> str:
     """Remove fenced blocks and inline code so link/heading scans ignore them."""
     return _CODE_SPAN_RE.sub("", _CODE_FENCE_RE.sub("", body))
@@ -235,6 +242,7 @@ class Document:
     docs_dir: Path
     front_matter: dict
     body: str
+    body_start_line: int = 1
     headings: list[str] = field(default_factory=list)
     wiki_links: list[str] = field(default_factory=list)
     related_patterns: list[str] = field(default_factory=list)
@@ -390,6 +398,7 @@ def load_document_text(
         docs_dir=docs_dir.resolve(),
         front_matter=fm,
         body=body,
+        body_start_line=body_start_line(text),
         headings=extract_headings(body),
         wiki_links=extract_wiki_links(body),
         related_patterns=_resolve_patterns(path, fm.get("related_code")),

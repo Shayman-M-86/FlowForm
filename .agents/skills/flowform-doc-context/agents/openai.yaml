@@ -1,4 +1,4 @@
 interface:
   display_name: "FlowForm Documentation Context"
-  short_description: "Find and read focused FlowForm documentation on demand"
-  default_prompt: "Use $flowform-doc-context to find and read only the FlowForm documentation needed for this documentation task."
+  short_description: "Run isolated, source-backed FlowForm research"
+  default_prompt: "Use $flowform-doc-context to run a fresh isolated research process and return a compact, source-backed FlowForm briefing."

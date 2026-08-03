@@ -15,7 +15,7 @@ from .contracts import (
 )
 
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "flowform-docsys", "version": "2.0.0"}
+SERVER_INFO = {"name": "flowform-docsys", "version": "2.1.0"}
 
 _READ_ONLY = {
     "readOnlyHint": True,
@@ -57,6 +57,8 @@ _READ_OUTPUT = {
             for name in ("path", "title", "status", "summary", "content")
         },
         "headings": {"type": "array", "items": {"type": "string"}},
+        "start_line": {"type": ["integer", "null"]},
+        "end_line": {"type": ["integer", "null"]},
         "truncated": {"type": "boolean"},
         "next_offset": {"type": ["integer", "null"]},
     },
@@ -67,6 +69,8 @@ _READ_OUTPUT = {
         "summary",
         "headings",
         "content",
+        "start_line",
+        "end_line",
         "truncated",
         "next_offset",
     ],
@@ -76,7 +80,7 @@ _READ_OUTPUT = {
 TOOLS = [
     {
         "name": "find",
-        "description": "Find a few relevant FlowForm documents.",
+        "description": "Find FlowForm documents.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -106,7 +110,7 @@ TOOLS = [
     },
     {
         "name": "read",
-        "description": "Read one exact document path or section.",
+        "description": "Read one document path or section.",
         "inputSchema": {
             "type": "object",
             "properties": {

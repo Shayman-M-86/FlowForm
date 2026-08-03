@@ -140,8 +140,27 @@ class DiscoveryContractTests(unittest.TestCase):
         self.assertTrue(section.truncated)
         self.assertEqual(section.next_offset, 20)
         self.assertEqual(len(section.content or ""), 20)
+        self.assertEqual(section.start_line, 5)
+        self.assertEqual(section.end_line, 7)
         with self.assertRaisesRegex(ValueError, "document not found"):
             execute_read(ReadRequest(path="docs/missing.md"), docset)
+
+    def test_read_reports_repository_source_lines_after_front_matter(self) -> None:
+        doc = _doc(
+            "source-lines",
+            title="Source lines",
+            body="\n# Source lines\n\nIntro.\n\n## Details\n\nEvidence.\n",
+        )
+        doc.body_start_line = 10
+
+        response = execute_read(
+            ReadRequest(path=doc.rel_path, section="Details"),
+            DocSet([doc]),
+        )
+
+        self.assertEqual(response.content, "## Details\n\nEvidence.")
+        self.assertEqual(response.start_line, 15)
+        self.assertEqual(response.end_line, 17)
 
 
 if __name__ == "__main__":

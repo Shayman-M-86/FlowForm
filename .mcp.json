@@ -7,6 +7,10 @@
     "flowform-docs": {
       "command": "/usr/bin/bash",
       "args": ["tools/mcp/docsys_run.sh"]
+    },
+    "flowform-research": {
+      "command": "/usr/bin/bash",
+      "args": ["tools/mcp/docsys_research_run.sh"]
     }
   }
 }

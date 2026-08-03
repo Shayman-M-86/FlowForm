@@ -111,6 +111,8 @@ def _print_text(response) -> None:
             print(f"- {heading}")
     if response.content is not None:
         print()
+        if response.start_line is not None:
+            print(f"lines: {response.start_line}-{response.end_line}")
         print(response.content)
         if response.truncated:
             print()

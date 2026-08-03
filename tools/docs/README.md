@@ -4,8 +4,8 @@ document_type: implementation
 status: scaffold
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
-related_code: ["generate-reference-docs.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/__main__.py"]
+last_edited: 2026-08-03
+related_code: ["generate-reference-docs.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/__main__.py", "docsys/research.py", "docsys/research_mcp_server.py"]
 change_triggers: ["docsys/"]
 related_docs: ["../../docs/project-knowledge/engineering-practices/documentation/documentation-workflow.md", "../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md"]
 ---
@@ -29,13 +29,19 @@ resolution.
 Use `tools/docs/bin/docsys --help` for documentation discovery, retrieval,
 impact review, validation, health checks, and evidence promotion. `find`
 returns a small candidate set and `read` loads only the selected outline,
-section, or bounded body. Exact flags and defaults live in command help rather
-than being duplicated here.
+section, or bounded body with exact source line bounds. Exact flags and defaults
+live in command help rather than being duplicated here.
+
+`flowform-research` launches one fresh, non-persistent local Codex process and
+returns a compact cited result. The process uses the existing Codex login, an
+isolated temporary working directory, and four private read-only retrieval
+tools. Quick research defaults to `gpt-5.6-terra`; thorough research defaults to
+`gpt-5.6-sol`. Either model may be overridden per request.
 
 `validate-agent-setup.py` checks the shared documentation skills,
-documentation-maintainer instructions, and the bounded `flowform-docs` MCP
-registration. `sync-agent-doc-config.py` keeps the Claude skill mirrors aligned
-with the canonical `.agents` copies.
+documentation-maintainer instructions, deterministic MCP bounds, and isolated
+research-process flags. `sync-agent-doc-config.py` keeps the Claude skill and
+specialist-agent mirrors aligned with the canonical FlowForm copies.
 
 ## Conventions enforced
 

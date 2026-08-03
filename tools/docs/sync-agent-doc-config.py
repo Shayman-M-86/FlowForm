@@ -11,6 +11,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ("flowform-doc-context", "flowform-doc-verification")
+AGENTS = ("docs-maintainer",)
 
 
 @dataclass(frozen=True)
@@ -32,9 +33,9 @@ def _front_matter_value(text: str, key: str) -> str | None:
     return None
 
 
-def _claude_maintainer() -> str:
-    source = ROOT / ".codex" / "agents" / "docs-maintainer.toml"
-    target = ROOT / ".claude" / "agents" / "docs-maintainer.md"
+def _claude_agent(name: str) -> str:
+    source = ROOT / ".codex" / "agents" / f"{name}.toml"
+    target = ROOT / ".claude" / "agents" / f"{name}.md"
     data = tomllib.loads(source.read_text())
     current = target.read_text() if target.exists() else ""
     model = _front_matter_value(current, "model") or "sonnet"
@@ -55,11 +56,12 @@ def mirrors() -> list[Mirror]:
         source = ROOT / ".agents" / "skills" / name / "SKILL.md"
         target = ROOT / ".claude" / "skills" / name / "SKILL.md"
         result.append(Mirror(target=target, content=source.read_text()))
-    result.append(
+    result.extend(
         Mirror(
-            target=ROOT / ".claude" / "agents" / "docs-maintainer.md",
-            content=_claude_maintainer(),
+            target=ROOT / ".claude" / "agents" / f"{name}.md",
+            content=_claude_agent(name),
         )
+        for name in AGENTS
     )
     return result
 

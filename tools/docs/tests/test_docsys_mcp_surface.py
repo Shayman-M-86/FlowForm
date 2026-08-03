@@ -133,6 +133,8 @@ class McpSurfaceTests(unittest.TestCase):
             "summary": "Short.",
             "headings": ["Example"],
             "content": "bounded",
+            "start_line": 20,
+            "end_line": 20,
             "truncated": False,
             "next_offset": None,
         }
