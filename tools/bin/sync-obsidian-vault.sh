@@ -10,10 +10,12 @@ set -Eeuo pipefail
 # in WSL (fast git/builds) and copy them into a REAL Windows folder that
 # Obsidian watches natively. Run this whenever you want the vault refreshed.
 #
-# The copy is one-way (repo -> vault) and mirror-style: files deleted from the
-# repo are removed from the vault too. The vault's own .obsidian config
-# (graph, plugins, appearance) is preserved because it is excluded below and
-# lives in the vault ROOT, one level above this docs/ subfolder.
+# The copy is one-way (repo -> vault) and mirror-style. Only Project Knowledge
+# and its shared assets are published to the vault; Development Workspace and
+# other files under docs/ stay repository-local. Files removed from either
+# published tree are removed from the vault too. The vault's own .obsidian
+# config (graph, plugins, appearance) is protected below and normally lives in
+# the vault ROOT, one level above this docs/ subfolder.
 #
 # Usage:
 #   tools/bin/sync-obsidian-vault.sh          # sync
@@ -33,14 +35,19 @@ fi
 
 mkdir -p "$VAULT_DOCS"
 
-# --delete mirrors deletions; excludes keep Obsidian/OS cruft out of the repo->vault
-# copy. Note .obsidian is excluded so the vault's config is never overwritten.
-rsync -rt --delete "${DRY_RUN[@]}" \
-  --exclude='.obsidian/' \
-  --exclude='.git/' \
-  --exclude='.DS_Store' \
+# Keep the destination as an exact published subset. --delete-excluded removes
+# material copied by the older whole-docs mirror, including Development
+# Workspace. Protect rules preserve vault/OS metadata even though it is outside
+# the allowlist.
+rsync -rt --delete --delete-excluded "${DRY_RUN[@]}" \
+  --filter='protect /.obsidian/' \
+  --filter='protect /.git/' \
+  --filter='protect /.DS_Store' \
+  --include='/assets/***' \
+  --include='/project-knowledge/***' \
+  --exclude='*' \
   "$REPO_DOCS"/ "$VAULT_DOCS"/
 
 if [[ ${#DRY_RUN[@]} -eq 0 ]]; then
-  echo "Synced $REPO_DOCS -> $VAULT_DOCS"
+  echo "Synced $REPO_DOCS/{assets,project-knowledge} -> $VAULT_DOCS"
 fi

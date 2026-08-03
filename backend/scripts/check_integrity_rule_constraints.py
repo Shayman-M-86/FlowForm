@@ -80,7 +80,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-SCHEMA_DIR = REPO_ROOT / "infra" / "postgres" / "init" / "schema"
+SCHEMA_DIR = REPO_ROOT / "infra" / "database" / "init" / "schema"
 SCHEMA_FILES = (
     SCHEMA_DIR / "flowform_core_db_schema_v4.sql",
     SCHEMA_DIR / "flowform_response_db_schema_v4.sql",
