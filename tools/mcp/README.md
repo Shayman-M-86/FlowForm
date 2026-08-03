@@ -1,23 +1,7 @@
-# FlowForm MCP servers
+# FlowForm backend MCP server
 
 An MCP server that wraps the FlowForm backend OpenAPI spec, intended for use
 inside Claude Code while developing the Studio frontend.
-
-## Documentation research
-
-`docsys_research_run.sh` exposes one `research` tool. Each request launches a
-fresh, non-persistent local Codex process using the existing `codex login`
-session. The process runs outside the repository, ignores user configuration
-and memories, and receives only the private read-only Docsys research tools.
-
-Verify the public surface without starting a model run:
-
-```bash
-bash tools/mcp/docsys_research_run.sh tools
-```
-
-The private `docsys_research_tools_run.sh` launcher is passed only to the child
-process. It is not intended to be registered as a caller-facing MCP server.
 
 ## Backend OpenAPI development server
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from docsys_hook_lib import ROOT, read_hook_input
+from shared_hook_input import ROOT, read_hook_input
 
 
 def _file_path(data: dict) -> str:

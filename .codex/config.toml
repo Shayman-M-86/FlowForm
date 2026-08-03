@@ -8,13 +8,3 @@ network_access = true
 [mcp_servers.flowform-openapi]
 command = "/usr/bin/bash"
 args = ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]
-
-
-[mcp_servers.flowform-docs]
-command = "/usr/bin/bash"
-args = ["tools/mcp/docsys_run.sh"]
-
-
-[mcp_servers.flowform-research]
-command = "/usr/bin/bash"
-args = ["tools/mcp/docsys_research_run.sh"]

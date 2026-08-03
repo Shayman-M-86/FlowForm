@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -21,7 +22,6 @@ DEFAULT_THOROUGH_MODEL = "gpt-5.6-sol"
 DEPTHS = frozenset({"quick", "thorough"})
 _MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$")
 _PROMPT_PATH = Path(__file__).with_name("prompts") / "research.md"
-_TOOLS_LAUNCHER = ROOT / "tools" / "mcp" / "docsys_research_tools_run.sh"
 
 RESULT_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -34,6 +34,7 @@ RESULT_SCHEMA: dict[str, Any] = {
         },
         "findings": {
             "type": "array",
+            "minItems": 1,
             "maxItems": 12,
             "items": {
                 "type": "object",
@@ -41,6 +42,7 @@ RESULT_SCHEMA: dict[str, Any] = {
                     "claim": {"type": "string"},
                     "sources": {
                         "type": "array",
+                        "minItems": 1,
                         "maxItems": 6,
                         "items": {
                             "type": "object",
@@ -165,7 +167,6 @@ def _codex_command(
     schema_path: Path,
     output_path: Path,
 ) -> list[str]:
-    launcher_args = json.dumps([str(_TOOLS_LAUNCHER)], separators=(",", ":"))
     return [
         shutil.which("codex") or "codex",
         "exec",
@@ -185,10 +186,6 @@ def _codex_command(
         "image_generation",
         "--disable",
         "hooks",
-        "--disable",
-        "shell_tool",
-        "--disable",
-        "unified_exec",
         "--sandbox",
         "read-only",
         "--skip-git-repo-check",
@@ -205,13 +202,7 @@ def _codex_command(
         "--config",
         "memories.generate_memories=false",
         "--config",
-        'shell_environment_policy.inherit="none"',
-        "--config",
-        'mcp_servers.flowform_research.command="/usr/bin/bash"',
-        "--config",
-        f"mcp_servers.flowform_research.args={launcher_args}",
-        "--config",
-        'mcp_servers.flowform_research.enabled_tools=["find","read","search_source","read_source"]',
+        'shell_environment_policy.inherit="all"',
         "--output-schema",
         str(schema_path),
         "--output-last-message",
@@ -275,7 +266,7 @@ def _validate_text_list(value: object, *, name: str, maximum: int = 20) -> list[
     return [item.strip() for item in value if item.strip()]
 
 
-def _validate_source(value: object) -> dict[str, Any]:
+def _validate_source(value: object, *, scope: str | None = None) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ResearchRuntimeError("finding source must be an object")
     path_value = value.get("path")
@@ -289,6 +280,13 @@ def _validate_source(value: object) -> dict[str, Any]:
         part in {"", ".", ".."} for part in path.parts
     ):
         raise ResearchRuntimeError("source path must be repository-relative")
+    normalized_path = path.as_posix()
+    if scope is not None and not (
+        normalized_path == scope or normalized_path.startswith(scope + "/")
+    ):
+        raise ResearchRuntimeError(
+            f"cited source is outside requested scope: {path_value}"
+        )
     resolved = ROOT.joinpath(*path.parts)
     if resolved.is_symlink() or not resolved.is_file():
         raise ResearchRuntimeError(f"cited source does not exist: {path_value}")
@@ -314,7 +312,9 @@ def _validate_source(value: object) -> dict[str, Any]:
     }
 
 
-def _validate_result(value: dict[str, Any]) -> dict[str, Any]:
+def _validate_result(
+    value: dict[str, Any], *, scope: str | None = None
+) -> dict[str, Any]:
     answer = value.get("answer")
     confidence = value.get("confidence")
     basis = value.get("basis")
@@ -341,7 +341,9 @@ def _validate_result(value: dict[str, Any]) -> dict[str, Any]:
         clean_findings.append(
             {
                 "claim": finding["claim"].strip(),
-                "sources": [_validate_source(source) for source in sources],
+                "sources": [
+                    _validate_source(source, scope=scope) for source in sources
+                ],
                 "snippet": snippet,
             }
         )
@@ -369,7 +371,7 @@ def run_research(request: ResearchRequest) -> dict[str, Any]:
         schema_path.write_text(json.dumps(RESULT_SCHEMA, separators=(",", ":")))
         command = _codex_command(
             request,
-            workspace=workspace,
+            workspace=ROOT,
             schema_path=schema_path,
             output_path=output_path,
         )
@@ -393,7 +395,9 @@ def run_research(request: ResearchRequest) -> dict[str, Any]:
             raise ResearchRuntimeError(f"Codex research failed: {message}")
         if not output_path.is_file():
             raise ResearchRuntimeError("Codex did not produce a final result")
-        result = _validate_result(_decode_result(output_path.read_text()))
+        result = _validate_result(
+            _decode_result(output_path.read_text()), scope=request.scope
+        )
 
     result["runtime"] = {
         "provider": "codex",
@@ -405,3 +409,76 @@ def run_research(request: ResearchRequest) -> dict[str, Any]:
         "persisted": False,
     }
     return result
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="docsys research",
+        description="Answer one FlowForm question in a fresh local Codex session.",
+    )
+    parser.add_argument("question", help="exact research question")
+    parser.add_argument(
+        "--depth",
+        choices=sorted(DEPTHS),
+        default="quick",
+        help="quick or thorough model profile (default: quick)",
+    )
+    parser.add_argument("--model", help="override the profile model")
+    parser.add_argument("--scope", help="repository-relative search scope")
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="output format (default: text)",
+    )
+    return parser
+
+
+def _print_text(result: dict[str, Any]) -> None:
+    print(result["answer"])
+    print()
+    print(
+        f"confidence: {result['confidence']} | basis: {result['basis']} | "
+        f"model: {result['runtime']['model']}"
+    )
+    for finding in result["findings"]:
+        print(f"- {finding['claim']}")
+        for source in finding["sources"]:
+            print(
+                f"  {source['path']}:{source['start_line']}-{source['end_line']} "
+                f"({source['kind']})"
+            )
+    for heading, key in (
+        ("contradictions", "contradictions"),
+        ("unresolved", "unresolved"),
+    ):
+        if result[key]:
+            print(f"{heading}:")
+            for item in result[key]:
+                print(f"- {item}")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _parser()
+    args = parser.parse_args(argv)
+    try:
+        result = run_research(
+            ResearchRequest(
+                question=args.question,
+                depth=args.depth,
+                model=args.model,
+                scope=args.scope,
+            )
+        )
+    except (ValueError, ResearchRuntimeError) as error:
+        parser.error(str(error))
+
+    if args.format == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        _print_text(result)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

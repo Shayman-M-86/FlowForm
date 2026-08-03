@@ -1,4 +1,4 @@
 interface:
   display_name: "FlowForm Documentation Context"
-  short_description: "Run isolated, source-backed FlowForm research"
-  default_prompt: "Use $flowform-doc-context to run a fresh isolated research process and return a compact, source-backed FlowForm briefing."
+  short_description: "Find, research, and maintain FlowForm docs"
+  default_prompt: "Use $flowform-doc-context to work from focused Docsys commands and implementation evidence."

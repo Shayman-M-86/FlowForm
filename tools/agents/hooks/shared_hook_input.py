@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Shared input adapter for FlowForm agent hooks."""
+
 from __future__ import annotations
 
 import json
@@ -11,14 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def read_hook_input() -> dict:
-    """Read hook input from whichever channel the calling agent uses.
-
-    Claude Code passes a JSON object on stdin. Codex (per this repo's existing
-    hooks) exposes the payload via the ``CLAUDE_TOOL_INPUT`` environment
-    variable and may leave stdin empty. This adapter accepts either, so the
-    same hook scripts work for both agents.
-    """
-    # Prefer stdin JSON (Claude Code, and any agent that supplies it).
+    """Read hook input from stdin or a supported agent environment variable."""
     raw = ""
     try:
         if not sys.stdin.isatty():
@@ -33,12 +27,11 @@ def read_hook_input() -> dict:
         except (json.JSONDecodeError, ValueError):
             pass
 
-    # Fall back to the env-var payload used by Codex hooks in this repo.
-    for var in ("CLAUDE_TOOL_INPUT", "CODEX_HOOK_INPUT", "CODEX_TOOL_INPUT"):
-        env_raw = os.environ.get(var)
-        if env_raw:
+    for variable in ("CLAUDE_TOOL_INPUT", "CODEX_HOOK_INPUT", "CODEX_TOOL_INPUT"):
+        value = os.environ.get(variable)
+        if value:
             try:
-                data = json.loads(env_raw)
+                data = json.loads(value)
                 if isinstance(data, dict):
                     return data
             except (json.JSONDecodeError, ValueError):

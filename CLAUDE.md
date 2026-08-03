@@ -37,31 +37,15 @@ More specific `CLAUDE.md` files override this guide within their directories.
 
 ## Documentation
 
-Documentation is optional context, not a task-start requirement. Use the
-`flowform-doc-context` skill for explicit documentation work, answer-oriented
-research into established FlowForm behaviour, or after finding a material
-documentation gap. Call the isolated `flowform-research` MCP tool for compact
-factual briefings and delegate bounded documentation edits to `docs-maintainer`.
-The research service starts a fresh local Codex process and returns
-source-backed evidence without editing.
-Verified current documents may directly answer explanation-only questions;
-inspect implementation when implementing, diagnosing, explicitly verifying, or
-resolving a material gap or contradiction.
-
-After behavioural or architectural changes, review the impacted documentation.
-Update only pages whose meaning changed, and regenerate generated documentation
-instead of editing it manually. After reviewing implementation-backed claims,
-use `docsys evidence promote --staged` to record staged evidence for Project
-Knowledge; Development Workspace is not verified. The pre-commit hook enforces
-verification drift and checks document `last_edited` dates without modifying
-or staging files. Treat
-`old-docs/` as historical material.
-
-Codex and Claude share `flowform-research` for isolated factual research and
-provide `docs-maintainer` for bounded documentation work. The parent agent
-remains responsible for integration and final validation. Use the shared
-`flowform-doc-verification` skill when the user wants to select, review,
-approve, and promote specific Project Knowledge pages.
+Documentation is optional context, not a task-start requirement. Use
+`flowform-doc-context` for explicit documentation work, research into established
+FlowForm behaviour, or a material documentation gap. Its shared Docsys commands
+are the only agent-facing documentation tooling entry points; there are no
+documentation MCP tools, lifecycle hooks, platform-specific commands, rules, or
+specialist agents.
+Implementation and tests remain authoritative. Review documentation impact once
+after relevant behaviour settles. Use `flowform-doc-verification` only when the
+user explicitly approves promotion and staging.
 
 ## Handoff
 

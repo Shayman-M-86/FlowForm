@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,8 +15,8 @@ from docsys.research import (
     _codex_command,
     _prompt,
     _validate_result,
+    main,
 )
-from docsys.source_retrieval import read_source, repository_files, search_source
 
 
 class ResearchRuntimeTests(unittest.TestCase):
@@ -40,7 +41,7 @@ class ResearchRuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "scope"):
             ResearchRequest(question="x", scope="../outside")
 
-    def test_codex_command_is_ephemeral_stateless_and_tool_bounded(self) -> None:
+    def test_codex_command_is_ephemeral_stateless_and_mcp_free(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             command = _codex_command(
@@ -59,10 +60,11 @@ class ResearchRuntimeTests(unittest.TestCase):
             "project_doc_max_bytes=0",
             "memories.use_memories=false",
             "memories.generate_memories=false",
-            'enabled_tools=["find","read","search_source","read_source"]',
             "--output-schema",
         ):
             self.assertIn(expected, joined)
+        self.assertNotIn("mcp_servers.", joined)
+        self.assertNotIn("docsys_research_tools", joined)
         self.assertEqual(command[-1], "-")
 
     def test_prompt_json_encodes_untrusted_request_text(self) -> None:
@@ -128,38 +130,51 @@ class ResearchRuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "beyond end"):
             _validate_result(payload)
 
+    def test_result_validation_enforces_requested_scope(self) -> None:
+        payload = {
+            "answer": "Docsys is bounded.",
+            "confidence": "high",
+            "basis": "implementation",
+            "findings": [
+                {
+                    "claim": "The source exists.",
+                    "sources": [
+                        {
+                            "path": "tools/docs/docsys/research.py",
+                            "start_line": 1,
+                            "end_line": 1,
+                            "kind": "implementation",
+                        }
+                    ],
+                    "snippet": None,
+                }
+            ],
+            "contradictions": [],
+            "unresolved": [],
+        }
 
-class SourceRetrievalTests(unittest.TestCase):
-    def test_repository_inventory_excludes_agent_state(self) -> None:
-        files = repository_files()
-        self.assertIn("tools/docs/docsys/research.py", files)
-        self.assertFalse(any(path.startswith(".codex/") for path in files))
-        self.assertNotIn("AGENTS.md", files)
-        self.assertNotIn("CLAUDE.md", files)
-        self.assertFalse(any(Path(path).name.startswith(".env") for path in files))
+        with self.assertRaisesRegex(RuntimeError, "outside requested scope"):
+            _validate_result(payload, scope="backend")
 
-    def test_search_and_read_are_bounded(self) -> None:
-        found = search_source(
-            "DEFAULT_QUICK_MODEL",
-            scope="tools/docs/docsys",
-            file_pattern="*.py",
-            limit=3,
-        )
-        self.assertGreaterEqual(found["total"], 1)
-        self.assertLessEqual(found["returned"], 3)
-        item = found["items"][0]
-        read = read_source(
-            str(item["path"]),
-            start_line=int(item["line"]),
-            end_line=int(item["line"]),
-        )
-        self.assertIn("DEFAULT_QUICK_MODEL", read["content"])
+    def test_command_prints_structured_research_result(self) -> None:
+        payload = {
+            "answer": "Docsys is the entry point.",
+            "confidence": "high",
+            "basis": "implementation",
+            "findings": [],
+            "contradictions": [],
+            "unresolved": [],
+            "runtime": {"model": DEFAULT_QUICK_MODEL},
+        }
+        output = StringIO()
+        with (
+            patch("docsys.research.run_research", return_value=payload),
+            patch("sys.stdout", output),
+        ):
+            result = main(["How does documentation work?", "--format", "json"])
 
-    def test_read_rejects_traversal_and_non_source_files(self) -> None:
-        with self.assertRaisesRegex(ValueError, "normalized"):
-            read_source("../outside", start_line=1, end_line=1)
-        with self.assertRaisesRegex(ValueError, "allowed"):
-            read_source(".codex/config.toml", start_line=1, end_line=1)
+        self.assertEqual(result, 0)
+        self.assertIn('"answer": "Docsys is the entry point."', output.getvalue())
 
 
 if __name__ == "__main__":

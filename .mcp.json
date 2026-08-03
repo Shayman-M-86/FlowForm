@@ -3,14 +3,6 @@
     "flowform-openapi": {
       "command": "/usr/bin/bash",
       "args": ["/home/shayman86/my-repos/FlowForm/tools/mcp/run.sh"]
-    },
-    "flowform-docs": {
-      "command": "/usr/bin/bash",
-      "args": ["tools/mcp/docsys_run.sh"]
-    },
-    "flowform-research": {
-      "command": "/usr/bin/bash",
-      "args": ["tools/mcp/docsys_research_run.sh"]
     }
   }
 }

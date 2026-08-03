@@ -17,10 +17,10 @@ This page records only the stable implementation boundaries.
   exact-file `related_code` conventions.
 - `contracts.py` owns bounded find/read requests and response projections.
 - CLI commands construct those contracts and print compact text or JSON.
-- `mcp_server.py` is a thin read-only adapter over the same contracts and
-  returns source line bounds for retrieved content.
+- `research.py` starts a fresh Codex session that uses the same CLI commands
+  and returns a schema-constrained cited answer.
 - Impact, freshness, health, debt, validation, indexing, and evidence remain
-  explicit CLI operations.
+  explicit command operations.
 
 Document loading is lazy: displaying CLI help or initializing the MCP server
 does not scan `docs/`.
@@ -37,22 +37,15 @@ and headings; section and body content are explicit and bounded. Content
 responses include one-based repository source lines so a research agent can
 return checkable citations without rereading the document through a shell.
 
-The MCP server advertises only `find` and `read`. Maintenance and mutation
-operations are CLI-only.
-
-The `flowform-research` MCP server is the answer-oriented entry point. Each call
-starts `codex exec` as a fresh ephemeral process in an empty temporary working
-directory. It ignores user config and rules, disables memory use and generation,
-does not persist a session, and cannot use shell, web, apps, or subagents. The
-installed Codex client owns authentication; Docsys never reads or copies its
-local authentication state.
-
-The private child-process MCP surface exposes only `find`, `read`,
-`search_source`, and `read_source`. Source retrieval is limited to bounded text
-ranges from tracked or visible non-ignored repository files and excludes secret
-files, agent instructions, local state, dependencies, build output, and
-historical documentation. The service validates every returned citation against
-the current worktree before returning the structured result to its caller.
+Documentation has no MCP surface. `docsys research` is the answer-oriented
+entry point. Each call
+starts `codex exec` as a fresh ephemeral process with temporary result files. It
+ignores user config and rules, disables memory use and generation,
+does not persist a session, and cannot use web, apps, or subagents. It uses the
+same `docsys find` and `docsys read` commands as a normal agent, plus narrow
+read-only source inspection inside the repository sandbox. The installed Codex
+client owns authentication; Docsys never reads or copies its local authentication
+state. Docsys validates every returned citation against the current worktree.
 
 ## Evidence and linkage
 
@@ -71,6 +64,7 @@ ordering.
 ## Validation
 
 Run focused unit tests and the documentation validators after changing Docsys.
-The agent-setup validator checks skill mirrors, MCP registration and schema
-bounds, and the absence of documentation startup injection. It deliberately
-does not constrain unrelated hooks or agent models.
+The agent-setup validator checks skill and root-rule mirrors, the command-first
+research boundary, and the absence of documentation MCP, platform-specific
+agents, rules, commands, and lifecycle hooks. It does not constrain unrelated
+agent tooling.

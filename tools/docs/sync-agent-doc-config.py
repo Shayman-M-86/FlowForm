@@ -7,11 +7,8 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
-import tomllib
-
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ("flowform-doc-context", "flowform-doc-verification")
-AGENTS = ("docs-maintainer",)
 
 
 @dataclass(frozen=True)
@@ -20,34 +17,15 @@ class Mirror:
     content: str
 
 
-def _front_matter_value(text: str, key: str) -> str | None:
-    if not text.startswith("---\n"):
-        return None
-    end = text.find("\n---\n", 4)
-    if end < 0:
-        return None
-    prefix = f"{key}:"
-    for line in text[4:end].splitlines():
-        if line.startswith(prefix):
-            return line.partition(":")[2].strip().strip("\"'")
-    return None
+def _section(text: str, heading: str) -> str:
+    start = text.index(f"{heading}\n")
+    end = text.find("\n## ", start + len(heading))
+    return text[start:] if end < 0 else text[start:end]
 
 
-def _claude_agent(name: str) -> str:
-    source = ROOT / ".codex" / "agents" / f"{name}.toml"
-    target = ROOT / ".claude" / "agents" / f"{name}.md"
-    data = tomllib.loads(source.read_text())
-    current = target.read_text() if target.exists() else ""
-    model = _front_matter_value(current, "model") or "sonnet"
-    instructions = str(data["developer_instructions"]).strip()
-    return (
-        "---\n"
-        f"name: {data['name']}\n"
-        f"description: {data['description']}\n"
-        f"model: {model}\n"
-        "---\n\n"
-        f"{instructions}\n"
-    )
+def _replace_section(text: str, heading: str, replacement: str) -> str:
+    current = _section(text, heading)
+    return text.replace(current, replacement, 1)
 
 
 def mirrors() -> list[Mirror]:
@@ -56,19 +34,24 @@ def mirrors() -> list[Mirror]:
         source = ROOT / ".agents" / "skills" / name / "SKILL.md"
         target = ROOT / ".claude" / "skills" / name / "SKILL.md"
         result.append(Mirror(target=target, content=source.read_text()))
-    result.extend(
+    agents_guide = (ROOT / "AGENTS.md").read_text()
+    claude_path = ROOT / "CLAUDE.md"
+    result.append(
         Mirror(
-            target=ROOT / ".claude" / "agents" / f"{name}.md",
-            content=_claude_agent(name),
+            target=claude_path,
+            content=_replace_section(
+                claude_path.read_text(),
+                "## Documentation",
+                _section(agents_guide, "## Documentation"),
+            ),
         )
-        for name in AGENTS
     )
     return result
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Check or update Claude documentation workflow mirrors."
+        description="Check or update shared Claude documentation workflow mirrors."
     )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true", help="report drift")
@@ -78,8 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     changed = [
         mirror
         for mirror in mirrors()
-        if not mirror.target.exists()
-        or mirror.target.read_text() != mirror.content
+        if not mirror.target.exists() or mirror.target.read_text() != mirror.content
     ]
     action = "DIFFERS" if args.check else "UPDATED"
     for mirror in changed:

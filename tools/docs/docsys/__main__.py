@@ -9,6 +9,7 @@ import sys
 _COMMANDS = {
     "find": ("docsys.query", "find a small set of relevant documents"),
     "read": ("docsys.retrieve", "read one exact document or section"),
+    "research": ("docsys.research", "answer one question in a fresh Codex session"),
     "impact": ("docsys.impact", "find documentation affected by code changes"),
     "freshness": ("docsys.freshness", "check implementation evidence freshness"),
     "health": ("docsys.health", "summarize documentation health"),

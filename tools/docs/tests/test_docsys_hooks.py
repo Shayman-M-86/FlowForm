@@ -25,7 +25,10 @@ class DocumentationHookConfigTests(unittest.TestCase):
             claude["hooks"].get("PostToolUse"),
         )
         command = codex["hooks"]["PostToolUse"][0]["hooks"][0]["command"]
-        self.assertIn("post_tool_python_quality.py", command)
+        self.assertEqual(
+            command,
+            "python3 tools/agents/hooks/post_tool_python_quality.py",
+        )
 
     def test_removed_documentation_hooks_are_not_present(self) -> None:
         hooks = ROOT / "tools/docs/hooks"

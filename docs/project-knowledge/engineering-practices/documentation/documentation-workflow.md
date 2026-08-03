@@ -9,15 +9,12 @@ last_edited: 2026-08-03
 tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
-  - "../../../../tools/docs/docsys/mcp_server.py"
   - "../../../../tools/docs/docsys/research.py"
-  - "../../../../tools/docs/docsys/research_mcp_server.py"
   - "../../../../tools/docs/docsys/validate.py"
   - "../../../../tools/docs/docsys/evidence.py"
   - "../../../../tools/docs/validate-doc-metadata.py"
 change_triggers:
   - "../../../../tools/docs/"
-  - "../../../../.codex/config.toml"
   - "../../../../.agents/skills/flowform-doc-context/"
   - "../../../../.agents/skills/flowform-doc-verification/"
 related_docs:
@@ -49,25 +46,26 @@ instead of adding a cross-linked variation.
 
 ## Answer-oriented research
 
-When an agent needs to know how existing FlowForm behaviour works, it calls the
-`flowform-research` MCP tool with the exact question. The service launches a new
-ephemeral local Codex process with no prior session, user configuration,
-memories, project instructions, shell, web, or subagents. The installed Codex
-client retains ownership of account authentication.
+Codex and Claude use the same `flowform-doc-context` skill and the same
+`tools/docs/bin/docsys` commands. Documentation has no MCP server, lifecycle
+hook, platform-specific command, rule, or specialist agent. The canonical skill
+lives under `.agents/skills/`; its Claude copy and the root documentation rule
+are checked and synchronized by `sync-agent-doc-config.py`.
 
-The isolated process sees only bounded Docsys discovery, document reads, source
-search, and exact source-range reads. It preserves source line bounds and
-returns a validated evidence packet instead of its search transcript. Quick
-research uses the fast read-oriented model; thorough research uses the stronger
-model and higher reasoning effort, with an explicit per-request override.
+For a separate compact briefing, `docsys research` launches a new ephemeral
+local Codex process with no prior session, user configuration, memories, project
+instructions, web, apps, or subagents. It runs the same repository commands in
+a read-only sandbox, preserves source line bounds, and returns a validated
+evidence packet instead of its search transcript. The installed Codex client
+retains ownership of account authentication.
 
 Verified current documentation may directly support an explanation-only
 answer. For implementation work, draft or scaffold documentation, or a
 contradiction, the researcher checks the smallest authoritative code, test,
 schema, configuration, CI, or infrastructure surface needed. It reports gaps
-and contradictions rather than editing documentation or guessing. The service
-validates cited paths and lines against the current worktree. Bounded
-documentation changes remain the `docs-maintainer` responsibility.
+and contradictions rather than editing documentation or guessing. The command
+validates cited paths and lines against the current worktree. The invoking agent
+owns any bounded documentation changes.
 
 ## Evidence-first update
 

@@ -5,7 +5,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import tomllib
 from docsys.evidence import (
     EvidenceEntry,
     EvidenceSource,
@@ -156,16 +155,21 @@ class CollectionModelTests(unittest.TestCase):
                 "staged index",
             )
 
-            with patch(
-                "docsys.evidence.EvidenceSource.from_index",
-                return_value=source,
-            ), patch(
-                "docsys.evidence.DocSet.load",
-                return_value=DocSet.load(docs_root),
-            ), patch(
-                "docsys.evidence._git_text",
-                return_value=f"{code_rel}\n",
-            ), patch("docsys.evidence._set_metadata") as set_metadata:
+            with (
+                patch(
+                    "docsys.evidence.EvidenceSource.from_index",
+                    return_value=source,
+                ),
+                patch(
+                    "docsys.evidence.DocSet.load",
+                    return_value=DocSet.load(docs_root),
+                ),
+                patch(
+                    "docsys.evidence._git_text",
+                    return_value=f"{code_rel}\n",
+                ),
+                patch("docsys.evidence._set_metadata") as set_metadata,
+            ):
                 result = check_staged()
 
             unchanged = DocSet.load(docs_root).docs[0]
@@ -205,16 +209,21 @@ class CollectionModelTests(unittest.TestCase):
                 "staged index",
             )
 
-            with patch(
-                "docsys.evidence.EvidenceSource.from_index",
-                return_value=source,
-            ), patch(
-                "docsys.evidence.DocSet.load",
-                return_value=DocSet.load(docs_root),
-            ), patch(
-                "docsys.evidence._git_text",
-                return_value=f"{code_rel}\n",
-            ), patch("docsys.evidence._set_metadata") as set_metadata:
+            with (
+                patch(
+                    "docsys.evidence.EvidenceSource.from_index",
+                    return_value=source,
+                ),
+                patch(
+                    "docsys.evidence.DocSet.load",
+                    return_value=DocSet.load(docs_root),
+                ),
+                patch(
+                    "docsys.evidence._git_text",
+                    return_value=f"{code_rel}\n",
+                ),
+                patch("docsys.evidence._set_metadata") as set_metadata,
+            ):
                 result = check_staged()
 
             unchanged = DocSet.load(docs_root).docs[0]
@@ -233,17 +242,18 @@ class CollectionModelTests(unittest.TestCase):
             "last_edited: 2026-07-26",
         )
 
-        with patch(
-            "docsys.evidence._git_text",
-            side_effect=[f"{staged}\n", old_document],
-        ), patch(
-            "docsys.evidence._today",
-            return_value="2026-07-27",
-        ), patch(
-            "docsys.evidence._set_last_edited"
-        ) as set_last_edited, patch(
-            "docsys.evidence.subprocess.run"
-        ) as run:
+        with (
+            patch(
+                "docsys.evidence._git_text",
+                side_effect=[f"{staged}\n", old_document],
+            ),
+            patch(
+                "docsys.evidence._today",
+                return_value="2026-07-27",
+            ),
+            patch("docsys.evidence._set_last_edited") as set_last_edited,
+            patch("docsys.evidence.subprocess.run") as run,
+        ):
             result = check_last_edited_staged()
 
         self.assertEqual(result, 1)
@@ -270,27 +280,21 @@ class CollectionModelTests(unittest.TestCase):
             first = EvidenceSource(
                 {
                     code_rel: EvidenceEntry(code_rel, "100644", "a" * 40),
-                    unrelated_rel: EvidenceEntry(
-                        unrelated_rel, "100644", "b" * 40
-                    ),
+                    unrelated_rel: EvidenceEntry(unrelated_rel, "100644", "b" * 40),
                 },
                 "first",
             ).snapshot(doc)
             unrelated_changed = EvidenceSource(
                 {
                     code_rel: EvidenceEntry(code_rel, "100644", "a" * 40),
-                    unrelated_rel: EvidenceEntry(
-                        unrelated_rel, "100644", "c" * 40
-                    ),
+                    unrelated_rel: EvidenceEntry(unrelated_rel, "100644", "c" * 40),
                 },
                 "unrelated changed",
             ).snapshot(doc)
             evidence_changed = EvidenceSource(
                 {
                     code_rel: EvidenceEntry(code_rel, "100644", "d" * 40),
-                    unrelated_rel: EvidenceEntry(
-                        unrelated_rel, "100644", "b" * 40
-                    ),
+                    unrelated_rel: EvidenceEntry(unrelated_rel, "100644", "b" * 40),
                 },
                 "evidence changed",
             ).snapshot(doc)
@@ -315,15 +319,19 @@ class CollectionModelTests(unittest.TestCase):
                 "staged",
             )
 
-            with patch(
-                "docsys.evidence.EvidenceSource.from_index",
-                return_value=source,
-            ), patch(
-                "docsys.evidence._git_bytes",
-                return_value=b"",
-            ) as git_bytes, patch(
-                "docsys.evidence._today",
-                return_value="2026-07-29",
+            with (
+                patch(
+                    "docsys.evidence.EvidenceSource.from_index",
+                    return_value=source,
+                ),
+                patch(
+                    "docsys.evidence._git_bytes",
+                    return_value=b"",
+                ) as git_bytes,
+                patch(
+                    "docsys.evidence._today",
+                    return_value="2026-07-29",
+                ),
             ):
                 result = promote_staged([rel], stage=True)
 
@@ -355,22 +363,9 @@ class CollectionModelTests(unittest.TestCase):
         claude_verification_skill = (
             ROOT / ".claude/skills/flowform-doc-verification/SKILL.md"
         ).read_text()
-        codex_commit_skill = (
-            ROOT / ".agents/skills/commit/SKILL.md"
-        ).read_text()
-        claude_commit_skill = (
-            ROOT / ".claude/skills/commit/SKILL.md"
-        ).read_text()
-        claude_commit_command = (
-            ROOT / ".claude/commands/commit.md"
-        ).read_text()
-        codex_agent = tomllib.loads(
-            (ROOT / ".codex/agents/docs-maintainer.toml").read_text()
-        )
-        claude_agent = (
-            ROOT / ".claude/agents/docs-maintainer.md"
-        ).read_text()
-
+        codex_commit_skill = (ROOT / ".agents/skills/commit/SKILL.md").read_text()
+        claude_commit_skill = (ROOT / ".claude/skills/commit/SKILL.md").read_text()
+        claude_commit_command = (ROOT / ".claude/commands/commit.md").read_text()
         self.assertEqual(codex_skill, claude_skill)
         self.assertEqual(codex_verification_skill, claude_verification_skill)
         self.assertEqual(codex_commit_skill, claude_commit_skill)
@@ -378,13 +373,9 @@ class CollectionModelTests(unittest.TestCase):
             ".claude/skills/commit/SKILL.md",
             claude_commit_command,
         )
-        self.assertEqual(codex_agent["name"], "docs-maintainer")
-        self.assertIn("name: docs-maintainer", claude_agent)
-        self.assertIn("Use document paths supplied by the parent", claude_agent)
-        self.assertIn(
-            "Use document paths supplied by the parent",
-            codex_agent["developer_instructions"],
-        )
+        self.assertFalse((ROOT / ".codex/agents/docs-maintainer.toml").exists())
+        self.assertFalse((ROOT / ".claude/agents/docs-maintainer.md").exists())
+        self.assertIn("tools/docs/bin/docsys research", codex_skill)
 
     def test_parent_collection_and_profile_validation(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
@@ -435,9 +426,9 @@ class CollectionModelTests(unittest.TestCase):
             self.assertGreaterEqual(len(findings[0].evidence), 5)
             self.assertEqual(len(findings[0].suggested_children), 16)
             self.assertTrue(
-                findings[0].suggested_children[0].endswith(
-                    "large-overview/large-overview-index.md"
-                )
+                findings[0]
+                .suggested_children[0]
+                .endswith("large-overview/large-overview-index.md")
             )
 
     def test_debt_defaults_to_project_knowledge(self) -> None:
@@ -482,9 +473,7 @@ class CollectionModelTests(unittest.TestCase):
             workspace = docs_root / "development-workspace"
             workspace.mkdir(parents=True)
             (docs_root / "docs-index.md").write_text(_document("Root"))
-            incomplete = _document(
-                "Workspace", authority="working"
-            )
+            incomplete = _document("Workspace", authority="working")
             for optional_line in (
                 'aliases: ["Workspace"]\n',
                 "authority: working\n",
@@ -514,11 +503,13 @@ class CollectionModelTests(unittest.TestCase):
             workspace = docs_root / "development-workspace"
             workspace.mkdir(parents=True)
             (docs_root / "docs-index.md").write_text(_document("Root"))
-            document = _document("Workspace", authority="working").replace(
-                "status: scaffold", "status: verified"
-            ).replace(
-                "verified_evidence_digest: null",
-                f"verified_evidence_digest: sha256:{'a' * 64}",
+            document = (
+                _document("Workspace", authority="working")
+                .replace("status: scaffold", "status: verified")
+                .replace(
+                    "verified_evidence_digest: null",
+                    f"verified_evidence_digest: sha256:{'a' * 64}",
+                )
             )
             (workspace / "development-workspace-index.md").write_text(document)
 

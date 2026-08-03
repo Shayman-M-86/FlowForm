@@ -1,38 +1,39 @@
 ---
 name: flowform-doc-context
-description: Research how FlowForm works through a fresh isolated Codex process with focused documentation and implementation evidence, or find context for explicit documentation work. Use when the user asks how established FlowForm behaviour is implemented, an agent needs a compact factual briefing without adding retrieval history to its own context, documentation is explicitly in scope, or implementation inspection reveals a material documentation gap.
+description: Find, research, and maintain FlowForm documentation through the shared Docsys commands. Use for questions about established FlowForm behaviour, explicit documentation work, or a material documentation gap found during implementation.
 ---
 
 # FlowForm documentation context
 
-Use this skill for answer-oriented FlowForm research, explicit documentation
-work, or a material gap discovered while inspecting implementation. Do not
-invoke it automatically for ordinary implementation tasks.
-
 ## Workflow
 
-1. For a "how does this work?" question or implementation-grounding request,
-   call the `flowform-research` MCP `research` tool. Pass the exact question and
-   an optional repository-relative scope. Use `quick` depth by default and
-   `thorough` only for ambiguous or cross-boundary questions.
-2. For one simple lookup, or when delegation is unavailable, use the
-   `flowform-docs` MCP `find` and `read` tools directly. Run
-   `tools/docs/bin/docsys find --help` only when CLI search controls are needed.
-3. Use `find` with concise terms, a documentation scope, or exact code files;
-   keep the result set at three or fewer.
-4. Use `read` for one selected path or section. Do not load neighbours or full
-   documents by default. Preserve returned source line bounds in citations.
-5. Treat implementation, tests, configuration, and automation as authoritative
-   when changing behaviour or when a selected document is unreliable.
-6. Run `impact` once near completion only when documentation meaning may have
-   changed. Update only affected authored pages and regenerate generated pages.
+1. Use supplied document paths directly. Otherwise run a narrow search:
 
-The research tool starts a new non-persistent Codex process with no prior
-session, user config, memories, project instructions, shell, web, or subagents.
-It exposes only bounded read-only documentation and repository retrieval tools.
-Consume its structured evidence packet; do not ask it to edit files.
+   ```sh
+   tools/docs/bin/docsys find <terms> --limit 3 --format json
+   ```
 
-When a parent agent supplies document paths, use them directly and skip
-discovery. Keep answer-oriented research separate from `docs-maintainer`, which
-owns bounded documentation edits. Do not scan the documentation tree or reload
-context on ordinary follow-up prompts.
+2. Read only the selected document or section:
+
+   ```sh
+   tools/docs/bin/docsys read <path> --body --format json
+   ```
+
+3. For a compact answer in a separate session, run:
+
+   ```sh
+   tools/docs/bin/docsys research "<exact question>" --format json
+   ```
+
+   Use `--depth thorough` only for ambiguous or cross-boundary questions. The
+   command starts a fresh, read-only Codex session and returns cited findings.
+4. For documentation changes, inspect the owning implementation, edit only the
+   bounded authored pages, and never hand-edit generated documentation.
+5. Run `tools/docs/bin/docsys impact --format json` once after relevant
+   behaviour settles. Update only pages whose meaning changed, then run the
+   relevant validators.
+
+Implementation, tests, schemas, configuration, and automation remain
+authoritative. Report contradictions and unresolved gaps rather than guessing.
+Do not invoke documentation discovery automatically for ordinary implementation
+tasks.

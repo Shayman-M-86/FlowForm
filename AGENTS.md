@@ -38,13 +38,14 @@ More specific `AGENTS.md` files override this guide within their directories.
 ## Documentation
 
 Documentation is optional context, not a task-start requirement. Use
-`flowform-doc-context` for explicit documentation work, answer-oriented research
-into established FlowForm behaviour, or after finding a material documentation
-gap. For a compact factual briefing, call the isolated `flowform-research` MCP
-tool; for bounded documentation edits, delegate to `docs-maintainer`.
+`flowform-doc-context` for explicit documentation work, research into established
+FlowForm behaviour, or a material documentation gap. Its shared Docsys commands
+are the only agent-facing documentation tooling entry points; there are no
+documentation MCP tools, lifecycle hooks, platform-specific commands, rules, or
+specialist agents.
 Implementation and tests remain authoritative. Review documentation impact once
-after relevant behaviour settles, and use `flowform-doc-verification` only when
-the user explicitly approves promotion and staging.
+after relevant behaviour settles. Use `flowform-doc-verification` only when the
+user explicitly approves promotion and staging.
 
 ## Handoff
 
