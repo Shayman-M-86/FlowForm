@@ -19,9 +19,9 @@ container image:
 | Context | Owns | Runtime selection |
 | --- | --- | --- |
 | `images/backend/` | Python runtime, backend source, default command, health probe | None |
-| `images/caddy/` | Route 53-enabled Caddy binary and production Caddyfile | Environment variables |
+| `images/caddy/` | Route 53- and rate-limit-enabled Caddy binary, production Caddyfile, and edge-limit policy | Environment variables and `rate-limits.caddy` |
 | `images/squid/` | Squid, policy template, AWS allow-list, renderer, validation, health probe | Source CIDR variables |
-| `images/alloy/` | Alloy binary plus App and Proxy telemetry configurations | `FLOWFORM_ALLOY_ROLE=app|proxy` |
+| `images/alloy/` | Alloy binary plus App and Proxy telemetry configurations | `FLOWFORM_ALLOY_ROLE=app\|proxy` |
 
 The checked-in immutable source contract is
 `infra/contracts/image-sources.json`. Backend builds from the repository root
@@ -35,11 +35,13 @@ repository source. CDK and SSM provide environment identity, internal DNS
 names, and promoted immutable image digests. Secrets are mounted at runtime
 and are never copied into these build contexts.
 
-The normal AWS images embed the production Caddyfile and Squid destination
-allow-list. The Proxmox rehearsal remains an environment adapter: its Compose
-override mounts the rehearsal certificate Caddyfile and fake-service Squid
-allow-list over those defaults. Development and rehearsal do not maintain
-separate copies of the deployable Backend image.
+The normal AWS images embed the production Caddyfile, its shared
+`images/caddy/rate-limits.caddy` policy, and the Squid destination allow-list.
+The Proxmox rehearsal remains an environment adapter: its Compose override
+mounts the rehearsal certificate Caddyfile and fake-service Squid allow-list
+over those defaults, while importing the same embedded rate-limit policy.
+Development and rehearsal do not maintain separate copies of the deployable
+Backend image.
 
 ## Local validation
 

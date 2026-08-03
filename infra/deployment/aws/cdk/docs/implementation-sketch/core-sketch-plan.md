@@ -39,11 +39,13 @@ topologies using immutable images from ECR. No Postgres container;
 `DATABASE_URL`s point at RDS. Secrets are fetched at deploy/boot time into
 runtime files and are never committed.
 
-**2b. Caddy image with Route 53 DNS-01.** Stock Caddy doesn't include the Route
-53 DNS provider, so `infra/containers/images/caddy/` builds the custom image
-with `xcaddy` and owns its Caddyfile. Runtime topology remains under
-`infra/containers/runtime/aws/common/compose/`. Credentials come from the
-instance role via IMDS, so the container requires IMDSv2 hop limit 2.
+**2b. Caddy image with Route 53 DNS-01 and edge rate limiting.** Stock Caddy
+includes neither the Route 53 DNS provider nor the selected rate-limit handler,
+so `infra/containers/images/caddy/` builds the custom image with `xcaddy` and
+owns its production Caddyfile plus the shared `rate-limits.caddy` policy.
+Runtime topology remains under `infra/containers/runtime/aws/common/compose/`.
+Credentials come from the instance role via IMDS, so the container requires
+IMDSv2 hop limit 2.
 
 **2c. Deploy mechanism.** GitHub Actions builds and pushes the backend image to ECR, then triggers the instance via **SSM SendCommand** (or an SSM document) to `docker compose pull && docker compose up -d`. No SSH from CI.
 

@@ -30,32 +30,32 @@ hardening is the containment layer inside that.
 ```text
 /opt/flowform-proxy/
   docker-compose.yml        # caddy + squid
-  .env                      # PROXY_PRIVATE_IP, APP_PRIVATE_IP, API_DOMAIN, image refs
-  caddy/Caddyfile
+  .env                      # APP_UPSTREAM_HOST, API_DOMAIN, source CIDRs, image refs
   squid/squid.conf
   squid/allowed-domains.txt
 ```
 
-Compose sketch (`caddy` is the custom ECR image built with xcaddy +
-`caddy-dns/route53` — stock `caddy:2-alpine` cannot do the decided
-Route 53 DNS-01 flow):
+The Caddy image embeds the canonical `infra/containers/images/caddy/Caddyfile`
+and `rate-limits.caddy`; the host does not own production copies. The custom ECR
+image is built with `xcaddy`, `caddy-dns/route53`, and `caddy-ratelimit` because
+stock `caddy:2-alpine` provides neither the decided Route 53 DNS-01 provider nor
+the selected rate-limit handler.
 
 ```yaml
 name: flowform-proxy
 
 services:
   caddy:
-    image: ${CADDY_IMAGE:?ECR ref of the xcaddy+route53 build}
+    image: ${CADDY_IMAGE:?ECR ref of the custom xcaddy build}
     restart: unless-stopped
     ports:
       - "80:80/tcp"
       - "443:443/tcp"
     environment:
       API_DOMAIN: ${API_DOMAIN:?}
-      APP_PRIVATE_IP: ${APP_PRIVATE_IP:?}
+      APP_UPSTREAM_HOST: ${APP_UPSTREAM_HOST:?}
       AWS_REGION: ${AWS_REGION}   # route53 provider via instance role/IMDS
     volumes:
-      - ./caddy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
       - caddy_data:/data          # cert storage must survive restarts
       - caddy_config:/config
     read_only: true
@@ -130,7 +130,9 @@ private VPC — acceptable because it never crosses the public internet.
   -Server
  }
 
- reverse_proxy http://{$APP_PRIVATE_IP}:5000 {
+ import rate-limits.caddy
+
+ reverse_proxy http://{$APP_UPSTREAM_HOST}:5000 {
   health_uri /api/v1/system/health/ready
   health_interval 30s
   health_timeout 5s

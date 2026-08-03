@@ -3,8 +3,8 @@
 This note condenses the Caddy deployment discussion into a focused companion to
 the [FlowForm Deployment Implementation Plan](core-sketch-plan.md). It expands
 the Caddy-specific parts of the plan: the EC2 application stack, the production
-Docker Compose runtime, Route 53 DNS-01 certificate issuance, and the locked-down
-network shape.
+Docker Compose runtime, Route 53 DNS-01 certificate issuance, edge rate
+limiting, and the locked-down network shape.
 
 Two deeper companions cover the implementation detail:
 [docker-hardening.md](docker-hardening.md) (Compose files, Caddyfile/Squid
@@ -44,6 +44,7 @@ PUBLIC proxy EC2 (public subnet)
   |-- Caddy container
   |     |-- listens on public 443 (80 for redirect)
   |     |-- manages ACME certificates with Route 53 DNS-01
+  |     |-- rejects requests that exceed coarse per-peer limits
   |     `-- reverse proxies to the app EC2's PRIVATE IP
   |
   `-- Squid container (outbound forward proxy, port 3128
@@ -73,15 +74,40 @@ Caddy should:
 
 - Receive public HTTPS traffic for `api.<domain>`.
 - Obtain and renew certificates with DNS-01 validation through Route 53.
+- Apply coarse per-peer API and endpoint rate limits before proxying.
 - Reverse proxy requests to the private app instance, for example
-  `http://{$APP_PRIVATE_IP}:5000`.
+  `http://{$APP_UPSTREAM_HOST}:5000`.
 - Keep Flask/Gunicorn private inside the Docker Compose network.
 - Avoid storing AWS credentials in files, images, or GitHub secrets.
 
-The main plan already calls out that stock Caddy does not include the Route 53
-DNS provider. Build a small custom image with `xcaddy` and the
-`caddy-dns/route53` plugin, then push it to ECR alongside the backend image. See
-[Phase 2b](core-sketch-plan.md#phase-2--backend-runtime-on-ec2).
+Stock Caddy includes neither the Route 53 DNS provider nor the selected
+rate-limit handler. The canonical image in `infra/containers/images/caddy/`
+uses `xcaddy` with pinned `caddy-dns/route53` and `caddy-ratelimit` modules, then
+embeds both the production `Caddyfile` and `rate-limits.caddy`. Push that image
+to ECR alongside the backend image. See [Phase
+2b](core-sketch-plan.md#phase-2--backend-runtime-on-ec2).
+
+## Rate-Limit Boundary
+
+`infra/containers/images/caddy/rate-limits.caddy` is the single policy file for
+AWS and the Proxmox rehearsal. It currently applies a general `120` requests per
+minute budget to `/api/*` and `10` POST requests per minute to each sensitive
+route group: respondent link resolution, account bootstrap, and outbound email
+actions. Keys use the direct peer IP and group IPv6 clients by `/64`.
+
+These are coarse edge controls. Requests can match both the general and a
+sensitive zone, and rejected requests receive `429` with `Retry-After` without
+reaching Flask. Flask's in-memory request limiter and application-level email
+limits remain separate controls. The current Caddy policy is local to one proxy
+instance; scaling the proxy role requires an explicit shared-storage and
+distributed-counter decision. A CDN or load balancer also requires trusted
+client-address configuration before forwarded IPs can replace the direct peer
+as the limit key.
+
+Caddy emits both a normal access record with `status=429` and a
+`http.handlers.rate_limit` activation record. The proxy Alloy pipeline already
+ships Caddy container logs to Loki; Grafana alert rules remain a separate
+operational configuration.
 
 ## Certificate Flow
 
@@ -286,7 +312,9 @@ app EC2:
         dns route53
     }
 
-    reverse_proxy http://{$APP_PRIVATE_IP}:5000 {
+    import rate-limits.caddy
+
+    reverse_proxy http://{$APP_UPSTREAM_HOST}:5000 {
         health_uri /api/v1/system/health/ready
     }
 }
@@ -309,6 +337,9 @@ Validate this in staging before adding prod:
 - The Caddy container can access instance-role credentials through IMDS, or the
   chosen alternative credential path is documented.
 - `curl https://api.<staging-domain>/...` reaches the backend through Caddy.
+- An approved rate-limit probe receives `429` with `Retry-After`, creates both
+  the Caddy access and activation records, and does not reach the backend.
+- The Caddy `429` access record reaches Loki through the proxy Alloy pipeline.
 - `curl http://<app-private-ip>:5000` fails from outside the proxy path.
 - Flask/Gunicorn can connect to both FlowForm databases on RDS.
 - Deployment through SSM can pull images and restart Compose without SSH.
@@ -325,7 +356,7 @@ Keep these out of the first pass unless staging reveals a need:
 - ALB in public subnets with EC2 in private subnets.
 - NAT reduction through VPC endpoints and PrivateLink where supported.
 - Caddy certificate-expiry monitoring.
-- Docker log shipping to CloudWatch.
+- Grafana alerting for sustained Caddy rate-limit activations.
 - SSM Patch Manager and rebuildable instance bootstrap.
 
 These belong with the post-cutover hardening work in

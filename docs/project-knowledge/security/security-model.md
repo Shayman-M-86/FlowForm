@@ -5,10 +5,13 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-03
 tags: [backend, infrastructure, security]
 related_code:
   - "../../../backend/app/core/config.py"
+  - "../../../backend/app/middleware/rate_limit/service.py"
+  - "../../../backend/app/email_service/rate_limiter.py"
+  - "../../../infra/containers/images/caddy/rate-limits.caddy"
 change_triggers:
   - "../../../backend/app/middleware/auth/"
   - "../../../backend/app/services/access/"
@@ -82,18 +85,23 @@ owns the detailed data model.
 Configuration and bootstrap assets support file-backed secrets and separate
 runtime configuration. Container and deployment definitions describe reduced
 container privileges, read-only filesystems with temporary writable areas, a
-reverse proxy, and restricted application connectivity. Their existence in the
-repository does not establish deployed IAM, network, certificate, backup,
-monitoring, or incident-response outcomes.
+reverse proxy, and restricted application connectivity. The public Caddy proxy
+applies coarse request budgets by direct peer IP before proxying to Flask. The
+backend retains a separate in-memory IP limiter, while the email service applies
+in-memory recipient cooldown and global-send budgets. Their existence in the
+repository does not establish deployed IAM, network, certificate, rate-limit,
+backup, monitoring, or incident-response outcomes.
 
 ## Known limitations to retain during review
 
-Rate limiting is application-local and depends on trusted client attribution.
-Cross-store response operations are coordinated by the application rather than
-by one transaction. Key material can be resident in worker memory. The
-repository does not by itself establish governance for privileged users,
-deployment-state verification, comprehensive endpoint authorization coverage,
-or a complete threat model.
+Rate-limit state is local to the current Caddy instance or application process;
+the checked-in configuration does not enable shared cross-instance counters.
+IP-based enforcement also depends on correct client attribution if another CDN
+or load balancer is introduced. Cross-store response operations are coordinated
+by the application rather than by one transaction. Key material can be resident
+in worker memory. The repository does not by itself establish governance for
+privileged users, deployment-state verification, comprehensive endpoint
+authorization coverage, or a complete threat model.
 
 ## Related documents
 
