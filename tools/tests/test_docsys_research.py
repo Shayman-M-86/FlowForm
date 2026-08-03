@@ -7,10 +7,9 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from flowform_tools.docsys.capabilities import inventory
-from flowform_tools.docsys.command_catalog import RESEARCH_CLI_TOOLS
-from flowform_tools.docsys.model import ROOT
-from flowform_tools.docsys.research import (
+from flowform_tools.docsys.commands.capabilities import inventory
+from flowform_tools.docsys.commands.ci import render_markdown
+from flowform_tools.docsys.commands.research import (
     DEFAULT_QUICK_MODEL,
     DEFAULT_THOROUGH_MODEL,
     ResearchRequest,
@@ -20,9 +19,41 @@ from flowform_tools.docsys.research import (
     _validate_result,
     main,
 )
+from flowform_tools.docsys.command_catalog import RESEARCH_CLI_TOOLS
+from flowform_tools.docsys.core.cli import markdown_table, paginate
+from flowform_tools.docsys.core.model import ROOT
 
 
 class ResearchRuntimeTests(unittest.TestCase):
+    def test_shared_cli_pagination_and_markdown_escaping(self) -> None:
+        shown, total, truncated = paginate([1, 2, 3], limit=2, show_all=False)
+
+        self.assertEqual(shown, [1, 2])
+        self.assertEqual(total, 3)
+        self.assertTrue(truncated)
+        self.assertEqual(paginate([1], limit=2, show_all=True), ([1], 1, False))
+        with self.assertRaisesRegex(ValueError, "at least 1"):
+            paginate([], limit=0, show_all=False)
+
+        table = markdown_table(["Message"], [["broken | [[target]]"]])
+        self.assertIn(r"broken \| &#91;&#91;target&#93;&#93;", table)
+        self.assertNotIn("[[target]]", table)
+
+        report = {
+            "comparison": "test",
+            "impacted_documents": [
+                {
+                    "confidence": "high",
+                    "path": "docs/example.md",
+                    "reasons": ["pipe | and [[broken target]]"],
+                    "modified_in_change": False,
+                }
+            ],
+        }
+        rendered = render_markdown(report, [])
+        self.assertIn(r"pipe \| and &#91;&#91;broken target&#93;&#93;", rendered)
+        self.assertNotIn("[[broken target]]", rendered)
+
     def test_request_selects_fast_and_thorough_models(self) -> None:
         quick = ResearchRequest(question="How does auth work?")
         thorough = ResearchRequest(question="Compare boundaries", depth="thorough")
@@ -89,7 +120,7 @@ class ResearchRuntimeTests(unittest.TestCase):
 
     def test_capability_inventory_reports_exact_ready_research_tools(self) -> None:
         with patch(
-            "flowform_tools.docsys.capabilities._available",
+            "flowform_tools.docsys.commands.capabilities._available",
             return_value=(True, "/example/tool"),
         ):
             payload = inventory()
@@ -135,7 +166,7 @@ class ResearchRuntimeTests(unittest.TestCase):
                     "claim": "The source exists.",
                     "sources": [
                         {
-                            "path": "tools/flowform_tools/docsys/research.py",
+                            "path": "tools/flowform_tools/docsys/commands/research.py",
                             "start_line": 1,
                             "end_line": 1,
                             "kind": "implementation",
@@ -165,7 +196,7 @@ class ResearchRuntimeTests(unittest.TestCase):
                     "claim": "The source exists.",
                     "sources": [
                         {
-                            "path": "tools/flowform_tools/docsys/research.py",
+                            "path": "tools/flowform_tools/docsys/commands/research.py",
                             "start_line": 1,
                             "end_line": 1,
                             "kind": "implementation",
@@ -193,7 +224,10 @@ class ResearchRuntimeTests(unittest.TestCase):
         }
         output = StringIO()
         with (
-            patch("flowform_tools.docsys.research.run_research", return_value=payload),
+            patch(
+                "flowform_tools.docsys.commands.research.run_research",
+                return_value=payload,
+            ),
             patch("sys.stdout", output),
         ):
             result = main(["How does documentation work?", "--format", "json"])

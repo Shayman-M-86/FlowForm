@@ -6,12 +6,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 from dataclasses import asdict, dataclass, field
 
-from . import gitutil
-from .markdown_ast import Node, parse_markdown
-from .model import ROOT, DocSet, Document, resolve_docs_root
+from ..core import gitutil
+from ..core.cli import add_output_args, envelope, paginate
+from ..core.markdown_ast import Node, parse_markdown
+from ..core.model import ROOT, DocSet, Document, resolve_docs_root
 
 _WORD = re.compile(r"\b[\w'-]+\b")
 _LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -131,25 +131,17 @@ def _code_roots(patterns: list[str]) -> set[str]:
 
 
 def _history(doc: Document) -> tuple[int | None, int | None, float | None]:
-    proc = subprocess.run(
-        ["git", "log", "--follow", "--format=%H%x09%aN", "--", doc.rel_path],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
+    _, history, _ = gitutil._run(
+        ["log", "--follow", "--format=%H%x09%aN", "--", doc.rel_path]
     )
-    rows = [line.split("\t", 1) for line in proc.stdout.splitlines() if "\t" in line]
+    rows = [line.split("\t", 1) for line in history.splitlines() if "\t" in line]
     if not rows:
         return None, None, None
     growth = None
     oldest = rows[-1][0]
-    shown = subprocess.run(
-        ["git", "show", f"{oldest}:{doc.rel_path}"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-    )
-    if shown.returncode == 0:
-        old_words = _words(shown.stdout)
+    code, old_content, _ = gitutil._run(["show", f"{oldest}:{doc.rel_path}"])
+    if code == 0:
+        old_words = _words(old_content)
         if old_words:
             growth = round((_words(doc.body) - old_words) / old_words, 3)
     return len(rows), len({row[1] for row in rows}), growth
@@ -338,12 +330,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--changed", action="store_true")
     parser.add_argument("--history", action="store_true")
     parser.add_argument("--suggest-splits", action="store_true")
-    parser.add_argument("--limit", type=int, default=10)
-    parser.add_argument("--all", action="store_true", dest="show_all")
-    parser.add_argument("--details", action="store_true")
-    parser.add_argument("--format", choices=("text", "json"), default="text")
+    add_output_args(parser, default_limit=10)
     args = parser.parse_args(argv)
-    if args.limit < 1:
+    try:
+        shown, _, _ = paginate([], limit=args.limit, show_all=args.show_all)
+    except ValueError as exc:
+        parser.error(str(exc))
         parser.error("--limit must be at least 1")
     docset = DocSet.load(resolve_docs_root(args.docs_root))
     selected = set(args.paths)
@@ -364,16 +356,16 @@ def main(argv: list[str] | None = None) -> int:
     selected_results = [
         result for result in report["documents"] if result["findings"]
     ]
-    shown = selected_results if args.show_all else selected_results[: args.limit]
+    shown, total, _ = paginate(
+        selected_results, limit=args.limit, show_all=args.show_all
+    )
     if args.format == "json":
-        payload = {
-            "schema": report["schema"],
-            "document_count": report["document_count"],
-            "total": len(selected_results),
-            "returned": len(shown),
-            "truncated": len(shown) < len(selected_results),
-            "items": shown,
-        }
+        payload = envelope(
+            report["schema"],
+            shown,
+            total=total,
+            document_count=report["document_count"],
+        )
         print(json.dumps(payload, separators=(",", ":")))
     else:
         print(f"Documentation debt: {report['document_count']} document(s)")
@@ -391,8 +383,8 @@ def main(argv: list[str] | None = None) -> int:
                         print(f"    - {evidence}")
                     for child in finding["suggested_children"]:
                         print(f"    -> {child}")
-        if len(shown) < len(selected_results):
-            print(f"… {len(selected_results) - len(shown)} more; use --all")
+        if len(shown) < total:
+            print(f"… {total - len(shown)} more; use --all")
     return 0
 
 

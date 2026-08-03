@@ -24,6 +24,17 @@ def _run(args: list[str]) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
+def run_bytes(args: list[str]) -> bytes:
+    """Run Git and return bytes, raising when exact object data is unavailable."""
+    proc = subprocess.run(["git", *args], cwd=ROOT, capture_output=True)
+    if proc.returncode != 0:
+        raise RuntimeError(
+            proc.stderr.decode(errors="replace").strip()
+            or f"git {' '.join(args)} failed"
+        )
+    return proc.stdout
+
+
 def is_git_repo() -> bool:
     code, _, _ = _run(["rev-parse", "--git-dir"])
     return code == 0
@@ -61,14 +72,10 @@ def _parse_name_status(out: str) -> list[str]:
         parts = line.split("\t")
         if len(parts) < 2:
             continue
-        status = parts[0]
         # Renames/copies report old and new path; keep the new one.
         path = parts[-1]
-        if status.startswith("D"):
-            # Deletions still matter to impact analysis; keep them.
-            files.append(path)
-        else:
-            files.append(path)
+        # Deletions still matter to impact analysis, so every status is kept.
+        files.append(path)
     return files
 
 

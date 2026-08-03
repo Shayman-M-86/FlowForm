@@ -133,6 +133,8 @@ include = [
     "app",
     "tests",
     "scripts",
+    "gunicorn.conf.py",
+    "wsgi.py",
 ]
 exclude = [
     "**/__pycache__",

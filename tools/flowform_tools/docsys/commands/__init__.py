@@ -1,0 +1,1 @@
+"""Docsys command entry points."""

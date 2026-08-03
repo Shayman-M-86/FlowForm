@@ -22,6 +22,7 @@ run_pyright() {
 }
 
 check_tooling() {
+    uv sync --project "${REPOSITORY_ROOT}/tools" --frozen --extra docs
     run_pyright "repository tooling" "${REPOSITORY_ROOT}"
 }
 

@@ -15,11 +15,12 @@ committed and diffed. Run it from the repository root:
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
-from . import gitutil
-from .model import ROOT, DocSet, Document, generated_dir_for, resolve_docs_root
+from ..core import gitutil
+from ..core.model import ROOT, DocSet, Document, generated_dir_for, resolve_docs_root
 
 INDEX_PATH = generated_dir_for(resolve_docs_root()) / "documentation-index.json"
 
@@ -83,7 +84,7 @@ def build_index(docset: DocSet | None = None) -> dict:
     entries.sort(key=lambda e: e["path"])
     return {
         "schema": "flowform.docsys.index/1",
-        "generated_by": "tools/flowform_tools/docsys/index.py",
+        "generated_by": "tools/flowform_tools/docsys/commands/index.py",
         "repo_head": gitutil.current_commit(),
         "document_count": len(entries),
         "documents": entries,
@@ -114,8 +115,6 @@ def load_index(docs_dir: Path | None = None) -> dict | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    import argparse
-
     parser = argparse.ArgumentParser(prog="docsys index")
     parser.add_argument(
         "--docs-root",

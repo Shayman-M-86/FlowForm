@@ -9,12 +9,11 @@ last_edited: 2026-08-03
 tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
-  - "../../../../tools/flowform_tools/docsys/research.py"
+  - "../../../../tools/flowform_tools/docsys/commands/research.py"
   - "../../../../tools/flowform_tools/docsys/command_catalog.py"
-  - "../../../../tools/flowform_tools/docsys/capabilities.py"
-  - "../../../../tools/flowform_tools/docsys/validate.py"
-  - "../../../../tools/flowform_tools/docsys/evidence.py"
-  - "../../../../tools/flowform_tools/docsys/maintenance/validate_doc_metadata.py"
+  - "../../../../tools/flowform_tools/docsys/commands/capabilities.py"
+  - "../../../../tools/flowform_tools/docsys/commands/validate.py"
+  - "../../../../tools/flowform_tools/docsys/commands/evidence.py"
 change_triggers:
   - "../../../../tools/"
   - "../../../../.agents/skills/flowform-doc-context/"

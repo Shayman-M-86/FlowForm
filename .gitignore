@@ -141,3 +141,4 @@ infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.key
 infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.srl
 !infra/deployment/proxmox/scripts/lib
 !infra/machine-images/tooling/lib
+.docsys/hook-state

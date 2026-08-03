@@ -4,12 +4,15 @@ version = "0.1.0"
 description = "FlowForm repository tooling — documentation system, OpenAPI MCP server, and agent hooks"
 requires-python = ">=3.14"
 # Intentionally empty. `flowform_tools.docsys` and `flowform_tools.agent_hooks`
-# are standard-library only so the pre-commit hook and CI can run them from a
-# bare `python3` with no virtual environment and no install step. Third-party
-# packages belong in the `openapi` extra below.
+# bare `python3` with no virtual environment and no install step. Commands that
+# use richer validation run through the `docs` extra; MCP dependencies belong
+# in the separate `openapi` extra.
 dependencies = []
 
 [project.optional-dependencies]
+docs = [
+    "pydantic>=2",
+]
 openapi = [
     "cryptography>=48.0.1",
     "fastmcp>=3.3.1",

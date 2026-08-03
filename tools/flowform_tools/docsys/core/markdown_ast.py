@@ -1,8 +1,7 @@
 """Small source-positioned Markdown AST used by documentation debt analysis.
 
 It intentionally models structural blocks rather than rendering Markdown. The
-parser is deterministic and dependency-free, and preserves line ranges for
-headings, prose, lists, blockquotes, tables, thematic breaks, and fenced code.
+parser is deterministic and dependency-free.
 """
 
 from __future__ import annotations
@@ -10,7 +9,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-_HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
+from .model import HEADING_RE
+
 _LIST_ITEM = re.compile(r"^(\s*)(?:[-+*]|\d+[.)])\s+(.+)$")
 _FENCE = re.compile(r"^\s*(```+|~~~+)\s*([^\s`]*)")
 _TABLE_DIVIDER = re.compile(r"^\s*\|?(?:\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?\s*$")
@@ -19,8 +19,6 @@ _TABLE_DIVIDER = re.compile(r"^\s*\|?(?:\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?\s*$")
 @dataclass
 class Node:
     kind: str
-    start_line: int
-    end_line: int
     text: str = ""
     level: int = 0
     info: str = ""
@@ -39,7 +37,7 @@ def _starts_block(lines: list[str], index: int) -> bool:
     line = lines[index]
     return bool(
         not line.strip()
-        or _HEADING.match(line)
+        or HEADING_RE.match(line)
         or _LIST_ITEM.match(line)
         or _FENCE.match(line)
         or line.lstrip().startswith(">")
@@ -65,7 +63,6 @@ def parse_markdown(text: str) -> MarkdownAst:
         fence = _FENCE.match(line)
         if fence:
             marker, info = fence.group(1), fence.group(2)
-            start = index
             index += 1
             content = []
             while index < len(lines) and not lines[index].lstrip().startswith(marker):
@@ -73,18 +70,14 @@ def parse_markdown(text: str) -> MarkdownAst:
                 index += 1
             if index < len(lines):
                 index += 1
-            nodes.append(
-                Node("code_block", start + 1, index, "\n".join(content), info=info)
-            )
+            nodes.append(Node("code_block", "\n".join(content), info=info))
             continue
 
-        heading = _HEADING.match(line)
+        heading = HEADING_RE.match(line)
         if heading:
             nodes.append(
                 Node(
                     "heading",
-                    index + 1,
-                    index + 1,
                     heading.group(2).strip(),
                     level=len(heading.group(1)),
                 )
@@ -95,26 +88,22 @@ def parse_markdown(text: str) -> MarkdownAst:
         if index + 1 < len(lines) and "|" in line and _TABLE_DIVIDER.match(
             lines[index + 1]
         ):
-            start = index
             content = [line, lines[index + 1]]
             index += 2
             while index < len(lines) and "|" in lines[index] and lines[index].strip():
                 content.append(lines[index])
                 index += 1
-            nodes.append(Node("table", start + 1, index, "\n".join(content)))
+            nodes.append(Node("table", "\n".join(content)))
             continue
 
         list_item = _LIST_ITEM.match(line)
         if list_item:
-            start = index
             children = []
             while index < len(lines) and (match := _LIST_ITEM.match(lines[index])):
                 indent = len(match.group(1).replace("\t", "    "))
                 children.append(
                     Node(
                         "list_item",
-                        index + 1,
-                        index + 1,
                         match.group(2),
                         level=indent // 2 + 1,
                     )
@@ -123,8 +112,6 @@ def parse_markdown(text: str) -> MarkdownAst:
             nodes.append(
                 Node(
                     "list",
-                    start + 1,
-                    index,
                     "\n".join(child.text for child in children),
                     children=children,
                 )
@@ -132,25 +119,23 @@ def parse_markdown(text: str) -> MarkdownAst:
             continue
 
         if line.lstrip().startswith(">"):
-            start = index
             content = []
             while index < len(lines) and lines[index].lstrip().startswith(">"):
                 content.append(lines[index].lstrip()[1:].lstrip())
                 index += 1
-            nodes.append(Node("blockquote", start + 1, index, "\n".join(content)))
+            nodes.append(Node("blockquote", "\n".join(content)))
             continue
 
         if re.match(r"^\s*(?:---+|\*\*\*+|___+)\s*$", line):
-            nodes.append(Node("thematic_break", index + 1, index + 1))
+            nodes.append(Node("thematic_break"))
             index += 1
             continue
 
-        start = index
         content = [line]
         index += 1
         while index < len(lines) and not _starts_block(lines, index):
             content.append(lines[index])
             index += 1
-        nodes.append(Node("paragraph", start + 1, index, "\n".join(content)))
+        nodes.append(Node("paragraph", "\n".join(content)))
 
     return MarkdownAst(nodes)

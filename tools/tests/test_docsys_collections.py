@@ -5,17 +5,27 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from flowform_tools.docsys.evidence import (
+from flowform_tools.docsys.commands.debt import (
+    _DEFAULT_POLICY,
+    analyse,
+    build_report,
+    measure,
+)
+from flowform_tools.docsys.commands.evidence import (
     EvidenceEntry,
     EvidenceSource,
     check_last_edited_staged,
     check_staged,
     promote_staged,
 )
-from flowform_tools.docsys.impact import detect_impact
-from flowform_tools.docsys.debt import _DEFAULT_POLICY, analyse, build_report, measure
-from flowform_tools.docsys.model import ROOT, DocSet, resolve_docs_root
-from flowform_tools.docsys.validate import all_findings, metadata_findings
+from flowform_tools.docsys.commands.impact import detect_impact
+from flowform_tools.docsys.commands.validate import all_findings, metadata_findings
+from flowform_tools.docsys.core.model import (
+    ROOT,
+    DocSet,
+    parse_front_matter,
+    resolve_docs_root,
+)
 
 
 def _document(title: str, authority: str = "canonical", body: str = "") -> str:
@@ -39,6 +49,17 @@ related_docs: []
 
 
 class CollectionModelTests(unittest.TestCase):
+    def test_front_matter_normalises_null_and_rejects_nested_mappings(self) -> None:
+        metadata = parse_front_matter(
+            "---\ntitle: Example\nverified_evidence_digest: null\n---\n"
+        )
+
+        self.assertIsNotNone(metadata)
+        assert metadata is not None
+        self.assertIsNone(metadata["verified_evidence_digest"])
+        with self.assertRaisesRegex(ValueError, "nested mappings"):
+            parse_front_matter("---\ntitle: Example\nmeta:\n  sub: value\n---\n")
+
     def test_related_code_accepts_only_exact_existing_repository_files(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             area = Path(temporary)
@@ -157,18 +178,20 @@ class CollectionModelTests(unittest.TestCase):
 
             with (
                 patch(
-                    "flowform_tools.docsys.evidence.EvidenceSource.from_index",
+                    "flowform_tools.docsys.commands.evidence.EvidenceSource.from_index",
                     return_value=source,
                 ),
                 patch(
-                    "flowform_tools.docsys.evidence.DocSet.load",
+                    "flowform_tools.docsys.commands.evidence.DocSet.load",
                     return_value=DocSet.load(docs_root),
                 ),
                 patch(
-                    "flowform_tools.docsys.evidence._git_text",
+                    "flowform_tools.docsys.commands.evidence._git_text",
                     return_value=f"{code_rel}\n",
                 ),
-                patch("flowform_tools.docsys.evidence._set_metadata") as set_metadata,
+                patch(
+                    "flowform_tools.docsys.commands.evidence._set_metadata"
+                ) as set_metadata,
             ):
                 result = check_staged()
 
@@ -211,18 +234,20 @@ class CollectionModelTests(unittest.TestCase):
 
             with (
                 patch(
-                    "flowform_tools.docsys.evidence.EvidenceSource.from_index",
+                    "flowform_tools.docsys.commands.evidence.EvidenceSource.from_index",
                     return_value=source,
                 ),
                 patch(
-                    "flowform_tools.docsys.evidence.DocSet.load",
+                    "flowform_tools.docsys.commands.evidence.DocSet.load",
                     return_value=DocSet.load(docs_root),
                 ),
                 patch(
-                    "flowform_tools.docsys.evidence._git_text",
+                    "flowform_tools.docsys.commands.evidence._git_text",
                     return_value=f"{code_rel}\n",
                 ),
-                patch("flowform_tools.docsys.evidence._set_metadata") as set_metadata,
+                patch(
+                    "flowform_tools.docsys.commands.evidence._set_metadata"
+                ) as set_metadata,
             ):
                 result = check_staged()
 
@@ -244,15 +269,17 @@ class CollectionModelTests(unittest.TestCase):
 
         with (
             patch(
-                "flowform_tools.docsys.evidence._git_text",
+                "flowform_tools.docsys.commands.evidence._git_text",
                 side_effect=[f"{staged}\n", old_document],
             ),
             patch(
-                "flowform_tools.docsys.evidence._today",
+                "flowform_tools.docsys.commands.evidence._today",
                 return_value="2026-07-27",
             ),
-            patch("flowform_tools.docsys.evidence._set_last_edited") as set_last_edited,
-            patch("flowform_tools.docsys.evidence.subprocess.run") as run,
+            patch(
+                "flowform_tools.docsys.commands.evidence._set_last_edited"
+            ) as set_last_edited,
+            patch("flowform_tools.docsys.core.gitutil.subprocess.run") as run,
         ):
             result = check_last_edited_staged()
 
@@ -321,15 +348,15 @@ class CollectionModelTests(unittest.TestCase):
 
             with (
                 patch(
-                    "flowform_tools.docsys.evidence.EvidenceSource.from_index",
+                    "flowform_tools.docsys.commands.evidence.EvidenceSource.from_index",
                     return_value=source,
                 ),
                 patch(
-                    "flowform_tools.docsys.evidence._git_bytes",
+                    "flowform_tools.docsys.core.gitutil.run_bytes",
                     return_value=b"",
                 ) as git_bytes,
                 patch(
-                    "flowform_tools.docsys.evidence._today",
+                    "flowform_tools.docsys.commands.evidence._today",
                     return_value="2026-07-29",
                 ),
             ):

@@ -11,7 +11,7 @@ related_code:
   - "../../../.github/workflows/ci.yml"
   - "../../../.github/workflows/deploy.yml"
   - "../../../.github/workflows/publish-staging-images.yml"
-  - "../../../tools/flowform_tools/docsys/ci.py"
+  - "../../../tools/flowform_tools/docsys/commands/ci.py"
 change_triggers:
   - "../../../scripts/ci/"
   - "../../../infra/deployment/aws/"

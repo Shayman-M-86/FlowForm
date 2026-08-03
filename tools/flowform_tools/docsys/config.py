@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-from .model import ROOT
+from .core.model import ROOT
 
 CONFIG_PATH = ROOT / "tools" / "docs" / "docsys.config.json"
 

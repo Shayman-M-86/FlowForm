@@ -8,7 +8,7 @@ verified_evidence_digest: null
 last_edited: 2026-08-03
 tags: [meta]
 related_code:
-  - "../../../../tools/flowform_tools/docsys/model.py"
+  - "../../../../tools/flowform_tools/docsys/core/model.py"
 change_triggers:
   - "../../../../tools/"
 related_docs:

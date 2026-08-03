@@ -8,7 +8,7 @@ import json
 import re
 from dataclasses import asdict, dataclass
 
-from .model import (
+from ..core.model import (
     ALLOWED_CONFIDENCE,
     ALLOWED_STATUS,
     REQUIRED_KEYS,
@@ -20,7 +20,7 @@ from .model import (
     resolve_docs_root,
     strip_code,
 )
-from .model import _MD_LINK_RE, _WIKI_LINK_RE
+from ..core.model import _MD_LINK_RE, _WIKI_LINK_RE
 
 PROFILES = ("editing", "project-knowledge", "workspace", "commit", "ci")
 

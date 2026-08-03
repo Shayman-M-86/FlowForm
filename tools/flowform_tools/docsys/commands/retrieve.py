@@ -6,8 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 
-from .contracts import ReadRequest, execute_read
-from .model import DocSet, Document
+from ..contracts import ReadRequest, execute_read
+from ..core.model import DocSet, Document
 
 
 def _brief(doc: Document) -> dict:

@@ -7,9 +7,11 @@ import math
 import re
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
-from typing import Any
+from typing import Any, Literal
 
-from .model import ROOT, DocSet, Document, strip_code
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from .core.model import HEADING_RE, ROOT, DocSet, Document, strip_code
 
 DEFAULT_FIND_LIMIT = 3
 MAX_FIND_LIMIT = 20
@@ -23,7 +25,6 @@ SEARCH_FIELDS = frozenset(
 )
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
-_HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _SIGNIFICANT_STOP_WORDS = frozenset(
     {
         "a",
@@ -126,15 +127,16 @@ def _summary(doc: Document, max_chars: int = 200) -> str:
     return text[: max_chars - 1].rstrip() + "…"
 
 
-@dataclass(frozen=True)
-class FindRequest:
+class FindRequest(BaseModel):
     """Validated inputs for a bounded documentation search."""
+
+    model_config = ConfigDict(frozen=True, validate_default=True)
 
     query: str = ""
     scope: str | None = None
     code_paths: tuple[str, ...] = ()
-    match: str = "all"
-    limit: int = DEFAULT_FIND_LIMIT
+    match: Literal["all", "any", "phrase"] = "all"
+    limit: int = Field(default=DEFAULT_FIND_LIMIT, ge=1, le=MAX_FIND_LIMIT)
     collections: tuple[str, ...] = ()
     types: tuple[str, ...] = ()
     statuses: tuple[str, ...] = ()
@@ -143,47 +145,50 @@ class FindRequest:
     explain: bool = False
     unbounded: bool = False
 
-    def __post_init__(self) -> None:
-        query = self.query.strip()
-        match = self.match.casefold()
-        if match not in MATCH_MODES:
-            raise ValueError(f"match must be one of: {', '.join(sorted(MATCH_MODES))}")
-        if not 1 <= self.limit <= MAX_FIND_LIMIT:
-            raise ValueError(f"limit must be between 1 and {MAX_FIND_LIMIT}")
-        if len(self.code_paths) > MAX_CODE_PATHS:
-            raise ValueError(f"at most {MAX_CODE_PATHS} code paths may be supplied")
+    @field_validator("query")
+    @classmethod
+    def _validate_query(cls, value: str) -> str:
+        return value.strip()
 
-        fields = _normalise_choice_values(tuple(self.fields))
+    @field_validator("scope")
+    @classmethod
+    def _validate_scope(cls, value: str | None) -> str | None:
+        return _normalise_scope(value)
+
+    @field_validator("match", mode="before")
+    @classmethod
+    def _validate_match(cls, value: object) -> object:
+        return value.casefold() if isinstance(value, str) else value
+
+    @field_validator("code_paths")
+    @classmethod
+    def _validate_code_paths(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        if len(values) > MAX_CODE_PATHS:
+            raise ValueError(f"at most {MAX_CODE_PATHS} code paths may be supplied")
+        return tuple(
+            dict.fromkeys(
+                _normalise_repo_path(value, label="code path") for value in values
+            )
+        )
+
+    @field_validator("collections", "types", "statuses", "tags", "fields")
+    @classmethod
+    def _validate_choices(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _normalise_choice_values(values)
+
+    @field_validator("fields")
+    @classmethod
+    def _validate_fields(cls, fields: tuple[str, ...]) -> tuple[str, ...]:
         unknown_fields = sorted(set(fields) - SEARCH_FIELDS)
         if unknown_fields:
             raise ValueError(f"unknown search field: {unknown_fields[0]}")
+        return fields
 
-        code_paths = tuple(
-            dict.fromkeys(
-                _normalise_repo_path(value, label="code path")
-                for value in self.code_paths
-            )
-        )
-        if not query and not code_paths:
+    @model_validator(mode="after")
+    def _require_query_or_code_path(self) -> "FindRequest":
+        if not self.query and not self.code_paths:
             raise ValueError("provide search terms or at least one --code path")
-
-        object.__setattr__(self, "query", query)
-        object.__setattr__(self, "scope", _normalise_scope(self.scope))
-        object.__setattr__(self, "code_paths", code_paths)
-        object.__setattr__(self, "match", match)
-        object.__setattr__(
-            self,
-            "collections",
-            _normalise_choice_values(tuple(self.collections)),
-        )
-        object.__setattr__(self, "types", _normalise_choice_values(tuple(self.types)))
-        object.__setattr__(
-            self,
-            "statuses",
-            _normalise_choice_values(tuple(self.statuses)),
-        )
-        object.__setattr__(self, "tags", _normalise_choice_values(tuple(self.tags)))
-        object.__setattr__(self, "fields", fields)
+        return self
 
 
 @dataclass(frozen=True)
@@ -243,20 +248,23 @@ class FindResponse:
         return json.dumps(self.as_dict(), separators=(",", ":"), ensure_ascii=False)
 
 
-@dataclass(frozen=True)
-class ReadRequest:
+class ReadRequest(BaseModel):
     """Validated inputs for exact, bounded documentation retrieval."""
+
+    model_config = ConfigDict(frozen=True, validate_default=True)
 
     path: str
     section: str | None = None
     include_body: bool = False
-    offset: int = 0
-    max_chars: int = DEFAULT_READ_CHARS
+    offset: int = Field(default=0, ge=0)
+    max_chars: int = Field(default=DEFAULT_READ_CHARS, ge=1, le=MAX_READ_CHARS)
     include_related: bool = False
     include_metadata: bool = False
 
-    def __post_init__(self) -> None:
-        raw_path = self.path.strip().replace("\\", "/")
+    @field_validator("path")
+    @classmethod
+    def _validate_path(cls, value: str) -> str:
+        raw_path = value.strip().replace("\\", "/")
         if not raw_path:
             raise ValueError("path must not be empty")
         if raw_path.startswith("/") or re.match(r"^[A-Za-z]:/", raw_path):
@@ -266,16 +274,17 @@ class ReadRequest:
             raise ValueError("path must be a normalized repository path")
         if path.suffix.casefold() != ".md":
             raise ValueError("path must name a Markdown document")
-        if self.section is not None and not self.section.strip():
-            raise ValueError("section must not be empty")
-        if self.offset < 0:
-            raise ValueError("offset must be zero or greater")
-        if not 1 <= self.max_chars <= MAX_READ_CHARS:
-            raise ValueError(f"max_chars must be between 1 and {MAX_READ_CHARS}")
+        return path.as_posix()
 
-        object.__setattr__(self, "path", path.as_posix())
-        if self.section is not None:
-            object.__setattr__(self, "section", self.section.strip())
+    @field_validator("section")
+    @classmethod
+    def _validate_section(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        section = value.strip()
+        if not section:
+            raise ValueError("section must not be empty")
+        return section
 
 
 @dataclass(frozen=True)
@@ -532,7 +541,7 @@ def _section_source(body: str, requested: str) -> tuple[str, int]:
             continue
         if in_fence:
             continue
-        match = _HEADING_RE.match(line.rstrip("\r\n"))
+        match = HEADING_RE.match(line.rstrip("\r\n"))
         if not match:
             continue
         current_level = len(match.group(1))

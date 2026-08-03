@@ -61,7 +61,8 @@ TAG_VOCABULARY = {
 
 _ITEM_RE = re.compile(r'\s+-\s+"?([^"]*?)"?\s*$')
 _KV_RE = re.compile(r"([A-Za-z_-]+):\s*(.*)$")
-_HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
+_NESTED_KV_RE = re.compile(r"\s+[A-Za-z_-]+:\s*\S")
+HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _CODE_FENCE_RE = re.compile(r"^```.*?^```", re.M | re.S)
 _CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
 _WIKI_LINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]")
@@ -73,8 +74,13 @@ def parse_front_matter(text: str) -> dict | None:
 
     Returns ``None`` when the document has no terminated front matter. Scalar
     values become strings (``null`` -> ``None``), block and inline lists become
-    lists of strings. This mirrors the existing validators so the tooling and
-    the validators never disagree about what a document declares.
+    lists of strings. This is the single parser for documentation front matter,
+    so Docsys commands and validators cannot disagree about what a document
+    declares. Skill metadata uses a deliberately narrower scalar-only parser.
+
+    Raises ``ValueError`` on a nested mapping. The supported vocabulary is flat,
+    and silently returning ``[]`` for ``key:\\n  sub: value`` would be a wrong
+    answer rather than a failure.
     """
     if not text.startswith("---"):
         return None
@@ -90,6 +96,10 @@ def parse_front_matter(text: str) -> dict | None:
         if item and current_list is not None:
             fm[current_list].append(item.group(1))
             continue
+        if current_list is not None and _NESTED_KV_RE.match(line):
+            raise ValueError(
+                f"nested mappings are not supported in front matter: {line.strip()!r}"
+            )
         kv = _KV_RE.match(line)
         if not kv:
             continue
@@ -133,7 +143,7 @@ def extract_headings(body: str) -> list[str]:
     """Return heading texts (levels 1-6) in document order, code stripped."""
     headings = []
     for line in strip_code(body).splitlines():
-        m = _HEADING_RE.match(line)
+        m = HEADING_RE.match(line)
         if m:
             headings.append(m.group(2).strip())
     return headings

@@ -5,26 +5,22 @@ status: scaffold
 authority: canonical
 verified_evidence_digest: null
 last_edited: 2026-08-03
-related_code: ["generate-reference-docs.py", "validate-doc-links.py", "validate-doc-metadata.py", "docsys/__main__.py", "docsys/command_catalog.py", "docsys/capabilities.py", "docsys/research.py"]
+related_code: ["bin/docsys", "flowform_tools/docsys/__main__.py", "flowform_tools/docsys/command_catalog.py", "flowform_tools/docsys/core/model.py", "flowform_tools/docsys/commands/validate.py", "flowform_tools/docsys/commands/research.py"]
 change_triggers: ["docsys/"]
 related_docs: ["../../docs/project-knowledge/engineering-practices/documentation/documentation-workflow.md", "../../docs/project-knowledge/engineering-practices/documentation/documentation-model.md"]
 ---
 
 # Documentation tools
 
-Provides lightweight, dependency-free tools for generating and validating the
-`docs/` knowledge network and its agent integrations.
+Provides lightweight tools for generating and validating the `docs/` knowledge
+network and its agent integrations. Commit/CI validation stays dependency-free;
+discovery and research use the optional `docs` dependencies.
 
 ## Available tools
 
-`generate-reference-docs.py` regenerates the compact reference output under
-`docs/project-knowledge/reference/generated/`.
-`validate-doc-links.py` checks that `[[wiki links]]` resolve to Obsidian note
-filenames or shortest unique note paths and that relative Markdown links resolve
-on disk. `validate-doc-metadata.py` checks required front-matter keys, ISO
-`last_edited` dates, title-matching Obsidian aliases, allowed status values,
-global title uniqueness, the controlled tag vocabulary, and `related_docs`
-resolution.
+`docsys generate-reference` regenerates compact reference output.
+`docsys validate-links` checks wiki and relative Markdown links. `docsys
+validate` owns front-matter, collection, and link validation.
 
 Use `tools/bin/docsys --help` for documentation discovery, retrieval,
 impact review, validation, health checks, and evidence promotion. `find`

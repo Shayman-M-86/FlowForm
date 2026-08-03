@@ -20,13 +20,12 @@ import argparse
 import hashlib
 import re
 import shlex
-import subprocess
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from .impact import detect_impact
-from .model import (
+from ..core import gitutil
+from ..core.model import (
     ROOT,
     DocSet,
     Document,
@@ -34,6 +33,7 @@ from .model import (
     load_document_text,
     pattern_matches,
 )
+from .impact import detect_impact
 
 DIGEST_PREFIX = "sha256:"
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -42,22 +42,8 @@ _DIGEST_RE = re.compile(r"(?m)^verified_evidence_digest:\s*.*$")
 _LAST_EDITED_RE = re.compile(r"(?m)^last_edited:\s*.*$")
 
 
-def _git_bytes(args: list[str]) -> bytes:
-    proc = subprocess.run(
-        ["git", *args],
-        cwd=ROOT,
-        capture_output=True,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(
-            proc.stderr.decode(errors="replace").strip()
-            or f"git {' '.join(args)} failed"
-        )
-    return proc.stdout
-
-
 def _git_text(args: list[str]) -> str:
-    return _git_bytes(args).decode(errors="replace")
+    return gitutil.run_bytes(args).decode(errors="replace")
 
 
 @dataclass(frozen=True)
@@ -83,7 +69,7 @@ class EvidenceSource:
     @classmethod
     def from_index(cls) -> "EvidenceSource":
         entries: dict[str, EvidenceEntry] = {}
-        for record in _git_bytes(["ls-files", "-s", "-z"]).split(b"\0"):
+        for record in gitutil.run_bytes(["ls-files", "-s", "-z"]).split(b"\0"):
             if not record:
                 continue
             metadata, raw_path = record.split(b"\t", 1)
@@ -99,7 +85,7 @@ class EvidenceSource:
     @classmethod
     def from_ref(cls, ref: str = "HEAD") -> "EvidenceSource":
         entries: dict[str, EvidenceEntry] = {}
-        for record in _git_bytes(["ls-tree", "-r", "-z", ref]).split(b"\0"):
+        for record in gitutil.run_bytes(["ls-tree", "-r", "-z", ref]).split(b"\0"):
             if not record:
                 continue
             metadata, raw_path = record.split(b"\t", 1)
@@ -238,7 +224,7 @@ def promote_staged(values: list[str], *, stage: bool = False) -> int:
         print(f"prepared verified metadata against staged evidence: {rel}")
     if promoted:
         if stage:
-            _git_bytes(["add", "--", *promoted])
+            gitutil.run_bytes(["add", "--", *promoted])
             print()
             print(
                 "staged updated verified metadata: "
@@ -436,7 +422,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "check-last-edited":
             return check_last_edited_staged()
         raise ValueError(f"unknown evidence command: {args.command}")
-    except (RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
+    except (RuntimeError, ValueError) as exc:
         print(f"documentation evidence error: {exc}")
         return 1
 

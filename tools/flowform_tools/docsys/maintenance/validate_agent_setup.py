@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import importlib
 import json
 import sys
@@ -12,6 +13,16 @@ import tomllib
 
 from flowform_tools.paths import ROOT
 SKILLS = ("flowform-doc-context", "flowform-doc-verification")
+BARE_DOCSYS_MODULES = (
+    "tools/flowform_tools/docsys/core/model.py",
+    "tools/flowform_tools/docsys/core/gitutil.py",
+    "tools/flowform_tools/docsys/core/markdown_ast.py",
+    "tools/flowform_tools/docsys/core/cli.py",
+    "tools/flowform_tools/docsys/commands/validate.py",
+    "tools/flowform_tools/docsys/commands/evidence.py",
+    "tools/flowform_tools/docsys/commands/impact.py",
+    "tools/flowform_tools/docsys/commands/debt.py",
+)
 
 
 def _require(condition: bool, message: str, errors: list[str]) -> None:
@@ -19,7 +30,8 @@ def _require(condition: bool, message: str, errors: list[str]) -> None:
         errors.append(message)
 
 
-def _front_matter(path: Path) -> dict[str, str]:
+def _skill_front_matter(path: Path) -> dict[str, str]:
+    """Parse the deliberately narrower flat scalar metadata used by skills."""
     text = path.read_text()
     if not text.startswith("---\n"):
         raise ValueError(f"{path.relative_to(ROOT)}: missing YAML front matter")
@@ -66,7 +78,7 @@ def _validate_skills(errors: list[str]) -> None:
             errors,
         )
         try:
-            metadata = _front_matter(canonical)
+            metadata = _skill_front_matter(canonical)
         except ValueError as exc:
             errors.append(str(exc))
             continue
@@ -157,12 +169,44 @@ def _validate_no_documentation_mcp(errors: list[str]) -> None:
         )
 
 
+def _validate_bare_docsys_imports(errors: list[str]) -> None:
+    """Protect commands that CI and commit hooks run without an environment."""
+    for relative in BARE_DOCSYS_MODULES:
+        path = ROOT / relative
+        if not path.is_file():
+            errors.append(f"missing bare-Python Docsys module: {relative}")
+            continue
+        try:
+            tree = ast.parse(path.read_text(), filename=relative)
+        except (OSError, SyntaxError) as exc:
+            errors.append(f"cannot inspect bare-Python Docsys module {relative}: {exc}")
+            continue
+        imported: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.partition(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                imported.add(node.module.partition(".")[0])
+        third_party = sorted(
+            name
+            for name in imported
+            if name != "flowform_tools" and name not in sys.stdlib_module_names
+        )
+        if third_party:
+            errors.append(
+                f"bare-Python Docsys module imports third-party package(s): "
+                f"{relative}: {', '.join(third_party)}"
+            )
+
+
 def _validate_commands(errors: list[str]) -> None:
     sys.path.insert(0, str(ROOT / "tools"))
     try:
-        capabilities = importlib.import_module("flowform_tools.docsys.capabilities")
+        capabilities = importlib.import_module(
+            "flowform_tools.docsys.commands.capabilities"
+        )
         catalog = importlib.import_module("flowform_tools.docsys.command_catalog")
-        research = importlib.import_module("flowform_tools.docsys.research")
+        research = importlib.import_module("flowform_tools.docsys.commands.research")
     except Exception as exc:
         errors.append(f"cannot load Docsys commands: {exc}")
         return
@@ -260,6 +304,7 @@ def validate() -> list[str]:
     _validate_skills(errors)
     _validate_shared_rules(errors)
     _validate_no_documentation_mcp(errors)
+    _validate_bare_docsys_imports(errors)
     _validate_commands(errors)
     _validate_hooks(errors)
     _require(

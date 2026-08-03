@@ -21,11 +21,13 @@ Run it from the repository root:
 """
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import dataclass, field
 
-from . import gitutil
-from .model import DocSet, Document, pattern_matches
+from ..core import gitutil
+from ..core.cli import add_output_args, envelope, paginate
+from ..core.model import DocSet, Document, pattern_matches
 
 _ORDER = {"high": 0, "medium": 1, "low": 2}
 
@@ -195,8 +197,6 @@ def impact_report(
 
 
 def main(argv: list[str] | None = None) -> int:
-    import argparse
-
     parser = argparse.ArgumentParser(prog="docsys impact")
     parser.add_argument("--base", help="base commit/ref to diff against")
     parser.add_argument("--head", help="head commit/ref (default HEAD)")
@@ -207,10 +207,7 @@ def main(argv: list[str] | None = None) -> int:
         metavar="FILE",
         help="analyse an exact changed file instead of a Git range; repeatable",
     )
-    parser.add_argument("--limit", type=int, default=5)
-    parser.add_argument("--all", action="store_true", dest="show_all")
-    parser.add_argument("--details", action="store_true")
-    parser.add_argument("--format", choices=("text", "json"), default="text")
+    add_output_args(parser, default_limit=5)
     args = parser.parse_args(argv)
 
     if args.changed and (args.base or args.head):
@@ -224,15 +221,11 @@ def main(argv: list[str] | None = None) -> int:
         changed_files=args.changed or None,
     )
     documents = report["impacted_documents"]
-    shown = documents if args.show_all else documents[: args.limit]
+    shown, total, _ = paginate(documents, limit=args.limit, show_all=args.show_all)
     if args.format == "json":
-        payload = {
-            "schema": report["schema"],
-            "comparison": report["comparison"],
-            "total": len(documents),
-            "returned": len(shown),
-            "truncated": len(shown) < len(documents),
-            "items": (
+        payload = envelope(
+            report["schema"],
+            (
                 shown
                 if args.details
                 else [
@@ -245,7 +238,9 @@ def main(argv: list[str] | None = None) -> int:
                     for item in shown
                 ]
             ),
-        }
+            total=total,
+            comparison=report["comparison"],
+        )
         print(json.dumps(payload, separators=(",", ":")))
         return 0
 
@@ -261,8 +256,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"           - {reason}")
             for f in d["matched_files"][:6]:
                 print(f"           · {f}")
-    if len(shown) < len(documents):
-        print(f"  … {len(documents) - len(shown)} more; use --all")
+    if len(shown) < total:
+        print(f"  … {total - len(shown)} more; use --all")
     return 0
 
 

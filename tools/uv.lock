@@ -361,6 +361,9 @@ version = "0.1.0"
 source = { editable = "." }
 
 [package.optional-dependencies]
+docs = [
+    { name = "pydantic" },
+]
 openapi = [
     { name = "cryptography" },
     { name = "fastmcp" },
@@ -372,8 +375,9 @@ requires-dist = [
     { name = "cryptography", marker = "extra == 'openapi'", specifier = ">=48.0.1" },
     { name = "fastmcp", marker = "extra == 'openapi'", specifier = ">=3.3.1" },
     { name = "httpx", marker = "extra == 'openapi'", specifier = ">=0.27.0" },
+    { name = "pydantic", marker = "extra == 'docs'", specifier = ">=2" },
 ]
-provides-extras = ["openapi"]
+provides-extras = ["docs", "openapi"]
 
 [[package]]
 name = "griffelib"

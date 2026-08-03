@@ -17,13 +17,15 @@ Scaffolds are ``unknown`` by design: they carry no verified claims yet. Run:
 
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import dataclass, field
 
-from . import gitutil
-from .config import Config
+from ..config import Config
+from ..core import gitutil
+from ..core.cli import add_output_args, envelope, paginate
+from ..core.model import DocSet, Document
 from .evidence import DIGEST_RE, EvidenceSource
-from .model import DocSet, Document
 
 CURRENT = "current"
 REVIEW = "review suggested"
@@ -134,13 +136,8 @@ def health_report(docset: DocSet | None = None, config: Config | None = None) ->
 
 
 def main(argv: list[str] | None = None) -> int:
-    import argparse
-
     parser = argparse.ArgumentParser(prog="docsys freshness")
-    parser.add_argument("--limit", type=int, default=10)
-    parser.add_argument("--all", action="store_true", dest="show_all")
-    parser.add_argument("--details", action="store_true")
-    parser.add_argument("--format", choices=("text", "json"), default="text")
+    add_output_args(parser, default_limit=10)
     parser.add_argument(
         "--only",
         choices=[CURRENT, REVIEW, STALE, UNKNOWN],
@@ -157,15 +154,11 @@ def main(argv: list[str] | None = None) -> int:
         if (not args.only or item["classification"] == args.only)
         and (args.only or item["classification"] != CURRENT)
     ]
-    shown = selected if args.show_all else selected[: args.limit]
+    shown, total, _ = paginate(selected, limit=args.limit, show_all=args.show_all)
     if args.format == "json":
-        payload = {
-            "schema": report["schema"],
-            "counts": report["counts"],
-            "total": len(selected),
-            "returned": len(shown),
-            "truncated": len(shown) < len(selected),
-            "items": (
+        payload = envelope(
+            report["schema"],
+            (
                 shown
                 if args.details
                 else [
@@ -177,7 +170,9 @@ def main(argv: list[str] | None = None) -> int:
                     for item in shown
                 ]
             ),
-        }
+            total=total,
+            counts=report["counts"],
+        )
         print(json.dumps(payload, separators=(",", ":")))
         return 0
 
@@ -192,8 +187,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.details:
             for reason in d["reasons"]:
                 print(f"           - {reason}")
-    if len(shown) < len(selected):
-        print(f"  … {len(selected) - len(shown)} more; use --all")
+    if len(shown) < total:
+        print(f"  … {total - len(shown)} more; use --all")
     return 0
 
 

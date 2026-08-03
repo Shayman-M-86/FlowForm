@@ -56,10 +56,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/uv.lock
+      - name: Install documentation tooling dependencies
+        run: uv sync --project tools --frozen --extra docs
       - name: Test documentation tooling
-        env:
-          PYTHONPATH: tools
-        run: python3 -m unittest discover -s tools/tests -v
+        run: uv run --project tools --frozen --extra docs python -m unittest discover -s tools/tests -v
       - name: Validate parallel documentation collections
         run: tools/bin/docsys validate --docs-root docs --profile ci
       - name: Report documentation debt (advisory)

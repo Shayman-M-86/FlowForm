@@ -13,81 +13,110 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Literal
 
-from .command_catalog import render_research_cli_policy
-from .model import ROOT
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictInt,
+    ValidationError,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
+
+from ..command_catalog import render_research_cli_policy
+from ..core.model import ROOT
 
 DEFAULT_QUICK_MODEL = "gpt-5.6-terra"
 DEFAULT_THOROUGH_MODEL = "gpt-5.6-sol"
 DEPTHS = frozenset({"quick", "thorough"})
 _MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$")
-_PROMPT_PATH = Path(__file__).with_name("prompts") / "research.md"
-
-RESULT_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "answer": {"type": "string"},
-        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
-        "basis": {
-            "type": "string",
-            "enum": ["documentation", "implementation", "mixed"],
-        },
-        "findings": {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 12,
-            "items": {
-                "type": "object",
-                "properties": {
-                    "claim": {"type": "string"},
-                    "sources": {
-                        "type": "array",
-                        "minItems": 1,
-                        "maxItems": 6,
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "path": {"type": "string"},
-                                "start_line": {"type": "integer", "minimum": 1},
-                                "end_line": {"type": "integer", "minimum": 1},
-                                "kind": {
-                                    "type": "string",
-                                    "enum": [
-                                        "documentation",
-                                        "implementation",
-                                        "test",
-                                        "configuration",
-                                    ],
-                                },
-                            },
-                            "required": ["path", "start_line", "end_line", "kind"],
-                            "additionalProperties": False,
-                        },
-                    },
-                    "snippet": {"type": ["string", "null"]},
-                },
-                "required": ["claim", "sources", "snippet"],
-                "additionalProperties": False,
-            },
-        },
-        "contradictions": {"type": "array", "items": {"type": "string"}},
-        "unresolved": {"type": "array", "items": {"type": "string"}},
-    },
-    "required": [
-        "answer",
-        "confidence",
-        "basis",
-        "findings",
-        "contradictions",
-        "unresolved",
-    ],
-    "additionalProperties": False,
-}
-
+_PROMPT_PATH = Path(__file__).parents[1] / "prompts" / "research.md"
 
 class ResearchRuntimeError(RuntimeError):
     """A fresh local Codex research process failed."""
+
+
+class ResearchSource(BaseModel):
+    """One source citation returned by the isolated research session."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str
+    start_line: StrictInt = Field(ge=1)
+    end_line: StrictInt = Field(ge=1)
+    kind: Literal["documentation", "implementation", "test", "configuration"]
+
+    @field_validator("path")
+    @classmethod
+    def _validate_path(cls, value: str, info: ValidationInfo) -> str:
+        path = PurePosixPath(value)
+        if value.startswith("/") or any(part in {"", ".", ".."} for part in path.parts):
+            raise ValueError("source path must be repository-relative")
+        normalized = path.as_posix()
+        scope = info.context.get("scope") if isinstance(info.context, dict) else None
+        if scope is not None and not (
+            normalized == scope or normalized.startswith(scope + "/")
+        ):
+            raise ValueError(f"cited source is outside requested scope: {value}")
+        resolved = ROOT.joinpath(*path.parts)
+        if resolved.is_symlink() or not resolved.is_file():
+            raise ValueError(f"cited source does not exist: {value}")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_lines(self) -> "ResearchSource":
+        if self.end_line < self.start_line:
+            raise ValueError("source line range is invalid")
+        resolved = ROOT.joinpath(*PurePosixPath(self.path).parts)
+        line_count = len(resolved.read_text(errors="replace").splitlines())
+        if self.end_line > max(1, line_count):
+            raise ValueError(f"cited line is beyond end of file: {self.path}")
+        return self
+
+
+class ResearchFinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    claim: str
+    sources: list[ResearchSource] = Field(min_length=1, max_length=6)
+    snippet: str | None
+
+    @field_validator("claim")
+    @classmethod
+    def _strip_claim(cls, value: str) -> str:
+        return value.strip()
+
+
+class ResearchResult(BaseModel):
+    """Validated result shape and generated schema for Codex research."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    answer: str
+    confidence: Literal["high", "medium", "low"]
+    basis: Literal["documentation", "implementation", "mixed"]
+    findings: list[ResearchFinding] = Field(min_length=1, max_length=12)
+    contradictions: list[str] = Field(max_length=20)
+    unresolved: list[str] = Field(max_length=20)
+
+    @field_validator("answer")
+    @classmethod
+    def _validate_answer(cls, value: str) -> str:
+        answer = value.strip()
+        if not answer:
+            raise ValueError("answer must be a non-empty string")
+        return answer
+
+    @field_validator("contradictions", "unresolved")
+    @classmethod
+    def _strip_text_lists(cls, values: list[str]) -> list[str]:
+        return [item.strip() for item in values if item.strip()]
+
+
+RESULT_SCHEMA: dict[str, Any] = ResearchResult.model_json_schema()
 
 
 @dataclass(frozen=True)
@@ -265,105 +294,15 @@ def _decode_result(raw: str) -> dict[str, Any]:
     return value
 
 
-def _validate_text_list(value: object, *, name: str, maximum: int = 20) -> list[str]:
-    if not isinstance(value, list) or len(value) > maximum:
-        raise ResearchRuntimeError(f"{name} must be a bounded array")
-    if any(not isinstance(item, str) for item in value):
-        raise ResearchRuntimeError(f"{name} must contain strings")
-    return [item.strip() for item in value if item.strip()]
-
-
-def _validate_source(value: object, *, scope: str | None = None) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise ResearchRuntimeError("finding source must be an object")
-    path_value = value.get("path")
-    start_line = value.get("start_line")
-    end_line = value.get("end_line")
-    kind = value.get("kind")
-    if not isinstance(path_value, str):
-        raise ResearchRuntimeError("source path must be a string")
-    path = PurePosixPath(path_value)
-    if path_value.startswith("/") or any(
-        part in {"", ".", ".."} for part in path.parts
-    ):
-        raise ResearchRuntimeError("source path must be repository-relative")
-    normalized_path = path.as_posix()
-    if scope is not None and not (
-        normalized_path == scope or normalized_path.startswith(scope + "/")
-    ):
-        raise ResearchRuntimeError(
-            f"cited source is outside requested scope: {path_value}"
-        )
-    resolved = ROOT.joinpath(*path.parts)
-    if resolved.is_symlink() or not resolved.is_file():
-        raise ResearchRuntimeError(f"cited source does not exist: {path_value}")
-    if (
-        isinstance(start_line, bool)
-        or not isinstance(start_line, int)
-        or isinstance(end_line, bool)
-        or not isinstance(end_line, int)
-        or start_line < 1
-        or end_line < start_line
-    ):
-        raise ResearchRuntimeError("source line range is invalid")
-    line_count = len(resolved.read_text(errors="replace").splitlines())
-    if end_line > max(1, line_count):
-        raise ResearchRuntimeError(f"cited line is beyond end of file: {path_value}")
-    if kind not in {"documentation", "implementation", "test", "configuration"}:
-        raise ResearchRuntimeError("source kind is invalid")
-    return {
-        "path": path.as_posix(),
-        "start_line": start_line,
-        "end_line": end_line,
-        "kind": kind,
-    }
-
-
 def _validate_result(
     value: dict[str, Any], *, scope: str | None = None
 ) -> dict[str, Any]:
-    answer = value.get("answer")
-    confidence = value.get("confidence")
-    basis = value.get("basis")
-    findings = value.get("findings")
-    if not isinstance(answer, str) or not answer.strip():
-        raise ResearchRuntimeError("answer must be a non-empty string")
-    if confidence not in {"high", "medium", "low"}:
-        raise ResearchRuntimeError("confidence is invalid")
-    if basis not in {"documentation", "implementation", "mixed"}:
-        raise ResearchRuntimeError("basis is invalid")
-    if not isinstance(findings, list) or not findings or len(findings) > 12:
-        raise ResearchRuntimeError("findings must contain between 1 and 12 items")
-
-    clean_findings = []
-    for finding in findings:
-        if not isinstance(finding, dict) or not isinstance(finding.get("claim"), str):
-            raise ResearchRuntimeError("finding must contain a claim")
-        sources = finding.get("sources")
-        if not isinstance(sources, list) or not sources or len(sources) > 6:
-            raise ResearchRuntimeError("finding must contain between 1 and 6 sources")
-        snippet = finding.get("snippet")
-        if snippet is not None and not isinstance(snippet, str):
-            raise ResearchRuntimeError("finding snippet must be a string or null")
-        clean_findings.append(
-            {
-                "claim": finding["claim"].strip(),
-                "sources": [
-                    _validate_source(source, scope=scope) for source in sources
-                ],
-                "snippet": snippet,
-            }
-        )
-    return {
-        "answer": answer.strip(),
-        "confidence": confidence,
-        "basis": basis,
-        "findings": clean_findings,
-        "contradictions": _validate_text_list(
-            value.get("contradictions"), name="contradictions"
-        ),
-        "unresolved": _validate_text_list(value.get("unresolved"), name="unresolved"),
-    }
+    try:
+        result = ResearchResult.model_validate(value, context={"scope": scope})
+    except ValidationError as exc:
+        messages = [str(error["msg"]) for error in exc.errors()]
+        raise ResearchRuntimeError("; ".join(messages)) from exc
+    return result.model_dump(mode="json")
 
 
 def run_research(request: ResearchRequest) -> dict[str, Any]:

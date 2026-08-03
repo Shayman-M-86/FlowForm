@@ -17,16 +17,25 @@ output — do not edit it by hand; regenerate with
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
 
-from . import gitutil
-from .config import Config
+from ..config import Config
+from ..core import gitutil
+from ..core.cli import add_output_args, envelope, markdown_table, paginate
+from ..core.model import (
+    HEADING_RE,
+    ROOT,
+    DocSet,
+    Document,
+    generated_dir_for,
+    resolve_docs_root,
+)
 from .freshness import CURRENT, REVIEW, STALE, UNKNOWN, check_all
-from .model import ROOT, DocSet, Document, generated_dir_for, resolve_docs_root
 from .validate import all_findings
 
 # Documents that are prose-navigation / index pages are expected to have few
@@ -40,7 +49,7 @@ def _open_questions(doc: Document) -> list[str]:
     questions: list[str] = []
     capturing = False
     for line in doc.body.splitlines():
-        heading = re.match(r"^(#{1,6})\s+(.*)$", line)
+        heading = HEADING_RE.match(line)
         if heading:
             capturing = bool(_OPEN_QUESTION_HEADING.search(heading.group(2)))
             continue
@@ -160,30 +169,6 @@ def build_health(docset: DocSet | None = None, config: Config | None = None) -> 
     }
 
 
-def _cell(value) -> str:
-    """Escape a value for a Markdown table cell.
-
-    Finding messages can contain ``[[wiki link]]`` and ``|`` characters. Left
-    raw, those would corrupt the table and be re-parsed as real wiki links by
-    the link validator, making the generated dashboard fail validation because
-    it *reports* a broken link. Escape brackets and pipes so cell text is inert.
-    """
-    text = str(value)
-    text = text.replace("|", "\\|")
-    text = text.replace("[[", "&#91;&#91;").replace("]]", "&#93;&#93;")
-    return text
-
-
-def _md_table(headers: list[str], rows: list[list[str]]) -> str:
-    if not rows:
-        return "_None._\n"
-    out = ["| " + " | ".join(headers) + " |"]
-    out.append("| " + " | ".join("---" for _ in headers) + " |")
-    for r in rows:
-        out.append("| " + " | ".join(_cell(c) for c in r) + " |")
-    return "\n".join(out) + "\n"
-
-
 def render_dashboard(health: dict) -> str:
     head = gitutil.short(health["repo_head"])
     fc = health["freshness_counts"]
@@ -216,11 +201,11 @@ def render_dashboard(health: dict) -> str:
         "`tools/bin/docsys health --write`.",
         "",
         "> Generated-document scaffold: this file is reproducible from repository "
-        "contents via `tools/flowform_tools/docsys/health.py`.",
+        "contents via `tools/flowform_tools/docsys/commands/health.py`.",
         "",
         "## Generator",
         "",
-        "`tools/flowform_tools/docsys/health.py` renders this dashboard and its "
+        "`tools/flowform_tools/docsys/commands/health.py` renders this dashboard and its "
         "machine-readable JSON companion.",
         "",
         "## Source files scanned",
@@ -243,13 +228,13 @@ def render_dashboard(health: dict) -> str:
         "",
         "## Verification status",
         "",
-        _md_table(
+        markdown_table(
             ["Status", "Documents"],
             [[k, v] for k, v in sorted(sc.items())],
         ),
         "## Freshness",
         "",
-        _md_table(
+        markdown_table(
             ["Classification", "Documents"],
             [
                 ["Current", fc["current"]],
@@ -262,7 +247,7 @@ def render_dashboard(health: dict) -> str:
         "",
         "Documents whose owned code changed since verification, most urgent first.",
         "",
-        _md_table(
+        markdown_table(
             ["Classification", "Document", "Reason"],
             [
                 [
@@ -275,7 +260,7 @@ def render_dashboard(health: dict) -> str:
         ),
         "## Heavily connected documents",
         "",
-        _md_table(
+        markdown_table(
             ["Document", "Inbound", "Outbound"],
             [[d["title"], d["in"], d["out"]] for d in health["heavily_connected"]],
         ),
@@ -284,25 +269,25 @@ def render_dashboard(health: dict) -> str:
         "Content documents with no inbound or outbound wiki-link relationships.",
         "",
         (
-            _md_table(["Path"], [[p] for p in health["orphan_documents"]])
+            markdown_table(["Path"], [[p] for p in health["orphan_documents"]])
             if health["orphan_documents"]
             else "_None._\n"
         ),
         "## Unresolved questions",
         "",
-        _md_table(
+        markdown_table(
             ["Document", "Open questions"],
             [[q["title"], q["count"]] for q in health["open_questions"]],
         ),
         "## Invalid metadata",
         "",
-        _md_table(
+        markdown_table(
             ["Path", "Issue"],
             [[m["path"], m["message"]] for m in health["invalid_metadata"]],
         ),
         "## Broken links",
         "",
-        _md_table(
+        markdown_table(
             ["Path", "Issue"],
             [[m["path"], m["message"]] for m in health["broken_links"]],
         ),
@@ -337,14 +322,9 @@ def write_health(
 
 
 def main(argv: list[str] | None = None) -> int:
-    import argparse
-
     parser = argparse.ArgumentParser(prog="docsys health")
     parser.add_argument("--write", action="store_true", help="write generated health artifacts")
-    parser.add_argument("--limit", type=int, default=10)
-    parser.add_argument("--all", action="store_true", dest="show_all")
-    parser.add_argument("--details", action="store_true")
-    parser.add_argument("--format", choices=("text", "json"), default="text")
+    add_output_args(parser, default_limit=10)
     parser.add_argument(
         "--docs-root",
         default=None,
@@ -378,19 +358,17 @@ def main(argv: list[str] | None = None) -> int:
             for path in health["orphan_documents"]
         ]
     )
-    shown = issues if args.show_all else issues[: args.limit]
+    shown, total, _ = paginate(issues, limit=args.limit, show_all=args.show_all)
     fc = health["freshness_counts"]
     if args.format == "json":
         print(
             json.dumps(
-                {
-                    "schema": health["schema"],
-                    "freshness_counts": fc,
-                    "total": len(issues),
-                    "returned": len(shown),
-                    "truncated": len(shown) < len(issues),
-                    "items": shown,
-                },
+                envelope(
+                    health["schema"],
+                    shown,
+                    total=total,
+                    freshness_counts=fc,
+                ),
                 separators=(",", ":"),
             )
         )
@@ -405,8 +383,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.details:
         for item in shown:
             print(f"  [{item['kind']}] {item['path']}")
-        if len(shown) < len(issues):
-            print(f"  … {len(issues) - len(shown)} more; use --all")
+        if len(shown) < total:
+            print(f"  … {total - len(shown)} more; use --all")
     return 0
 
 

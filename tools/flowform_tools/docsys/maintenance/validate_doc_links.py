@@ -16,14 +16,11 @@ from __future__ import annotations
 
 import re
 
+from flowform_tools.docsys.core.model import DOCS, body_after_front_matter, strip_code
 from flowform_tools.paths import ROOT
-
-DOCS = ROOT / "docs"
 
 MD_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 WIKI_LINK = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]")
-CODE_FENCE = re.compile(r"^```.*?^```", re.M | re.S)
-CODE_SPAN = re.compile(r"`[^`\n]*`")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -46,10 +43,7 @@ def main(argv: list[str] | None = None) -> int:
 
     for path in paths:
         rel = path.relative_to(ROOT)
-        body = path.read_text(errors="replace")
-        if body.startswith("---") and (end := body.find("\n---", 3)) != -1:
-            body = body[end + 4:]
-        body = CODE_SPAN.sub("", CODE_FENCE.sub("", body))
+        body = strip_code(body_after_front_matter(path.read_text(errors="replace")))
 
         for target in WIKI_LINK.findall(body):
             if target.strip().casefold() not in targets:

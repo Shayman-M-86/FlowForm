@@ -11,4 +11,15 @@ REPO_ROOT="$(cd -- "$TOOLS_DIR/.." && pwd)"
 
 cd "$REPO_ROOT"
 export PYTHONPATH="$TOOLS_DIR${PYTHONPATH:+:$PYTHONPATH}"
+
+case "${1:-}" in
+    find|read|research|validate-agent-setup)
+        if ! command -v uv >/dev/null 2>&1; then
+            echo "docsys $1 requires the tools 'docs' extra; install uv and run: uv sync --project tools --extra docs" >&2
+            exit 1
+        fi
+        exec uv run --project "$TOOLS_DIR" --frozen --extra docs python -m flowform_tools.docsys "$@"
+        ;;
+esac
+
 exec python3 -m flowform_tools.docsys "$@"

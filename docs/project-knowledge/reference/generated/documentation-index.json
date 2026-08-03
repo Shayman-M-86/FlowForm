@@ -1,7 +1,7 @@
 {
   "schema": "flowform.docsys.index/1",
-  "generated_by": "tools/flowform_tools/docsys/index.py",
-  "repo_head": "079518b22392bfc5ddf7c6f985771d9ed08d2587",
+  "generated_by": "tools/flowform_tools/docsys/commands/index.py",
+  "repo_head": "cfdb9686a488b2f9121adef1ecc5e0d50e117291",
   "document_count": 69,
   "documents": [
     {
@@ -1994,7 +1994,7 @@
         "../../../.github/workflows/ci.yml",
         "../../../.github/workflows/deploy.yml",
         "../../../.github/workflows/publish-staging-images.yml",
-        "../../../tools/flowform_tools/docsys/ci.py"
+        "../../../tools/flowform_tools/docsys/commands/ci.py"
       ],
       "change_triggers": [
         "../../../scripts/ci/",
@@ -2005,7 +2005,7 @@
         ".github/workflows/ci.yml",
         ".github/workflows/deploy.yml",
         ".github/workflows/publish-staging-images.yml",
-        "tools/flowform_tools/docsys/ci.py"
+        "tools/flowform_tools/docsys/commands/ci.py"
       ],
       "change_triggers_resolved": [
         "scripts/ci/",
@@ -2188,14 +2188,14 @@
         "Related documents"
       ],
       "related_code": [
-        "../../../../tools/flowform_tools/docsys/model.py"
+        "../../../../tools/flowform_tools/docsys/core/model.py"
       ],
       "change_triggers": [
         "../../../../tools/"
       ],
       "exclusions": [],
       "related_code_resolved": [
-        "tools/flowform_tools/docsys/model.py"
+        "tools/flowform_tools/docsys/core/model.py"
       ],
       "change_triggers_resolved": [
         "tools/"
@@ -2255,12 +2255,11 @@
       ],
       "related_code": [
         "../../../../AGENTS.md",
-        "../../../../tools/flowform_tools/docsys/research.py",
+        "../../../../tools/flowform_tools/docsys/commands/research.py",
         "../../../../tools/flowform_tools/docsys/command_catalog.py",
-        "../../../../tools/flowform_tools/docsys/capabilities.py",
-        "../../../../tools/flowform_tools/docsys/validate.py",
-        "../../../../tools/flowform_tools/docsys/evidence.py",
-        "../../../../tools/flowform_tools/docsys/maintenance/validate_doc_metadata.py"
+        "../../../../tools/flowform_tools/docsys/commands/capabilities.py",
+        "../../../../tools/flowform_tools/docsys/commands/validate.py",
+        "../../../../tools/flowform_tools/docsys/commands/evidence.py"
       ],
       "change_triggers": [
         "../../../../tools/",
@@ -2270,12 +2269,11 @@
       "exclusions": [],
       "related_code_resolved": [
         "AGENTS.md",
-        "tools/flowform_tools/docsys/research.py",
+        "tools/flowform_tools/docsys/commands/research.py",
         "tools/flowform_tools/docsys/command_catalog.py",
-        "tools/flowform_tools/docsys/capabilities.py",
-        "tools/flowform_tools/docsys/validate.py",
-        "tools/flowform_tools/docsys/evidence.py",
-        "tools/flowform_tools/docsys/maintenance/validate_doc_metadata.py"
+        "tools/flowform_tools/docsys/commands/capabilities.py",
+        "tools/flowform_tools/docsys/commands/validate.py",
+        "tools/flowform_tools/docsys/commands/evidence.py"
       ],
       "change_triggers_resolved": [
         "tools/",

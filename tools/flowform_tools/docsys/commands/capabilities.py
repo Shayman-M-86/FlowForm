@@ -7,8 +7,8 @@ import argparse
 import json
 import shutil
 
-from .command_catalog import DOCSYS_COMMANDS, RESEARCH_CLI_TOOLS
-from .model import ROOT
+from ..command_catalog import DOCSYS_COMMANDS, RESEARCH_CLI_TOOLS
+from ..core.model import ROOT
 
 
 def _available(executable: str) -> tuple[bool, str | None]:

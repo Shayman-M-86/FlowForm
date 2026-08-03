@@ -50,6 +50,7 @@
             "**/.ruff_cache": true,
             "**/.coverage": true,
             "**/cdk.out": true,
+            ".docsys/": true
         },
         "files.watcherExclude": {
             "**/.git/objects/**": true,

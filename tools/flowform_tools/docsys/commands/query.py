@@ -8,8 +8,8 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from .contracts import FindRequest, execute_find
-from .model import DocSet, Document
+from ..contracts import FindRequest, execute_find
+from ..core.model import DocSet, Document
 
 
 @dataclass(frozen=True)

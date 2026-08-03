@@ -8,7 +8,7 @@ from flowform_tools.docsys.contracts import (
     execute_find,
     execute_read,
 )
-from flowform_tools.docsys.model import DOCS, ROOT, DocSet, Document
+from flowform_tools.docsys.core.model import DOCS, ROOT, DocSet, Document
 
 
 def _doc(
@@ -77,7 +77,7 @@ class DiscoveryContractTests(unittest.TestCase):
         self.assertNotIn("score", response.items[0].as_dict())
 
     def test_match_modes_and_exact_code_filter_are_explicit(self) -> None:
-        code_path = "tools/flowform_tools/docsys/model.py"
+        code_path = "tools/flowform_tools/docsys/core/model.py"
         docs = [
             _doc(
                 "both",
