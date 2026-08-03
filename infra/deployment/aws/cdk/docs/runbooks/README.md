@@ -1,18 +1,15 @@
-# Runbooks
+# CDK runbooks
 
-Copy-pasteable commands for common operational actions against the CDK
-stacks. Each file covers one area; this page is the index.
+Runbooks contain bounded operator procedures whose commands and destructive
+effects must remain aligned with the current implementation.
 
-| Runbook | What it covers |
-|---|---|
-| [teardown.md](teardown.md) | Destroying a whole environment or individual stacks, and the order/gotchas |
-| [frontend-deploy.md](frontend-deploy.md) | Building and publishing the frontends to S3 + CloudFront (manual + CI) |
+| Runbook | Purpose |
+| --- | --- |
+| [Frontend deploy](frontend-deploy.md) | Manually reproduce the frontend publication path when automation needs diagnosis. |
+| [Teardown](teardown.md) | Deliberately remove CDK-managed environment topology after reviewing retained and shared state. |
 
-All commands assume:
-
-- You're in `infra/deployment/aws/cdk/` (`cd infra/deployment/aws/cdk` first).
-- AWS credentials for the target account are active (`aws login` / `aws sso login` / `AWS_PROFILE`).
-- The CDK CLI runs via `npx cdk …` (it's a Node tool, not vendored in this Python project).
-
-Stack names follow `FlowForm-<Env>-<Stack>`, e.g. `FlowForm-Staging-Frontend`.
-`<env>` in `-c env=<env>` is one of `dev`, `staging`, `prod`.
+For ordinary stack deployment, artifact publication, release promotion, and
+host convergence, use the [AWS operations index](../../../operations/README.md).
+If a runbook becomes a design discussion or implementation plan, move its
+durable ideas into Project Knowledge and route the unfinished work to
+Development Workspace.

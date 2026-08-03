@@ -39,7 +39,7 @@ from flowform_infra.constructs.ses_construct import AppEmailIdentity
 #   - SES identity: manual FOR NOW. Planned to move into a shared CDK
 #     stack (ses.EmailIdentity + DKIM records, adopted via `cdk import`)
 #     when email infra is next touched.
-# Full list of hand-done steps: docs/manual-prerequisites.md.
+# Operator prerequisite boundary: docs/prerequisites.md.
 
 
 class SecurityStack(Stack):

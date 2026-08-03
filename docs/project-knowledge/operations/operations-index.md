@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [infrastructure, backend]
 related_code:
   - "../../../backend/app/logging/logging_config.py"
@@ -13,7 +13,7 @@ related_code:
 change_triggers:
   - "../../../backend/app/api/v1/system/health.py"
   - "../../../infra/containers/images/alloy/"
-related_docs: ["Infrastructure knowledge", "Container runtime", "Proxmox rehearsal"]
+related_docs: ["Infrastructure knowledge", "Container runtime", "Proxmox rehearsal", "Telemetry and health", "Release recovery and readiness"]
 ---
 
 # Operations knowledge
@@ -51,8 +51,20 @@ Correlation makes it possible to connect logs and sampled traces; it does not
 guarantee either delivery or retention. Environment evidence is required to
 establish destination access, sampling, labels, dashboards, and alerting.
 
+## Topics
+
+- [[telemetry-and-health|Telemetry and health]] documents the implemented
+  health probes, logging and request-correlation contract, distributed trace
+  path, and bounded business-tracing policy.
+- [[release-recovery-and-readiness|Release recovery and readiness]] describes
+  the lifecycle joining validated artifacts, compatible state transitions,
+  runtime convergence, verification, rollback boundaries, and recovery
+  evidence.
+
 ## Related documents
 
 - [[infrastructure-index|Infrastructure knowledge]]
 - [[containers-index|Container runtime]]
 - [[proxmox-index|Proxmox rehearsal]]
+- [[telemetry-and-health|Telemetry and health]]
+- [[release-recovery-and-readiness|Release recovery and readiness]]

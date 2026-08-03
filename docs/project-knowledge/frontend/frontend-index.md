@@ -5,7 +5,7 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [frontend]
 related_code:
   - "../../../frontend/package.json"
@@ -15,7 +15,7 @@ change_triggers:
   - "../../../frontend/apps/public-site/src/"
   - "../../../frontend/apps/studio-app/src/"
   - "../../../frontend/packages/"
-related_docs: ["Builder and rules", "Product knowledge"]
+related_docs: ["Builder and rules", "Product knowledge", "System context"]
 ---
 
 # Frontend implementation
@@ -33,7 +33,7 @@ depending back on application modules.
               +-----------------+-----------------+
               |                                   |
           Studio app                         Public Site
- authenticated management              public/respondent entry
+ management + respondent routes         public product/docs
               |                                   |
               +-----------------+-----------------+
                                 |
@@ -60,3 +60,4 @@ automated test coverage.
 
 - [[builder-and-rules|Builder and rules]]
 - [[product-index|Product knowledge]]
+- [[system-context|System context]]

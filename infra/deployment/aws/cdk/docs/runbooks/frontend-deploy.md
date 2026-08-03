@@ -60,8 +60,7 @@ two to propagate, so a stale response right after publishing is expected.
 
 ## Notes
 
-- `VITE_API_BASE_URL` currently points at `api.<domain>`, which won't
-  resolve until `application_stack.py`'s ALB exists — the studio app builds
-  and serves, but API calls fail until then.
+- Frontend publication does not prove that the configured API or identity
+  provider is reachable. Verify the user-facing flow after publishing.
 - The buckets are private (CloudFront-only via OAC). Hitting the S3 URL
   directly returns 403 — that's correct, not a deploy failure.

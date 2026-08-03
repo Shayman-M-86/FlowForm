@@ -1,49 +1,43 @@
-# FlowForm Infrastructure (CDK)
+# FlowForm AWS infrastructure definitions
 
-AWS infrastructure for FlowForm, managed as code. See
-[`docs/`](docs/) for the full picture:
+This package declares FlowForm's AWS topology with Python CDK. It owns cloud
+resource definitions and synth-time assertions; the repository-wide AWS
+operations layer owns routine deployment, artifact publication, host
+convergence, and recovery workflows.
 
-- [`aws-overview.md`](docs/aws-overview.md) — what exists and why
-- [`environments.md`](docs/environments.md) — dev/staging/prod
-- [`secrets-and-config.md`](docs/secrets-and-config.md) — Secrets Manager vs SSM vs local `.env`
-- [`deployment.md`](docs/deployment.md) — bootstrap, deploy, teardown
-- [`manual-prerequisites.md`](docs/manual-prerequisites.md) — everything hand-done that CDK assumes exists
-- [`runbooks/`](docs/runbooks/) — copy-pasteable commands for common actions (teardown, frontend deploy)
+Start with the [CDK operator and maintenance index](docs/README.md). Durable
+architecture and operational ideas belong in FlowForm Project Knowledge rather
+than in this package.
 
-## Quick start
+## Local setup
 
 ```bash
-uv sync
-npx cdk synth -c env=dev
+uv sync --extra dev
+npm ci
 ```
 
-## Layout
+## Fast validation
+
+```bash
+uv run ruff check .
+../../../../scripts/tools/typecheck.sh cdk
+uv run pytest -q
+npx --no-install cdk synth -c env=staging
+```
+
+These checks validate source and synthesized templates. They do not prove that
+an AWS environment is deployed, healthy, or recoverable.
+
+## Package shape
 
 ```text
 flowform_infra/
-  config/environments.py   # per-env account/region/sizing
-  stacks/                  # one file per CloudFormation stack
-  constructs/              # reusable pieces shared across stacks
-tests/                     # synth-time assertions (aws_cdk.assertions)
+  config/       environment declarations and shared policy
+  constructs/   reusable CDK building blocks
+  stacks/       independently deployable ownership boundaries
+tests/          synth-time assertions
+docs/           local operator and maintenance guidance
 ```
 
-Security, Registry, Network, Database, Application, and frontend hosting have
-substantive resources. Observability remains a structural boundary. See
-`aws-overview.md` for the current stack map.
-
-The app and proxy consume distinct role AMIs published through
-`/flowform/<environment>/ec2/appAmiId` and `proxyAmiId`. Both descend from the
-shared base built under `infra/machine-images/definitions/`, but CDK never
-launches that base directly. Each instance requests a 10 GiB encrypted gp3
-root volume, which cannot be smaller than its role AMI snapshot.
-
-## Environment model
-
-- **dev** deploys the Security stack only (KMS, secrets, SES send access).
-  The app, both databases, and the frontends run locally
-  (`infra/containers/runtime/development/compose/` + Vite dev servers) — no
-  VPC, RDS, ECS, or Amplify.
-- **staging** is the one shared non-prod cloud environment: full stack set,
-  doubles as the integration environment.
-- **prod** is the same stack set as staging with retention/protection
-  turned on.
+Use source and synthesized output for the current resource inventory. Do not
+maintain a parallel Markdown list of stacks, parameters, or resource names.

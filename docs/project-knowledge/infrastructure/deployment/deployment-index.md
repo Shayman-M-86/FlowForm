@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"
@@ -14,7 +14,7 @@ change_triggers:
   - "../../../../infra/deployment/aws/"
   - "../../../../infra/deployment/bootstrap/"
   - "../../../../.github/workflows/"
-related_docs: ["Infrastructure knowledge", "Container runtime", "Machine images", "Proxmox rehearsal", "Configuration and secrets"]
+related_docs: ["Infrastructure knowledge", "Container runtime", "Machine images", "Proxmox rehearsal", "Configuration and secrets", "Deployment design forces", "External platform boundaries", "Release recovery and readiness"]
 ---
 
 # Deployment architecture
@@ -109,6 +109,21 @@ already deployed hosts. Exact command sequences, account prerequisites, and
 recovery procedures change with the implementation and belong next to those
 operations.
 
+## Design and lifecycle
+
+[[design-forces-and-evolution|Deployment design forces]] explains the cost,
+isolation, availability, and operator-effort trade-offs that shape the initial
+AWS posture, along with the signals that should trigger evolution. It also
+distinguishes environment topology from artifact, configuration, state, and
+external-service lifecycles.
+
+[[external-platform-boundaries|External platform boundaries]] separates
+declared infrastructure from imported foundations, configured providers, and
+human-authorized capabilities. [[release-recovery-and-readiness|Release
+recovery and readiness]] describes how those boundaries participate in
+release, verification, rollback, and recovery without claiming that the whole
+lifecycle is automated today.
+
 ## Other environments
 
 The local Proxmox rehearsal has a separate lifecycle and topology, but consumes
@@ -123,3 +138,6 @@ deployment.
 - [[images-index|Machine images]]
 - [[proxmox-index|Proxmox rehearsal]]
 - [[configuration|Configuration and secrets]]
+- [[design-forces-and-evolution|Deployment design forces]]
+- [[external-platform-boundaries|External platform boundaries]]
+- [[release-recovery-and-readiness|Release recovery and readiness]]

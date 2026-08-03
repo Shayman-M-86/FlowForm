@@ -5,7 +5,7 @@ document_type: decision
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [infrastructure, security, configuration, ci-cd]
 related_code: []
 change_triggers:
@@ -16,6 +16,7 @@ change_triggers:
 related_docs:
   - "Engineering decisions"
   - "AWS staging runtime convergence"
+  - "ADR 0002: Low-cost AWS operating model"
 ---
 
 # ADR 0001: AWS staging infrastructure target
@@ -56,7 +57,13 @@ The remaining delivery work is coordinated in
 source and current infrastructure documentation before relying on these
 boundaries.
 
+The broader cost, availability, and evolution rationale is separated into
+[[0002-low-cost-aws-operating-model|ADR 0002: Low-cost AWS operating model]] so
+this topology decision does not become a permanent claim about which services
+or capacities are appropriate.
+
 ## Related documents
 
 - [[decisions-index|Engineering decisions]]
 - [[aws-staging-runtime-convergence|AWS staging runtime convergence]]
+- [[0002-low-cost-aws-operating-model|ADR 0002: Low-cost AWS operating model]]

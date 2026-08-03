@@ -44,6 +44,9 @@ understanding in Project Knowledge.
 - `old-docs/` retains the previous documentation trees verbatim. It is inert
   historical source material and is deliberately excluded from Docsys
   metadata, structure, link, indexing, and evidence checks.
+  Its `cdk-local-documentation/` branch retains superseded AWS implementation
+  sketches and prerequisite notes whose durable ideas were moved into Project
+  Knowledge and engineering decisions.
 
 ## Related documents
 

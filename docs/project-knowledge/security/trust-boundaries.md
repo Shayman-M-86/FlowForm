@@ -22,6 +22,7 @@ related_docs:
   - "Security model"
   - "Identity and authentication"
   - "Responses and encryption"
+  - "Runtime infrastructure security"
 ---
 
 # Trust boundaries
@@ -81,6 +82,11 @@ forwarded addresses can safely become rate-limit identities. Development and
 test Compose topologies can expose different boundaries from the declared cloud
 shape.
 
+Host administration, telemetry collection, container control interfaces, and
+certificate automation are privileged crossings rather than background
+implementation details. [[runtime-infrastructure-security|Runtime
+infrastructure security]] describes the invariants used to assess them.
+
 ## Review questions
 
 Remaining evidence should establish the trusted-proxy policy, browser origin and
@@ -94,3 +100,4 @@ deployment validation proves about the defined network and runtime controls.
 - [[security-model|Security model]]
 - [[identity-and-authentication|Identity and authentication]]
 - [[responses-and-encryption|Responses and encryption]]
+- [[runtime-infrastructure-security|Runtime infrastructure security]]

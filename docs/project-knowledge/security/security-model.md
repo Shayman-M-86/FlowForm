@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-08-03
+last_edited: 2026-08-04
 tags: [backend, infrastructure, security]
 related_code:
   - "../../../backend/app/core/config.py"
@@ -27,6 +27,7 @@ related_docs:
   - "Respondent access and continuity"
   - "Responses and encryption"
   - "Configuration and secrets"
+  - "Runtime infrastructure security"
 ---
 
 # Security model
@@ -92,6 +93,10 @@ in-memory recipient cooldown and global-send budgets. Their existence in the
 repository does not establish deployed IAM, network, certificate, rate-limit,
 backup, monitoring, or incident-response outcomes.
 
+The durable host and container invariants, including privileged integration
+points that can undermine otherwise constrained workloads, belong to
+[[runtime-infrastructure-security|Runtime infrastructure security]].
+
 ## Known limitations to retain during review
 
 Rate-limit state is local to the current Caddy instance or application process;
@@ -111,3 +116,4 @@ authorization coverage, or a complete threat model.
 - [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[responses-and-encryption|Responses and encryption]]
 - [[configuration|Configuration and secrets]]
+- [[runtime-infrastructure-security|Runtime infrastructure security]]

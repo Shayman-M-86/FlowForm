@@ -18,10 +18,9 @@ set -euo pipefail
 #      DB volume reset), and are copied into the tmpfs dir here so
 #      Compose bind-mounts that complete directory read-only at /run/secrets.
 #
-# This mirrors the EC2 bootstrap flow (see the Secrets and Configuration
-# Bootstrap section in
-# infra/deployment/aws/cdk/docs/implementation-sketch/caddy-ec2-implementation-notes.md);
-# on EC2 the DB passwords come from the database stack/RDS instead.
+# This mirrors the deployed file-backed secret boundary described in
+# docs/project-knowledge/infrastructure/configuration.md; on AWS the database
+# authentication inputs are supplied by the deployed environment instead.
 #
 # Usage:
 #   scripts/secrets/fetch-dev-secrets.sh

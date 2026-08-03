@@ -13,7 +13,8 @@
 # can never sneak into a deploy. Note: this means a deploy happens after
 # every green CI run on staging, not just frontend-touching ones — a
 # redundant sync/invalidation is harmless. Prod is intentionally not
-# wired up yet — see infra/deployment/aws/cdk/docs/implementation-sketch/.
+# wired up yet — see the current CI/CD implementation and AWS staging planning
+# documents under docs/.
 
 name: deploy
 

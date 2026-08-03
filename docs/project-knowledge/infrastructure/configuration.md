@@ -5,7 +5,7 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [configuration, infrastructure, security]
 related_code:
   - "../../../backend/app/core/config.py"
@@ -14,7 +14,7 @@ related_code:
 change_triggers:
   - "../../../infra/deployment/bootstrap/"
   - "../../../scripts/secrets/"
-related_docs: ["Infrastructure knowledge", "Local infrastructure", "Deployment architecture"]
+related_docs: ["Infrastructure knowledge", "Local infrastructure", "Deployment architecture", "External platform boundaries"]
 ---
 
 # Configuration and secrets
@@ -49,8 +49,15 @@ Local development has its own ignored inputs and persistent database state;
 replacing its credentials may require an intentional data reset. Exact setup
 and recovery procedures belong with the scripts that implement them.
 
+Some required inputs originate outside FlowForm's deployment authority. Their
+ownership, bootstrap authority, recovery expectation, and live verification
+belong to [[external-platform-boundaries|External platform boundaries]]. This
+keeps the application configuration contract separate from registrar,
+provider, account, approval, and source-control administration.
+
 ## Related documents
 
 - [[infrastructure-index|Infrastructure knowledge]]
 - [[local-infrastructure|Local infrastructure]]
 - [[deployment-index|Deployment architecture]]
+- [[external-platform-boundaries|External platform boundaries]]

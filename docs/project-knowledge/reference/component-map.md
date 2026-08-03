@@ -5,7 +5,7 @@ document_type: reference
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [backend, frontend, infrastructure, security]
 related_code:
   - "../../../backend/app/core/factory.py"
@@ -19,6 +19,7 @@ change_triggers:
   - "../../../infra/database/init/schema/"
 related_docs:
   - "Reference documentation"
+  - "System context"
   - "Data flows"
   - "Backend knowledge"
 ---
@@ -29,6 +30,8 @@ related_docs:
 
 This map names durable logical boundaries. It stops short of file-level
 ownership, commands, sequence detail, and deployment topology.
+Actors and externally operated dependencies belong to [[system-context|System
+context]].
 
 | Component | Responsibility |
 | --- | --- | --- |
@@ -59,5 +62,6 @@ guarantee of mechanically enforced layering or a deployment claim.
 ## Related documents
 
 - [[reference-index|Reference documentation]]
+- [[system-context|System context]]
 - [[repository-map|Repository map]]
 - [[data-flows|Data flows]]

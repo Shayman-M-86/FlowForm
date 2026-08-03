@@ -5,7 +5,7 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [meta]
 related_code: []
 change_triggers:
@@ -16,6 +16,7 @@ change_triggers:
 related_docs:
   - "FlowForm documentation"
   - "Development workspace"
+  - "System context"
   - "Product knowledge"
   - "Frontend implementation"
   - "Backend knowledge"
@@ -38,6 +39,10 @@ FlowForm supports designing and publishing surveys, controlling access,
 collecting responses, and reviewing results. Browser applications, backend
 services, persistence, security controls, and deployment environments each own
 part of that lifecycle.
+
+[[system-context|System context]] provides the shortest end-to-end orientation
+to the actors, software surfaces, stores, external dependencies, and product
+lifecycle before the ownership branches below add detail.
 
 ## Ownership map
 
@@ -69,6 +74,7 @@ by confident prose. Plans and unresolved choices remain in the
 
 - [[docs-index|FlowForm documentation]]
 - [[development-workspace-index|Development workspace]]
+- [[system-context|System context]]
 - [[product-index|Product knowledge]]
 - [[frontend-index|Frontend implementation]]
 - [[backend-index|Backend knowledge]]

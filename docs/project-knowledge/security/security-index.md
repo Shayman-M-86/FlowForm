@@ -5,7 +5,7 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [security]
 related_code: []
 change_triggers:
@@ -17,6 +17,7 @@ related_docs:
   - "Security model"
   - "Trust boundaries"
   - "Identity and authentication"
+  - "Runtime infrastructure security"
   - "Respondent access and continuity"
   - "Responses and encryption"
 ---
@@ -37,6 +38,11 @@ Auth0-to-local-user lifecycle. Data knowledge owns persistence and encrypted
 responses. Product knowledge owns respondent link and continuity semantics.
 This branch connects those responsibilities without duplicating their detailed
 rules.
+
+[[runtime-infrastructure-security|Runtime infrastructure security]] owns the
+host, workload identity, container isolation, secret delivery, outbound policy,
+privileged integration, maintenance, and replacement invariants that support
+the application-facing security model.
 
 ```text
 browser / operator / respondent
@@ -59,5 +65,6 @@ browser / operator / respondent
 - [[security-model|Security model]]
 - [[trust-boundaries|Trust boundaries]]
 - [[identity-and-authentication|Identity and authentication]]
+- [[runtime-infrastructure-security|Runtime infrastructure security]]
 - [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[responses-and-encryption|Responses and encryption]]

@@ -5,7 +5,7 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-08-03
+last_edited: 2026-08-04
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"
@@ -15,7 +15,7 @@ related_code:
 change_triggers:
   - "../../../scripts/ci/"
   - "../../../infra/deployment/aws/"
-related_docs: ["Engineering practices", "Continuous integration", "Deployment architecture", "CI workflows"]
+related_docs: ["Engineering practices", "Continuous integration", "Deployment architecture", "Release recovery and readiness", "CI workflows"]
 ---
 
 # CI/CD implementation
@@ -69,9 +69,16 @@ The legacy account said CI did not itself promote runtime digests, deploy CDK,
 bootstrap hosts, run database migrations, provision observability, or release
 production. This remains a draft investigation point, not a current guarantee.
 
+The durable ordering, compatibility, verification, and rollback concepts for a
+complete delivery are described in [[release-recovery-and-readiness|Release
+recovery and readiness]]. That lifecycle is intentionally broader than the
+current workflow inventory and must not be read as evidence that every stage is
+automated.
+
 ## Related documents
 
 - [[engineering-practices-index|Engineering practices]]
 - [[continuous-integration|Continuous integration]]
 - [[deployment-index|Deployment architecture]]
+- [[release-recovery-and-readiness|Release recovery and readiness]]
 - [[ci-workflows|CI workflows]]

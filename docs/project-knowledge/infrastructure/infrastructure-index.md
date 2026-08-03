@@ -5,7 +5,7 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-08-04
 tags: [infrastructure]
 related_code: []
 change_triggers:
@@ -13,7 +13,7 @@ change_triggers:
   - "../../../infra/contracts/"
   - "../../../infra/deployment/"
   - "../../../infra/machine-images/"
-related_docs: ["Deployment architecture", "Container runtime", "Machine images", "Proxmox rehearsal", "Configuration and secrets", "Local infrastructure"]
+related_docs: ["Deployment architecture", "Deployment design forces", "External platform boundaries", "Container runtime", "Machine images", "Proxmox rehearsal", "Configuration and secrets", "Local infrastructure"]
 ---
 
 # Infrastructure knowledge
@@ -48,6 +48,12 @@ machine images + container images
 - [[proxmox-index|Proxmox rehearsal]] owns the local isolated rehearsal.
 - [[configuration|Configuration and secrets]] explains how typed application
   settings and sensitive values cross the runtime boundary.
+- [[external-platform-boundaries|External platform boundaries]] distinguishes
+  declared infrastructure from imported foundations, configured providers,
+  and human-authorized capabilities.
+- [[design-forces-and-evolution|Deployment design forces]] records the durable
+  cost, isolation, availability, and operating-effort pressures that shape an
+  environment without freezing transient cloud selections.
 - [[local-infrastructure|Local infrastructure]] describes the distinct
   development and test environment.
 
@@ -62,4 +68,6 @@ environment checks.
 - [[images-index|Machine images]]
 - [[proxmox-index|Proxmox rehearsal]]
 - [[configuration|Configuration and secrets]]
+- [[external-platform-boundaries|External platform boundaries]]
+- [[design-forces-and-evolution|Deployment design forces]]
 - [[local-infrastructure|Local infrastructure]]

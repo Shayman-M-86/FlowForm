@@ -5,7 +5,7 @@ document_type: decision-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-08-04
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]
@@ -51,6 +51,9 @@ evidence + options + constraints
 
 - [[0001-aws-staging-infrastructure-target|ADR 0001: AWS staging infrastructure target]]
   records the intended first staging topology and its exclusions.
+- [[0002-low-cost-aws-operating-model|ADR 0002: Low-cost AWS operating model]]
+  proposes the cost, availability, isolation, and operator-effort boundary that
+  should govern how the AWS shape evolves.
 - [[adr-template|ADR template]] is the working structure for a new record.
 
 ## Related documents
