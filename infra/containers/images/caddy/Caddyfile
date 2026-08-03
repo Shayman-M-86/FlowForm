@@ -51,6 +51,10 @@
 		-Server
 	}
 
+	# Keep the endpoint matchers and budgets in one reviewable configuration
+	# file. The same file is used by AWS and the Proxmox rehearsal.
+	import rate-limits.caddy
+
 	reverse_proxy http://{$APP_UPSTREAM_HOST}:5000 {
 		# Forward the same per-request UUID logged above so the backend adopts it
 		# as its request_id (proxy-aware header manipulation: header_up, not

@@ -1162,10 +1162,14 @@ function MembersSection({ projectId, surveyId, canEdit }: { projectId: number; s
       key: 'member',
       header: 'Member',
       minWidth: 100,
-      maxWidth: 200,
-      cell: (member) => (
+      idealWidth: 200,
+      maxWidth: 320,
+      growWeight: 4,
+      shrinkPriority: 3,
+      compactBelow: 150,
+      cell: (member, _index, mode) => (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">
+          <p className={`truncate font-semibold text-foreground ${mode === 'full' ? 'text-sm' : 'text-xs'}`}>
             {member.user.display_name ?? member.user.email}
           </p>
           <p className="truncate text-2xs text-muted-foreground">{member.user.email}</p>
@@ -1176,9 +1180,16 @@ function MembersSection({ projectId, surveyId, canEdit }: { projectId: number; s
       key: 'status',
       header: 'Status',
       minWidth: 60,
+      idealWidth: 90,
       maxWidth: 100,
-      cell: (member) => (
-        <Badge variant={member.status === 'active' ? 'success' : 'muted'} size="xs">
+      shrinkPriority: 1,
+      compactBelow: 75,
+      cell: (member, _index, mode) => (
+        <Badge
+          variant={member.status === 'active' ? 'success' : 'muted'}
+          size="xs"
+          className={mode === 'full' ? undefined : 'px-1.5 text-[0.65rem]'}
+        >
           {member.status === 'active' ? 'Active' : 'Suspended'}
         </Badge>
       ),
@@ -1187,7 +1198,10 @@ function MembersSection({ projectId, surveyId, canEdit }: { projectId: number; s
       key: 'survey-role',
       header: 'Survey role',
       minWidth: 75,
-      maxWidth: 160,
+      idealWidth: 140,
+      maxWidth: 180,
+      shrinkPriority: 2,
+      compactBelow: 100,
       cell: (member) => {
         if (!member.surveyRoleId) return <span className="text-xs text-muted-foreground">—</span>
         const role = surveyRoles.find((r) => r.id === member.surveyRoleId)
@@ -1203,8 +1217,15 @@ function MembersSection({ projectId, surveyId, canEdit }: { projectId: number; s
     },
     {
       key: 'effective',
-      header: 'Effective permissions',
+      header: (mode) => mode === 'full' ? 'Effective permissions' : 'Permissions',
       minWidth: 110,
+      idealWidth: 240,
+      maxWidth: 400,
+      growWeight: 3,
+      shrinkPriority: 0,
+      visibilityPriority: 10,
+      hideable: true,
+      compactBelow: 160,
       cell: (member) => (
         <CompactPermissionBadges
           permissions={effectivePermissionPreview(member)}
@@ -1215,7 +1236,10 @@ function MembersSection({ projectId, surveyId, canEdit }: { projectId: number; s
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
       minWidth: 50,
+      idealWidth: 50,
       maxWidth: 50,
+      growWeight: 0,
+      visibilityPriority: 100,
       headerClassName: 'flex justify-center pr-2',
       cellClassName: 'flex justify-center px-0',
       cell: (member: MemberRow) => (

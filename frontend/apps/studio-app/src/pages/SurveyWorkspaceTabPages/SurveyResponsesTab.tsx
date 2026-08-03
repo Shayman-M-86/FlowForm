@@ -35,12 +35,11 @@ const STATUS_LABEL: Record<ResponseStatus, string> = {
 /** A flattened table row: one survey session plus the owning subject's code. */
 type SessionRow = SessionTree & { subjectCode: string }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, compact = false): string {
   return new Date(iso).toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    ...(compact ? {} : { hour: '2-digit', minute: '2-digit' }),
   })
 }
 
@@ -127,15 +126,28 @@ export function SurveyResponsesTab() {
     {
       key: 'subject',
       header: 'Subject',
-      minWidth: 120,
+      minWidth: 110,
+      idealWidth: 180,
+      maxWidth: 320,
+      growWeight: 3,
+      shrinkPriority: 3,
+      compactBelow: 140,
       cell: (row) => (
-        <span className="font-mono text-xs text-foreground">{row.subjectCode}</span>
+        <span className="block truncate font-mono text-xs text-foreground" title={row.subjectCode}>
+          {row.subjectCode}
+        </span>
       ),
     },
     {
       key: 'session',
       header: 'Session',
-      minWidth: 120,
+      minWidth: 100,
+      idealWidth: 140,
+      maxWidth: 180,
+      shrinkPriority: 0,
+      visibilityPriority: 15,
+      hideable: true,
+      compactBelow: 120,
       cell: (row) => (
         <span className="font-mono text-xs text-muted-foreground">{truncateUuid(row.session.session_id)}</span>
       ),
@@ -143,9 +155,17 @@ export function SurveyResponsesTab() {
     {
       key: 'status',
       header: 'Status',
-      minWidth: 110,
-      cell: (row) => (
-        <Badge variant={STATUS_BADGE_VARIANT[row.session.status]} size="xs">
+      minWidth: 90,
+      idealWidth: 110,
+      maxWidth: 130,
+      shrinkPriority: 1,
+      compactBelow: 100,
+      cell: (row, _index, mode) => (
+        <Badge
+          variant={STATUS_BADGE_VARIANT[row.session.status]}
+          size="xs"
+          className={mode === 'full' ? undefined : 'px-1.5 text-[0.65rem]'}
+        >
           {STATUS_LABEL[row.session.status]}
         </Badge>
       ),
@@ -153,26 +173,45 @@ export function SurveyResponsesTab() {
     {
       key: 'started',
       header: 'Started',
-      minWidth: 140,
-      cell: (row) => (
-        <span className="text-xs text-muted-foreground">{formatDate(row.session.started_at)}</span>
+      minWidth: 100,
+      idealWidth: 140,
+      maxWidth: 160,
+      shrinkPriority: 0,
+      visibilityPriority: 10,
+      hideable: true,
+      compactBelow: 120,
+      cell: (row, _index, mode) => (
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          {formatDate(row.session.started_at, mode !== 'full')}
+        </span>
       ),
     },
     {
       key: 'lastActivity',
-      header: 'Last Activity',
-      minWidth: 140,
-      cell: (row) => (
-        <span className="text-xs text-muted-foreground">
-          {row.session.completed_at ? formatDate(row.session.completed_at) : formatDate(row.session.last_activity_at)}
+      header: (mode) => mode === 'full' ? 'Last activity' : 'Activity',
+      minWidth: 100,
+      idealWidth: 140,
+      maxWidth: 160,
+      shrinkPriority: 0,
+      visibilityPriority: 20,
+      hideable: true,
+      compactBelow: 120,
+      cell: (row, _index, mode) => (
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          {row.session.completed_at
+            ? formatDate(row.session.completed_at, mode !== 'full')
+            : formatDate(row.session.last_activity_at, mode !== 'full')}
         </span>
       ),
     },
     {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
-      minWidth: 80,
-      maxWidth: 80,
+      minWidth: 72,
+      idealWidth: 72,
+      maxWidth: 72,
+      growWeight: 0,
+      visibilityPriority: 100,
       headerClassName: 'flex justify-center text-right pr-2',
       cellClassName: 'flex justify-center gap-1 px-0',
       cell: (row) => (

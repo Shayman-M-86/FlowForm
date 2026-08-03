@@ -8,9 +8,13 @@ type Props = { projectId: number }
 type View = 'subjects' | 'participants'
 
 const PAGE_SIZE = 20
-const COMPACT_TABLE_CLASS = 'min-w-0 max-w-full [&_.ui-table-th]:py-2 [&_.ui-table-td]:py-2 sm:[&_.ui-table-th]:py-3 sm:[&_.ui-table-td]:py-3'
-const COMPACT_HEADER_CLASS = 'px-1 text-[0.625rem] tracking-normal sm:pl-2 sm:pr-0 sm:text-xs sm:tracking-wider'
-const COMPACT_CELL_CLASS = 'min-w-0 overflow-hidden px-1 sm:pl-2 sm:pr-0'
+
+function formatCreatedDate(value: string, compact: boolean): string {
+  return new Date(value).toLocaleDateString(
+    undefined,
+    compact ? { month: 'short', day: 'numeric' } : undefined,
+  )
+}
 
 export function SubjectsTab({ projectId }: Props) {
   const [view, setView] = useState<View>('subjects')
@@ -66,12 +70,17 @@ export function SubjectsTab({ projectId }: Props) {
     {
       key: 'subject_code',
       header: 'Subject code',
-      minWidth: 112,
-      targetWidth: 160,
-      headerClassName: COMPACT_HEADER_CLASS,
-      cellClassName: COMPACT_CELL_CLASS,
-      cell: (row) => (
-        <span className="block truncate text-xs font-medium text-foreground sm:text-sm" title={row.subject_code}>
+      minWidth: 110,
+      idealWidth: 190,
+      maxWidth: 360,
+      growWeight: 3,
+      shrinkPriority: 3,
+      compactBelow: 150,
+      cell: (row, _index, mode) => (
+        <span
+          className={`block truncate font-medium text-foreground ${mode === 'full' ? 'text-sm' : 'text-xs'}`}
+          title={row.subject_code}
+        >
           {row.subject_code}
         </span>
       ),
@@ -79,21 +88,26 @@ export function SubjectsTab({ projectId }: Props) {
     {
       key: 'status',
       header: 'Status',
-      minWidth: 108,
-      targetWidth: 120,
-      headerClassName: COMPACT_HEADER_CLASS,
-      cellClassName: COMPACT_CELL_CLASS,
-      cell: (row) => (
-        <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+      minWidth: 100,
+      idealWidth: 140,
+      maxWidth: 180,
+      shrinkPriority: 1,
+      compactBelow: 120,
+      cell: (row, _index, mode) => (
+        <div className={`flex min-w-0 items-start ${mode === 'full' ? 'flex-row gap-2' : 'flex-col gap-1'}`}>
           <Badge
             variant={row.is_participant ? 'success' : 'default'}
             size="xs"
-            className="max-w-full px-1.5 text-[0.65rem] sm:px-2 sm:text-xs"
+            className={mode === 'full' ? 'max-w-full' : 'max-w-full px-1.5 text-[0.65rem]'}
           >
             {row.is_participant ? 'Participant' : 'Subject only'}
           </Badge>
           {row.canonical_subject_id && (
-            <Badge variant="warning" size="xs" className="px-1.5 text-[0.65rem] sm:px-2 sm:text-xs">
+            <Badge
+              variant="warning"
+              size="xs"
+              className={mode === 'full' ? undefined : 'px-1.5 text-[0.65rem]'}
+            >
               Alias
             </Badge>
           )}
@@ -102,28 +116,31 @@ export function SubjectsTab({ projectId }: Props) {
     },
     {
       key: 'identities',
-      header: (
-        <>
-          <span className="sm:hidden">IDs</span>
-          <span className="hidden sm:inline">Identities</span>
-        </>
+      header: (mode) => mode === 'full' ? 'Identities' : 'IDs',
+      minWidth: 64,
+      idealWidth: 80,
+      maxWidth: 100,
+      shrinkPriority: 0,
+      compactBelow: 76,
+      cell: (row, _index, mode) => (
+        <span className={mode === 'full' ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground'}>
+          {row.active_identity_count}
+        </span>
       ),
-      minWidth: 72,
-      targetWidth: 80,
-      headerClassName: COMPACT_HEADER_CLASS,
-      cellClassName: COMPACT_CELL_CLASS,
-      cell: (row) => <span className="text-xs text-muted-foreground sm:text-sm">{row.active_identity_count}</span>,
     },
     {
       key: 'created_at',
       header: 'Created',
-      minWidth: 96,
-      targetWidth: 120,
-      headerClassName: COMPACT_HEADER_CLASS,
-      cellClassName: COMPACT_CELL_CLASS,
-      cell: (row) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground sm:text-sm">
-          {new Date(row.created_at).toLocaleDateString()}
+      minWidth: 84,
+      idealWidth: 112,
+      maxWidth: 140,
+      shrinkPriority: 0,
+      visibilityPriority: 10,
+      hideable: true,
+      compactBelow: 105,
+      cell: (row, _index, mode) => (
+        <span className={`whitespace-nowrap text-muted-foreground ${mode === 'full' ? 'text-sm' : 'text-xs'}`}>
+          {formatCreatedDate(row.created_at, mode !== 'full')}
         </span>
       ),
     },
@@ -135,11 +152,16 @@ export function SubjectsTab({ projectId }: Props) {
       key: 'subject_code',
       header: 'Subject code',
       minWidth: 104,
-      targetWidth: 160,
-      headerClassName: COMPACT_HEADER_CLASS,
-      cellClassName: COMPACT_CELL_CLASS,
-      cell: (row) => (
-        <span className="block truncate text-xs font-medium text-foreground sm:text-sm" title={row.subject_code}>
+      idealWidth: 180,
+      maxWidth: 320,
+      growWeight: 3,
+      shrinkPriority: 3,
+      compactBelow: 140,
+      cell: (row, _index, mode) => (
+        <span
+          className={`block truncate font-medium text-foreground ${mode === 'full' ? 'text-sm' : 'text-xs'}`}
+          title={row.subject_code}
+        >
           {row.subject_code}
         </span>
       ),
@@ -147,12 +169,17 @@ export function SubjectsTab({ projectId }: Props) {
     {
       key: 'email',
       header: 'Email',
-      minWidth: 144,
-      targetWidth: 200,
-      headerClassName: COMPACT_HEADER_CLASS,
-      cellClassName: COMPACT_CELL_CLASS,
-      cell: (row) => (
-        <span className="block truncate text-xs text-muted-foreground sm:text-sm" title={row.email ?? undefined}>
+      minWidth: 130,
+      idealWidth: 240,
+      maxWidth: 400,
+      growWeight: 4,
+      shrinkPriority: 2,
+      compactBelow: 180,
+      cell: (row, _index, mode) => (
+        <span
+          className={`block truncate text-muted-foreground ${mode === 'full' ? 'text-sm' : 'text-xs'}`}
+          title={row.email ?? undefined}
+        >
           {row.email ?? '—'}
         </span>
       ),
@@ -160,13 +187,16 @@ export function SubjectsTab({ projectId }: Props) {
     {
       key: 'created_at',
       header: 'Created',
-      minWidth: 96,
-      targetWidth: 120,
-      headerClassName: COMPACT_HEADER_CLASS,
-      cellClassName: COMPACT_CELL_CLASS,
-      cell: (row) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground sm:text-sm">
-          {new Date(row.created_at).toLocaleDateString()}
+      minWidth: 84,
+      idealWidth: 112,
+      maxWidth: 140,
+      shrinkPriority: 0,
+      visibilityPriority: 10,
+      hideable: true,
+      compactBelow: 105,
+      cell: (row, _index, mode) => (
+        <span className={`whitespace-nowrap text-muted-foreground ${mode === 'full' ? 'text-sm' : 'text-xs'}`}>
+          {formatCreatedDate(row.created_at, mode !== 'full')}
         </span>
       ),
     },
@@ -174,7 +204,10 @@ export function SubjectsTab({ projectId }: Props) {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
       minWidth: 44,
+      idealWidth: 44,
       maxWidth: 44,
+      growWeight: 0,
+      visibilityPriority: 100,
       headerClassName: 'flex justify-center px-0',
       cellClassName: 'flex justify-center px-0',
       cell: (row) => (
@@ -297,14 +330,14 @@ export function SubjectsTab({ projectId }: Props) {
         <div className="flex justify-center py-10"><Spinner size={24} /></div>
       ) : view === 'subjects' ? (
         <Table
-          className={COMPACT_TABLE_CLASS}
+          className="min-w-0 max-w-full"
           columns={subjectColumns}
           rows={subjectsQuery.data?.subjects ?? []}
           getRowKey={(row) => row.id}
         />
       ) : (
         <Table
-          className={COMPACT_TABLE_CLASS}
+          className="min-w-0 max-w-full"
           columns={participantColumns}
           rows={participantsQuery.data?.participants ?? []}
           getRowKey={(row) => row.id}

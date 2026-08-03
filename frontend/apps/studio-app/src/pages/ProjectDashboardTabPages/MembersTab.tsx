@@ -170,14 +170,20 @@ export function MembersTab({ projectId }: Props) {
       key: 'member',
       header: 'Member',
       minWidth: 120,
-      targetWidth: 200,
+      idealWidth: 220,
+      maxWidth: 420,
+      growWeight: 4,
+      shrinkPriority: 3,
+      compactBelow: 170,
       cellClassName: 'min-w-0 overflow-hidden pr-1',
-      cell: (row) => (
+      cell: (row, _index, mode) => (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">
+          <p className={`truncate font-semibold text-foreground ${mode === 'full' ? 'text-sm' : 'text-xs'}`}>
             {row.user.display_name ?? row.user.email}
           </p>
-          <p className="truncate text-xs text-muted-foreground">{row.user.email}</p>
+          <p className={`truncate text-muted-foreground ${mode === 'full' ? 'text-xs' : 'text-2xs'}`}>
+            {row.user.email}
+          </p>
         </div>
       ),
     },
@@ -185,7 +191,11 @@ export function MembersTab({ projectId }: Props) {
       key: 'role',
       header: 'Role',
       minWidth: 80,
-      targetWidth: 100,
+      idealWidth: 130,
+      maxWidth: 180,
+      growWeight: 1,
+      shrinkPriority: 2,
+      compactBelow: 105,
       cellClassName: 'min-w-0 overflow-hidden pr-1',
       cell: (row) => {
         const role = roleById.get(String(row.role_id ?? ''))
@@ -203,10 +213,18 @@ export function MembersTab({ projectId }: Props) {
       key: 'status',
       header: 'Status',
       minWidth: 80,
-      targetWidth: 100,
+      idealWidth: 100,
+      maxWidth: 110,
+      growWeight: 1,
+      shrinkPriority: 1,
+      compactBelow: 90,
       cellClassName: 'min-w-0 overflow-hidden pr-1',
-      cell: (row) => (
-        <Badge variant={row.status === 'active' ? 'success' : 'warning'} size="xs">
+      cell: (row, _index, mode) => (
+        <Badge
+          variant={row.status === 'active' ? 'success' : 'warning'}
+          size="xs"
+          className={mode === 'full' ? undefined : 'px-1.5 text-[0.65rem]'}
+        >
           {row.status === 'active' ? 'Active' : 'Suspended'}
         </Badge>
       ),
@@ -215,7 +233,10 @@ export function MembersTab({ projectId }: Props) {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
       minWidth: 44,
+      idealWidth: 44,
       maxWidth: 44,
+      growWeight: 0,
+      visibilityPriority: 100,
       headerClassName: 'flex justify-center text-right pr-2',
       cellClassName: 'flex justify-center px-0',
       cell: (row) => {
@@ -257,6 +278,11 @@ export function MembersTab({ projectId }: Props) {
       key: 'email',
       header: 'Email',
       minWidth: 120,
+      idealWidth: 220,
+      maxWidth: 320,
+      growWeight: 3,
+      shrinkPriority: 1,
+      compactBelow: 160,
       cell: (row) => (
         <p className="truncate text-xs text-foreground">{row.invited_email}</p>
       ),
@@ -265,7 +291,10 @@ export function MembersTab({ projectId }: Props) {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
       minWidth: 90,
+      idealWidth: 90,
       maxWidth: 90,
+      growWeight: 0,
+      visibilityPriority: 100,
       headerClassName: 'flex justify-center text-right pr-2',
       cellClassName: 'flex justify-center px-0',
       cell: (row) => canManageMembers ? (

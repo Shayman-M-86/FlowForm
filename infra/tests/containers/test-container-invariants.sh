@@ -33,6 +33,7 @@ for file in \
   "${BACKEND}" \
   "${CADDY_DIR}/Dockerfile" \
   "${CADDY_DIR}/Caddyfile" \
+  "${CADDY_DIR}/rate-limits.caddy" \
   "${SQUID_DIR}/Dockerfile" \
   "${SQUID_DIR}/squid.conf.template" \
   "${SQUID_DIR}/allowed-domains.txt" \
@@ -101,14 +102,34 @@ grep -Eq '^FROM caddy:2\.11\.4-alpine@sha256:[0-9a-f]{64}$' \
   "${CADDY_DIR}/Dockerfile" || note "Caddy runtime source is not immutable"
 grep -Fq -- '--with github.com/caddy-dns/route53@v1.6.2' \
   "${CADDY_DIR}/Dockerfile" || note "Caddy Route 53 module is not pinned"
+grep -Fq -- '--with github.com/mholt/caddy-ratelimit@5625512f24f6f59d6f64fb3aafe5eecff0b286db' \
+  "${CADDY_DIR}/Dockerfile" || note "Caddy rate-limit module is not pinned"
 grep -Fq 'COPY Caddyfile /etc/caddy/Caddyfile' "${CADDY_DIR}/Dockerfile" \
   || note "Caddy image does not embed its production Caddyfile"
+grep -Fq 'COPY rate-limits.caddy /etc/caddy/rate-limits.caddy' \
+  "${CADDY_DIR}/Dockerfile" || note "Caddy image does not embed its rate-limit configuration"
+grep -Fq "grep -Fxq 'http.handlers.rate_limit'" "${CADDY_DIR}/Dockerfile" \
+  || note "Caddy image does not verify its rate-limit module"
 grep -Fq $'\t\tdns route53' "${CADDY_DIR}/Caddyfile" \
   || note "production Caddyfile does not use Route 53 DNS-01"
 grep -Fq $'\t\tpropagation_delay 60s' "${CADDY_DIR}/Caddyfile" \
   || note "production Caddyfile does not wait for Route 53 propagation"
 grep -Fq 'reverse_proxy http://{$APP_UPSTREAM_HOST}:5000' "${CADDY_DIR}/Caddyfile" \
   || note "Caddy does not use the stable app upstream host contract"
+grep -Fq $'\timport rate-limits.caddy' "${CADDY_DIR}/Caddyfile" \
+  || note "production Caddyfile does not import its rate-limit configuration"
+grep -Fq $'\timport rate-limits.caddy' \
+  "${REHEARSAL_ROOT}/services/caddy/Caddyfile.proxy" \
+  || note "rehearsal Caddyfile does not import its rate-limit configuration"
+for zone in general_api respondent_link_resolution account_bootstrap email_actions; do
+  grep -Fq $'\tzone '"${zone}"' {' "${CADDY_DIR}/rate-limits.caddy" \
+    || note "Caddy rate-limit configuration has no ${zone} zone"
+done
+grep -Fq '/api/v1/respondent/links/resolve' "${CADDY_DIR}/rate-limits.caddy" \
+  || note "Caddy rate-limit configuration does not cover respondent link resolution"
+grep -Fq '/api/v1/studio/projects/*/surveys/*/links/*/send-email' \
+  "${CADDY_DIR}/rate-limits.caddy" \
+  || note "Caddy rate-limit configuration does not cover survey-link email sending"
 
 # AWS and rehearsal proxy behavior must differ only in certificate selection.
 strip_caddy() {

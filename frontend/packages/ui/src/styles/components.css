@@ -401,48 +401,38 @@
 
   /* ── Table ──────────────────────────────────────────────────────────────── */
 
-  /* Scrolls horizontally when the inner table is wider than the container */
   .ui-table-container {
-    @apply w-full overflow-x-auto;
+    @apply w-full overflow-x-auto rounded-lg border border-border bg-card;
   }
 
-  /* The table itself */
   .ui-table {
-    @apply w-full overflow-hidden rounded-lg border border-border bg-card;
+    @apply table-fixed border-separate border-spacing-0 bg-card;
   }
 
-  /* Header row */
   .ui-table-header {
-    @apply grid justify-between border-b border-border pl-1.5;
+    @apply bg-muted/30;
   }
 
-  /* Header cell */
   .ui-table-th {
-    @apply pl-2 pr-0 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+    @apply overflow-hidden border-b border-border p-0 text-left align-middle;
   }
 
-  /* Body container */
-  .ui-table-body {
-    @apply flex flex-col pl-2;
+  .ui-table-th-content {
+    @apply min-w-0 overflow-hidden px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground;
   }
 
-  /* Data row */
   .ui-table-row {
-    @apply relative grid justify-between items-center transition-colors;
+    @apply transition-colors;
   }
 
-  /* Inset row divider — doesn't touch the left/right edges */
-  .ui-table-row + .ui-table-row::before {
-    content: "";
-    @apply absolute inset-x-4 top-0 h-px bg-border;
+  .ui-table-row + .ui-table-row .ui-table-td {
+    @apply border-t border-border;
   }
 
-  /* Clickable row hover/focus states */
   .ui-table-row--clickable {
     @apply cursor-pointer hover:bg-(--bg-hover-highlight) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring;
   }
 
-  /* Striped rows — even rows get a muted tint that fades to transparent at the edges */
   .ui-table-row--striped:nth-child(even) {
     background-image: linear-gradient(
       to right,
@@ -459,13 +449,15 @@
     @apply bg-(--bg-hover-highlight);
   }
 
-  /* Data cell */
   .ui-table-td {
-    @apply pl-2 pr-0 py-3;
+    @apply min-w-0 overflow-hidden p-0 align-middle;
   }
 
-  /* Empty state */
-  .ui-table-empty {
+  .ui-table-cell-content {
+    @apply min-w-0 overflow-hidden px-3 py-2.5;
+  }
+
+  .ui-table-empty > td > div {
     @apply flex items-center justify-center px-4 py-10;
   }
 

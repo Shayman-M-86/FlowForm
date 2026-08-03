@@ -58,8 +58,14 @@ export type { DropdownMenuAction, DropdownMenuSection, DropdownMenuDirection, Dr
 export { DropdownMenu } from "./components/ui/DropdownMenu";
 export type { TabSelectorItem } from "./components/ui/TabSelector";
 export { TabSelector } from "./components/ui/TabSelector";
-export type { TableColumn, TableProps } from "./components/ui/Table";
-export { Table } from "./components/ui/Table";
+export type {
+  ResolvedTableColumn,
+  ResolvedTableLayout,
+  TableCellMode,
+  TableColumn,
+  TableProps,
+} from "./components/ui/Table";
+export { resolveTableLayout, Table } from "./components/ui/Table";
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs";
 export type { ToastVariant } from "./components/ui/Toast";
 export { Toast } from "./components/ui/Toast";

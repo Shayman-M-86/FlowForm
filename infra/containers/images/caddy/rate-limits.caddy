@@ -1,0 +1,62 @@
+# FlowForm edge rate limits. This file is imported inside the API site block in
+# Caddyfile and is the single place to change endpoint matchers and budgets.
+#
+# All zones are keyed by the direct peer IP. That is the public client in the
+# current internet -> Caddy topology. If a trusted CDN or load balancer is put
+# in front of Caddy, configure trusted proxies before treating forwarded client
+# IP headers as rate-limit identities.
+#
+# Requests may match more than one zone. A sensitive request therefore consumes
+# its endpoint-specific budget and the general API budget.
+rate_limit {
+	zone general_api {
+		match {
+			path /api/*
+		}
+		key {remote_host}
+		events 120
+		window 1m
+		# Treat each IPv6 /64 as one client so address rotation within a
+		# normal client prefix cannot bypass the limit.
+		ipv6_prefix 64
+	}
+
+	# Public token resolution is deliberately tighter because it can be called
+	# without an authenticated FlowForm account.
+	zone respondent_link_resolution {
+		match {
+			method POST
+			path /api/v1/respondent/links/resolve /api/v1/respondent/links/verification/link
+		}
+		key {remote_host}
+		events 10
+		window 1m
+		ipv6_prefix 64
+	}
+
+	# User bootstrap creates or confirms local account state after Auth0 login.
+	zone account_bootstrap {
+		match {
+			method POST
+			path /api/v1/account/bootstrap-user
+		}
+		key {remote_host}
+		events 10
+		window 1m
+		ipv6_prefix 64
+	}
+
+	# These authenticated endpoints trigger outbound email. Caddy provides a
+	# coarse per-IP guard; application-level per-user/project limits still belong
+	# in Flask.
+	zone email_actions {
+		match {
+			method POST
+			path /api/v1/studio/projects/*/invitations /api/v1/studio/projects/*/surveys/*/links/*/send-email
+		}
+		key {remote_host}
+		events 10
+		window 1m
+		ipv6_prefix 64
+	}
+}
