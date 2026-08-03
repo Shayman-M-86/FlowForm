@@ -2,10 +2,10 @@
 title: Backend implementation documentation
 aliases: ["Backend implementation documentation"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
-last_edited: 2026-07-30
+verified_evidence_digest: sha256:c744ece815ce6517988b5623fed0240b58abd7f008b89c70527a52f16022f4cf
+last_edited: 2026-08-04
 tags: [backend]
 related_code: []
 change_triggers:
@@ -13,6 +13,8 @@ change_triggers:
   - "../../../../backend/tests/"
 related_docs:
   - "Backend knowledge"
+  - "Backend runtime composition"
+  - "Backend API contracts and errors"
   - "Testing workflow"
 ---
 
@@ -49,9 +51,14 @@ HTTP request
 - [[code-organization|Backend code organization]]
 - [[feature-slices|Backend feature slices]]
 - [[backend-configuration-patterns|Backend configuration patterns]]
+- [[backend-runtime-composition|Backend runtime composition]]
+- [[api-contracts-and-errors|Backend API contracts and errors]]
 
 ## Related documents
 
 - [[backend-index|Backend knowledge]]
 - [[code-organization|Backend code organization]]
 - [[feature-slices|Backend feature slices]]
+- [[backend-runtime-composition|Backend runtime composition]]
+- [[api-contracts-and-errors|Backend API contracts and errors]]
+- [[testing|Testing workflow]]

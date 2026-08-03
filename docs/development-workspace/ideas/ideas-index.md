@@ -5,10 +5,13 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-08-04
 tags: [meta]
 related_code: []
-related_docs: ["Development workspace"]
+related_docs:
+  - "Development workspace"
+  - "Study interaction product direction"
+  - "Market and commercial hypotheses"
 ---
 
 # Engineering ideas
@@ -37,9 +40,20 @@ idea --clarify---->+--> investigation
                    +--> archive / discard
 ```
 
+## Current ideas
+
+- [[study-interaction-product-direction|Study interaction product direction]]
+  proposes a focused responsibility boundary around participant interactions,
+  survey-driven automation, and explicit handoff to human judgement.
+- [[market-and-commercial-hypotheses|Market and commercial hypotheses]] keeps
+  distribution, cross-market language, packaging, and pricing assumptions
+  separate from product commitments.
+
 ## Related documents
 
 - [[development-workspace-index|Development workspace]]
 - [[research-index|Engineering research]]
 - [[investigations-index|Engineering investigations]]
 - [[planning-index|Engineering planning]]
+- [[study-interaction-product-direction|Study interaction product direction]]
+- [[market-and-commercial-hypotheses|Market and commercial hypotheses]]

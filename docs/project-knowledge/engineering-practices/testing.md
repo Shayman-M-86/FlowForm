@@ -2,15 +2,17 @@
 title: Testing workflow
 aliases: ["Testing workflow"]
 document_type: workflow
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
-last_edited: 2026-08-03
+verified_evidence_digest: sha256:f954afd7b0bef30ebf0479442b9deee3e3ec2c7f3b19aa9331a2c4fae4082022
+last_edited: 2026-08-04
 tags: [tooling]
 related_code:
   - "../../../backend/scripts/run-tests.sh"
   - "../../../backend/scripts/run-tests.py"
   - "../../../backend/pyproject.toml"
+  - "../../../backend/tests/conftest.py"
+  - "../../../backend/tests/e2e/conftest.py"
   - "../../../.github/workflows/ci.yml"
   - "../../../scripts/tools/typecheck.sh"
   - "../../../pyrightconfig.json"
@@ -60,6 +62,37 @@ hosted CI or deployed verification where required
 Legacy material distinguished normal isolated backend testing from an explicit
 local live-external mode. Treat external credentials, egress, and provider calls
 as opt-in; do not infer their availability from this draft.
+
+## Backend test model
+
+The backend suite separates fast unit tests, database or service integration
+tests, route-level end-to-end tests, and opt-in live-provider tests. Pytest uses
+strict marker and configuration handling, excludes `live_external` by default,
+and promotes unexpected warnings to errors except for a narrowly declared
+compatibility warning. Coverage records branches as well as statements; the
+configuration does not itself declare a minimum percentage.
+
+Database tests preserve the core/response split. Each test opens an outer
+transaction for each store, then binds SQLAlchemy sessions in savepoint mode so
+application commits can execute without making the test's data durable.
+Cross-store tests can request the two sessions explicitly. Route-level tests
+replace the request-session factories with non-closing proxies around those
+savepoint-bound sessions, allowing real request teardown and commit behavior to
+be exercised while retaining isolation.
+
+```text
+core test transaction       response test transaction
+          |                           |
+       savepoint                    savepoint
+          \                           /
+           +---- service or HTTP test
+                         |
+                  rollback outer state
+```
+
+Live-provider tests are both opt-in and excluded from normal CI-oriented test
+runs. A passing isolated test therefore does not attest Auth0, KMS, Secrets
+Manager, SES, deployed networking, or any other external service.
 
 ## Choosing and interpreting checks
 

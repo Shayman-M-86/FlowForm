@@ -2,10 +2,10 @@
 title: Product knowledge
 aliases: ["Product knowledge"]
 document_type: overview
-status: draft
+status: verified
 authority: canonical
-verified_evidence_digest: null
-last_edited: 2026-07-30
+verified_evidence_digest: sha256:ed613d280ffe3ca202beec2f62d24b1b5119786819fed51683d914e0f008647c
+last_edited: 2026-08-04
 tags: [backend, frontend, security]
 related_code:
   - "../../../backend/app/services/content.py"
@@ -17,6 +17,7 @@ related_docs:
   - "Builder and rules"
   - "Respondent access and continuity"
   - "Frontend implementation"
+  - "Study interaction product direction"
 ---
 
 # Product knowledge
@@ -42,8 +43,26 @@ author intent --> draft survey --> published version
                                   respondent journey
 ```
 
+## Current product boundary
+
+The implemented product model covers survey authoring and publication,
+respondent access and continuity, submission sessions, answer storage, and
+result review. Its question-and-rule graph changes a respondent's path within a
+survey through visibility, requiredness, jumps, and termination.
+
+That graph is not a general model of the surrounding study or organisational
+workflow. Participant records and assigned links support access and continuity;
+they are not a case-management record for calls, appointments, lab work,
+treatment, or analysis. Those activities may happen before, between, or after
+FlowForm interactions without being represented inside the product.
+
+[[study-interaction-product-direction|Study interaction product direction]]
+explores a non-canonical product vision that builds on this boundary without
+turning FlowForm into a complete research-operations system.
+
 ## Related documents
 
 - [[builder-and-rules|Builder and rules]]
 - [[respondent-access-and-continuity|Respondent access and continuity]]
 - [[frontend-index|Frontend implementation]]
+- [[study-interaction-product-direction|Study interaction product direction]]
