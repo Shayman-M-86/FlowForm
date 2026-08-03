@@ -12,6 +12,7 @@ from pathlib import Path
 import tomllib
 
 from flowform_tools.paths import ROOT
+
 SKILLS = ("flowform-doc-context", "flowform-doc-verification")
 BARE_DOCSYS_MODULES = (
     "tools/flowform_tools/docsys/core/model.py",
@@ -132,7 +133,7 @@ def _validate_shared_rules(errors: list[str]) -> None:
                 )
 
 
-def _validate_no_documentation_mcp(errors: list[str]) -> None:
+def _validate_research_mcp(errors: list[str]) -> None:
     try:
         codex = tomllib.loads((ROOT / ".codex" / "config.toml").read_text())
         claude = json.loads((ROOT / ".mcp.json").read_text())
@@ -141,16 +142,30 @@ def _validate_no_documentation_mcp(errors: list[str]) -> None:
         errors.append(f"invalid agent configuration: {exc}")
         return
 
-    names = set(codex.get("mcp_servers", {})) | set(claude.get("mcpServers", {}))
+    expected = "flowform-doc-research"
+    codex_servers = codex.get("mcp_servers", {})
+    claude_servers = claude.get("mcpServers", {})
     _require(
-        not any("doc" in name.casefold() for name in names),
-        "documentation MCP registration remains",
+        expected in codex_servers,
+        "Codex research MCP registration is missing",
+        errors,
+    )
+    _require(
+        expected in claude_servers,
+        "Claude research MCP registration is missing",
         errors,
     )
     permissions = claude_settings.get("permissions", {}).get("allow", [])
     _require(
-        not any("mcp__flowform-doc" in str(item).casefold() for item in permissions),
-        "Claude documentation MCP permission remains",
+        "mcp__flowform-doc-research__research" in permissions,
+        "Claude research MCP permission is missing",
+        errors,
+    )
+    launcher = ROOT / "tools/bin/flowform-doc-research"
+    _require(launcher.is_file(), "research MCP launcher is missing", errors)
+    _require(
+        (ROOT / "tools/bin/docsys-claude-sandbox").is_file(),
+        "Claude SDK sandbox launcher is missing",
         errors,
     )
     removed = (
@@ -206,8 +221,13 @@ def _validate_commands(errors: list[str]) -> None:
             "flowform_tools.docsys.commands.capabilities"
         )
         catalog = importlib.import_module("flowform_tools.docsys.command_catalog")
-        research = importlib.import_module("flowform_tools.docsys.commands.research")
-    except Exception as exc:
+        models = importlib.import_module("flowform_tools.docsys.research.models")
+        prompt_module = importlib.import_module("flowform_tools.docsys.research.prompt")
+        codex_provider = importlib.import_module("flowform_tools.docsys.research.codex")
+        sessions = importlib.import_module(
+            "flowform_tools.docsys.research.session_pool"
+        )
+    except Exception as exc:  # noqa: BLE001 - report any invalid command import
         errors.append(f"cannot load Docsys commands: {exc}")
         return
 
@@ -224,8 +244,8 @@ def _validate_commands(errors: list[str]) -> None:
     actual_tools = tuple(tool["executable"] for tool in catalog.RESEARCH_CLI_TOOLS)
     _require(actual_tools == expected_tools, "research CLI inventory differs", errors)
 
-    request = research.ResearchRequest(question="validation")
-    prompt = research._prompt(request)
+    request = models.ResearchRequest(question="validation")
+    prompt = prompt_module.build_prompt(request)
     for executable in expected_tools:
         _require(
             f"`{executable}`" in prompt,
@@ -242,9 +262,14 @@ def _validate_commands(errors: list[str]) -> None:
         "one or more research CLI tools are unavailable",
         errors,
     )
+    _require(
+        all(tool["available"] for tool in payload["research_session"]["requirements"]),
+        "one or more research MCP runtime requirements are unavailable",
+        errors,
+    )
 
     isolated_workspace = Path("/tmp/flowform-research-validation")
-    command = research._codex_command(
+    command = codex_provider.codex_command(
         request,
         workspace=isolated_workspace,
         schema_path=Path("/tmp/flowform-research-schema.json"),
@@ -275,6 +300,27 @@ def _validate_commands(errors: list[str]) -> None:
             errors,
         )
 
+    options = sessions._options(request, workspace=isolated_workspace)
+    _require(
+        Path(options.cli_path).name == "docsys-claude-sandbox",
+        "Claude SDK must run through the read-only sandbox launcher",
+        errors,
+    )
+    _require(
+        options.setting_sources == [], "Claude SDK settings must be disabled", errors
+    )
+    _require(
+        options.strict_mcp_config and options.mcp_servers == {},
+        "Claude SDK session must not inherit MCP servers",
+        errors,
+    )
+    _require(
+        options.extra_args.get("no-session-persistence") is None
+        and "no-session-persistence" in options.extra_args,
+        "Claude SDK session persistence must be disabled",
+        errors,
+    )
+
 
 def _validate_hooks(errors: list[str]) -> None:
     try:
@@ -303,7 +349,7 @@ def validate() -> list[str]:
     errors: list[str] = []
     _validate_skills(errors)
     _validate_shared_rules(errors)
-    _validate_no_documentation_mcp(errors)
+    _validate_research_mcp(errors)
     _validate_bare_docsys_imports(errors)
     _validate_commands(errors)
     _validate_hooks(errors)
@@ -327,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
     print(
-        "agent documentation workflow valid: shared skills and commands; no docs MCP or hooks"
+        "agent documentation workflow valid: shared skills, commands, and one-tool research MCP"
     )
     return 0
 

@@ -49,9 +49,9 @@ environment setup.
 Documentation is optional context, not a task-start requirement. Use
 `flowform-doc-context` for explicit documentation work, research into established
 FlowForm behaviour, or a material documentation gap. Its shared Docsys commands
-are the only agent-facing documentation tooling entry points; there are no
-documentation MCP tools, lifecycle hooks, platform-specific commands, rules, or
-specialist agents.
+remain the primary documentation entry points. One lightweight research MCP
+tool provides pre-warmed, source-backed briefings; there are no documentation
+lifecycle hooks, platform-specific commands, rules, or specialist agents.
 Implementation and tests remain authoritative. Review documentation impact once
 after relevant behaviour settles. Use `flowform-doc-verification` only when the
 user explicitly approves promotion and staging.

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Run Claude Code with local login and a read-only view of the repository.
+set -euo pipefail
+
+CLAUDE_BIN="$(command -v claude)"
+WORKSPACE="$PWD"
+
+exec bwrap \
+    --ro-bind / / \
+    --dev-bind /dev /dev \
+    --proc /proc \
+    --tmpfs /tmp \
+    --dir "$WORKSPACE" \
+    --bind "$WORKSPACE" "$WORKSPACE" \
+    --chdir "$WORKSPACE" \
+    "$CLAUDE_BIN" "$@"

@@ -15,7 +15,7 @@ DOCSYS_COMMANDS = {
     },
     "research": {
         "module": "flowform_tools.docsys.commands.research",
-        "description": "answer one question in a fresh Codex session",
+        "description": "answer one question via warm Claude SDK with Codex fallback",
         "access": "read-only-worktree",
     },
     "impact": {
@@ -57,7 +57,7 @@ DOCSYS_COMMANDS = {
     },
     "capabilities": {
         "module": "flowform_tools.docsys.commands.capabilities",
-        "description": "list Docsys commands and research CLI tools",
+        "description": "list Docsys commands and research runtime capabilities",
         "access": "read-only",
     },
     "validate-agent-setup": {

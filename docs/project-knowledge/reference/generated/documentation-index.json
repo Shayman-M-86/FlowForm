@@ -1,7 +1,7 @@
 {
   "schema": "flowform.docsys.index/1",
   "generated_by": "tools/flowform_tools/docsys/commands/index.py",
-  "repo_head": "cfdb9686a488b2f9121adef1ecc5e0d50e117291",
+  "repo_head": "880cc41ad74efc36b9565a11bbb4f00a5ab860f5",
   "document_count": 69,
   "documents": [
     {
@@ -2256,6 +2256,8 @@
       "related_code": [
         "../../../../AGENTS.md",
         "../../../../tools/flowform_tools/docsys/commands/research.py",
+        "../../../../tools/flowform_tools/docsys/research/mcp_server.py",
+        "../../../../tools/flowform_tools/docsys/research/session_pool.py",
         "../../../../tools/flowform_tools/docsys/command_catalog.py",
         "../../../../tools/flowform_tools/docsys/commands/capabilities.py",
         "../../../../tools/flowform_tools/docsys/commands/validate.py",
@@ -2270,6 +2272,8 @@
       "related_code_resolved": [
         "AGENTS.md",
         "tools/flowform_tools/docsys/commands/research.py",
+        "tools/flowform_tools/docsys/research/mcp_server.py",
+        "tools/flowform_tools/docsys/research/session_pool.py",
         "tools/flowform_tools/docsys/command_catalog.py",
         "tools/flowform_tools/docsys/commands/capabilities.py",
         "tools/flowform_tools/docsys/commands/validate.py",

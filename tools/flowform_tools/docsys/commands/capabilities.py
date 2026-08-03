@@ -43,7 +43,38 @@ def inventory() -> dict:
             for name, spec in DOCSYS_COMMANDS.items()
         ],
         "research_session": {
+            "interface": "mcp",
+            "tool": "research",
+            "provider_order": ["claude-agent-sdk", "codex"],
+            "authentication": "local-cli-login",
+            "lifecycle": "prewarmed-single-use-session",
             "enforcement": "prompt-policy-and-read-only-sandbox",
+            "requirements": [
+                _research_tool(
+                    {
+                        "executable": "tools/bin/flowform-doc-research",
+                        "usage": "launch the one-tool research MCP server",
+                    }
+                ),
+                _research_tool(
+                    {
+                        "executable": "claude",
+                        "usage": "provide the locally authenticated primary runtime",
+                    }
+                ),
+                _research_tool(
+                    {
+                        "executable": "bwrap",
+                        "usage": "enforce the primary read-only filesystem boundary",
+                    }
+                ),
+                _research_tool(
+                    {
+                        "executable": "codex",
+                        "usage": "provide the local-login fallback runtime",
+                    }
+                ),
+            ],
             "commands": [_research_tool(tool) for tool in RESEARCH_CLI_TOOLS],
         },
     }
@@ -68,6 +99,14 @@ def _print_text(payload: dict) -> None:
     for command in payload["docsys_commands"]:
         print(f"- {command['name']} [{command['access']}]: {command['description']}")
     print("Research CLI tools:")
+    session = payload["research_session"]
+    print(
+        f"- interface: {session['interface']} tool={session['tool']} "
+        f"lifecycle={session['lifecycle']}"
+    )
+    for requirement in session["requirements"]:
+        status = "ready" if requirement["available"] else "missing"
+        print(f"- {requirement['executable']} [{status}]: {requirement['usage']}")
     for tool in payload["research_session"]["commands"]:
         status = "ready" if tool["available"] else "missing"
         print(f"- {tool['executable']} [{status}]: {tool['usage']}")

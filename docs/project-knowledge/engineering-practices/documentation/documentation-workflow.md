@@ -10,6 +10,8 @@ tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
   - "../../../../tools/flowform_tools/docsys/commands/research.py"
+  - "../../../../tools/flowform_tools/docsys/research/mcp_server.py"
+  - "../../../../tools/flowform_tools/docsys/research/session_pool.py"
   - "../../../../tools/flowform_tools/docsys/command_catalog.py"
   - "../../../../tools/flowform_tools/docsys/commands/capabilities.py"
   - "../../../../tools/flowform_tools/docsys/commands/validate.py"
@@ -48,20 +50,27 @@ instead of adding a cross-linked variation.
 ## Answer-oriented research
 
 Codex and Claude use the same `flowform-doc-context` skill and the same
-`tools/bin/docsys` commands. Documentation has no MCP server, lifecycle
-hook, platform-specific command, rule, or specialist agent. The canonical skill
+`tools/bin/docsys` commands. One lightweight MCP server exposes only the
+answer-oriented `research` tool; documentation has no lifecycle hook,
+platform-specific command, rule, or specialist agent. The canonical skill
 lives under `.agents/skills/`; its Claude copy and the root documentation rule
 are checked and synchronized by `sync-agent-doc-config.py`.
 
-For a separate compact briefing, `docsys research` launches a new ephemeral
-local Codex process with no prior session, user configuration, memories, project
-instructions, MCP servers, hooks, web, apps, or subagents. It starts in an empty
-temporary workspace and receives absolute repository paths instead of
-discovering project agent configuration. Its command inventory is owned by
-`docsys capabilities`; the prompt restricts command selection and the read-only
-sandbox enforces the worktree boundary. It preserves source line bounds and
-returns a validated evidence packet instead of its search transcript. The
-installed Codex client retains ownership of account authentication.
+The MCP server initializes quick and thorough Claude Agent SDK clients during
+its lifespan without sending a model prompt. Each research request consumes one
+client exactly once, disconnects it, and replaces it with a fresh warm client,
+so independent questions do not share context. Claude uses the installed local
+account login, not a repository API key. A read-only Bubblewrap boundary,
+disabled session persistence, empty inherited MCP configuration, and a bounded
+command inventory isolate the research process. Codex is the fresh ephemeral
+fallback when the primary provider fails. The compatibility `docsys research`
+command follows the same provider order without the MCP server's warm pool.
+
+The command inventory is owned by `docsys capabilities`; the prompt restricts
+command selection and the read-only sandbox enforces the worktree boundary. A
+result preserves source line bounds and returns a validated evidence packet
+instead of its search transcript. The installed Claude Code and Codex clients
+retain ownership of account authentication.
 
 Verified current documentation may directly support an explanation-only
 answer. For implementation work, draft or scaffold documentation, or a

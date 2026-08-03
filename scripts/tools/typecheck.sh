@@ -22,7 +22,7 @@ run_pyright() {
 }
 
 check_tooling() {
-    uv sync --project "${REPOSITORY_ROOT}/tools" --frozen --extra docs
+    uv sync --project "${REPOSITORY_ROOT}/tools" --frozen --extra docs --extra research
     run_pyright "repository tooling" "${REPOSITORY_ROOT}"
 }
 

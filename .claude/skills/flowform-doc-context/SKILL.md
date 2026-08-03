@@ -22,14 +22,18 @@ command inventory, local availability, or write boundary matters.
    tools/bin/docsys read <path> --body --format json
    ```
 
-3. For a compact answer in a separate session, run:
+3. For a compact answer in a separate session, call the FlowForm research MCP
+   tool with an exact `question` and optional repository-relative `scope`.
+   Use `depth=thorough` only for ambiguous or cross-boundary questions. If the
+   MCP tool is unavailable, use the compatibility command:
 
    ```sh
    tools/bin/docsys research "<exact question>" --format json
    ```
 
-   Use `--depth thorough` only for ambiguous or cross-boundary questions. The
-   command starts a fresh, read-only Codex session and returns cited findings.
+   The MCP server consumes one pre-warmed, read-only Claude SDK session per
+   request and replaces it immediately. It uses Codex as a fresh fallback and
+   returns cited findings.
 4. For documentation changes, inspect the owning implementation, edit only the
    bounded authored pages, and never hand-edit generated documentation.
 5. Run `tools/bin/docsys impact --format json` once after relevant

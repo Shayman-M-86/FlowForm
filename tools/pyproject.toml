@@ -5,12 +5,17 @@ description = "FlowForm repository tooling — documentation system, OpenAPI MCP
 requires-python = ">=3.14"
 # Intentionally empty. `flowform_tools.docsys` and `flowform_tools.agent_hooks`
 # bare `python3` with no virtual environment and no install step. Commands that
-# use richer validation run through the `docs` extra; MCP dependencies belong
-# in the separate `openapi` extra.
+# use richer validation run through optional extras; MCP dependencies belong in
+# the separate `openapi` and `research` extras.
 dependencies = []
 
 [project.optional-dependencies]
 docs = [
+    "pydantic>=2",
+]
+research = [
+    "claude-agent-sdk>=0.2.111",
+    "fastmcp>=3.3.1",
     "pydantic>=2",
 ]
 openapi = [

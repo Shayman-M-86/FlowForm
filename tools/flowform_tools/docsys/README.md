@@ -2,7 +2,8 @@
 
 Docsys is FlowForm's documentation discovery, retrieval, impact, validation,
 health, and evidence library. Its hook-critical core stays dependency-free;
-request and research contracts use the `docs` extra. The supported entrypoint is:
+request contracts use the `docs` extra and agent research uses the separate
+`research` extra. The supported command entrypoint is:
 
 ```sh
 tools/bin/docsys --help
@@ -17,8 +18,9 @@ This page records only the stable implementation boundaries.
   exact-file `related_code` conventions.
 - `contracts.py` owns bounded find/read requests and response projections.
 - `commands/` contains CLI entry points that print compact text or JSON.
-- `commands/research.py` starts a fresh Codex session that uses the same CLI commands
-  and returns a schema-constrained cited answer.
+- `commands/research.py` is the thin compatibility CLI for one research request.
+- `research/` owns request/result contracts, prompts, the pre-warmed Claude SDK
+  session pool, the one-tool MCP server, and the isolated Codex fallback.
 - `command_catalog.py` owns command effects and the spawned research CLI policy;
   `commands/capabilities.py` exposes that inventory as text or JSON.
 - Impact, freshness, health, debt, validation, indexing, and evidence remain
@@ -38,19 +40,29 @@ and headings; section and body content are explicit and bounded. Content
 responses include one-based repository source lines so a research agent can
 return checkable citations without rereading the document through a shell.
 
-Documentation has no MCP surface. `docsys research` is the answer-oriented
-entry point. Each call starts `codex exec` as a fresh ephemeral process in an
-empty temporary workspace with temporary result files. Starting outside the
-repository prevents project configuration, MCP servers, hooks, rules, and
-skills from being discovered. The prompt supplies the absolute repository and
-Docsys paths instead. The process ignores user config and rules, disables
-memory use and generation, does not persist a session, and cannot use web,
-apps, or subagents. It uses only `docsys find`, `docsys read`, and the narrow
-read-only source tools defined by `command_catalog.py`. The prompt enforces that
-executable policy; the read-only sandbox is the hard worktree boundary. The
-installed Codex client owns authentication, and Docsys never reads or copies
-its local authentication state. Docsys validates every returned citation
-against the current worktree.
+Documentation exposes one answer-oriented MCP tool: `research`. Its server
+lifespan pre-connects one Sonnet and one Opus `ClaudeSDKClient` without sending
+a model prompt. A request consumes the matching client exactly once. While that
+request runs, the pool initializes its replacement; after the result, the used
+client is disconnected and its temporary workspace is removed. Independent
+questions therefore do not share conversation context.
+
+The SDK launches the installed Claude Code CLI through a Bubblewrap wrapper,
+so it can use the existing local account login while the repository remains
+read-only. Safe mode disables project and user customizations, session
+persistence is disabled, inherited MCP servers are rejected, and provider API
+or cloud credential variables are removed. The researcher can use only
+`docsys find`, `docsys read`, and the narrow read-only source tools defined by
+`command_catalog.py`. If Claude cannot complete a request, a fresh ephemeral
+Codex process runs with its existing local login and read-only sandbox. Docsys
+validates every returned citation against the current worktree.
+
+`docsys research` remains a non-warm compatibility entry point. It creates one
+SDK client for that invocation and applies the same Claude-first, Codex-fallback
+policy.
+
+This server is local developer automation. It is not a supported boundary for
+offering other users access through personal Claude subscription credentials.
 
 Use `docsys capabilities --format json` for the exact command effects, approved
 research executables, allowed Docsys subcommands, local availability, and
@@ -73,7 +85,7 @@ ordering.
 ## Validation
 
 Run focused unit tests and the documentation validators after changing Docsys.
-The agent-setup validator checks skill and root-rule mirrors, the command-first
-research boundary, and the absence of documentation MCP, platform-specific
-agents, rules, commands, and lifecycle hooks. It does not constrain unrelated
-agent tooling.
+The agent-setup validator checks skill and root-rule mirrors, the single-tool
+research MCP boundary, local runtime requirements, and the absence of
+platform-specific documentation agents, rules, commands, and lifecycle hooks.
+It does not constrain unrelated agent tooling.

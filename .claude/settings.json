@@ -74,6 +74,7 @@
       "Bash(npx astro check:*)",
       "Bash(npx astro info:*)",
       "Bash(npx eslint:*)",
+      "mcp__flowform-doc-research__research",
       "Read(**/node_modules/**/*.d.ts)",
       "Read(**/node_modules/**/package.json)",
       "Bash(rmdir:*)",

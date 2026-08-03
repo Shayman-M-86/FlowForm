@@ -3,6 +3,10 @@
     "flowform-openapi": {
       "command": "/usr/bin/bash",
       "args": ["/home/shayman86/my-repos/FlowForm/tools/bin/flowform-openapi"]
+    },
+    "flowform-doc-research": {
+      "command": "/usr/bin/bash",
+      "args": ["/home/shayman86/my-repos/FlowForm/tools/bin/flowform-doc-research"]
     }
   }
 }

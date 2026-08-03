@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Launch the lightweight, pre-warmed FlowForm documentation research MCP server.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+TOOLS_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd -- "$TOOLS_DIR/.." && pwd)"
+
+cd "$REPO_ROOT"
+export PYTHONPATH="$TOOLS_DIR${PYTHONPATH:+:$PYTHONPATH}"
+exec uv run --project "$TOOLS_DIR" --frozen --extra research \
+    python -m flowform_tools.docsys.research.mcp_server
