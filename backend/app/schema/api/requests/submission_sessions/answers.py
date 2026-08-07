@@ -5,11 +5,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
 
+from app.schema.api.requests.survey_document import SaveSurveyDocumentAnswerRequest
 from app.schema.api.submission_sessions.answer_payload import (
     SubmissionAnswerValue,
     parse_answer_value,
 )
 from app.schema.enums import AnswerFamily, SubmissionAnswerState
+
+__all__ = ["SaveSubmissionSessionAnswerRequest", "SaveSurveyDocumentAnswerRequest"]
 
 
 class SaveSubmissionSessionAnswerRequest(BaseModel):

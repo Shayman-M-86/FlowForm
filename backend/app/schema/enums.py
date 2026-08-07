@@ -12,7 +12,7 @@ mappings, the OpenAPI spec, and any generated TypeScript clients stay accurate.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Final, Literal
 
 ProjectMemberStatus = Literal["active", "suspended"]
 ProjectInvitationStatus = Literal["pending", "accepted", "declined", "revoked"]
@@ -60,3 +60,31 @@ MatchingAnswerKeyStrategy = Literal["matching_answer_key"]
 RatingDirectStrategy = Literal["rating_direct"]
 FieldNumericRangesStrategy = Literal["field_numeric_ranges"]
 ScoringStrategy = Literal["choice_option_map", "matching_answer_key", "rating_direct", "field_numeric_ranges"]
+
+# Canonical survey-definition vocabulary shared by schema and publication logic.
+SurveyInteractionKind = Literal[
+    "text",
+    "long_text",
+    "number",
+    "single_choice",
+    "multiple_choice",
+    "rating",
+    "slider",
+    "date",
+]
+SurveyResponseType = Literal["string", "integer", "decimal", "date", "choice", "choice_set"]
+SurveyConditionOperator = Literal[
+    "equals",
+    "not_equals",
+    "contains",
+    "is_answered",
+    "is_empty",
+    "greater_than",
+    "less_than",
+]
+SurveyStringFormat = Literal["email", "url", "tel"]
+
+SURVEY_VALUE_TAKING_OPERATORS: Final[frozenset[SurveyConditionOperator]] = frozenset(
+    {"equals", "not_equals", "contains", "greater_than", "less_than"}
+)
+SURVEY_PRESENCE_OPERATORS: Final[frozenset[SurveyConditionOperator]] = frozenset({"is_answered", "is_empty"})

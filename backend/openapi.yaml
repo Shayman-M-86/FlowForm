@@ -8038,18 +8038,18 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
-            survey_delete_published:
-              summary: SurveyDeletePublishedError
-              value:
-                code: SURVEY_HAS_PUBLISHED_VERSION
-                message: Cannot delete survey 0 because it has a published version.
             survey_publish:
               summary: SurveyPublishError
               value:
                 code: SURVEY_PUBLISH_ERROR
                 message: <example>
                 details:
-                  validation_errors: <example>
+                  issues: []
+            survey_delete_published:
+              summary: SurveyDeletePublishedError
+              value:
+                code: SURVEY_HAS_PUBLISHED_VERSION
+                message: Cannot delete survey 0 because it has a published version.
             project_slug_conflict:
               summary: ProjectSlugConflictError
               value:

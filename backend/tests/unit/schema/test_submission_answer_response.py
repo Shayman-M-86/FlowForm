@@ -10,7 +10,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.schema.api.responses.submission_sessions.answers import SubmissionSessionAnswerResponse
+import pytest
+from pydantic import ValidationError
+
+from app.schema.api.requests.submission_sessions.answers import SaveSurveyDocumentAnswerRequest
+from app.schema.api.responses.submission_sessions.answers import (
+    SubmissionSessionAnswerResponse,
+    SurveyDocumentAnswerResponse,
+)
 from app.schema.api.submission_sessions.answer_payload import ChoiceAnswerValue
 
 
@@ -50,3 +57,49 @@ def test_cleared_answer_value_is_none() -> None:
     dumped = response.model_dump(mode="json")
     assert dumped["answer_value"] is None
     assert dumped["answer_family"] is None
+
+
+def test_survey_document_answer_response_uses_field_identity() -> None:
+    response = SurveyDocumentAnswerResponse(
+        field_id="field_consent",
+        field_key="consent",
+        response_type="choice",
+        state="answered",
+        value="option_yes",
+        client_mutation_id=uuid4(),
+        saved_at=datetime(2026, 6, 18, 12, 0, tzinfo=UTC),
+    )
+
+    dumped = response.model_dump(mode="json")
+    assert dumped["field_id"] == "field_consent"
+    assert dumped["response_type"] == "choice"
+    assert dumped["value"] == "option_yes"
+
+
+def test_survey_document_answer_request_validates_value_by_response_type() -> None:
+    request = SaveSurveyDocumentAnswerRequest(
+        client_mutation_id=uuid4(),
+        response_type="date",
+        state="answered",
+        value="2026-06-18",
+    )
+
+    assert request.model_dump(mode="json")["value"] == "2026-06-18"
+
+    with pytest.raises(ValidationError):
+        SaveSurveyDocumentAnswerRequest(
+            client_mutation_id=uuid4(),
+            response_type="integer",
+            state="answered",
+            value="3",
+        )
+
+
+def test_survey_document_clear_request_has_no_value() -> None:
+    request = SaveSurveyDocumentAnswerRequest(
+        client_mutation_id=uuid4(),
+        response_type="string",
+        state="cleared",
+    )
+
+    assert request.value is None

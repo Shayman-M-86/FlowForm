@@ -1,6 +1,47 @@
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, Protocol
 
 from app.core.errors import AppError, AuthError
+
+
+class IssueDefinition(Protocol):
+    """Minimum shape needed to expose a domain validation issue."""
+
+    @property
+    def code(self) -> str: ...
+
+    @property
+    def message(self) -> str: ...
+
+    @property
+    def object_id(self) -> str | None: ...
+
+
+class IssueValidationError(AppError):
+    """Generic API error for a domain operation blocked by validation issues."""
+
+    def __init__(
+        self,
+        *,
+        status_code: int,
+        code: str,
+        message: str,
+        issues: Sequence[IssueDefinition] = (),
+    ) -> None:
+        serialized_issues = [
+            {
+                "code": issue.code,
+                "message": issue.message,
+                **({"object_id": issue.object_id} if issue.object_id is not None else {}),
+            }
+            for issue in issues
+        ]
+        super().__init__(
+            status_code=status_code,
+            code=code,
+            message=message,
+            details={"issues": serialized_issues},
+        )
 
 
 class ForbiddenError(AppError):
@@ -209,15 +250,20 @@ class SurveyNotPublishedError(AppError):
         )
 
 
-class SurveyPublishError(AppError):
+class SurveyPublishError(IssueValidationError):
     """Error raised when a survey cannot be published due to validation issues."""
 
-    def __init__(self, message: str) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        issues: Sequence[IssueDefinition] = (),
+    ) -> None:
         super().__init__(
             status_code=409,
             code="SURVEY_PUBLISH_ERROR",
             message=message,
-            details={"validation_errors": message},
+            issues=issues,
         )
 
 

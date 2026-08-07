@@ -5,8 +5,11 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.schema.api.responses.survey_document import SurveyDocumentAnswerResponse
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import AnswerFamily, SubmissionAnswerState
+
+__all__ = ["SubmissionSessionAnswerResponse", "SurveyDocumentAnswerResponse"]
 
 
 class SubmissionSessionAnswerResponse(BaseModel):

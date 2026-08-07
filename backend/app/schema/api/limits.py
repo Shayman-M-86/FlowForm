@@ -69,7 +69,7 @@ LIST_PAGE_SIZE_MIN = 1
 LIST_PAGE_SIZE_MAX = 100
 
 
-# Survey content collection and serialized-size limits.
+# Survey content collection limits.
 QUESTION_ITEMS_MAX = 10
 RULE_ITEMS_MAX = 50
 SCORING_RULE_ITEMS_MAX = 50
@@ -93,3 +93,26 @@ RATING_STARS_MAX = 12
 ANSWER_NUMBER_MIN = -1_000_000
 ANSWER_NUMBER_MAX = 1_000_000
 PHONE_MAX = 64
+
+
+# Survey definition content limits.
+SHORT_TEXT_MAX = 1000
+LONG_TEXT_MAX = 5000
+
+SECTIONS_MAX = 100
+BLOCKS_PER_SECTION_MAX = 200
+CHOICE_OPTIONS_MAX = 200
+
+# One whole-document ceiling, checked against the serialized definition. Covers text,
+# options, nesting and any property added later without a bespoke traversal.
+SURVEY_DEFINITION_MAX_BYTES = 1_000_000
+
+HEADING_LEVEL_MIN = 1
+HEADING_LEVEL_MAX = 6
+LONG_TEXT_ROWS_MIN = 2
+LONG_TEXT_ROWS_MAX = 20
+RATING_BOUND_MIN = 0
+RATING_BOUND_MAX = 100
+RESPONSE_TEXT_MAX = 10_000
+RESPONSE_NUMBER_MIN = -1_000_000_000
+RESPONSE_NUMBER_MAX = 1_000_000_000
