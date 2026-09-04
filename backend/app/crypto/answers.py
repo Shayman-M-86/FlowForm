@@ -18,10 +18,10 @@ from app.crypto.models import (
     AnswerContext,
     AnswerLocator,
 )
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.api.content.common import FieldId
 from app.schema.enums import SubmissionAnswerState
 
-AnswerValueInput = SubmissionAnswerValue | PlaintextAnswerValue
+AnswerValueInput = PlaintextAnswerValue
 
 
 def derive_slot_answer_locator(
@@ -35,7 +35,7 @@ def derive_slot_answer_locator(
 def encrypt_answer_current(
     *,
     context: AnswerContext,
-    question_node_id: UUID,
+    field_id: FieldId,
     answer_state: SubmissionAnswerState,
     answer_value: AnswerValueInput,
 ) -> EncryptedAnswerPayload:
@@ -48,7 +48,7 @@ def encrypt_answer_current(
     """
     aad = build_aad(context)
     plaintext = build_plaintext_payload(
-        question_node_id=question_node_id,
+        field_id=field_id,
         answer_state=answer_state,
         answer_value=answer_value,
     )
@@ -69,7 +69,7 @@ def decrypt_answer_current(
     parsed = parse_plaintext_payload(raw)
 
     return DecryptedAnswerPayload(
-        question_node_id=parsed.question_node_id,
+        field_id=parsed.field_id,
         answer_state=parsed.answer_state,
         answer_value=parsed.answer_value,
     )

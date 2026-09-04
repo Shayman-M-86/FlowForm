@@ -16,10 +16,10 @@ def _ctx() -> AnswerContext:
 
 
 def test_encrypt_decrypt_current_answer_round_trip() -> None:
-    question_node_id = uuid.uuid4()
+    field_id = "field_health"
     encrypted = encrypt_answer_current(
         context=_ctx(),
-        question_node_id=question_node_id,
+        field_id=field_id,
         answer_state="answered",
         answer_value={"value": "yes"},
     )
@@ -30,6 +30,6 @@ def test_encrypt_decrypt_current_answer_round_trip() -> None:
         context=_ctx(),
     )
 
-    assert decrypted.question_node_id == question_node_id
+    assert decrypted.field_id == field_id
     assert decrypted.answer_state == "answered"
     assert decrypted.answer_value == {"value": "yes"}

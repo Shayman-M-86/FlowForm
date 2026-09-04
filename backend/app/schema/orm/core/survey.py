@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     BigInteger,
@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -85,15 +86,16 @@ class Survey(TimestampMixin, CoreBase):
 
 
 class SurveyVersion(TimestampMixin, CoreBase):
-    """A versioned snapshot of a survey's questions and rules."""
+    """A versioned canonical survey definition and its lifecycle state."""
 
     __tablename__ = "survey_versions"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     status: Mapped[SurveyVersionStatus] = mapped_column(Text, default="draft", nullable=False)
-    compiled_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    definition: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by_user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True

@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.permissions import ProjectPermission
 from app.schema.api import limits
+from app.schema.api.content.survey_document import SurveyDefinition
 from app.schema.enums import SurveyVersionStatus, SurveyVisibility
 
 
@@ -38,8 +39,9 @@ class SurveyVersionResponses(BaseModel):
     id: int
     survey_id: int
     version_number: int
+    revision: int
     status: SurveyVersionStatus
-    compiled_schema: dict | None
+    definition: SurveyDefinition
     published_at: datetime | None
     created_by_user_id: int | None
     created_at: datetime

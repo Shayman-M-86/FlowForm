@@ -9,11 +9,10 @@ from app.db.base import CoreBase
 
 if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession
-    from app.schema.orm.core.survey_content import SurveyQuestion
 
 
 class SubmissionAnswerSlot(CoreBase):
-    """Stable core-side pointer for one submission session/question answer."""
+    """Stable core-side pointer for one submission session/field answer."""
 
     __tablename__ = "submission_answer_slots"
 
@@ -22,14 +21,13 @@ class SubmissionAnswerSlot(CoreBase):
     )
     submission_session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    question_node_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    question_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    field_id: Mapped[str] = mapped_column(Text, nullable=False)
 
     __table_args__ = (
         UniqueConstraint(
             "submission_session_id",
-            "question_node_id",
-            name="uq_submission_answer_slots_session_question",
+            "field_id",
+            name="uq_submission_answer_slots_session_field",
         ),
         ForeignKeyConstraint(
             ["submission_session_id", "survey_version_id"],
@@ -37,16 +35,8 @@ class SubmissionAnswerSlot(CoreBase):
             ondelete="CASCADE",
             name="fk_submission_answer_slots_session_version",
         ),
-        ForeignKeyConstraint(
-            ["survey_version_id", "question_node_id"],
-            ["survey_questions.survey_version_id", "survey_questions.id"],
-            name="fk_submission_answer_slots_question_same_version",
-        ),
     )
 
     session: Mapped[SubmissionSession] = relationship(
         "SubmissionSession", foreign_keys=[submission_session_id]
-    )
-    question: Mapped[SurveyQuestion] = relationship(
-        "SurveyQuestion", foreign_keys=[survey_version_id, question_node_id]
     )

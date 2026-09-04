@@ -11,11 +11,12 @@ from app.db.error_handling import commit_with_err_handle
 from app.domain import survey_rules, version_rules
 from app.domain.errors import SurveyNotFoundError, VersionNotFoundError
 from app.domain.guards import ensure_present
+from app.domain.surveys.publication import ensure_publishable
 from app.repositories import (
-    content_repo as cr,
     response_stores_repo as rsr,
     surveys_repo as sr,
 )
+from app.schema.api.content.survey_document import SurveyDefinition
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
@@ -143,11 +144,53 @@ class SurveyService:
         self._get_survey(db, project_id, survey_id)
         return self._get_version(db, project_id, survey_id, version_number)
 
-    def create_version(self, db: Session, project_id: int, survey_id: int, actor: User) -> SurveyVersion:  # noqa: ARG002
+    def create_version(
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        definition: SurveyDefinition,
+        actor: User,
+    ) -> SurveyVersion:
         self._get_survey(db, project_id, survey_id)
-        version = sr.create_version(db, survey_id)
+        version = sr.create_version(
+            db,
+            survey_id,
+            definition.model_dump(by_alias=True, mode="json"),
+            created_by_user_id=actor.id,
+        )
         commit_with_err_handle(db, contexts=[version])
         return version
+
+    def load_definition(
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        version_number: int,
+        actor: User,  # noqa: ARG002
+    ) -> SurveyDefinition:
+        version = self._get_version(db, project_id, survey_id, version_number)
+        return self._definition_from_version(version)
+
+    def replace_definition(
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        version_number: int,
+        definition: SurveyDefinition,
+        actor: User,  # noqa: ARG002
+    ) -> SurveyVersion:
+        version = self._get_version(db, project_id, survey_id, version_number)
+        version_rules.ensure_is_editable(version=version)
+        result = sr.replace_definition(
+            db,
+            version,
+            definition.model_dump(by_alias=True, mode="json"),
+        )
+        commit_with_err_handle(db, contexts=[result])
+        return result
 
     def copy_version_to_draft(
         self,
@@ -160,9 +203,13 @@ class SurveyService:
         self._get_survey(db, project_id, survey_id)
         source_version = self._get_version(db, project_id, survey_id, version_number)
 
-        draft = sr.create_version(db, survey_id, created_by_user_id=actor.id)
-        cr.clone_nodes(db, source_version, draft)
-        cr.clone_scoring_rules(db, source_version, draft)
+        definition = self._definition_from_version(source_version)
+        draft = sr.create_version(
+            db,
+            survey_id,
+            definition.model_dump(by_alias=True, mode="json"),
+            created_by_user_id=actor.id,
+        )
 
         commit_with_err_handle(db, contexts=[draft])
         return draft
@@ -180,27 +227,8 @@ class SurveyService:
         version = self._get_version(db, project_id, survey_id, version_number)
 
         version_rules.ensure_is_draft(version=version)
-
-        questions = cr.list_nodes(db, version.id)
-        version_rules.ensure_has_questions(questions=questions)
-
-        all_nodes = cr.list_nodes(db, version.id)
-        scoring_rules = cr.list_scoring_rules(db, version.id)
-
-        compiled = {
-            "nodes": [
-                {
-                    "node_id": str(n.id),
-                    "type": n.node_type,
-                    "sort_key": n.sort_key,
-                    "content": n.question_schema,
-                }
-                for n in all_nodes
-            ],
-            "scoring_rules": [
-                {"id": s.id, "scoring_key": s.scoring_key, "scoring_schema": s.scoring_schema} for s in scoring_rules
-            ],
-        }
+        definition = self._definition_from_version(version)
+        ensure_publishable(definition)
         self._ensure_survey_default_response_store(
             db,
             survey=survey,
@@ -212,10 +240,15 @@ class SurveyService:
             survey_id=survey.id,
         )
 
-        result = sr.publish_version(db, survey, version, compiled)
+        result = sr.publish_version(db, survey, version)
         commit_with_err_handle(db, contexts=[result, survey, version])
         tracing.fields(outcome="published", version_number=version_number)
         return result
+
+    @staticmethod
+    def _definition_from_version(version: SurveyVersion) -> SurveyDefinition:
+        """Parse the persisted JSON at the service boundary before use."""
+        return SurveyDefinition.model_validate(version.definition)
 
     def _ensure_survey_encryption_key(
         self,

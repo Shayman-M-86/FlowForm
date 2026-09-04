@@ -782,14 +782,25 @@ class AnswerSaveError(AppError):
         )
 
 
-class QuestionNotInVersionError(AppError):
-    """Raised when a question node ID does not belong to the frozen survey version."""
+class FieldNotInDefinitionError(AppError):
+    """Raised when a field ID does not belong to the session's survey definition."""
 
     def __init__(self) -> None:
         super().__init__(
             status_code=400,
-            code="QUESTION_NOT_IN_VERSION",
-            message="Question does not belong to this survey version.",
+            code="FIELD_NOT_IN_DEFINITION",
+            message="Field does not belong to this survey definition.",
+        )
+
+
+class InvalidFieldAnswerError(AppError):
+    """Raised when an answer does not satisfy its resolved survey field."""
+
+    def __init__(self, message: str = "Answer is not valid for this field.") -> None:
+        super().__init__(
+            status_code=400,
+            code="INVALID_FIELD_ANSWER",
+            message=message,
         )
 
 

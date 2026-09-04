@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import binascii
 from typing import Annotated, Any
-from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -17,6 +16,7 @@ from pydantic import (
     field_validator,
 )
 
+from app.schema.api.content.common import FieldId
 from app.schema.enums import SubmissionAnswerState
 
 MIN_LINKAGE_SECRET_BYTES = 32
@@ -112,7 +112,7 @@ class EncryptedAnswerPayload(CryptoValueModel):
 class DecryptedAnswerPayload(CryptoValueModel):
     """Parsed plaintext recovered from one encrypted answer payload."""
 
-    question_node_id: UUID
+    field_id: FieldId
     answer_state: SubmissionAnswerState
     answer_value: PlaintextAnswerValue
 
@@ -150,7 +150,7 @@ class _PlaintextPayloadBase(AliasedCryptoValueModel):
         validation_alias="v",
         serialization_alias="v",
     )
-    question_node_id: UUID
+    field_id: FieldId
     answer_state: SubmissionAnswerState
 
 

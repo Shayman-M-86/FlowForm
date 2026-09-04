@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -81,12 +82,23 @@ def get_version(db: Session, project_id: int, survey_id: int, version_number: in
     )
 
 
-def create_version(db: Session, survey_id: int, created_by_user_id: int | None = None) -> SurveyVersion:
+def get_version_by_id(db: Session, version_id: int) -> SurveyVersion | None:
+    return db.get(SurveyVersion, version_id)
+
+
+def create_version(
+    db: Session,
+    survey_id: int,
+    definition: dict[str, Any],
+    created_by_user_id: int | None = None,
+) -> SurveyVersion:
     max_num = db.scalar(select(func.max(SurveyVersion.version_number)).where(SurveyVersion.survey_id == survey_id)) or 0
     version = SurveyVersion(
         survey_id=survey_id,
         version_number=max_num + 1,
+        revision=0,
         status="draft",
+        definition=definition,
         created_by_user_id=created_by_user_id,
     )
     db.add(version)
@@ -98,7 +110,6 @@ def publish_version(
     db: Session,
     survey: Survey,
     version: SurveyVersion,
-    compiled_schema: dict,
 ) -> SurveyVersion:
     if survey.published_version_id and survey.published_version_id != version.id:
         current = db.get(SurveyVersion, survey.published_version_id)
@@ -109,7 +120,6 @@ def publish_version(
             flush_with_err_handle(db, contexts=[current, survey])
 
     version.status = "published"
-    version.compiled_schema = compiled_schema
     version.published_at = datetime.now(UTC)
 
     # SQLAlchemy flushes all dirty session objects together, so pass both as
@@ -119,6 +129,18 @@ def publish_version(
     survey.published_version_id = version.id
     flush_with_err_handle(db, contexts=[survey, version])
 
+    return version
+
+
+def replace_definition(
+    db: Session,
+    version: SurveyVersion,
+    definition: dict[str, Any],
+) -> SurveyVersion:
+    """Replace one draft definition and advance its optimistic revision."""
+    version.definition = definition
+    version.revision += 1
+    flush_with_err_handle(db, contexts=[version])
     return version
 
 

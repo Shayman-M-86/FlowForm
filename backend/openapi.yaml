@@ -26,11 +26,8 @@ tags:
 - name: Roles
 - name: Subjects
 - name: Survey Access Links
-- name: Survey Builder
 - name: Survey Members
-- name: Survey Results
 - name: Survey Roles
-- name: Survey Scoring
 - name: Survey Versions
 - name: Surveys
 paths:
@@ -2180,301 +2177,6 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes:
-    get:
-      operationId: listNodes
-      summary: List survey builder nodes
-      description: List survey builder nodes
-      tags:
-      - Survey Builder
-      x-flowform-rbac:
-        permission: survey:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NodeResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    post:
-      operationId: createNode
-      summary: Create survey builder node
-      description: Create survey builder node
-      tags:
-      - Survey Builder
-      x-flowform-rbac:
-        permission: survey:edit
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateNodeRequest'
-      responses:
-        '201':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NodeResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}:
-    get:
-      operationId: getNode
-      summary: Get survey builder node
-      description: Get survey builder node
-      tags:
-      - Survey Builder
-      x-flowform-rbac:
-        permission: survey:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: node_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NodeResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      operationId: updateNode
-      summary: Update survey builder node
-      description: Update survey builder node
-      tags:
-      - Survey Builder
-      x-flowform-rbac:
-        permission: survey:edit
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: node_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateNodeRequest'
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NodeResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    delete:
-      operationId: deleteNode
-      summary: Delete survey builder node
-      description: Delete survey builder node
-      tags:
-      - Survey Builder
-      x-flowform-rbac:
-        permission: survey:edit
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: node_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '204':
-          description: No content.
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
   /api/v1/studio/projects/{project_id}/surveys/{survey_id}/members:
     get:
       operationId: listSurveyMembers
@@ -2669,250 +2371,6 @@ paths:
       responses:
         '200':
           description: Successful response.
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects:
-    get:
-      operationId: listSurveyResultSubjects
-      summary: List survey result subjects
-      description: List survey result subjects
-      tags:
-      - Survey Results
-      x-flowform-rbac:
-        permission: submission:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: page
-        in: query
-        required: false
-        schema:
-          default: 1
-          minimum: 1
-          title: Page
-          type: integer
-      - name: page_size
-        in: query
-        required: false
-        schema:
-          default: 20
-          maximum: 100
-          minimum: 1
-          title: Page Size
-          type: integer
-      - name: include_decrypted_answer_values
-        in: query
-        required: false
-        schema:
-          default: false
-          title: Include Decrypted Answer Values
-          type: boolean
-      - name: include_events
-        in: query
-        required: false
-        schema:
-          default: false
-          title: Include Events
-          type: boolean
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedSurveySubjectTreesResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects/{subject_id}:
-    get:
-      operationId: getSubjectTree
-      summary: Get survey result subject tree
-      description: Get survey result subject tree
-      tags:
-      - Survey Results
-      x-flowform-rbac:
-        permission: submission:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: subject_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: include_decrypted_answer_values
-        in: query
-        required: false
-        schema:
-          default: false
-          title: Include Decrypted Answer Values
-          type: boolean
-      - name: include_events
-        in: query
-        required: false
-        schema:
-          default: false
-          title: Include Events
-          type: boolean
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SurveySubjectTreeResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/export:
-    post:
-      operationId: exportResults
-      summary: Export survey results
-      description: Streams a CSV or JSON file attachment (one row per answer slot), not a JSON envelope. Use the `format`
-        field on the request body to choose CSV or JSON.
-      tags:
-      - Survey Results
-      x-flowform-rbac:
-        permission: submission:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ExportSurveyResultsRequest'
-      responses:
-        '200':
-          description: Successful response.
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/sessions/{session_id}:
-    delete:
-      operationId: deleteSession
-      summary: Delete survey response session
-      description: Delete survey response session
-      tags:
-      - Survey Results
-      x-flowform-rbac:
-        permission: submission:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: session_id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '204':
-          description: No content.
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3368,244 +2826,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MySurveyPermissionsResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules:
-    get:
-      operationId: listScoringRules
-      summary: List scoring rules
-      description: List scoring rules
-      tags:
-      - Survey Scoring
-      x-flowform-rbac:
-        permission: survey:view
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ScoringRuleResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    post:
-      operationId: createScoringRule
-      summary: Create scoring rule
-      description: Create scoring rule
-      tags:
-      - Survey Scoring
-      x-flowform-rbac:
-        permission: survey:edit
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateScoringRuleRequest'
-      responses:
-        '201':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ScoringRuleResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}:
-    patch:
-      operationId: updateScoringRule
-      summary: Update scoring rule
-      description: Update scoring rule
-      tags:
-      - Survey Scoring
-      x-flowform-rbac:
-        permission: survey:edit
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: scoring_rule_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateScoringRuleRequest'
-      responses:
-        '200':
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ScoringRuleResponses'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '409':
-          $ref: '#/components/responses/ConflictError'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    delete:
-      operationId: deleteScoringRule
-      summary: Delete scoring rule
-      description: Delete scoring rule
-      tags:
-      - Survey Scoring
-      x-flowform-rbac:
-        permission: survey:edit
-      parameters:
-      - name: project_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: survey_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: version_number
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      - name: scoring_rule_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 2147483647
-      responses:
-        '204':
-          description: No content.
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -4397,6 +3617,771 @@ components:
       - token
       title: ResolveSurveyAccessLinkTokenRequest
       type: object
+    AlwaysVisible:
+      additionalProperties: false
+      description: The field is always shown.
+      properties:
+        mode:
+          const: always
+          title: Mode
+          type: string
+          maxLength: 6
+      required:
+      - mode
+      title: AlwaysVisible
+      type: object
+    ChoiceOption:
+      additionalProperties: false
+      description: One selectable option. The id is what an answer stores.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 7
+          pattern: ^option_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        label:
+          maxLength: 1000
+          minLength: 1
+          title: Label
+          type: string
+      required:
+      - id
+      - label
+      title: ChoiceOption
+      type: object
+    ChoiceResponse:
+      additionalProperties: false
+      description: Stores a single selected option id.
+      properties:
+        type:
+          const: choice
+          title: Type
+          type: string
+          maxLength: 6
+        required:
+          default: false
+          title: Required
+          type: boolean
+      required:
+      - type
+      title: ChoiceResponse
+      type: object
+    ChoiceSetResponse:
+      additionalProperties: false
+      description: Stores zero or more selected option ids.
+      properties:
+        type:
+          const: choice_set
+          title: Type
+          type: string
+          maxLength: 10
+        required:
+          default: false
+          title: Required
+          type: boolean
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/ChoiceSetValidation'
+          - type: 'null'
+          default: null
+      required:
+      - type
+      title: ChoiceSetResponse
+      type: object
+    ChoiceSetValidation:
+      additionalProperties: false
+      description: Selection-count bounds for a multi-select answer.
+      properties:
+        minSelections:
+          anyOf:
+          - maximum: 200
+            minimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Minselections
+        maxSelections:
+          anyOf:
+          - maximum: 200
+            minimum: 1
+            type: integer
+          - type: 'null'
+          default: null
+          title: Maxselections
+      title: ChoiceSetValidation
+      type: object
+    ConditionalVisibility:
+      additionalProperties: false
+      description: The field is shown only when its condition holds.
+      properties:
+        mode:
+          const: conditional
+          title: Mode
+          type: string
+          maxLength: 11
+        condition:
+          $ref: '#/components/schemas/FieldAnswerCondition'
+      required:
+      - mode
+      - condition
+      title: ConditionalVisibility
+      type: object
+    DateInteraction:
+      additionalProperties: false
+      description: A date picker.
+      properties:
+        kind:
+          const: date
+          title: Kind
+          type: string
+          maxLength: 4
+        placeholder:
+          default: ''
+          maxLength: 1000
+          title: Placeholder
+          type: string
+      required:
+      - kind
+      title: DateInteraction
+      type: object
+    DateResponse:
+      additionalProperties: false
+      description: Stores a calendar date.
+      properties:
+        type:
+          const: date
+          title: Type
+          type: string
+          maxLength: 4
+        required:
+          default: false
+          title: Required
+          type: boolean
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/DateValidation'
+          - type: 'null'
+          default: null
+      required:
+      - type
+      title: DateResponse
+      type: object
+    DateValidation:
+      additionalProperties: false
+      description: Bounds for a date answer.
+      properties:
+        earliest:
+          anyOf:
+          - format: date
+            type: string
+            maxLength: 10
+          - type: 'null'
+          default: null
+          title: Earliest
+        latest:
+          anyOf:
+          - format: date
+            type: string
+            maxLength: 10
+          - type: 'null'
+          default: null
+          title: Latest
+      title: DateValidation
+      type: object
+    DecimalResponse:
+      additionalProperties: false
+      description: Stores a number that may have a fractional part.
+      properties:
+        type:
+          const: decimal
+          title: Type
+          type: string
+          maxLength: 7
+        required:
+          default: false
+          title: Required
+          type: boolean
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/NumberValidation'
+          - type: 'null'
+          default: null
+      required:
+      - type
+      title: DecimalResponse
+      type: object
+    DividerBlock:
+      additionalProperties: false
+      description: A horizontal rule.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^block_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        type:
+          const: divider
+          title: Type
+          type: string
+          maxLength: 7
+      required:
+      - id
+      - type
+      title: DividerBlock
+      type: object
+    FieldAnswerCondition:
+      additionalProperties: false
+      description: A predicate over a single field's stored answer.
+      properties:
+        fieldId:
+          maxLength: 128
+          minLength: 6
+          pattern: ^field_[A-Za-z0-9_]+$
+          title: Fieldid
+          type: string
+        operator:
+          enum:
+          - equals
+          - not_equals
+          - contains
+          - is_answered
+          - is_empty
+          - greater_than
+          - less_than
+          title: Operator
+          type: string
+          maxLength: 12
+        value:
+          anyOf:
+          - type: boolean
+          - type: integer
+          - type: number
+          - type: string
+          - type: 'null'
+          default: null
+          title: Value
+      required:
+      - fieldId
+      - operator
+      title: FieldAnswerCondition
+      type: object
+    FieldBehaviour:
+      additionalProperties: false
+      description: Runtime behaviour attached to a field.
+      properties:
+        visibility:
+          discriminator:
+            mapping:
+              always: '#/components/schemas/AlwaysVisible'
+              conditional: '#/components/schemas/ConditionalVisibility'
+            propertyName: mode
+          oneOf:
+          - $ref: '#/components/schemas/AlwaysVisible'
+          - $ref: '#/components/schemas/ConditionalVisibility'
+          title: Visibility
+      title: FieldBehaviour
+      type: object
+    HeadingBlock:
+      additionalProperties: false
+      description: A heading rendered above surrounding content.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^block_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        type:
+          const: heading
+          title: Type
+          type: string
+          maxLength: 7
+        content:
+          $ref: '#/components/schemas/HeadingContent'
+      required:
+      - id
+      - type
+      - content
+      title: HeadingBlock
+      type: object
+    HeadingContent:
+      additionalProperties: false
+      description: Section heading payload.
+      properties:
+        text:
+          maxLength: 1000
+          minLength: 1
+          title: Text
+          type: string
+        level:
+          default: 1
+          maximum: 6
+          minimum: 1
+          title: Level
+          type: integer
+      required:
+      - text
+      title: HeadingContent
+      type: object
+    ImageBlock:
+      additionalProperties: false
+      description: An image block.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^block_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        type:
+          const: image
+          title: Type
+          type: string
+          maxLength: 5
+        content:
+          $ref: '#/components/schemas/ImageContent'
+      required:
+      - id
+      - type
+      - content
+      title: ImageBlock
+      type: object
+    ImageContent:
+      additionalProperties: false
+      description: Image payload. The url is restricted to https/data so it stays renderable.
+      properties:
+        url:
+          maxLength: 2048
+          minLength: 1
+          title: Url
+          type: string
+        altText:
+          maxLength: 1000
+          minLength: 1
+          title: Alttext
+          type: string
+        caption:
+          default: ''
+          maxLength: 1000
+          title: Caption
+          type: string
+      required:
+      - url
+      - altText
+      title: ImageContent
+      type: object
+    InputBlock:
+      additionalProperties: false
+      description: A block that collects an answer.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^block_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        type:
+          const: input
+          title: Type
+          type: string
+          maxLength: 5
+        field:
+          $ref: '#/components/schemas/SurveyField'
+      required:
+      - id
+      - type
+      - field
+      title: InputBlock
+      type: object
+    IntegerResponse:
+      additionalProperties: false
+      description: Stores a whole number.
+      properties:
+        type:
+          const: integer
+          title: Type
+          type: string
+          maxLength: 7
+        required:
+          default: false
+          title: Required
+          type: boolean
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/NumberValidation'
+          - type: 'null'
+          default: null
+      required:
+      - type
+      title: IntegerResponse
+      type: object
+    LongTextInteraction:
+      additionalProperties: false
+      description: A multi-line text input.
+      properties:
+        kind:
+          const: long_text
+          title: Kind
+          type: string
+          maxLength: 9
+        rows:
+          default: 4
+          maximum: 20
+          minimum: 2
+          title: Rows
+          type: integer
+        placeholder:
+          default: ''
+          maxLength: 1000
+          title: Placeholder
+          type: string
+      required:
+      - kind
+      title: LongTextInteraction
+      type: object
+    MultipleChoiceInteraction:
+      additionalProperties: false
+      description: Select any number of options.
+      properties:
+        kind:
+          const: multiple_choice
+          title: Kind
+          type: string
+          maxLength: 15
+        presentation:
+          default: checkbox
+          enum:
+          - checkbox
+          - cards
+          title: Presentation
+          type: string
+          maxLength: 8
+        options:
+          items:
+            $ref: '#/components/schemas/ChoiceOption'
+          maxItems: 200
+          minItems: 1
+          title: Options
+          type: array
+      required:
+      - kind
+      - options
+      title: MultipleChoiceInteraction
+      type: object
+    NoticeBlock:
+      additionalProperties: false
+      description: A callout block.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^block_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        type:
+          const: notice
+          title: Type
+          type: string
+          maxLength: 6
+        content:
+          $ref: '#/components/schemas/NoticeContent'
+      required:
+      - id
+      - type
+      - content
+      title: NoticeBlock
+      type: object
+    NoticeContent:
+      additionalProperties: false
+      description: Callout payload.
+      properties:
+        tone:
+          default: information
+          enum:
+          - information
+          - success
+          - warning
+          - danger
+          title: Tone
+          type: string
+          maxLength: 11
+        title:
+          maxLength: 1000
+          minLength: 1
+          title: Title
+          type: string
+        text:
+          maxLength: 5000
+          minLength: 1
+          title: Text
+          type: string
+      required:
+      - title
+      - text
+      title: NoticeContent
+      type: object
+    NumberInteraction:
+      additionalProperties: false
+      description: A numeric input.
+      properties:
+        kind:
+          const: number
+          title: Kind
+          type: string
+          maxLength: 6
+        suffix:
+          default: ''
+          maxLength: 1000
+          title: Suffix
+          type: string
+        placeholder:
+          default: ''
+          maxLength: 1000
+          title: Placeholder
+          type: string
+      required:
+      - kind
+      title: NumberInteraction
+      type: object
+    NumberValidation:
+      additionalProperties: false
+      description: Bounds for a numeric answer.
+      properties:
+        min:
+          anyOf:
+          - anyOf:
+            - type: integer
+            - type: number
+            ge: -1000000000
+            le: 1000000000
+          - type: 'null'
+          default: null
+          title: Min
+        max:
+          anyOf:
+          - anyOf:
+            - type: integer
+            - type: number
+            ge: -1000000000
+            le: 1000000000
+          - type: 'null'
+          default: null
+          title: Max
+      title: NumberValidation
+      type: object
+    ParagraphBlock:
+      additionalProperties: false
+      description: A block of body copy.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^block_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        type:
+          const: paragraph
+          title: Type
+          type: string
+          maxLength: 9
+        content:
+          $ref: '#/components/schemas/ParagraphContent'
+      required:
+      - id
+      - type
+      - content
+      title: ParagraphBlock
+      type: object
+    ParagraphContent:
+      additionalProperties: false
+      description: Body copy payload.
+      properties:
+        text:
+          maxLength: 5000
+          minLength: 1
+          title: Text
+          type: string
+      required:
+      - text
+      title: ParagraphContent
+      type: object
+    RatingInteraction:
+      additionalProperties: false
+      description: A discrete scale between two bounds.
+      properties:
+        kind:
+          const: rating
+          title: Kind
+          type: string
+          maxLength: 6
+        presentation:
+          default: numbers
+          enum:
+          - numbers
+          - stars
+          - emoji
+          title: Presentation
+          type: string
+          maxLength: 7
+        min:
+          default: 1
+          maximum: 100
+          minimum: 0
+          title: Min
+          type: integer
+        max:
+          default: 5
+          maximum: 100
+          minimum: 0
+          title: Max
+          type: integer
+        minLabel:
+          default: ''
+          maxLength: 1000
+          title: Minlabel
+          type: string
+        maxLabel:
+          default: ''
+          maxLength: 1000
+          title: Maxlabel
+          type: string
+      required:
+      - kind
+      title: RatingInteraction
+      type: object
+    SingleChoiceInteraction:
+      additionalProperties: false
+      description: Select exactly one option.
+      properties:
+        kind:
+          const: single_choice
+          title: Kind
+          type: string
+          maxLength: 13
+        presentation:
+          default: radio
+          enum:
+          - radio
+          - cards
+          - dropdown
+          title: Presentation
+          type: string
+          maxLength: 8
+        options:
+          items:
+            $ref: '#/components/schemas/ChoiceOption'
+          maxItems: 200
+          minItems: 1
+          title: Options
+          type: array
+      required:
+      - kind
+      - options
+      title: SingleChoiceInteraction
+      type: object
+    SliderInteraction:
+      additionalProperties: false
+      description: A continuous scale dragged between two bounds.
+      properties:
+        kind:
+          const: slider
+          title: Kind
+          type: string
+          maxLength: 6
+        min:
+          anyOf:
+          - type: integer
+          - type: number
+          default: 0
+          title: Min
+        max:
+          anyOf:
+          - type: integer
+          - type: number
+          default: 100
+          title: Max
+        step:
+          anyOf:
+          - type: integer
+          - type: number
+          default: 1
+          gt: 0
+          title: Step
+        showValue:
+          default: true
+          title: Showvalue
+          type: boolean
+        minLabel:
+          default: ''
+          maxLength: 1000
+          title: Minlabel
+          type: string
+        maxLabel:
+          default: ''
+          maxLength: 1000
+          title: Maxlabel
+          type: string
+      required:
+      - kind
+      title: SliderInteraction
+      type: object
+    StringResponse:
+      additionalProperties: false
+      description: Stores free text.
+      properties:
+        type:
+          const: string
+          title: Type
+          type: string
+          maxLength: 6
+        required:
+          default: false
+          title: Required
+          type: boolean
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/StringValidation'
+          - type: 'null'
+          default: null
+      required:
+      - type
+      title: StringResponse
+      type: object
+    StringValidation:
+      additionalProperties: false
+      description: Bounds for a free-text answer.
+      properties:
+        minLength:
+          anyOf:
+          - maximum: 10000
+            minimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Minlength
+        maxLength:
+          anyOf:
+          - maximum: 10000
+            minimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Maxlength
+        format:
+          anyOf:
+          - enum:
+            - email
+            - url
+            - tel
+            type: string
+            maxLength: 5
+          - type: 'null'
+          default: null
+          title: Format
+      title: StringValidation
+      type: object
     SurveyAccessLinkResponse:
       description: API response shape for a survey access link.
       properties:
@@ -4488,6 +4473,122 @@ components:
       - created_at
       title: SurveyAccessLinkResponse
       type: object
+    SurveyDefinition:
+      additionalProperties: false
+      description: The complete portable content of a survey version.
+      properties:
+        schemaVersion:
+          const: 1
+          default: 1
+          title: Schemaversion
+          type: integer
+        document:
+          $ref: '#/components/schemas/SurveyDocument'
+      required:
+      - document
+      title: SurveyDefinition
+      type: object
+    SurveyDocument:
+      additionalProperties: false
+      description: The ordered sections of a survey version.
+      properties:
+        sections:
+          items:
+            $ref: '#/components/schemas/SurveySection'
+          maxItems: 100
+          minItems: 1
+          title: Sections
+          type: array
+      required:
+      - sections
+      title: SurveyDocument
+      type: object
+    SurveyField:
+      additionalProperties: false
+      description: 'A question: its prompt, how it is answered, and what it stores.
+
+
+        ``id`` is the answer-storage identity; ``key`` names the column in exported results.
+
+        Interaction and response remain separate unions. A small validator enforces their
+
+        compatibility without multiplying the model count into one class per pairing.'
+      properties:
+        id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^field_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        key:
+          pattern: ^[a-z0-9_]{1,64}$
+          title: Key
+          type: string
+        prompt:
+          maxLength: 1000
+          minLength: 1
+          title: Prompt
+          type: string
+        description:
+          default: ''
+          maxLength: 5000
+          title: Description
+          type: string
+        helpText:
+          default: ''
+          maxLength: 1000
+          title: Helptext
+          type: string
+        interaction:
+          discriminator:
+            mapping:
+              date: '#/components/schemas/DateInteraction'
+              long_text: '#/components/schemas/LongTextInteraction'
+              multiple_choice: '#/components/schemas/MultipleChoiceInteraction'
+              number: '#/components/schemas/NumberInteraction'
+              rating: '#/components/schemas/RatingInteraction'
+              single_choice: '#/components/schemas/SingleChoiceInteraction'
+              slider: '#/components/schemas/SliderInteraction'
+              text: '#/components/schemas/TextInteraction'
+            propertyName: kind
+          oneOf:
+          - $ref: '#/components/schemas/TextInteraction'
+          - $ref: '#/components/schemas/LongTextInteraction'
+          - $ref: '#/components/schemas/NumberInteraction'
+          - $ref: '#/components/schemas/SingleChoiceInteraction'
+          - $ref: '#/components/schemas/MultipleChoiceInteraction'
+          - $ref: '#/components/schemas/RatingInteraction'
+          - $ref: '#/components/schemas/SliderInteraction'
+          - $ref: '#/components/schemas/DateInteraction'
+          title: Interaction
+        response:
+          discriminator:
+            mapping:
+              choice: '#/components/schemas/ChoiceResponse'
+              choice_set: '#/components/schemas/ChoiceSetResponse'
+              date: '#/components/schemas/DateResponse'
+              decimal: '#/components/schemas/DecimalResponse'
+              integer: '#/components/schemas/IntegerResponse'
+              string: '#/components/schemas/StringResponse'
+            propertyName: type
+          oneOf:
+          - $ref: '#/components/schemas/StringResponse'
+          - $ref: '#/components/schemas/IntegerResponse'
+          - $ref: '#/components/schemas/DecimalResponse'
+          - $ref: '#/components/schemas/DateResponse'
+          - $ref: '#/components/schemas/ChoiceResponse'
+          - $ref: '#/components/schemas/ChoiceSetResponse'
+          title: Response
+        behaviour:
+          $ref: '#/components/schemas/FieldBehaviour'
+      required:
+      - id
+      - key
+      - prompt
+      - interaction
+      - response
+      title: SurveyField
+      type: object
     SurveyResponses:
       description: API response shape for a survey.
       properties:
@@ -4553,6 +4654,54 @@ components:
       - updated_at
       title: SurveyResponses
       type: object
+    SurveySection:
+      additionalProperties: false
+      description: One page of the survey. List order is the order respondents see.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 8
+          pattern: ^section_[A-Za-z0-9_]+$
+          title: Id
+          type: string
+        title:
+          maxLength: 1000
+          minLength: 1
+          title: Title
+          type: string
+        description:
+          default: ''
+          maxLength: 5000
+          title: Description
+          type: string
+        blocks:
+          items:
+            discriminator:
+              mapping:
+                divider: '#/components/schemas/DividerBlock'
+                heading: '#/components/schemas/HeadingBlock'
+                image: '#/components/schemas/ImageBlock'
+                input: '#/components/schemas/InputBlock'
+                notice: '#/components/schemas/NoticeBlock'
+                paragraph: '#/components/schemas/ParagraphBlock'
+              propertyName: type
+            oneOf:
+            - $ref: '#/components/schemas/HeadingBlock'
+            - $ref: '#/components/schemas/ParagraphBlock'
+            - $ref: '#/components/schemas/NoticeBlock'
+            - $ref: '#/components/schemas/ImageBlock'
+            - $ref: '#/components/schemas/DividerBlock'
+            - $ref: '#/components/schemas/InputBlock'
+          maxItems: 200
+          minItems: 1
+          title: Blocks
+          type: array
+      required:
+      - id
+      - title
+      - blocks
+      title: SurveySection
+      type: object
     SurveyVersionResponses:
       description: API response shape for a survey version.
       properties:
@@ -4565,6 +4714,9 @@ components:
         version_number:
           title: Version Number
           type: integer
+        revision:
+          title: Revision
+          type: integer
         status:
           enum:
           - draft
@@ -4573,12 +4725,8 @@ components:
           title: Status
           type: string
           maxLength: 9
-        compiled_schema:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Compiled Schema
+        definition:
+          $ref: '#/components/schemas/SurveyDefinition'
         published_at:
           anyOf:
           - format: date-time
@@ -4605,13 +4753,42 @@ components:
       - id
       - survey_id
       - version_number
+      - revision
       - status
-      - compiled_schema
+      - definition
       - published_at
       - created_by_user_id
       - created_at
       - updated_at
       title: SurveyVersionResponses
+      type: object
+    TextInteraction:
+      additionalProperties: false
+      description: A single-line text input.
+      properties:
+        kind:
+          const: text
+          title: Kind
+          type: string
+          maxLength: 4
+        presentation:
+          default: plain
+          enum:
+          - plain
+          - email
+          - url
+          - tel
+          title: Presentation
+          type: string
+          maxLength: 5
+        placeholder:
+          default: ''
+          maxLength: 1000
+          title: Placeholder
+          type: string
+      required:
+      - kind
+      title: TextInteraction
       type: object
     ResolveSurveyAccessLinkResponse:
       description: API response shape for resolving a respondent survey access link token.
@@ -5161,18 +5338,19 @@ components:
       description: Request body for recording a respondent session event.
       properties:
         event_type:
-          const: question_viewed
+          const: field_viewed
           title: Event Type
           type: string
-          maxLength: 15
-        question_node_id:
-          format: uuid
-          title: Question Node Id
+          maxLength: 12
+        field_id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^field_[A-Za-z0-9_]+$
+          title: Field Id
           type: string
-          maxLength: 36
       required:
       - event_type
-      - question_node_id
+      - field_id
       title: SubmissionSessionEventRequest
       type: object
     CompleteSubmissionSessionResponse:
@@ -5861,968 +6039,6 @@ components:
           title: Message Id
       title: SendSurveyLinkEmailResponse
       type: object
-    ChoiceConditionIn:
-      additionalProperties: false
-      description: Represents a condition block targeting a choice question.
-      properties:
-        target_id:
-          maxLength: 128
-          minLength: 1
-          title: Target Id
-          type: string
-        family:
-          const: choice
-          title: Family
-          type: string
-          maxLength: 6
-        requirements:
-          $ref: '#/components/schemas/ChoiceRequirementsIn'
-      required:
-      - target_id
-      - family
-      - requirements
-      title: ChoiceConditionIn
-      type: object
-    ChoiceDefinitionIn:
-      additionalProperties: false
-      description: definition block for a choice question.
-      properties:
-        min:
-          minimum: 0
-          title: Min
-          type: integer
-        max:
-          minimum: 1
-          title: Max
-          type: integer
-        options:
-          items:
-            $ref: '#/components/schemas/ChoiceOptionIn'
-          maxItems: 10
-          title: Options
-          type: array
-      required:
-      - min
-      - max
-      - options
-      title: ChoiceDefinitionIn
-      type: object
-    ChoiceOptionIn:
-      additionalProperties: false
-      description: A single selectable option for a choice question.
-      properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-      required:
-      - id
-      - label
-      title: ChoiceOptionIn
-      type: object
-    ChoiceQuestionSchemaIn:
-      additionalProperties: false
-      description: Incoming choice-question content schema.
-      properties:
-        family:
-          const: choice
-          title: Family
-          type: string
-          maxLength: 6
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-        title:
-          anyOf:
-          - maxLength: 500
-            minLength: 0
-            type: string
-          - type: 'null'
-          default: null
-          title: Title
-        definition:
-          $ref: '#/components/schemas/ChoiceDefinitionIn'
-      required:
-      - family
-      - label
-      - definition
-      title: ChoiceQuestionSchemaIn
-      type: object
-      x-flowform-export: builder
-    ChoiceRequirementsIn:
-      additionalProperties: false
-      description: Validation requirements for a choice-question condition.
-      properties:
-        required:
-          items:
-            maxLength: 128
-            minLength: 1
-            type: string
-          maxItems: 50
-          title: Required
-          type: array
-        forbidden:
-          items:
-            maxLength: 128
-            minLength: 1
-            type: string
-          maxItems: 50
-          title: Forbidden
-          type: array
-        any_of:
-          items:
-            maxLength: 128
-            minLength: 1
-            type: string
-          maxItems: 50
-          title: Any Of
-          type: array
-      title: ChoiceRequirementsIn
-      type: object
-    DateFieldRequirementsIn:
-      additionalProperties: false
-      description: Validation requirements for a date field-question condition.
-      properties:
-        type:
-          const: date
-          title: Type
-          type: string
-          maxLength: 4
-        operator:
-          enum:
-          - before
-          - after
-          title: Operator
-          type: string
-          maxLength: 6
-        value:
-          maxLength: 10
-          title: Value
-          type: string
-      required:
-      - type
-      - operator
-      - value
-      title: DateFieldRequirementsIn
-      type: object
-    EndAndDiscardActionIn:
-      additionalProperties: false
-      description: Navigation action that ends the survey and discards the response.
-      properties:
-        end_and_discard:
-          default: true
-          title: End And Discard
-          type: boolean
-      title: EndAndDiscardActionIn
-      type: object
-    EndAndSubmitActionIn:
-      additionalProperties: false
-      description: Navigation action that ends the survey and submits the response.
-      properties:
-        end_and_submit:
-          default: true
-          title: End And Submit
-          type: boolean
-      title: EndAndSubmitActionIn
-      type: object
-    FieldConditionIn:
-      additionalProperties: false
-      description: Represents a condition block targeting a field question.
-      properties:
-        target_id:
-          maxLength: 128
-          minLength: 1
-          title: Target Id
-          type: string
-        family:
-          const: field
-          title: Family
-          type: string
-          maxLength: 5
-        requirements:
-          discriminator:
-            mapping:
-              date: '#/components/schemas/DateFieldRequirementsIn'
-              number: '#/components/schemas/NumberFieldRequirementsIn'
-            propertyName: type
-          oneOf:
-          - $ref: '#/components/schemas/NumberFieldRequirementsIn'
-          - $ref: '#/components/schemas/DateFieldRequirementsIn'
-          title: Requirements
-      required:
-      - target_id
-      - family
-      - requirements
-      title: FieldConditionIn
-      type: object
-    FieldDefinitionIn:
-      additionalProperties: false
-      description: definition block for a field question.
-      properties:
-        field_type:
-          enum:
-          - short_text
-          - long_text
-          - email
-          - number
-          - date
-          - phone
-          title: Field Type
-          type: string
-          maxLength: 10
-        ui:
-          $ref: '#/components/schemas/FieldUIIn'
-      required:
-      - field_type
-      title: FieldDefinitionIn
-      type: object
-    FieldQuestionSchemaIn:
-      additionalProperties: false
-      description: Incoming field-question content schema.
-      properties:
-        family:
-          const: field
-          title: Family
-          type: string
-          maxLength: 5
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-        title:
-          anyOf:
-          - maxLength: 500
-            minLength: 0
-            type: string
-          - type: 'null'
-          default: null
-          title: Title
-        definition:
-          $ref: '#/components/schemas/FieldDefinitionIn'
-      required:
-      - family
-      - label
-      - definition
-      title: FieldQuestionSchemaIn
-      type: object
-      x-flowform-export: builder
-    FieldUIIn:
-      additionalProperties: false
-      description: UI block for a field question.
-      properties:
-        placeholder:
-          default: ''
-          maxLength: 50
-          title: Placeholder
-          type: string
-      title: FieldUIIn
-      type: object
-    MatchingConditionIn:
-      additionalProperties: false
-      description: Represents a condition block targeting a matching question.
-      properties:
-        target_id:
-          maxLength: 128
-          minLength: 1
-          title: Target Id
-          type: string
-        family:
-          const: matching
-          title: Family
-          type: string
-          maxLength: 8
-        requirements:
-          $ref: '#/components/schemas/MatchingRequirementsIn'
-      required:
-      - target_id
-      - family
-      - requirements
-      title: MatchingConditionIn
-      type: object
-    MatchingDefinitionIn:
-      additionalProperties: false
-      description: definition block for a matching question.
-      properties:
-        prompts:
-          items:
-            $ref: '#/components/schemas/MatchingItemIn'
-          maxItems: 10
-          title: Prompts
-          type: array
-        matches:
-          items:
-            $ref: '#/components/schemas/MatchingItemIn'
-          maxItems: 10
-          title: Matches
-          type: array
-      required:
-      - prompts
-      - matches
-      title: MatchingDefinitionIn
-      type: object
-    MatchingItemIn:
-      additionalProperties: false
-      description: One item on either side of a matching question.
-      properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
-        label:
-          maxLength: 250
-          minLength: 1
-          title: Label
-          type: string
-      required:
-      - id
-      - label
-      title: MatchingItemIn
-      type: object
-    MatchingPairIn:
-      additionalProperties: false
-      description: A single prompt-to-match pairing in a matching condition.
-      properties:
-        prompt_id:
-          maxLength: 128
-          minLength: 1
-          title: Prompt Id
-          type: string
-        match_id:
-          maxLength: 128
-          minLength: 1
-          title: Match Id
-          type: string
-      required:
-      - prompt_id
-      - match_id
-      title: MatchingPairIn
-      type: object
-    MatchingQuestionSchemaIn:
-      additionalProperties: false
-      description: Incoming matching-question content schema.
-      properties:
-        family:
-          const: matching
-          title: Family
-          type: string
-          maxLength: 8
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-        title:
-          anyOf:
-          - maxLength: 500
-            minLength: 0
-            type: string
-          - type: 'null'
-          default: null
-          title: Title
-        definition:
-          $ref: '#/components/schemas/MatchingDefinitionIn'
-      required:
-      - family
-      - label
-      - definition
-      title: MatchingQuestionSchemaIn
-      type: object
-      x-flowform-export: builder
-    MatchingRequirementsIn:
-      additionalProperties: false
-      description: Validation requirements for a matching-question condition.
-      properties:
-        required:
-          items:
-            $ref: '#/components/schemas/MatchingPairIn'
-          maxItems: 50
-          minItems: 1
-          title: Required
-          type: array
-      required:
-      - required
-      title: MatchingRequirementsIn
-      type: object
-    NumberFieldRequirementsIn:
-      additionalProperties: false
-      description: Validation requirements for a numeric field-question condition.
-      properties:
-        type:
-          const: number
-          title: Type
-          type: string
-          maxLength: 6
-        operator:
-          enum:
-          - LT
-          - LTE
-          - GT
-          - GTE
-          - EQ
-          - NEQ
-          title: Operator
-          type: string
-          maxLength: 3
-        value:
-          anyOf:
-          - type: integer
-          - type: number
-          title: Value
-      required:
-      - type
-      - operator
-      - value
-      title: NumberFieldRequirementsIn
-      type: object
-    QuestionNodeResponse:
-      description: API response shape for a question node.
-      properties:
-        id:
-          format: uuid
-          title: Id
-          type: string
-          maxLength: 36
-        node_key:
-          title: Node Key
-          type: string
-          maxLength: 128
-        sort_key:
-          title: Sort Key
-          type: integer
-        node_type:
-          const: question
-          title: Node Type
-          type: string
-          maxLength: 8
-        content:
-          discriminator:
-            mapping:
-              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
-              field: '#/components/schemas/FieldQuestionSchemaIn'
-              matching: '#/components/schemas/MatchingQuestionSchemaIn'
-              rating: '#/components/schemas/RatingQuestionSchemaIn'
-            propertyName: family
-          oneOf:
-          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
-          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
-          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
-          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
-          title: Content
-      required:
-      - id
-      - node_key
-      - sort_key
-      - node_type
-      - content
-      title: QuestionNodeResponse
-      type: object
-    RatingConditionIn:
-      additionalProperties: false
-      description: Represents a condition block targeting a rating question.
-      properties:
-        target_id:
-          maxLength: 128
-          minLength: 1
-          title: Target Id
-          type: string
-        family:
-          const: rating
-          title: Family
-          type: string
-          maxLength: 6
-        requirements:
-          $ref: '#/components/schemas/RatingRequirementsIn'
-      required:
-      - target_id
-      - family
-      - requirements
-      title: RatingConditionIn
-      type: object
-    RatingEmojiDefinitionIn:
-      additionalProperties: false
-      description: definition block for an emoji-style rating question.
-      properties:
-        variant:
-          const: emoji
-          title: Variant
-          type: string
-          maxLength: 5
-        emoji_list:
-          enum:
-          - sad_to_happy
-          - angry_to_happy
-          - disgust_to_happy
-          title: Emoji List
-          type: string
-          maxLength: 16
-        words:
-          default: false
-          title: Words
-          type: boolean
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - variant
-      - emoji_list
-      - ui
-      title: RatingEmojiDefinitionIn
-      type: object
-    RatingQuestionSchemaIn:
-      additionalProperties: false
-      description: Incoming rating-question content schema.
-      properties:
-        family:
-          const: rating
-          title: Family
-          type: string
-          maxLength: 6
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-        title:
-          anyOf:
-          - maxLength: 500
-            minLength: 0
-            type: string
-          - type: 'null'
-          default: null
-          title: Title
-        definition:
-          discriminator:
-            mapping:
-              emoji: '#/components/schemas/RatingEmojiDefinitionIn'
-              slider: '#/components/schemas/RatingSliderDefinitionIn'
-              stars: '#/components/schemas/RatingStarDefinitionIn'
-            propertyName: variant
-          oneOf:
-          - $ref: '#/components/schemas/RatingSliderDefinitionIn'
-          - $ref: '#/components/schemas/RatingStarDefinitionIn'
-          - $ref: '#/components/schemas/RatingEmojiDefinitionIn'
-          title: Definition
-      required:
-      - family
-      - label
-      - definition
-      title: RatingQuestionSchemaIn
-      type: object
-      x-flowform-export: builder
-    RatingRangeIn:
-      additionalProperties: false
-      description: Range block for a slider rating — min, max, and step in one object.
-      properties:
-        min:
-          maximum: 1000
-          minimum: -1000
-          title: Min
-          type: number
-        max:
-          maximum: 1000
-          minimum: -1000
-          title: Max
-          type: number
-        step:
-          exclusiveMinimum: 0
-          title: Step
-          type: number
-      required:
-      - min
-      - max
-      - step
-      title: RatingRangeIn
-      type: object
-    RatingRequirementsIn:
-      additionalProperties: false
-      description: Validation requirements for a rating-question condition.
-      properties:
-        min:
-          anyOf:
-          - type: integer
-          - type: number
-          - type: 'null'
-          default: null
-          title: Min
-        max:
-          anyOf:
-          - type: integer
-          - type: number
-          - type: 'null'
-          default: null
-          title: Max
-      title: RatingRequirementsIn
-      type: object
-    RatingSliderDefinitionIn:
-      additionalProperties: false
-      description: definition block for a slider-style rating question.
-      properties:
-        variant:
-          const: slider
-          title: Variant
-          type: string
-          maxLength: 6
-        range:
-          $ref: '#/components/schemas/RatingRangeIn'
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - variant
-      - range
-      - ui
-      title: RatingSliderDefinitionIn
-      type: object
-    RatingStarDefinitionIn:
-      additionalProperties: false
-      description: definition block for a star-style rating question.
-      properties:
-        variant:
-          const: stars
-          title: Variant
-          type: string
-          maxLength: 5
-        stars:
-          maximum: 12
-          minimum: 1
-          title: Stars
-          type: integer
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - variant
-      - stars
-      - ui
-      title: RatingStarDefinitionIn
-      type: object
-    RatingUIIn:
-      additionalProperties: false
-      description: Left/right labels for all rating variants.
-      properties:
-        left_label:
-          maxLength: 50
-          minLength: 1
-          title: Left Label
-          type: string
-        right_label:
-          maxLength: 50
-          minLength: 1
-          title: Right Label
-          type: string
-      required:
-      - left_label
-      - right_label
-      title: RatingUIIn
-      type: object
-    RuleBranchIn:
-      additionalProperties: false
-      description: Represents the effects applied by a then or else branch.
-      properties:
-        set:
-          anyOf:
-          - items:
-              $ref: '#/components/schemas/RuleSetItemIn'
-            maxItems: 50
-            minItems: 1
-            type: array
-          - type: 'null'
-          default: null
-          title: Set
-        do:
-          anyOf:
-          - $ref: '#/components/schemas/SkipToActionIn'
-          - $ref: '#/components/schemas/EndAndSubmitActionIn'
-          - $ref: '#/components/schemas/EndAndDiscardActionIn'
-          - type: 'null'
-          default: null
-          title: Do
-      title: RuleBranchIn
-      type: object
-    RuleIfIn:
-      additionalProperties: false
-      description: Represents the rule predicate and how its conditions are matched.
-      properties:
-        match:
-          enum:
-          - ALL
-          - ANY
-          - NONE
-          title: Match
-          type: string
-          maxLength: 4
-        conditions:
-          items:
-            discriminator:
-              mapping:
-                choice: '#/components/schemas/ChoiceConditionIn'
-                field: '#/components/schemas/FieldConditionIn'
-                matching: '#/components/schemas/MatchingConditionIn'
-                rating: '#/components/schemas/RatingConditionIn'
-              propertyName: family
-            oneOf:
-            - $ref: '#/components/schemas/ChoiceConditionIn'
-            - $ref: '#/components/schemas/MatchingConditionIn'
-            - $ref: '#/components/schemas/RatingConditionIn'
-            - $ref: '#/components/schemas/FieldConditionIn'
-          maxItems: 50
-          minItems: 1
-          title: Conditions
-          type: array
-      required:
-      - match
-      - conditions
-      title: RuleIfIn
-      type: object
-    RuleNodeResponse:
-      description: API response shape for a rule node.
-      properties:
-        id:
-          format: uuid
-          title: Id
-          type: string
-          maxLength: 36
-        node_key:
-          title: Node Key
-          type: string
-          maxLength: 128
-        sort_key:
-          title: Sort Key
-          type: integer
-        node_type:
-          const: rule
-          title: Node Type
-          type: string
-          maxLength: 4
-        content:
-          $ref: '#/components/schemas/RuleSchemaIn'
-      required:
-      - id
-      - node_key
-      - sort_key
-      - node_type
-      - content
-      title: RuleNodeResponse
-      type: object
-    RuleSchemaIn:
-      additionalProperties: false
-      description: Represents the full rule content stored in question_schema for a rule node.
-      properties:
-        if:
-          $ref: '#/components/schemas/RuleIfIn'
-        then:
-          $ref: '#/components/schemas/RuleBranchIn'
-        else:
-          anyOf:
-          - $ref: '#/components/schemas/RuleBranchIn'
-          - type: 'null'
-          default: null
-      required:
-      - if
-      - then
-      title: RuleSchemaIn
-      type: object
-    RuleSetItemIn:
-      additionalProperties: false
-      description: Represents one visibility or required-state change applied by a branch.
-      properties:
-        target_id:
-          maxLength: 128
-          minLength: 1
-          title: Target Id
-          type: string
-        visible:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          default: null
-          title: Visible
-        required:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          default: null
-          title: Required
-      required:
-      - target_id
-      title: RuleSetItemIn
-      type: object
-    SkipToActionIn:
-      additionalProperties: false
-      description: Navigation action that jumps to a specific question.
-      properties:
-        skip_to:
-          maxLength: 128
-          minLength: 1
-          title: Skip To
-          type: string
-      required:
-      - skip_to
-      title: SkipToActionIn
-      type: object
-    NodeResponses:
-      discriminator:
-        mapping:
-          question: '#/components/schemas/QuestionNodeResponse'
-          rule: '#/components/schemas/RuleNodeResponse'
-        propertyName: node_type
-      oneOf:
-      - $ref: '#/components/schemas/QuestionNodeResponse'
-      - $ref: '#/components/schemas/RuleNodeResponse'
-      title: NodeResponses
-    CreateQuestionNodeRequest:
-      additionalProperties: false
-      description: Validates requests that create a new question node.
-      properties:
-        id:
-          format: uuid
-          title: Id
-          type: string
-          maxLength: 36
-        node_key:
-          maxLength: 128
-          minLength: 1
-          title: Node Key
-          type: string
-        node_type:
-          const: question
-          title: Node Type
-          type: string
-          maxLength: 8
-        sort_key:
-          exclusiveMinimum: 0
-          title: Sort Key
-          type: integer
-        content:
-          discriminator:
-            mapping:
-              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
-              field: '#/components/schemas/FieldQuestionSchemaIn'
-              matching: '#/components/schemas/MatchingQuestionSchemaIn'
-              rating: '#/components/schemas/RatingQuestionSchemaIn'
-            propertyName: family
-          oneOf:
-          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
-          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
-          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
-          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
-          title: Content
-      required:
-      - id
-      - node_key
-      - node_type
-      - sort_key
-      - content
-      title: CreateQuestionNodeRequest
-      type: object
-      x-flowform-export: builder
-    CreateRuleNodeRequest:
-      additionalProperties: false
-      description: Validates requests that create a new rule node.
-      properties:
-        id:
-          format: uuid
-          title: Id
-          type: string
-          maxLength: 36
-        node_key:
-          maxLength: 128
-          minLength: 1
-          title: Node Key
-          type: string
-        node_type:
-          const: rule
-          title: Node Type
-          type: string
-          maxLength: 4
-        sort_key:
-          exclusiveMinimum: 0
-          title: Sort Key
-          type: integer
-        content:
-          $ref: '#/components/schemas/RuleSchemaIn'
-      required:
-      - id
-      - node_key
-      - node_type
-      - sort_key
-      - content
-      title: CreateRuleNodeRequest
-      type: object
-      x-flowform-export: builder
-    CreateNodeRequest:
-      discriminator:
-        mapping:
-          question: '#/components/schemas/CreateQuestionNodeRequest'
-          rule: '#/components/schemas/CreateRuleNodeRequest'
-        propertyName: node_type
-      oneOf:
-      - $ref: '#/components/schemas/CreateQuestionNodeRequest'
-      - $ref: '#/components/schemas/CreateRuleNodeRequest'
-      title: CreateNodeRequest
-    UpdateNodeRequest:
-      additionalProperties: false
-      description: Validates partial updates to an existing survey content node.
-      properties:
-        id:
-          format: uuid
-          title: Id
-          type: string
-          maxLength: 36
-        node_key:
-          anyOf:
-          - maxLength: 128
-            minLength: 1
-            type: string
-          - type: 'null'
-          default: null
-          title: Node Key
-        node_type:
-          anyOf:
-          - enum:
-            - question
-            - rule
-            type: string
-            maxLength: 8
-          - type: 'null'
-          default: null
-          title: Node Type
-        sort_key:
-          anyOf:
-          - exclusiveMinimum: 0
-            type: integer
-          - type: 'null'
-          default: null
-          title: Sort Key
-        content:
-          anyOf:
-          - discriminator:
-              mapping:
-                choice: '#/components/schemas/ChoiceQuestionSchemaIn'
-                field: '#/components/schemas/FieldQuestionSchemaIn'
-                matching: '#/components/schemas/MatchingQuestionSchemaIn'
-                rating: '#/components/schemas/RatingQuestionSchemaIn'
-              propertyName: family
-            oneOf:
-            - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
-            - $ref: '#/components/schemas/FieldQuestionSchemaIn'
-            - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
-            - $ref: '#/components/schemas/RatingQuestionSchemaIn'
-          - $ref: '#/components/schemas/RuleSchemaIn'
-          - type: 'null'
-          default: null
-          title: Content
-      required:
-      - id
-      title: UpdateNodeRequest
-      type: object
     SurveyMemberResponses:
       description: Embedded user details on a survey member row.
       properties:
@@ -6966,287 +6182,6 @@ components:
       required:
       - role_id
       title: UpdateSurveyMemberRoleRequest
-      type: object
-    SurveyAnswerSlotResponses:
-      description: One answer slot in an admin survey-results view, optionally decrypted.
-      properties:
-        question_node_id:
-          format: uuid
-          title: Question Node Id
-          type: string
-          maxLength: 36
-        question_key:
-          anyOf:
-          - type: string
-            maxLength: 128
-          - type: 'null'
-          default: null
-          title: Question Key
-        answer_family:
-          anyOf:
-          - enum:
-            - choice
-            - field
-            - matching
-            - rating
-            type: string
-            maxLength: 8
-          - type: 'null'
-          default: null
-          title: Answer Family
-        has_encrypted_answer:
-          title: Has Encrypted Answer
-          type: boolean
-        decrypted:
-          title: Decrypted
-          type: boolean
-        state:
-          anyOf:
-          - enum:
-            - answered
-            - cleared
-            type: string
-            maxLength: 8
-          - type: 'null'
-          default: null
-          title: State
-        answer_value:
-          anyOf:
-          - $ref: '#/components/schemas/ChoiceAnswerValue'
-          - discriminator:
-              mapping:
-                date: '#/components/schemas/DateFieldAnswerValue'
-                email: '#/components/schemas/EmailFieldAnswerValue'
-                long_text: '#/components/schemas/LongTextFieldAnswerValue'
-                number: '#/components/schemas/NumberFieldAnswerValue'
-                phone: '#/components/schemas/PhoneFieldAnswerValue'
-                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
-              propertyName: field_type
-            oneOf:
-            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
-            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
-            - $ref: '#/components/schemas/EmailFieldAnswerValue'
-            - $ref: '#/components/schemas/NumberFieldAnswerValue'
-            - $ref: '#/components/schemas/DateFieldAnswerValue'
-            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
-          - $ref: '#/components/schemas/MatchingAnswerValue'
-          - discriminator:
-              mapping:
-                emoji: '#/components/schemas/EmojiRatingAnswerValue'
-                slider: '#/components/schemas/SliderRatingAnswerValue'
-                stars: '#/components/schemas/StarsRatingAnswerValue'
-              propertyName: variant
-            oneOf:
-            - $ref: '#/components/schemas/SliderRatingAnswerValue'
-            - $ref: '#/components/schemas/StarsRatingAnswerValue'
-            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Answer Value
-      required:
-      - question_node_id
-      - has_encrypted_answer
-      - decrypted
-      title: SurveyAnswerSlotResponses
-      type: object
-    SurveySessionEventResponses:
-      description: One timeline event for a session. Never carries answer values.
-      properties:
-        event_type:
-          enum:
-          - session_started
-          - question_viewed
-          - answer_saved
-          - session_completed
-          title: Event Type
-          type: string
-          maxLength: 17
-        question_node_id:
-          anyOf:
-          - format: uuid
-            type: string
-            maxLength: 36
-          - type: 'null'
-          default: null
-          title: Question Node Id
-        received_at:
-          format: date-time
-          title: Received At
-          type: string
-          maxLength: 35
-      required:
-      - event_type
-      - received_at
-      title: SurveySessionEventResponses
-      type: object
-    SurveySessionResponses:
-      description: 'Admin-facing summary of one respondent submission session.
-
-
-        Sourced from core session metadata only; carries no decrypted answer
-
-        payloads and no response-database locators or crypto material.'
-      properties:
-        session_id:
-          format: uuid
-          title: Session Id
-          type: string
-          maxLength: 36
-        survey_id:
-          title: Survey Id
-          type: integer
-        survey_version_id:
-          title: Survey Version Id
-          type: integer
-        status:
-          enum:
-          - in_progress
-          - completed
-          - abandoned
-          title: Status
-          type: string
-          maxLength: 11
-        started_at:
-          format: date-time
-          title: Started At
-          type: string
-          maxLength: 35
-        completed_at:
-          anyOf:
-          - format: date-time
-            type: string
-            maxLength: 35
-          - type: 'null'
-          default: null
-          title: Completed At
-        last_activity_at:
-          format: date-time
-          title: Last Activity At
-          type: string
-          maxLength: 35
-      required:
-      - session_id
-      - survey_id
-      - survey_version_id
-      - status
-      - started_at
-      - last_activity_at
-      title: SurveySessionResponses
-      type: object
-    SurveySessionTreeResponses:
-      description: One session with its answer slots and optional event timeline.
-      properties:
-        session:
-          $ref: '#/components/schemas/SurveySessionResponses'
-        answers:
-          items:
-            $ref: '#/components/schemas/SurveyAnswerSlotResponses'
-          maxItems: 50
-          title: Answers
-          type: array
-        events:
-          anyOf:
-          - items:
-              $ref: '#/components/schemas/SurveySessionEventResponses'
-            type: array
-          - type: 'null'
-          default: null
-          title: Events
-      required:
-      - session
-      - answers
-      title: SurveySessionTreeResponses
-      type: object
-    SurveySubjectResponses:
-      description: Admin-facing summary of one project subject.
-      properties:
-        subject_id:
-          format: uuid
-          title: Subject Id
-          type: string
-          maxLength: 36
-        subject_code:
-          title: Subject Code
-          type: string
-      required:
-      - subject_id
-      - subject_code
-      title: SurveySubjectResponses
-      type: object
-    SurveySubjectTreeResponses:
-      description: One subject with all of its sessions for a survey.
-      properties:
-        subject:
-          $ref: '#/components/schemas/SurveySubjectResponses'
-        sessions:
-          items:
-            $ref: '#/components/schemas/SurveySessionTreeResponses'
-          title: Sessions
-          type: array
-      required:
-      - subject
-      - sessions
-      title: SurveySubjectTreeResponses
-      type: object
-    PaginatedSurveySubjectTreesResponses:
-      description: Paginated list of subject result trees.
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/SurveySubjectTreeResponses'
-          maxItems: 100
-          title: Items
-          type: array
-        total:
-          title: Total
-          type: integer
-        page:
-          title: Page
-          type: integer
-        page_size:
-          title: Page Size
-          type: integer
-        include_decrypted_answer_values:
-          title: Include Decrypted Answer Values
-          type: boolean
-      required:
-      - items
-      - total
-      - page
-      - page_size
-      - include_decrypted_answer_values
-      title: PaginatedSurveySubjectTreesResponses
-      type: object
-    ExportSurveyResultsRequest:
-      additionalProperties: false
-      description: Request body for exporting a survey's results.
-      properties:
-        format:
-          default: csv
-          enum:
-          - csv
-          - json
-          title: Format
-          type: string
-          maxLength: 4
-        include_decrypted_answer_values:
-          default: false
-          title: Include Decrypted Answer Values
-          type: boolean
-        session_ids:
-          anyOf:
-          - items:
-              format: uuid
-              type: string
-              maxLength: 36
-            maxItems: 100
-            type: array
-          - type: 'null'
-          default: null
-          title: Session Ids
-      title: ExportSurveyResultsRequest
       type: object
     CreateSurveyRoleRequest:
       description: Request body for creating a survey role.
@@ -7412,381 +6347,6 @@ components:
       - permissions
       title: MySurveyPermissionsResponses
       type: object
-    ScoringRuleResponses:
-      description: API response shape for a scoring rule.
-      properties:
-        id:
-          title: Id
-          type: integer
-        survey_version_id:
-          title: Survey Version Id
-          type: integer
-        scoring_key:
-          title: Scoring Key
-          type: string
-          maxLength: 128
-        scoring_schema:
-          additionalProperties: true
-          title: Scoring Schema
-          type: object
-        created_at:
-          format: date-time
-          title: Created At
-          type: string
-          maxLength: 35
-        updated_at:
-          format: date-time
-          title: Updated At
-          type: string
-          maxLength: 35
-      required:
-      - id
-      - survey_version_id
-      - scoring_key
-      - scoring_schema
-      - created_at
-      - updated_at
-      title: ScoringRuleResponses
-      type: object
-    ChoiceOptionMapConfig:
-      additionalProperties: false
-      description: 'Configuration for choice option mapping scoring strategy.
-
-
-        Maps each choice option ID to a score and optionally combines multiple scores
-
-        by summing or taking the maximum value.'
-      properties:
-        option_scores:
-          additionalProperties:
-            anyOf:
-            - type: integer
-            - type: number
-          propertyNames:
-            maxLength: 128
-          title: Option Scores
-          type: object
-        combine:
-          default: sum
-          enum:
-          - sum
-          - max
-          title: Combine
-          type: string
-          maxLength: 3
-      required:
-      - option_scores
-      title: ChoiceOptionMapConfig
-      type: object
-    ChoiceOptionMapScoringSchemaIn:
-      additionalProperties: false
-      description: 'Request schema for choice option mapping scoring rule.
-
-
-        Applies scores based on selected choice options, targeting a specific bucket
-
-        and optionally filtered by a condition.'
-      properties:
-        target:
-          maxLength: 128
-          title: Target
-          type: string
-        bucket:
-          maxLength: 128
-          title: Bucket
-          type: string
-        condition:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Condition
-        strategy:
-          const: choice_option_map
-          title: Strategy
-          type: string
-          maxLength: 17
-        config:
-          $ref: '#/components/schemas/ChoiceOptionMapConfig'
-      required:
-      - target
-      - bucket
-      - strategy
-      - config
-      title: ChoiceOptionMapScoringSchemaIn
-      type: object
-    FieldNumericRangesConfig:
-      additionalProperties: false
-      description: 'Configuration for field numeric ranges scoring strategy.
-
-
-        Defines numeric ranges and their corresponding scores for evaluating numeric
-
-        field answers.'
-      properties:
-        ranges:
-          items:
-            $ref: '#/components/schemas/NumericRangeScoreIn'
-          maxItems: 50
-          title: Ranges
-          type: array
-      required:
-      - ranges
-      title: FieldNumericRangesConfig
-      type: object
-    FieldNumericRangesScoringSchemaIn:
-      additionalProperties: false
-      description: 'Request schema for field numeric ranges scoring rule.
-
-
-        Scores numeric responses based on which range interval they fall into,
-
-        targeting a specific bucket and optionally filtered by a condition.'
-      properties:
-        target:
-          maxLength: 128
-          title: Target
-          type: string
-        bucket:
-          maxLength: 128
-          title: Bucket
-          type: string
-        condition:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Condition
-        strategy:
-          const: field_numeric_ranges
-          title: Strategy
-          type: string
-          maxLength: 20
-        config:
-          $ref: '#/components/schemas/FieldNumericRangesConfig'
-      required:
-      - target
-      - bucket
-      - strategy
-      - config
-      title: FieldNumericRangesScoringSchemaIn
-      type: object
-    MatchingAnswerKeyConfig:
-      additionalProperties: false
-      description: 'Configuration for matching answer key scoring strategy.
-
-
-        Defines correct answer pairs and scoring rules: points awarded for correct
-
-        matches, penalties for incorrect ones, and an optional score ceiling.'
-      properties:
-        correct_pairs:
-          items:
-            $ref: '#/components/schemas/MatchingPairIn'
-          maxItems: 50
-          title: Correct Pairs
-          type: array
-        points_per_correct:
-          anyOf:
-          - type: integer
-          - type: number
-          default: 1
-          title: Points Per Correct
-        penalty_per_incorrect:
-          anyOf:
-          - type: integer
-          - type: number
-          default: 0
-          title: Penalty Per Incorrect
-        max_score:
-          anyOf:
-          - type: integer
-          - type: number
-          - type: 'null'
-          default: null
-          title: Max Score
-      required:
-      - correct_pairs
-      title: MatchingAnswerKeyConfig
-      type: object
-    MatchingAnswerKeyScoringSchemaIn:
-      additionalProperties: false
-      description: 'Request schema for matching answer key scoring rule.
-
-
-        Evaluates matching answers against correct pairs, scoring based on accuracy.
-
-        Targets a specific bucket and optionally filtered by a condition.'
-      properties:
-        target:
-          maxLength: 128
-          title: Target
-          type: string
-        bucket:
-          maxLength: 128
-          title: Bucket
-          type: string
-        condition:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Condition
-        strategy:
-          const: matching_answer_key
-          title: Strategy
-          type: string
-          maxLength: 19
-        config:
-          $ref: '#/components/schemas/MatchingAnswerKeyConfig'
-      required:
-      - target
-      - bucket
-      - strategy
-      - config
-      title: MatchingAnswerKeyScoringSchemaIn
-      type: object
-    NumericRangeScoreIn:
-      additionalProperties: false
-      description: 'Request model for a numeric range with associated score.
-
-
-        Validates that max is greater than or equal to min.'
-      properties:
-        min:
-          anyOf:
-          - type: integer
-          - type: number
-          title: Min
-        max:
-          anyOf:
-          - type: integer
-          - type: number
-          title: Max
-        score:
-          anyOf:
-          - type: integer
-          - type: number
-          title: Score
-      required:
-      - min
-      - max
-      - score
-      title: NumericRangeScoreIn
-      type: object
-    RatingDirectConfig:
-      additionalProperties: false
-      description: 'Configuration for direct rating scoring strategy.
-
-
-        Multiplies the raw rating value by the specified multiplier.'
-      properties:
-        multiplier:
-          anyOf:
-          - type: integer
-          - type: number
-          default: 1
-          title: Multiplier
-      title: RatingDirectConfig
-      type: object
-    RatingDirectScoringSchemaIn:
-      additionalProperties: false
-      description: 'Request schema for direct rating scoring rule.
-
-
-        Directly scores a rating response by multiplying by a factor, targeting a
-
-        specific bucket and optionally filtered by a condition.'
-      properties:
-        target:
-          maxLength: 128
-          title: Target
-          type: string
-        bucket:
-          maxLength: 128
-          title: Bucket
-          type: string
-        condition:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          default: null
-          title: Condition
-        strategy:
-          const: rating_direct
-          title: Strategy
-          type: string
-          maxLength: 13
-        config:
-          $ref: '#/components/schemas/RatingDirectConfig'
-      required:
-      - target
-      - bucket
-      - strategy
-      - config
-      title: RatingDirectScoringSchemaIn
-      type: object
-    CreateScoringRuleRequest:
-      additionalProperties: false
-      description: Validates requests that create a new scoring rule schema entry.
-      properties:
-        scoring_key:
-          maxLength: 128
-          title: Scoring Key
-          type: string
-        scoring_schema:
-          discriminator:
-            mapping:
-              choice_option_map: '#/components/schemas/ChoiceOptionMapScoringSchemaIn'
-              field_numeric_ranges: '#/components/schemas/FieldNumericRangesScoringSchemaIn'
-              matching_answer_key: '#/components/schemas/MatchingAnswerKeyScoringSchemaIn'
-              rating_direct: '#/components/schemas/RatingDirectScoringSchemaIn'
-            propertyName: strategy
-          oneOf:
-          - $ref: '#/components/schemas/ChoiceOptionMapScoringSchemaIn'
-          - $ref: '#/components/schemas/MatchingAnswerKeyScoringSchemaIn'
-          - $ref: '#/components/schemas/RatingDirectScoringSchemaIn'
-          - $ref: '#/components/schemas/FieldNumericRangesScoringSchemaIn'
-          title: Scoring Schema
-      required:
-      - scoring_key
-      - scoring_schema
-      title: CreateScoringRuleRequest
-      type: object
-    UpdateScoringRuleRequest:
-      additionalProperties: false
-      description: Validates requests that partially update a scoring rule schema entry.
-      properties:
-        scoring_key:
-          anyOf:
-          - maxLength: 128
-            type: string
-          - type: 'null'
-          default: null
-          title: Scoring Key
-        scoring_schema:
-          anyOf:
-          - discriminator:
-              mapping:
-                choice_option_map: '#/components/schemas/ChoiceOptionMapScoringSchemaIn'
-                field_numeric_ranges: '#/components/schemas/FieldNumericRangesScoringSchemaIn'
-                matching_answer_key: '#/components/schemas/MatchingAnswerKeyScoringSchemaIn'
-                rating_direct: '#/components/schemas/RatingDirectScoringSchemaIn'
-              propertyName: strategy
-            oneOf:
-            - $ref: '#/components/schemas/ChoiceOptionMapScoringSchemaIn'
-            - $ref: '#/components/schemas/MatchingAnswerKeyScoringSchemaIn'
-            - $ref: '#/components/schemas/RatingDirectScoringSchemaIn'
-            - $ref: '#/components/schemas/FieldNumericRangesScoringSchemaIn'
-          - type: 'null'
-          default: null
-          title: Scoring Schema
-      title: UpdateScoringRuleRequest
-      type: object
   responses:
     BadRequestError:
       description: Bad request.
@@ -7825,11 +6385,16 @@ components:
               value:
                 code: PASSWORD_CHANGE_UNSUPPORTED
                 message: This account's password is managed by its sign-in provider and cannot be changed through FlowForm.
-            question_not_in_version:
-              summary: QuestionNotInVersionError
+            field_not_in_definition:
+              summary: FieldNotInDefinitionError
               value:
-                code: QUESTION_NOT_IN_VERSION
-                message: Question does not belong to this survey version.
+                code: FIELD_NOT_IN_DEFINITION
+                message: Field does not belong to this survey definition.
+            invalid_field_answer:
+              summary: InvalidFieldAnswerError
+              value:
+                code: INVALID_FIELD_ANSWER
+                message: Answer is not valid for this field.
             completion_validation:
               summary: CompletionValidationError
               value:
@@ -8195,6 +6760,11 @@ components:
               value:
                 code: VERSION_STATE_PROTECTED
                 message: The active published survey version cannot be unpublished or deleted.
+            cannot_modify_the_definition_of_a_published_survey_version:
+              summary: 'DB rule: VERSION_DEFINITION_LOCKED'
+              value:
+                code: VERSION_DEFINITION_LOCKED
+                message: The definition cannot be changed after its survey version is published.
             uq_survey_links_token:
               summary: 'DB rule: LINK_TOKEN_CONFLICT'
               value:
@@ -8310,41 +6880,16 @@ components:
               value:
                 code: SESSION_SUBJECT_PROJECT_CONFLICT
                 message: The project subject does not belong to this project.
-            uq_submission_answer_slots_session_question:
+            uq_submission_answer_slots_session_field:
               summary: 'DB rule: ANSWER_SLOT_EXISTS'
               value:
                 code: ANSWER_SLOT_EXISTS
-                message: An answer slot already exists for this session and question.
+                message: An answer slot already exists for this session and field.
             fk_submission_events_session_version:
               summary: 'DB rule: EVENT_SESSION_VERSION_CONFLICT'
               value:
                 code: EVENT_SESSION_VERSION_CONFLICT
                 message: The session does not belong to this survey version.
-            fk_submission_events_question_node_same_version:
-              summary: 'DB rule: EVENT_QUESTION_VERSION_CONFLICT'
-              value:
-                code: EVENT_QUESTION_VERSION_CONFLICT
-                message: The question node does not belong to this survey version.
-            survey_questions_pkey:
-              summary: 'DB rule: NODE_ID_CONFLICT'
-              value:
-                code: NODE_ID_CONFLICT
-                message: A node with this ID already exists.
-            uq_survey_questions_survey_version_id_question_key:
-              summary: 'DB rule: RULE_KEY_CONFLICT'
-              value:
-                code: RULE_KEY_CONFLICT
-                message: This survey version already uses that rule_key.
-            uq_survey_questions_survey_version_id_sort_key:
-              summary: 'DB rule: SORT_KEY_CONFLICT'
-              value:
-                code: SORT_KEY_CONFLICT
-                message: This survey version already uses that sort_key.
-            cannot_modify_components_of_a_published_survey_version:
-              summary: 'DB rule: SCORING_VERSION_LOCKED'
-              value:
-                code: SCORING_VERSION_LOCKED
-                message: Scoring rules cannot be changed on a published survey version.
             uq_survey_encryption_keys_survey:
               summary: 'DB rule: SURVEY_ENCRYPTION_KEY_EXISTS'
               value:
@@ -8360,11 +6905,6 @@ components:
               value:
                 code: SURVEY_ENCRYPTION_KEY_SURVEY_MISMATCH
                 message: The survey encryption key does not reference a survey in this project.
-            uq_survey_scoring_rules_survey_version_id_scoring_key:
-              summary: 'DB rule: SCORING_KEY_CONFLICT'
-              value:
-                code: SCORING_KEY_CONFLICT
-                message: This survey version already uses scoring_key='<scoring_key>'.
             uq_project_roles_project_name:
               summary: 'DB rule: PROJECT_ROLE_NAME_CONFLICT'
               value:
@@ -8528,12 +7068,12 @@ components:
               value:
                 code: INVITATION_STATE_INVALID
                 message: 'Server invariant violated: a project invitation was written with invalid status=''<status>''.'
-            ck_survey_versions_published_requires_schema_and_timestamp:
+            ck_survey_versions_published_requires_timestamp:
               summary: 'DB rule: VERSION_PUBLISH_STATE_INVALID'
               value:
                 code: VERSION_PUBLISH_STATE_INVALID
-                message: 'Server invariant violated: a survey version reached status=''published'' without both compiled_schema
-                  and published_at. This indicates a code path bypassed surveys_repo.publish_version.'
+                message: 'Server invariant violated: a survey version reached status=''published'' without published_at. This
+                  indicates a code path bypassed surveys_repo.publish_version.'
             ck_submission_sessions_session_status_valid:
               summary: 'DB rule: SESSION_STATE_INVALID'
               value:

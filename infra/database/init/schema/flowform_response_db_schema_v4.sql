@@ -64,8 +64,8 @@ CREATE TABLE response_answers (
     -- Groups this current answer under one opaque response envelope.
     envelope_id UUID NOT NULL,
 
-    -- Encrypted payload containing the real question-node UUID, answer state
-    -- and answer value.
+    -- Encrypted payload containing the canonical survey field id, answer state
+    -- and answer value. Core identifiers are not copied into this database.
     ciphertext BYTEA NOT NULL,
 
     -- Fresh nonce generated for this encrypted current answer.

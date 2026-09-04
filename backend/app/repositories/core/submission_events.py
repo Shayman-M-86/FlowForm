@@ -35,7 +35,7 @@ def create_event(
     session_id: uuid.UUID,
     survey_version_id: int,
     event_type: SubmissionEventType,
-    question_node_id: uuid.UUID | None = None,
+    field_id: str | None = None,
     event_metadata: dict[str, Any] | None = None,
 ) -> SubmissionEvent:
     """Create and flush one submission event.
@@ -46,7 +46,7 @@ def create_event(
         session_id=session_id,
         survey_version_id=survey_version_id,
         event_type=event_type,
-        question_node_id=question_node_id,
+        field_id=field_id,
         event_metadata=_normalise_event_metadata(event_metadata),
     )
 
@@ -61,7 +61,7 @@ def record_event(
     session_id: uuid.UUID,
     survey_version_id: int,
     event_type: SubmissionEventType,
-    question_node_id: uuid.UUID | None = None,
+    field_id: str | None = None,
     event_metadata: dict[str, Any] | None = None,
     log_label: str = "submission_event",
 ) -> None:
@@ -75,7 +75,7 @@ def record_event(
             session_id=session_id,
             survey_version_id=survey_version_id,
             event_type=event_type,
-            question_node_id=question_node_id,
+            field_id=field_id,
             event_metadata=event_metadata,
         )
         db.commit()

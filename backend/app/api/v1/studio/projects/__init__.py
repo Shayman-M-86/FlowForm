@@ -2,7 +2,6 @@ from logging import getLogger
 
 from flask import Blueprint
 
-from app.services.content import ContentService
 from app.services.members import MembersService
 from app.services.participants import ParticipantService
 from app.services.projects import ProjectService
@@ -17,7 +16,6 @@ logger = getLogger(__name__)
 studio_projects_bp = Blueprint("studio_projects_v1", __name__)
 
 users_service = UserService()
-content_svc = ContentService()
 participant_service = ParticipantService()
 project_service = ProjectService()
 roles_service = RolesService()

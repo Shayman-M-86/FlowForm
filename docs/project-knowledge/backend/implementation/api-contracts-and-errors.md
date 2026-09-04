@@ -4,8 +4,8 @@ aliases: ["Backend API contracts and errors", "Backend API contract model", "API
 document_type: implementation
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:81011f19d9477ef82887549f36a20785d014b8a56fe5294926da8df34f7337d6
-last_edited: 2026-08-04
+verified_evidence_digest: sha256:409a7c78fb6a4f5c8d1896dffb050f5f2a1242815bcc410431718284809e17b5
+last_edited: 2026-09-05
 tags: [backend, frontend]
 related_code:
   - "../../../../backend/app/api/utils/validation.py"

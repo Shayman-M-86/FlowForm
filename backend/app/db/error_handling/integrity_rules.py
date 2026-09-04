@@ -35,8 +35,8 @@ valid but collided with current database state.
 
 A small number of rules return **500 Internal Server Error** for CHECK
 violations on *server-controlled* fields that clients cannot set
-(submission ``status``, version ``status``/``compiled_schema``/
-``published_at``). If those CHECKs fire, internal code wrote inconsistent
+(submission ``status`` and version ``status``/``published_at``). If those
+CHECKs fire, internal code wrote inconsistent
 state — that is a server bug, not a client error, and the message says so
 explicitly.
 
@@ -98,9 +98,7 @@ from app.schema.orm.core import (
     SurveyEncryptionKey,
     SurveyLink,
     SurveyMembershipRole,
-    SurveyQuestion,
     SurveyRole,
-    SurveyScoringRule,
     SurveyVersion,
     User,
 )
@@ -121,10 +119,8 @@ type RuleContext = (
     | SubmissionSession
     | SubmissionAnswerSlot
     | SubmissionEvent
-    | SurveyQuestion
     | SurveyEncryptionKey
     | SurveyRole
-    | SurveyScoringRule
     | ProjectRole
     | ProjectMembership
     | SurveyMembershipRole
@@ -159,8 +155,7 @@ allowed_parameters = {
     "event_type",
     "subject_code",
     "normalized_email",
-    "node_type",
-    "scoring_key",
+    "field_id",
     "name",
     "invited_email",
     "client_mutation_id",
@@ -280,15 +275,7 @@ def _submission_event_ctx(event: SubmissionEvent) -> dict[str, object]:
         "session_id": event.session_id,
         "survey_version_id": event.survey_version_id,
         "event_type": event.event_type,
-        "question_node_id": event.question_node_id,
-    }
-
-
-def _survey_question_ctx(question: SurveyQuestion) -> dict[str, object]:
-    return {
-        "survey_question_id": question.id,
-        "survey_version_id": question.survey_version_id,
-        "node_type": question.node_type,
+        "field_id": event.field_id,
     }
 
 
@@ -298,14 +285,6 @@ def _survey_encryption_key_ctx(key: SurveyEncryptionKey) -> dict[str, object]:
         "project_id": key.project_id,
         "survey_id": key.survey_id,
         "kms_context_version": key.kms_context_version,
-    }
-
-
-def _survey_scoring_rule_ctx(rule: SurveyScoringRule) -> dict[str, object]:
-    return {
-        "survey_scoring_rule_id": rule.id,
-        "survey_version_id": rule.survey_version_id,
-        "scoring_key": rule.scoring_key,
     }
 
 
@@ -344,7 +323,7 @@ def _submission_answer_slot_ctx(slot: SubmissionAnswerSlot) -> dict[str, object]
         "answer_slot_id": slot.id,
         "session_id": slot.submission_session_id,
         "survey_version_id": slot.survey_version_id,
-        "question_node_id": slot.question_node_id,
+        "field_id": slot.field_id,
     }
 
 
@@ -478,12 +457,21 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_survey_version_ctx,
     ),
-    # ck_survey_versions_published_requires_schema_and_timestamp
+    message_rule(
+        "Cannot modify the definition of a published survey version",
+        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+            409,
+            "VERSION_DEFINITION_LOCKED",
+            "The definition cannot be changed after its survey version is published.",
+        ),
+        extractor=_survey_version_ctx,
+    ),
+    # ck_survey_versions_published_requires_timestamp
     #
     # This CHECK is internal-invariant defence in depth. The fields
-    # (status, compiled_schema, published_at) are not exposed in any request
-    # schema — surveys_repo.publish_version is the only code path that flips
-    # status to "published" and it writes all three together. So there is no
+    # (status and published_at) are not exposed in any request schema —
+    # surveys_repo.publish_version is the only code path that flips status to
+    # "published" and writes the timestamp. So there is no
     # Pydantic or service-level guard to add: nothing the client can send
     # could trigger this.
     #
@@ -493,12 +481,12 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
     # the bug is visible in logs and to the caller, instead of disguising
     # the invariant violation as a 422.
     check_rule(
-        "ck_survey_versions_published_requires_schema_and_timestamp",
+        "ck_survey_versions_published_requires_timestamp",
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             500,
             "VERSION_PUBLISH_STATE_INVALID",
             "Server invariant violated: a survey version reached"
-            " status='published' without both compiled_schema and published_at."
+            " status='published' without published_at."
             " This indicates a code path bypassed surveys_repo.publish_version.",
         ),
         extractor=_survey_version_ctx,
@@ -780,15 +768,6 @@ SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_submission_event_ctx,
     ),
-    foreign_key_rule(
-        "fk_submission_events_question_node_same_version",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
-            409,
-            "EVENT_QUESTION_VERSION_CONFLICT",
-            "The question node does not belong to this survey version.",
-        ),
-        extractor=_submission_event_ctx,
-    ),
     #
     # ck_submission_events_event_type_valid
     #
@@ -806,69 +785,6 @@ SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
         extractor=_submission_event_ctx,
     ),
 )
-
-SURVEY_QUESTION_RULES: tuple[DbErrorRule, ...] = (
-    unique_rule(
-        "survey_questions_pkey",
-        lambda _ctx, _exc: DbIntegrityError(
-            409,
-            "NODE_ID_CONFLICT",
-            "A node with this ID already exists.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-    unique_rule(
-        "uq_survey_questions_survey_version_id_question_key",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "QUESTION_KEY_CONFLICT" if ctx.get("node_type") == "question" else "RULE_KEY_CONFLICT",
-            f"This survey version already uses that"
-            f" {'question' if ctx.get('node_type') == 'question' else 'rule'}_key.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-    unique_rule(
-        "uq_survey_questions_survey_version_id_sort_key",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
-            409,
-            "SORT_KEY_CONFLICT",
-            "This survey version already uses that sort_key.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-
-    message_rule(
-        "Cannot modify components of a published survey version",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "QUESTION_VERSION_LOCKED" if ctx.get("node_type") == "question" else "RULE_VERSION_LOCKED",
-            "This node cannot be changed because its survey version is published.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-)
-
-SURVEY_SCORING_RULE_RULES: tuple[DbErrorRule, ...] = (
-    unique_rule(
-        "uq_survey_scoring_rules_survey_version_id_scoring_key",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "SCORING_KEY_CONFLICT",
-            f"This survey version already uses scoring_key={ctx['scoring_key']!r}.",
-        ),
-        extractor=_survey_scoring_rule_ctx,
-    ),
-    message_rule(
-        "Cannot modify components of a published survey version",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
-            409,
-            "SCORING_VERSION_LOCKED",
-            "Scoring rules cannot be changed on a published survey version.",
-        ),
-        extractor=_survey_scoring_rule_ctx,
-    ),
-)
-
 
 def _survey_role_ctx(role: SurveyRole) -> dict[str, object]:
     return {
@@ -1083,11 +999,11 @@ RESPONSE_ENVELOPE_RULES: tuple[DbErrorRule, ...] = (
 
 SUBMISSION_ANSWER_SLOT_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_submission_answer_slots_session_question",
+        "uq_submission_answer_slots_session_field",
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "ANSWER_SLOT_EXISTS",
-            "An answer slot already exists for this session and question.",
+            "An answer slot already exists for this session and field.",
         ),
         extractor=_submission_answer_slot_ctx,
     ),
@@ -1121,9 +1037,7 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     SubmissionSession: SUBMISSION_SESSION_RULES,
     SubmissionAnswerSlot: SUBMISSION_ANSWER_SLOT_RULES,
     SubmissionEvent: SUBMISSION_EVENT_RULES,
-    SurveyQuestion: SURVEY_QUESTION_RULES,
     SurveyEncryptionKey: SURVEY_ENCRYPTION_KEY_RULES,
-    SurveyScoringRule: SURVEY_SCORING_RULE_RULES,
     ProjectRole: PROJECT_ROLE_RULES,
     ProjectMembership: PROJECT_MEMBERSHIP_RULES,
     SurveyMembershipRole: SURVEY_MEMBERSHIP_ROLE_RULES,

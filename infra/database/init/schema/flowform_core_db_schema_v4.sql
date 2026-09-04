@@ -16,24 +16,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION prevent_changes_to_published_version_parts()
+CREATE OR REPLACE FUNCTION prevent_changes_to_published_definition()
 RETURNS TRIGGER AS $$
-DECLARE
-    v_survey_version_id BIGINT;
 BEGIN
-    v_survey_version_id := COALESCE(NEW.survey_version_id, OLD.survey_version_id);
-
-    IF EXISTS (
-        SELECT 1
-        FROM survey_versions sv
-        WHERE sv.id = v_survey_version_id
-          AND sv.status = 'published'
-          AND sv.deleted_at IS NULL
-    ) THEN
-        RAISE EXCEPTION 'Cannot modify components of a published survey version';
+    IF OLD.status = 'published'
+       AND OLD.deleted_at IS NULL
+       AND NEW.definition IS DISTINCT FROM OLD.definition THEN
+        RAISE EXCEPTION 'Cannot modify the definition of a published survey version';
     END IF;
 
-    RETURN COALESCE(NEW, OLD);
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -361,14 +353,15 @@ CREATE TABLE survey_encryption_keys (
 -- =========================================
 -- SURVEY VERSIONS
 -- =========================================
--- Published compiled_schema snapshots are soft-deleted.
+-- Every version stores one complete, API-validated canonical survey definition.
 
 CREATE TABLE survey_versions (
     id BIGSERIAL PRIMARY KEY,
     survey_id BIGINT NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
     version_number INTEGER NOT NULL,
+    revision INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'draft',
-    compiled_schema JSONB,
+    definition JSONB NOT NULL,
     published_at TIMESTAMPTZ,
     created_by_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -381,10 +374,16 @@ CREATE TABLE survey_versions (
     CONSTRAINT ck_survey_versions_version_number_positive
         CHECK (version_number > 0),
 
-    CONSTRAINT ck_survey_versions_published_requires_schema_and_timestamp
+    CONSTRAINT ck_survey_versions_revision_non_negative
+        CHECK (revision >= 0),
+
+    CONSTRAINT ck_survey_versions_definition_is_object
+        CHECK (jsonb_typeof(definition) = 'object'),
+
+    CONSTRAINT ck_survey_versions_published_requires_timestamp
         CHECK (
             status <> 'published'
-            OR (compiled_schema IS NOT NULL AND published_at IS NOT NULL)
+            OR published_at IS NOT NULL
         ),
 
     CONSTRAINT uq_survey_versions_survey_id_id
@@ -404,128 +403,6 @@ ADD CONSTRAINT fk_surveys_published_version_same_survey
 CREATE UNIQUE INDEX uq_survey_versions_one_published
     ON survey_versions (survey_id)
     WHERE status = 'published' AND deleted_at IS NULL;
-
--- =========================================
--- SURVEY QUESTIONS
--- =========================================
-
-CREATE TABLE survey_questions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-    survey_version_id BIGINT NOT NULL
-        REFERENCES survey_versions(id)
-        ON DELETE CASCADE,
-
-    question_key TEXT NOT NULL,
-    sort_key INTEGER NOT NULL,
-    node_type TEXT NOT NULL,
-    question_schema JSONB NOT NULL,
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT ck_survey_questions_node_type_valid
-        CHECK (node_type IN ('question', 'rule')),
-
-    CONSTRAINT ck_survey_questions_sort_key_positive
-        CHECK (sort_key > 0),
-
-    CONSTRAINT ck_survey_questions_question_key_len
-        CHECK (length(question_key) BETWEEN 1 AND 128),
-
-    CONSTRAINT ck_survey_questions_question_key_format
-        CHECK (question_key ~ '^[A-Za-z0-9_-]+$'),
-
-    CONSTRAINT ck_survey_questions_schema_size
-        CHECK (length(question_schema::text) <= 10000),
-
-    CONSTRAINT ck_survey_questions_question_schema_is_object
-        CHECK (
-            node_type <> 'question'
-            OR jsonb_typeof(question_schema) = 'object'
-        ),
-
-    CONSTRAINT ck_survey_questions_question_family_valid
-        CHECK (
-            node_type <> 'question'
-            OR question_schema->>'family' IN ('choice', 'field', 'matching', 'rating')
-        ),
-
-    CONSTRAINT uq_survey_questions_survey_version_id_id
-        UNIQUE (survey_version_id, id)
-);
-
-CREATE UNIQUE INDEX uq_survey_questions_survey_version_id_question_key
-    ON survey_questions (survey_version_id, question_key);
-
-CREATE UNIQUE INDEX uq_survey_questions_survey_version_id_sort_key
-    ON survey_questions (survey_version_id, sort_key);
-
-CREATE INDEX ix_survey_questions_survey_version_id_node_type
-    ON survey_questions (survey_version_id, node_type);
-
-CREATE INDEX ix_survey_questions_survey_version_id_sort_key
-    ON survey_questions (survey_version_id, sort_key);
-
--- =========================================
--- SURVEY RULES
--- =========================================
-
-
--- =========================================
--- SURVEY SCORING RULES
--- =========================================
-
-CREATE TABLE survey_scoring_rules (
-    id BIGSERIAL PRIMARY KEY,
-    survey_version_id BIGINT NOT NULL REFERENCES survey_versions(id) ON DELETE CASCADE,
-    scoring_key TEXT NOT NULL,
-    scoring_schema JSONB NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_survey_scoring_rules_survey_version_id_scoring_key
-        UNIQUE (survey_version_id, scoring_key),
-
-    CONSTRAINT ck_survey_scoring_rules_scoring_schema_is_object
-        CHECK (jsonb_typeof(scoring_schema) = 'object'),
-
-    CONSTRAINT ck_survey_scoring_rules_scoring_schema_required_keys_present
-        CHECK (scoring_schema ?& ARRAY['target', 'bucket', 'strategy', 'config']),
-
-    CONSTRAINT ck_survey_scoring_rules_scoring_target_valid
-        CHECK (
-            jsonb_typeof(scoring_schema->'target') = 'string'
-            AND btrim(scoring_schema->>'target') <> ''
-        ),
-
-    CONSTRAINT ck_survey_scoring_rules_scoring_bucket_valid
-        CHECK (
-            jsonb_typeof(scoring_schema->'bucket') = 'string'
-            AND btrim(scoring_schema->>'bucket') <> ''
-        ),
-
-    CONSTRAINT ck_survey_scoring_rules_scoring_strategy_valid
-        CHECK (
-            scoring_schema->>'strategy' IN (
-                'choice_option_map',
-                'matching_answer_key',
-                'rating_direct',
-                'field_numeric_ranges'
-            )
-        ),
-
-    CONSTRAINT ck_survey_scoring_rules_scoring_config_is_object
-        CHECK (
-            jsonb_typeof(scoring_schema->'config') = 'object'
-        ),
-
-    CONSTRAINT ck_survey_scoring_rules_scoring_condition_is_object
-        CHECK (
-            (scoring_schema ? 'condition') = FALSE
-            OR jsonb_typeof(scoring_schema->'condition') = 'object'
-        )
-);
 
 -- =========================================
 -- SURVEY ROLES (OVERRIDE MODEL)
@@ -1011,23 +888,24 @@ CREATE TABLE submission_answer_slots (
     id UUID DEFAULT gen_random_uuid() NOT NULL,
     submission_session_id UUID NOT NULL,
     survey_version_id BIGINT NOT NULL,
-    question_node_id UUID NOT NULL,
-    question_key TEXT,
+    field_id TEXT NOT NULL,
 
     CONSTRAINT pk_submission_answer_slots
         PRIMARY KEY (id),
 
-    CONSTRAINT uq_submission_answer_slots_session_question
-        UNIQUE (submission_session_id, question_node_id),
+    CONSTRAINT uq_submission_answer_slots_session_field
+        UNIQUE (submission_session_id, field_id),
+
+    CONSTRAINT ck_submission_answer_slots_field_id_len
+        CHECK (length(field_id) BETWEEN 7 AND 128),
+
+    CONSTRAINT ck_submission_answer_slots_field_id_format
+        CHECK (field_id ~ '^field_[A-Za-z0-9_]+$'),
 
     CONSTRAINT fk_submission_answer_slots_session_version
         FOREIGN KEY (submission_session_id, survey_version_id)
         REFERENCES submission_sessions (id, survey_version_id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_submission_answer_slots_question_same_version
-        FOREIGN KEY (survey_version_id, question_node_id)
-        REFERENCES survey_questions (survey_version_id, id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE submission_events (
@@ -1035,24 +913,30 @@ CREATE TABLE submission_events (
     session_id UUID NOT NULL,
     survey_version_id BIGINT NOT NULL,
     event_type TEXT NOT NULL,
-    question_node_id UUID REFERENCES survey_questions(id) ON DELETE SET NULL,
+    field_id TEXT,
     metadata JSONB,
     received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ck_submission_events_event_type_valid
-        CHECK (event_type IN ('session_started', 'question_viewed', 'answer_saved', 'session_completed')),
+        CHECK (event_type IN ('session_started', 'field_viewed', 'answer_saved', 'session_completed')),
 
-    CONSTRAINT ck_submission_events_question_required_for_question_events
+    CONSTRAINT ck_submission_events_field_required_for_field_events
         CHECK (
-            event_type NOT IN ('question_viewed', 'answer_saved')
-            OR question_node_id IS NOT NULL
+            event_type NOT IN ('field_viewed', 'answer_saved')
+            OR field_id IS NOT NULL
         ),
 
-    CONSTRAINT ck_submission_events_question_absent_for_session_events
+    CONSTRAINT ck_submission_events_field_absent_for_session_events
         CHECK (
             event_type NOT IN ('session_started', 'session_completed')
-            OR question_node_id IS NULL
+            OR field_id IS NULL
         ),
+
+    CONSTRAINT ck_submission_events_field_id_len
+        CHECK (field_id IS NULL OR length(field_id) BETWEEN 7 AND 128),
+
+    CONSTRAINT ck_submission_events_field_id_format
+        CHECK (field_id IS NULL OR field_id ~ '^field_[A-Za-z0-9_]+$'),
 
     CONSTRAINT ck_submission_events_metadata_is_object
         CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object'),
@@ -1060,11 +944,7 @@ CREATE TABLE submission_events (
     CONSTRAINT fk_submission_events_session_version
         FOREIGN KEY (session_id, survey_version_id)
         REFERENCES submission_sessions(id, survey_version_id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_submission_events_question_node_same_version
-        FOREIGN KEY (survey_version_id, question_node_id)
-        REFERENCES survey_questions(survey_version_id, id)
+        ON DELETE CASCADE
 );
 
 -- =========================================
@@ -1153,22 +1033,9 @@ CREATE TRIGGER trg_survey_versions_protect_active_published_version
 BEFORE UPDATE OR DELETE ON survey_versions
 FOR EACH ROW EXECUTE FUNCTION protect_active_published_version();
 
-CREATE TRIGGER trg_survey_questions_updated_at
-BEFORE UPDATE ON survey_questions
-FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-CREATE TRIGGER trg_survey_questions_lock_published
-BEFORE INSERT OR UPDATE OR DELETE ON survey_questions
-FOR EACH ROW EXECUTE FUNCTION prevent_changes_to_published_version_parts();
-
-
-CREATE TRIGGER trg_survey_scoring_rules_updated_at
-BEFORE UPDATE ON survey_scoring_rules
-FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-CREATE TRIGGER trg_survey_scoring_rules_lock_published
-BEFORE INSERT OR UPDATE OR DELETE ON survey_scoring_rules
-FOR EACH ROW EXECUTE FUNCTION prevent_changes_to_published_version_parts();
+CREATE TRIGGER trg_survey_versions_lock_published_definition
+BEFORE UPDATE OF definition ON survey_versions
+FOR EACH ROW EXECUTE FUNCTION prevent_changes_to_published_definition();
 
 -- =========================================
 -- INDEXES
@@ -1190,8 +1057,6 @@ CREATE INDEX ix_survey_encryption_keys_project_survey
 
 CREATE INDEX ix_survey_versions_survey ON survey_versions(survey_id);
 CREATE INDEX ix_survey_versions_status ON survey_versions(status);
-CREATE INDEX ix_survey_questions_version ON survey_questions(survey_version_id);
-CREATE INDEX ix_survey_scoring_rules_version ON survey_scoring_rules(survey_version_id);
 
 CREATE INDEX ix_survey_membership_roles_project ON survey_membership_roles(project_id);
 CREATE INDEX ix_survey_membership_roles_membership ON survey_membership_roles(membership_id);
@@ -1230,8 +1095,8 @@ CREATE INDEX ix_submission_sessions_expires_at ON submission_sessions(expires_at
 
 CREATE INDEX ix_submission_events_session_received_at ON submission_events(session_id, received_at);
 CREATE INDEX ix_submission_events_survey_version ON submission_events(survey_version_id);
-CREATE INDEX ix_submission_events_question_node ON submission_events(question_node_id)
-    WHERE question_node_id IS NOT NULL;
+CREATE INDEX ix_submission_events_field_id ON submission_events(field_id)
+    WHERE field_id IS NOT NULL;
 
 CREATE INDEX ix_subject_ip_observations_project_observed_at
     ON subject_ip_observations(project_id, observed_at DESC);

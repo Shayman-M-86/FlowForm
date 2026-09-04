@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from app.schema.api import limits
 from app.schema.api.common.fields import Slug, SurveyTitle
+from app.schema.api.content.survey_document import SurveyDefinition
 from app.schema.enums import SurveyVisibility
 
 
@@ -32,7 +33,13 @@ class UpdateSurveyRequest(BaseModel):
 class CreateVersionRequest(BaseModel):
     """Request body for creating a new survey version."""
 
-    pass
+    definition: SurveyDefinition
+
+
+class ReplaceSurveyDefinitionRequest(BaseModel):
+    """Request body for replacing one editable version's complete definition."""
+
+    definition: SurveyDefinition
 
 
 class ListPublicSurveysRequest(BaseModel):

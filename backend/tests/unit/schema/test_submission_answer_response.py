@@ -76,29 +76,30 @@ def test_survey_document_answer_response_uses_field_identity() -> None:
     assert dumped["value"] == "option_yes"
 
 
-def test_survey_document_answer_request_validates_value_by_response_type() -> None:
+def test_survey_document_answer_request_does_not_accept_client_response_type() -> None:
     request = SaveSurveyDocumentAnswerRequest(
         client_mutation_id=uuid4(),
-        response_type="date",
         state="answered",
         value="2026-06-18",
     )
 
     assert request.model_dump(mode="json")["value"] == "2026-06-18"
+    assert "response_type" not in request.model_dump(mode="json")
 
     with pytest.raises(ValidationError):
-        SaveSurveyDocumentAnswerRequest(
-            client_mutation_id=uuid4(),
-            response_type="integer",
-            state="answered",
-            value="3",
+        SaveSurveyDocumentAnswerRequest.model_validate(
+            {
+                "client_mutation_id": uuid4(),
+                "state": "answered",
+                "value": "3",
+                "response_type": "integer",
+            }
         )
 
 
 def test_survey_document_clear_request_has_no_value() -> None:
     request = SaveSurveyDocumentAnswerRequest(
         client_mutation_id=uuid4(),
-        response_type="string",
         state="cleared",
     )
 

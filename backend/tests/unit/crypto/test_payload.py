@@ -1,18 +1,16 @@
 """Tests for plaintext payload encode/decode."""
 
-from uuid import UUID
-
 import pytest
 
 from app.crypto._internal.payload import build_plaintext_payload, parse_plaintext_payload
 
-_Q1 = UUID("00000000-0000-0000-0000-000000000001")
+_FIELD_ID = "field_health"
 
 
 class TestBuildPlaintextPayload:
     def test_returns_bytes(self) -> None:
         result = build_plaintext_payload(
-            question_node_id=_Q1,
+            field_id=_FIELD_ID,
             answer_state="answered",
             answer_value={"value": "yes"},
         )
@@ -20,18 +18,18 @@ class TestBuildPlaintextPayload:
 
     def test_round_trip(self) -> None:
         payload = build_plaintext_payload(
-            question_node_id=_Q1,
+            field_id=_FIELD_ID,
             answer_state="answered",
             answer_value={"value": "yes"},
         )
         parsed = parse_plaintext_payload(payload)
-        assert parsed.question_node_id == _Q1
+        assert parsed.field_id == _FIELD_ID
         assert parsed.answer_state == "answered"
         assert parsed.answer_value == {"value": "yes"}
 
     def test_none_value(self) -> None:
         payload = build_plaintext_payload(
-            question_node_id=_Q1,
+            field_id=_FIELD_ID,
             answer_state="cleared",
             answer_value=None,
         )
@@ -42,7 +40,7 @@ class TestBuildPlaintextPayload:
     def test_complex_value(self) -> None:
         value = {"selected": [1, 2, 3], "nested": {"key": "val"}}
         payload = build_plaintext_payload(
-            question_node_id=_Q1,
+            field_id=_FIELD_ID,
             answer_state="answered",
             answer_value=value,
         )

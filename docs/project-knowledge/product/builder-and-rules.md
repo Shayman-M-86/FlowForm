@@ -4,8 +4,8 @@ aliases: ["Builder and rules"]
 document_type: domain
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:9b3e5056849ff92c6d8afce697a1b5db7a652d24f10927f1c732e485f6a73aad
-last_edited: 2026-08-04
+verified_evidence_digest: sha256:bcea33ef646985565b9631f2087f78e3e852ae8580bc9352c4eaa7e11c916bb0
+last_edited: 2026-09-05
 tags: [frontend]
 related_code:
   - "../../../frontend/packages/builder/src/pages/builder/NodePage.tsx"
@@ -15,7 +15,7 @@ related_code:
   - "../../../frontend/packages/builder/src/components/form_filler/FormFiller.tsx"
   - "../../../frontend/apps/studio-app/src/pages/SurveyWorkspaceTabPages/useSurveyBuilderController.ts"
   - "../../../frontend/apps/studio-app/src/pages/RespondPage.tsx"
-  - "../../../backend/app/services/content.py"
+  - "../../../backend/app/services/surveys.py"
 change_triggers:
   - "../../../frontend/packages/builder/src/"
   - "../../../frontend/packages/schema/src/generated/"

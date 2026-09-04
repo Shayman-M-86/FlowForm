@@ -4,8 +4,8 @@ aliases: ["Surveys and versioning"]
 document_type: domain
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:5ffc2c087690e3874569b6c9ac61128056edc10ec5206dd79aef4af41be4f7e0
-last_edited: 2026-07-27
+verified_evidence_digest: sha256:82649bcb08dbd5a5a4ffaf7ac679d3c4f53b1e2934e3f9d25e9de895e2f6aa78
+last_edited: 2026-09-05
 tags: [backend]
 related_code:
   - "../../../backend/app/services/surveys.py"

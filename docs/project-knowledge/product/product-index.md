@@ -4,11 +4,11 @@ aliases: ["Product knowledge"]
 document_type: overview
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:ed613d280ffe3ca202beec2f62d24b1b5119786819fed51683d914e0f008647c
-last_edited: 2026-08-04
+verified_evidence_digest: sha256:82482719e6312cd07e370b214025c93f9d7d562ba95da973a2162cec06e5dfa4
+last_edited: 2026-09-05
 tags: [backend, frontend, security]
 related_code:
-  - "../../../backend/app/services/content.py"
+  - "../../../backend/app/services/surveys.py"
   - "../../../backend/app/domain/submission_access_rules.py"
 change_triggers:
   - "../../../frontend/packages/builder/src/"

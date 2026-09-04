@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from uuid import UUID
-
 from pydantic import BaseModel, ConfigDict
 
+from app.schema.api.content.common import FieldId
 from app.schema.enums import SubmissionSessionClientEventType
 
 
@@ -13,4 +12,4 @@ class SubmissionSessionEventRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     event_type: SubmissionSessionClientEventType
-    question_node_id: UUID
+    field_id: FieldId

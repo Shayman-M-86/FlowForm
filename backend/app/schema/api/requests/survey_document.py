@@ -5,34 +5,24 @@ from __future__ import annotations
 from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from app.schema.api.content.survey_document import (
     SurveyDocumentAnswerValue,
-    parse_survey_document_answer_value,
 )
-from app.schema.enums import SubmissionAnswerState, SurveyResponseType
+from app.schema.enums import SubmissionAnswerState
 
 
 class SaveSurveyDocumentAnswerRequest(BaseModel):
     """Request body for saving or clearing one survey document field answer."""
 
+    # The request only validates the transport envelope. Its field-specific
+    # value type and constraints come from the resolved SurveyField.response.
     model_config = ConfigDict(extra="forbid")
 
     client_mutation_id: UUID
-    response_type: SurveyResponseType
     state: SubmissionAnswerState
     value: SurveyDocumentAnswerValue | None = None
-
-    @field_validator("value", mode="before")
-    @classmethod
-    def validate_value_for_response_type(cls, value: object, info: ValidationInfo) -> object:
-        if value is None:
-            return None
-        response_type = info.data.get("response_type")
-        if response_type is None:
-            return value
-        return parse_survey_document_answer_value(response_type, value)
 
     @model_validator(mode="after")
     def validate_state(self) -> Self:

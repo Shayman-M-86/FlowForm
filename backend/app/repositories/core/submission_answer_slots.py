@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 
-_SLOT_CONSTRAINT = "uq_submission_answer_slots_session_question"
+_SLOT_CONSTRAINT = "uq_submission_answer_slots_session_field"
 
 
 def get_or_create(
@@ -17,15 +17,13 @@ def get_or_create(
     *,
     submission_session_id: uuid.UUID,
     survey_version_id: int,
-    question_node_id: uuid.UUID,
-    question_key: str | None,
+    field_id: str,
 ) -> SubmissionAnswerSlot:
-    """Return the stable answer slot for a session/question, creating it once."""
+    """Return the stable answer slot for a session/field, creating it once."""
     slot = SubmissionAnswerSlot(
         submission_session_id=submission_session_id,
         survey_version_id=survey_version_id,
-        question_node_id=question_node_id,
-        question_key=question_key,
+        field_id=field_id,
     )
     nested = db.begin_nested()
     db.add(slot)
@@ -40,7 +38,7 @@ def get_or_create(
             existing = db.scalar(
                 select(SubmissionAnswerSlot).where(
                     SubmissionAnswerSlot.submission_session_id == submission_session_id,
-                    SubmissionAnswerSlot.question_node_id == question_node_id,
+                    SubmissionAnswerSlot.field_id == field_id,
                 )
             )
             if existing is not None:

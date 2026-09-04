@@ -836,58 +836,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List survey builder nodes
-         * @description List survey builder nodes
-         */
-        get: operations["listNodes"];
-        put?: never;
-        /**
-         * Create survey builder node
-         * @description Create survey builder node
-         */
-        post: operations["createNode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey builder node
-         * @description Get survey builder node
-         */
-        get: operations["getNode"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete survey builder node
-         * @description Delete survey builder node
-         */
-        delete: operations["deleteNode"];
-        options?: never;
-        head?: never;
-        /**
-         * Update survey builder node
-         * @description Update survey builder node
-         */
-        patch: operations["updateNode"];
-        trace?: never;
-    };
     "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members": {
         parameters: {
             query?: never;
@@ -934,86 +882,6 @@ export interface paths {
          * @description Update survey member role assignment
          */
         patch: operations["updateSurveyMemberRole"];
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List survey result subjects
-         * @description List survey result subjects
-         */
-        get: operations["listSurveyResultSubjects"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects/{subject_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey result subject tree
-         * @description Get survey result subject tree
-         */
-        get: operations["getSubjectTree"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Export survey results
-         * @description Streams a CSV or JSON file attachment (one row per answer slot), not a JSON envelope. Use the `format` field on the request body to choose CSV or JSON.
-         */
-        post: operations["exportResults"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/sessions/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete survey response session
-         * @description Delete survey response session
-         */
-        delete: operations["deleteSession"];
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/studio/projects/{project_id}/survey-roles": {
@@ -1134,54 +1002,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List scoring rules
-         * @description List scoring rules
-         */
-        get: operations["listScoringRules"];
-        put?: never;
-        /**
-         * Create scoring rule
-         * @description Create scoring rule
-         */
-        post: operations["createScoringRule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete scoring rule
-         * @description Delete scoring rule
-         */
-        delete: operations["deleteScoringRule"];
-        options?: never;
-        head?: never;
-        /**
-         * Update scoring rule
-         * @description Update scoring rule
-         */
-        patch: operations["updateScoringRule"];
         trace?: never;
     };
     "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions": {
@@ -1579,6 +1399,549 @@ export interface components {
             token: string;
         };
         /**
+         * AlwaysVisible
+         * @description The field is always shown.
+         */
+        AlwaysVisible: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "always";
+        };
+        /**
+         * ChoiceOption
+         * @description One selectable option. The id is what an answer stores.
+         */
+        ChoiceOption: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * ChoiceResponse
+         * @description Stores a single selected option id.
+         */
+        ChoiceResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice";
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+        };
+        /**
+         * ChoiceSetResponse
+         * @description Stores zero or more selected option ids.
+         */
+        ChoiceSetResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice_set";
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** @default null */
+            validation: components["schemas"]["ChoiceSetValidation"] | null;
+        };
+        /**
+         * ChoiceSetValidation
+         * @description Selection-count bounds for a multi-select answer.
+         */
+        ChoiceSetValidation: {
+            /**
+             * Minselections
+             * @default null
+             */
+            minSelections: number | null;
+            /**
+             * Maxselections
+             * @default null
+             */
+            maxSelections: number | null;
+        };
+        /**
+         * ConditionalVisibility
+         * @description The field is shown only when its condition holds.
+         */
+        ConditionalVisibility: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "conditional";
+            condition: components["schemas"]["FieldAnswerCondition"];
+        };
+        /**
+         * DateInteraction
+         * @description A date picker.
+         */
+        DateInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "date";
+            /**
+             * Placeholder
+             * @default
+             */
+            placeholder: string;
+        };
+        /**
+         * DateResponse
+         * @description Stores a calendar date.
+         */
+        DateResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "date";
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** @default null */
+            validation: components["schemas"]["DateValidation"] | null;
+        };
+        /**
+         * DateValidation
+         * @description Bounds for a date answer.
+         */
+        DateValidation: {
+            /**
+             * Earliest
+             * @default null
+             */
+            earliest: string | null;
+            /**
+             * Latest
+             * @default null
+             */
+            latest: string | null;
+        };
+        /**
+         * DecimalResponse
+         * @description Stores a number that may have a fractional part.
+         */
+        DecimalResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "decimal";
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** @default null */
+            validation: components["schemas"]["NumberValidation"] | null;
+        };
+        /**
+         * DividerBlock
+         * @description A horizontal rule.
+         */
+        DividerBlock: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "divider";
+        };
+        /**
+         * FieldAnswerCondition
+         * @description A predicate over a single field's stored answer.
+         */
+        FieldAnswerCondition: {
+            /** Fieldid */
+            fieldId: string;
+            /**
+             * Operator
+             * @enum {string}
+             */
+            operator: "equals" | "not_equals" | "contains" | "is_answered" | "is_empty" | "greater_than" | "less_than";
+            /**
+             * Value
+             * @default null
+             */
+            value: boolean | number | string | null;
+        };
+        /**
+         * FieldBehaviour
+         * @description Runtime behaviour attached to a field.
+         */
+        FieldBehaviour: {
+            /** Visibility */
+            visibility?: components["schemas"]["AlwaysVisible"] | components["schemas"]["ConditionalVisibility"];
+        };
+        /**
+         * HeadingBlock
+         * @description A heading rendered above surrounding content.
+         */
+        HeadingBlock: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "heading";
+            content: components["schemas"]["HeadingContent"];
+        };
+        /**
+         * HeadingContent
+         * @description Section heading payload.
+         */
+        HeadingContent: {
+            /** Text */
+            text: string;
+            /**
+             * Level
+             * @default 1
+             */
+            level: number;
+        };
+        /**
+         * ImageBlock
+         * @description An image block.
+         */
+        ImageBlock: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "image";
+            content: components["schemas"]["ImageContent"];
+        };
+        /**
+         * ImageContent
+         * @description Image payload. The url is restricted to https/data so it stays renderable.
+         */
+        ImageContent: {
+            /** Url */
+            url: string;
+            /** Alttext */
+            altText: string;
+            /**
+             * Caption
+             * @default
+             */
+            caption: string;
+        };
+        /**
+         * InputBlock
+         * @description A block that collects an answer.
+         */
+        InputBlock: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "input";
+            field: components["schemas"]["SurveyField"];
+        };
+        /**
+         * IntegerResponse
+         * @description Stores a whole number.
+         */
+        IntegerResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer";
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** @default null */
+            validation: components["schemas"]["NumberValidation"] | null;
+        };
+        /**
+         * LongTextInteraction
+         * @description A multi-line text input.
+         */
+        LongTextInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "long_text";
+            /**
+             * Rows
+             * @default 4
+             */
+            rows: number;
+            /**
+             * Placeholder
+             * @default
+             */
+            placeholder: string;
+        };
+        /**
+         * MultipleChoiceInteraction
+         * @description Select any number of options.
+         */
+        MultipleChoiceInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "multiple_choice";
+            /**
+             * Presentation
+             * @default checkbox
+             * @enum {string}
+             */
+            presentation: "checkbox" | "cards";
+            /** Options */
+            options: components["schemas"]["ChoiceOption"][];
+        };
+        /**
+         * NoticeBlock
+         * @description A callout block.
+         */
+        NoticeBlock: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "notice";
+            content: components["schemas"]["NoticeContent"];
+        };
+        /**
+         * NoticeContent
+         * @description Callout payload.
+         */
+        NoticeContent: {
+            /**
+             * Tone
+             * @default information
+             * @enum {string}
+             */
+            tone: "information" | "success" | "warning" | "danger";
+            /** Title */
+            title: string;
+            /** Text */
+            text: string;
+        };
+        /**
+         * NumberInteraction
+         * @description A numeric input.
+         */
+        NumberInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "number";
+            /**
+             * Suffix
+             * @default
+             */
+            suffix: string;
+            /**
+             * Placeholder
+             * @default
+             */
+            placeholder: string;
+        };
+        /**
+         * NumberValidation
+         * @description Bounds for a numeric answer.
+         */
+        NumberValidation: {
+            /**
+             * Min
+             * @default null
+             */
+            min: (number) | null;
+            /**
+             * Max
+             * @default null
+             */
+            max: (number) | null;
+        };
+        /**
+         * ParagraphBlock
+         * @description A block of body copy.
+         */
+        ParagraphBlock: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "paragraph";
+            content: components["schemas"]["ParagraphContent"];
+        };
+        /**
+         * ParagraphContent
+         * @description Body copy payload.
+         */
+        ParagraphContent: {
+            /** Text */
+            text: string;
+        };
+        /**
+         * RatingInteraction
+         * @description A discrete scale between two bounds.
+         */
+        RatingInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "rating";
+            /**
+             * Presentation
+             * @default numbers
+             * @enum {string}
+             */
+            presentation: "numbers" | "stars" | "emoji";
+            /**
+             * Min
+             * @default 1
+             */
+            min: number;
+            /**
+             * Max
+             * @default 5
+             */
+            max: number;
+            /**
+             * Minlabel
+             * @default
+             */
+            minLabel: string;
+            /**
+             * Maxlabel
+             * @default
+             */
+            maxLabel: string;
+        };
+        /**
+         * SingleChoiceInteraction
+         * @description Select exactly one option.
+         */
+        SingleChoiceInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "single_choice";
+            /**
+             * Presentation
+             * @default radio
+             * @enum {string}
+             */
+            presentation: "radio" | "cards" | "dropdown";
+            /** Options */
+            options: components["schemas"]["ChoiceOption"][];
+        };
+        /**
+         * SliderInteraction
+         * @description A continuous scale dragged between two bounds.
+         */
+        SliderInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "slider";
+            /**
+             * Min
+             * @default 0
+             */
+            min: number;
+            /**
+             * Max
+             * @default 100
+             */
+            max: number;
+            /**
+             * Step
+             * @default 1
+             */
+            step: number;
+            /**
+             * Showvalue
+             * @default true
+             */
+            showValue: boolean;
+            /**
+             * Minlabel
+             * @default
+             */
+            minLabel: string;
+            /**
+             * Maxlabel
+             * @default
+             */
+            maxLabel: string;
+        };
+        /**
+         * StringResponse
+         * @description Stores free text.
+         */
+        StringResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "string";
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** @default null */
+            validation: components["schemas"]["StringValidation"] | null;
+        };
+        /**
+         * StringValidation
+         * @description Bounds for a free-text answer.
+         */
+        StringValidation: {
+            /**
+             * Minlength
+             * @default null
+             */
+            minLength: number | null;
+            /**
+             * Maxlength
+             * @default null
+             */
+            maxLength: number | null;
+            /**
+             * Format
+             * @default null
+             */
+            format: ("email" | "url" | "tel") | null;
+        };
+        /**
          * SurveyAccessLinkResponse
          * @description API response shape for a survey access link.
          */
@@ -1626,6 +1989,58 @@ export interface components {
             created_at: string;
         };
         /**
+         * SurveyDefinition
+         * @description The complete portable content of a survey version.
+         */
+        SurveyDefinition: {
+            /**
+             * Schemaversion
+             * @default 1
+             * @constant
+             */
+            schemaVersion: 1;
+            document: components["schemas"]["SurveyDocument"];
+        };
+        /**
+         * SurveyDocument
+         * @description The ordered sections of a survey version.
+         */
+        SurveyDocument: {
+            /** Sections */
+            sections: components["schemas"]["SurveySection"][];
+        };
+        /**
+         * SurveyField
+         * @description A question: its prompt, how it is answered, and what it stores.
+         *
+         *     ``id`` is the answer-storage identity; ``key`` names the column in exported results.
+         *     Interaction and response remain separate unions. A small validator enforces their
+         *     compatibility without multiplying the model count into one class per pairing.
+         */
+        SurveyField: {
+            /** Id */
+            id: string;
+            /** Key */
+            key: string;
+            /** Prompt */
+            prompt: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Helptext
+             * @default
+             */
+            helpText: string;
+            /** Interaction */
+            interaction: components["schemas"]["TextInteraction"] | components["schemas"]["LongTextInteraction"] | components["schemas"]["NumberInteraction"] | components["schemas"]["SingleChoiceInteraction"] | components["schemas"]["MultipleChoiceInteraction"] | components["schemas"]["RatingInteraction"] | components["schemas"]["SliderInteraction"] | components["schemas"]["DateInteraction"];
+            /** Response */
+            response: components["schemas"]["StringResponse"] | components["schemas"]["IntegerResponse"] | components["schemas"]["DecimalResponse"] | components["schemas"]["DateResponse"] | components["schemas"]["ChoiceResponse"] | components["schemas"]["ChoiceSetResponse"];
+            behaviour?: components["schemas"]["FieldBehaviour"];
+        };
+        /**
          * SurveyResponses
          * @description API response shape for a survey.
          */
@@ -1661,6 +2076,23 @@ export interface components {
             updated_at: string;
         };
         /**
+         * SurveySection
+         * @description One page of the survey. List order is the order respondents see.
+         */
+        SurveySection: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Blocks */
+            blocks: (components["schemas"]["HeadingBlock"] | components["schemas"]["ParagraphBlock"] | components["schemas"]["NoticeBlock"] | components["schemas"]["ImageBlock"] | components["schemas"]["DividerBlock"] | components["schemas"]["InputBlock"])[];
+        };
+        /**
          * SurveyVersionResponses
          * @description API response shape for a survey version.
          */
@@ -1671,15 +2103,14 @@ export interface components {
             survey_id: number;
             /** Version Number */
             version_number: number;
+            /** Revision */
+            revision: number;
             /**
              * Status
              * @enum {string}
              */
             status: "draft" | "published" | "archived";
-            /** Compiled Schema */
-            compiled_schema: {
-                [key: string]: unknown;
-            } | null;
+            definition: components["schemas"]["SurveyDefinition"];
             /** Published At */
             published_at: string | null;
             /** Created By User Id */
@@ -1694,6 +2125,28 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * TextInteraction
+         * @description A single-line text input.
+         */
+        TextInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "text";
+            /**
+             * Presentation
+             * @default plain
+             * @enum {string}
+             */
+            presentation: "plain" | "email" | "url" | "tel";
+            /**
+             * Placeholder
+             * @default
+             */
+            placeholder: string;
         };
         /**
          * ResolveSurveyAccessLinkResponse
@@ -2023,12 +2476,9 @@ export interface components {
              * Event Type
              * @constant
              */
-            event_type: "question_viewed";
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
+            event_type: "field_viewed";
+            /** Field Id */
+            field_id: string;
         };
         /**
          * CompleteSubmissionSessionResponse
@@ -2442,566 +2892,6 @@ export interface components {
             message_id: string | null;
         };
         /**
-         * ChoiceConditionIn
-         * @description Represents a condition block targeting a choice question.
-         */
-        ChoiceConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "choice";
-            requirements: components["schemas"]["ChoiceRequirementsIn"];
-        };
-        /**
-         * ChoiceDefinitionIn
-         * @description definition block for a choice question.
-         */
-        ChoiceDefinitionIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-            /** Options */
-            options: components["schemas"]["ChoiceOptionIn"][];
-        };
-        /**
-         * ChoiceOptionIn
-         * @description A single selectable option for a choice question.
-         */
-        ChoiceOptionIn: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-        };
-        /**
-         * ChoiceQuestionSchemaIn
-         * @description Incoming choice-question content schema.
-         */
-        ChoiceQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "choice";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["ChoiceDefinitionIn"];
-        };
-        /**
-         * ChoiceRequirementsIn
-         * @description Validation requirements for a choice-question condition.
-         */
-        ChoiceRequirementsIn: {
-            /** Required */
-            required?: string[];
-            /** Forbidden */
-            forbidden?: string[];
-            /** Any Of */
-            any_of?: string[];
-        };
-        /**
-         * DateFieldRequirementsIn
-         * @description Validation requirements for a date field-question condition.
-         */
-        DateFieldRequirementsIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "date";
-            /**
-             * Operator
-             * @enum {string}
-             */
-            operator: "before" | "after";
-            /** Value */
-            value: string;
-        };
-        /**
-         * EndAndDiscardActionIn
-         * @description Navigation action that ends the survey and discards the response.
-         */
-        EndAndDiscardActionIn: {
-            /**
-             * End And Discard
-             * @default true
-             */
-            end_and_discard: boolean;
-        };
-        /**
-         * EndAndSubmitActionIn
-         * @description Navigation action that ends the survey and submits the response.
-         */
-        EndAndSubmitActionIn: {
-            /**
-             * End And Submit
-             * @default true
-             */
-            end_and_submit: boolean;
-        };
-        /**
-         * FieldConditionIn
-         * @description Represents a condition block targeting a field question.
-         */
-        FieldConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "field";
-            /** Requirements */
-            requirements: components["schemas"]["NumberFieldRequirementsIn"] | components["schemas"]["DateFieldRequirementsIn"];
-        };
-        /**
-         * FieldDefinitionIn
-         * @description definition block for a field question.
-         */
-        FieldDefinitionIn: {
-            /**
-             * Field Type
-             * @enum {string}
-             */
-            field_type: "short_text" | "long_text" | "email" | "number" | "date" | "phone";
-            ui?: components["schemas"]["FieldUIIn"];
-        };
-        /**
-         * FieldQuestionSchemaIn
-         * @description Incoming field-question content schema.
-         */
-        FieldQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "field";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["FieldDefinitionIn"];
-        };
-        /**
-         * FieldUIIn
-         * @description UI block for a field question.
-         */
-        FieldUIIn: {
-            /**
-             * Placeholder
-             * @default
-             */
-            placeholder: string;
-        };
-        /**
-         * MatchingConditionIn
-         * @description Represents a condition block targeting a matching question.
-         */
-        MatchingConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "matching";
-            requirements: components["schemas"]["MatchingRequirementsIn"];
-        };
-        /**
-         * MatchingDefinitionIn
-         * @description definition block for a matching question.
-         */
-        MatchingDefinitionIn: {
-            /** Prompts */
-            prompts: components["schemas"]["MatchingItemIn"][];
-            /** Matches */
-            matches: components["schemas"]["MatchingItemIn"][];
-        };
-        /**
-         * MatchingItemIn
-         * @description One item on either side of a matching question.
-         */
-        MatchingItemIn: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-        };
-        /**
-         * MatchingPairIn
-         * @description A single prompt-to-match pairing in a matching condition.
-         */
-        MatchingPairIn: {
-            /** Prompt Id */
-            prompt_id: string;
-            /** Match Id */
-            match_id: string;
-        };
-        /**
-         * MatchingQuestionSchemaIn
-         * @description Incoming matching-question content schema.
-         */
-        MatchingQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "matching";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["MatchingDefinitionIn"];
-        };
-        /**
-         * MatchingRequirementsIn
-         * @description Validation requirements for a matching-question condition.
-         */
-        MatchingRequirementsIn: {
-            /** Required */
-            required: components["schemas"]["MatchingPairIn"][];
-        };
-        /**
-         * NumberFieldRequirementsIn
-         * @description Validation requirements for a numeric field-question condition.
-         */
-        NumberFieldRequirementsIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "number";
-            /**
-             * Operator
-             * @enum {string}
-             */
-            operator: "LT" | "LTE" | "GT" | "GTE" | "EQ" | "NEQ";
-            /** Value */
-            value: number;
-        };
-        /**
-         * QuestionNodeResponse
-         * @description API response shape for a question node.
-         */
-        QuestionNodeResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /** Sort Key */
-            sort_key: number;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "question";
-            /** Content */
-            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
-        };
-        /**
-         * RatingConditionIn
-         * @description Represents a condition block targeting a rating question.
-         */
-        RatingConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "rating";
-            requirements: components["schemas"]["RatingRequirementsIn"];
-        };
-        /**
-         * RatingEmojiDefinitionIn
-         * @description definition block for an emoji-style rating question.
-         */
-        RatingEmojiDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "emoji";
-            /**
-             * Emoji List
-             * @enum {string}
-             */
-            emoji_list: "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
-            /**
-             * Words
-             * @default false
-             */
-            words: boolean;
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingQuestionSchemaIn
-         * @description Incoming rating-question content schema.
-         */
-        RatingQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "rating";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            /** Definition */
-            definition: components["schemas"]["RatingSliderDefinitionIn"] | components["schemas"]["RatingStarDefinitionIn"] | components["schemas"]["RatingEmojiDefinitionIn"];
-        };
-        /**
-         * RatingRangeIn
-         * @description Range block for a slider rating — min, max, and step in one object.
-         */
-        RatingRangeIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-            /** Step */
-            step: number;
-        };
-        /**
-         * RatingRequirementsIn
-         * @description Validation requirements for a rating-question condition.
-         */
-        RatingRequirementsIn: {
-            /**
-             * Min
-             * @default null
-             */
-            min: number | null;
-            /**
-             * Max
-             * @default null
-             */
-            max: number | null;
-        };
-        /**
-         * RatingSliderDefinitionIn
-         * @description definition block for a slider-style rating question.
-         */
-        RatingSliderDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "slider";
-            range: components["schemas"]["RatingRangeIn"];
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingStarDefinitionIn
-         * @description definition block for a star-style rating question.
-         */
-        RatingStarDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "stars";
-            /** Stars */
-            stars: number;
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingUIIn
-         * @description Left/right labels for all rating variants.
-         */
-        RatingUIIn: {
-            /** Left Label */
-            left_label: string;
-            /** Right Label */
-            right_label: string;
-        };
-        /**
-         * RuleBranchIn
-         * @description Represents the effects applied by a then or else branch.
-         */
-        RuleBranchIn: {
-            /**
-             * Set
-             * @default null
-             */
-            set: components["schemas"]["RuleSetItemIn"][] | null;
-            /**
-             * Do
-             * @default null
-             */
-            do: components["schemas"]["SkipToActionIn"] | components["schemas"]["EndAndSubmitActionIn"] | components["schemas"]["EndAndDiscardActionIn"] | null;
-        };
-        /**
-         * RuleIfIn
-         * @description Represents the rule predicate and how its conditions are matched.
-         */
-        RuleIfIn: {
-            /**
-             * Match
-             * @enum {string}
-             */
-            match: "ALL" | "ANY" | "NONE";
-            /** Conditions */
-            conditions: (components["schemas"]["ChoiceConditionIn"] | components["schemas"]["MatchingConditionIn"] | components["schemas"]["RatingConditionIn"] | components["schemas"]["FieldConditionIn"])[];
-        };
-        /**
-         * RuleNodeResponse
-         * @description API response shape for a rule node.
-         */
-        RuleNodeResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /** Sort Key */
-            sort_key: number;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "rule";
-            content: components["schemas"]["RuleSchemaIn"];
-        };
-        /**
-         * RuleSchemaIn
-         * @description Represents the full rule content stored in question_schema for a rule node.
-         */
-        RuleSchemaIn: {
-            if: components["schemas"]["RuleIfIn"];
-            then: components["schemas"]["RuleBranchIn"];
-            /** @default null */
-            else: components["schemas"]["RuleBranchIn"] | null;
-        };
-        /**
-         * RuleSetItemIn
-         * @description Represents one visibility or required-state change applied by a branch.
-         */
-        RuleSetItemIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * Visible
-             * @default null
-             */
-            visible: boolean | null;
-            /**
-             * Required
-             * @default null
-             */
-            required: boolean | null;
-        };
-        /**
-         * SkipToActionIn
-         * @description Navigation action that jumps to a specific question.
-         */
-        SkipToActionIn: {
-            /** Skip To */
-            skip_to: string;
-        };
-        /** NodeResponses */
-        NodeResponses: components["schemas"]["QuestionNodeResponse"] | components["schemas"]["RuleNodeResponse"];
-        /**
-         * CreateQuestionNodeRequest
-         * @description Validates requests that create a new question node.
-         */
-        CreateQuestionNodeRequest: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "question";
-            /** Sort Key */
-            sort_key: number;
-            /** Content */
-            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
-        };
-        /**
-         * CreateRuleNodeRequest
-         * @description Validates requests that create a new rule node.
-         */
-        CreateRuleNodeRequest: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "rule";
-            /** Sort Key */
-            sort_key: number;
-            content: components["schemas"]["RuleSchemaIn"];
-        };
-        /** CreateNodeRequest */
-        CreateNodeRequest: components["schemas"]["CreateQuestionNodeRequest"] | components["schemas"]["CreateRuleNodeRequest"];
-        /**
-         * UpdateNodeRequest
-         * @description Validates partial updates to an existing survey content node.
-         */
-        UpdateNodeRequest: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Node Key
-             * @default null
-             */
-            node_key: string | null;
-            /**
-             * Node Type
-             * @default null
-             */
-            node_type: ("question" | "rule") | null;
-            /**
-             * Sort Key
-             * @default null
-             */
-            sort_key: number | null;
-            /**
-             * Content
-             * @default null
-             */
-            content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"] | null;
-        };
-        /**
          * SurveyMemberResponses
          * @description Embedded user details on a survey member row.
          */
@@ -3078,176 +2968,6 @@ export interface components {
         UpdateSurveyMemberRoleRequest: {
             /** Role Id */
             role_id: number;
-        };
-        /**
-         * SurveyAnswerSlotResponses
-         * @description One answer slot in an admin survey-results view, optionally decrypted.
-         */
-        SurveyAnswerSlotResponses: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * Question Key
-             * @default null
-             */
-            question_key: string | null;
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /** Has Encrypted Answer */
-            has_encrypted_answer: boolean;
-            /** Decrypted */
-            decrypted: boolean;
-            /**
-             * State
-             * @default null
-             */
-            state: ("answered" | "cleared") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
-                [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * SurveySessionEventResponses
-         * @description One timeline event for a session. Never carries answer values.
-         */
-        SurveySessionEventResponses: {
-            /**
-             * Event Type
-             * @enum {string}
-             */
-            event_type: "session_started" | "question_viewed" | "answer_saved" | "session_completed";
-            /**
-             * Question Node Id
-             * @default null
-             */
-            question_node_id: string | null;
-            /**
-             * Received At
-             * Format: date-time
-             */
-            received_at: string;
-        };
-        /**
-         * SurveySessionResponses
-         * @description Admin-facing summary of one respondent submission session.
-         *
-         *     Sourced from core session metadata only; carries no decrypted answer
-         *     payloads and no response-database locators or crypto material.
-         */
-        SurveySessionResponses: {
-            /**
-             * Session Id
-             * Format: uuid
-             */
-            session_id: string;
-            /** Survey Id */
-            survey_id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "in_progress" | "completed" | "abandoned";
-            /**
-             * Started At
-             * Format: date-time
-             */
-            started_at: string;
-            /**
-             * Completed At
-             * @default null
-             */
-            completed_at: string | null;
-            /**
-             * Last Activity At
-             * Format: date-time
-             */
-            last_activity_at: string;
-        };
-        /**
-         * SurveySessionTreeResponses
-         * @description One session with its answer slots and optional event timeline.
-         */
-        SurveySessionTreeResponses: {
-            session: components["schemas"]["SurveySessionResponses"];
-            /** Answers */
-            answers: components["schemas"]["SurveyAnswerSlotResponses"][];
-            /**
-             * Events
-             * @default null
-             */
-            events: components["schemas"]["SurveySessionEventResponses"][] | null;
-        };
-        /**
-         * SurveySubjectResponses
-         * @description Admin-facing summary of one project subject.
-         */
-        SurveySubjectResponses: {
-            /**
-             * Subject Id
-             * Format: uuid
-             */
-            subject_id: string;
-            /** Subject Code */
-            subject_code: string;
-        };
-        /**
-         * SurveySubjectTreeResponses
-         * @description One subject with all of its sessions for a survey.
-         */
-        SurveySubjectTreeResponses: {
-            subject: components["schemas"]["SurveySubjectResponses"];
-            /** Sessions */
-            sessions: components["schemas"]["SurveySessionTreeResponses"][];
-        };
-        /**
-         * PaginatedSurveySubjectTreesResponses
-         * @description Paginated list of subject result trees.
-         */
-        PaginatedSurveySubjectTreesResponses: {
-            /** Items */
-            items: components["schemas"]["SurveySubjectTreeResponses"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
-            /** Include Decrypted Answer Values */
-            include_decrypted_answer_values: boolean;
-        };
-        /**
-         * ExportSurveyResultsRequest
-         * @description Request body for exporting a survey's results.
-         */
-        ExportSurveyResultsRequest: {
-            /**
-             * Format
-             * @default csv
-             * @enum {string}
-             */
-            format: "csv" | "json";
-            /**
-             * Include Decrypted Answer Values
-             * @default false
-             */
-            include_decrypted_answer_values: boolean;
-            /**
-             * Session Ids
-             * @default null
-             */
-            session_ids: string[] | null;
         };
         /**
          * CreateSurveyRoleRequest
@@ -3332,245 +3052,6 @@ export interface components {
         MySurveyPermissionsResponses: {
             /** Permissions */
             permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-        };
-        /**
-         * ScoringRuleResponses
-         * @description API response shape for a scoring rule.
-         */
-        ScoringRuleResponses: {
-            /** Id */
-            id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /** Scoring Key */
-            scoring_key: string;
-            /** Scoring Schema */
-            scoring_schema: {
-                [key: string]: unknown;
-            };
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * ChoiceOptionMapConfig
-         * @description Configuration for choice option mapping scoring strategy.
-         *
-         *     Maps each choice option ID to a score and optionally combines multiple scores
-         *     by summing or taking the maximum value.
-         */
-        ChoiceOptionMapConfig: {
-            /** Option Scores */
-            option_scores: {
-                [key: string]: number;
-            };
-            /**
-             * Combine
-             * @default sum
-             * @enum {string}
-             */
-            combine: "sum" | "max";
-        };
-        /**
-         * ChoiceOptionMapScoringSchemaIn
-         * @description Request schema for choice option mapping scoring rule.
-         *
-         *     Applies scores based on selected choice options, targeting a specific bucket
-         *     and optionally filtered by a condition.
-         */
-        ChoiceOptionMapScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "choice_option_map";
-            config: components["schemas"]["ChoiceOptionMapConfig"];
-        };
-        /**
-         * FieldNumericRangesConfig
-         * @description Configuration for field numeric ranges scoring strategy.
-         *
-         *     Defines numeric ranges and their corresponding scores for evaluating numeric
-         *     field answers.
-         */
-        FieldNumericRangesConfig: {
-            /** Ranges */
-            ranges: components["schemas"]["NumericRangeScoreIn"][];
-        };
-        /**
-         * FieldNumericRangesScoringSchemaIn
-         * @description Request schema for field numeric ranges scoring rule.
-         *
-         *     Scores numeric responses based on which range interval they fall into,
-         *     targeting a specific bucket and optionally filtered by a condition.
-         */
-        FieldNumericRangesScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "field_numeric_ranges";
-            config: components["schemas"]["FieldNumericRangesConfig"];
-        };
-        /**
-         * MatchingAnswerKeyConfig
-         * @description Configuration for matching answer key scoring strategy.
-         *
-         *     Defines correct answer pairs and scoring rules: points awarded for correct
-         *     matches, penalties for incorrect ones, and an optional score ceiling.
-         */
-        MatchingAnswerKeyConfig: {
-            /** Correct Pairs */
-            correct_pairs: components["schemas"]["MatchingPairIn"][];
-            /**
-             * Points Per Correct
-             * @default 1
-             */
-            points_per_correct: number;
-            /**
-             * Penalty Per Incorrect
-             * @default 0
-             */
-            penalty_per_incorrect: number;
-            /**
-             * Max Score
-             * @default null
-             */
-            max_score: number | null;
-        };
-        /**
-         * MatchingAnswerKeyScoringSchemaIn
-         * @description Request schema for matching answer key scoring rule.
-         *
-         *     Evaluates matching answers against correct pairs, scoring based on accuracy.
-         *     Targets a specific bucket and optionally filtered by a condition.
-         */
-        MatchingAnswerKeyScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "matching_answer_key";
-            config: components["schemas"]["MatchingAnswerKeyConfig"];
-        };
-        /**
-         * NumericRangeScoreIn
-         * @description Request model for a numeric range with associated score.
-         *
-         *     Validates that max is greater than or equal to min.
-         */
-        NumericRangeScoreIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-            /** Score */
-            score: number;
-        };
-        /**
-         * RatingDirectConfig
-         * @description Configuration for direct rating scoring strategy.
-         *
-         *     Multiplies the raw rating value by the specified multiplier.
-         */
-        RatingDirectConfig: {
-            /**
-             * Multiplier
-             * @default 1
-             */
-            multiplier: number;
-        };
-        /**
-         * RatingDirectScoringSchemaIn
-         * @description Request schema for direct rating scoring rule.
-         *
-         *     Directly scores a rating response by multiplying by a factor, targeting a
-         *     specific bucket and optionally filtered by a condition.
-         */
-        RatingDirectScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "rating_direct";
-            config: components["schemas"]["RatingDirectConfig"];
-        };
-        /**
-         * CreateScoringRuleRequest
-         * @description Validates requests that create a new scoring rule schema entry.
-         */
-        CreateScoringRuleRequest: {
-            /** Scoring Key */
-            scoring_key: string;
-            /** Scoring Schema */
-            scoring_schema: components["schemas"]["ChoiceOptionMapScoringSchemaIn"] | components["schemas"]["MatchingAnswerKeyScoringSchemaIn"] | components["schemas"]["RatingDirectScoringSchemaIn"] | components["schemas"]["FieldNumericRangesScoringSchemaIn"];
-        };
-        /**
-         * UpdateScoringRuleRequest
-         * @description Validates requests that partially update a scoring rule schema entry.
-         */
-        UpdateScoringRuleRequest: {
-            /**
-             * Scoring Key
-             * @default null
-             */
-            scoring_key: string | null;
-            /**
-             * Scoring Schema
-             * @default null
-             */
-            scoring_schema: (components["schemas"]["ChoiceOptionMapScoringSchemaIn"] | components["schemas"]["MatchingAnswerKeyScoringSchemaIn"] | components["schemas"]["RatingDirectScoringSchemaIn"] | components["schemas"]["FieldNumericRangesScoringSchemaIn"]) | null;
         };
     };
     responses: {
@@ -3668,9 +3149,46 @@ export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest
 export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
 export type EmailVerificationCheckResponses = components['schemas']['EmailVerificationCheckResponses'];
 export type ResolveSurveyAccessLinkTokenRequest = components['schemas']['ResolveSurveyAccessLinkTokenRequest'];
+export type AlwaysVisible = components['schemas']['AlwaysVisible'];
+export type ChoiceOption = components['schemas']['ChoiceOption'];
+export type ChoiceResponse = components['schemas']['ChoiceResponse'];
+export type ChoiceSetResponse = components['schemas']['ChoiceSetResponse'];
+export type ChoiceSetValidation = components['schemas']['ChoiceSetValidation'];
+export type ConditionalVisibility = components['schemas']['ConditionalVisibility'];
+export type DateInteraction = components['schemas']['DateInteraction'];
+export type DateResponse = components['schemas']['DateResponse'];
+export type DateValidation = components['schemas']['DateValidation'];
+export type DecimalResponse = components['schemas']['DecimalResponse'];
+export type DividerBlock = components['schemas']['DividerBlock'];
+export type FieldAnswerCondition = components['schemas']['FieldAnswerCondition'];
+export type FieldBehaviour = components['schemas']['FieldBehaviour'];
+export type HeadingBlock = components['schemas']['HeadingBlock'];
+export type HeadingContent = components['schemas']['HeadingContent'];
+export type ImageBlock = components['schemas']['ImageBlock'];
+export type ImageContent = components['schemas']['ImageContent'];
+export type InputBlock = components['schemas']['InputBlock'];
+export type IntegerResponse = components['schemas']['IntegerResponse'];
+export type LongTextInteraction = components['schemas']['LongTextInteraction'];
+export type MultipleChoiceInteraction = components['schemas']['MultipleChoiceInteraction'];
+export type NoticeBlock = components['schemas']['NoticeBlock'];
+export type NoticeContent = components['schemas']['NoticeContent'];
+export type NumberInteraction = components['schemas']['NumberInteraction'];
+export type NumberValidation = components['schemas']['NumberValidation'];
+export type ParagraphBlock = components['schemas']['ParagraphBlock'];
+export type ParagraphContent = components['schemas']['ParagraphContent'];
+export type RatingInteraction = components['schemas']['RatingInteraction'];
+export type SingleChoiceInteraction = components['schemas']['SingleChoiceInteraction'];
+export type SliderInteraction = components['schemas']['SliderInteraction'];
+export type StringResponse = components['schemas']['StringResponse'];
+export type StringValidation = components['schemas']['StringValidation'];
 export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
+export type SurveyDefinition = components['schemas']['SurveyDefinition'];
+export type SurveyDocument = components['schemas']['SurveyDocument'];
+export type SurveyField = components['schemas']['SurveyField'];
 export type SurveyResponses = components['schemas']['SurveyResponses'];
+export type SurveySection = components['schemas']['SurveySection'];
 export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
+export type TextInteraction = components['schemas']['TextInteraction'];
 export type ResolveSurveyAccessLinkResponse = components['schemas']['ResolveSurveyAccessLinkResponse'];
 export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
 export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
@@ -3717,75 +3235,16 @@ export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyA
 export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
 export type UpdateSurveyAccessLinkRequest = components['schemas']['UpdateSurveyAccessLinkRequest'];
 export type SendSurveyLinkEmailResponse = components['schemas']['SendSurveyLinkEmailResponse'];
-export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
-export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
-export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
-export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
-export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
-export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
-export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
-export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
-export type FieldConditionIn = components['schemas']['FieldConditionIn'];
-export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
-export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
-export type FieldUiIn = components['schemas']['FieldUIIn'];
-export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
-export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
-export type MatchingItemIn = components['schemas']['MatchingItemIn'];
-export type MatchingPairIn = components['schemas']['MatchingPairIn'];
-export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
-export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
-export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
-export type QuestionNodeResponse = components['schemas']['QuestionNodeResponse'];
-export type RatingConditionIn = components['schemas']['RatingConditionIn'];
-export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
-export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
-export type RatingRangeIn = components['schemas']['RatingRangeIn'];
-export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn'];
-export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
-export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
-export type RatingUiIn = components['schemas']['RatingUIIn'];
-export type RuleBranchIn = components['schemas']['RuleBranchIn'];
-export type RuleIfIn = components['schemas']['RuleIfIn'];
-export type RuleNodeResponse = components['schemas']['RuleNodeResponse'];
-export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
-export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
-export type SkipToActionIn = components['schemas']['SkipToActionIn'];
-export type NodeResponses = components['schemas']['NodeResponses'];
-export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
-export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
-export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
-export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
 export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
 export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
 export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
 export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
 export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
-export type SurveyAnswerSlotResponses = components['schemas']['SurveyAnswerSlotResponses'];
-export type SurveySessionEventResponses = components['schemas']['SurveySessionEventResponses'];
-export type SurveySessionResponses = components['schemas']['SurveySessionResponses'];
-export type SurveySessionTreeResponses = components['schemas']['SurveySessionTreeResponses'];
-export type SurveySubjectResponses = components['schemas']['SurveySubjectResponses'];
-export type SurveySubjectTreeResponses = components['schemas']['SurveySubjectTreeResponses'];
-export type PaginatedSurveySubjectTreesResponses = components['schemas']['PaginatedSurveySubjectTreesResponses'];
-export type ExportSurveyResultsRequest = components['schemas']['ExportSurveyResultsRequest'];
 export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
 export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
 export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
 export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
 export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
-export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
-export type ChoiceOptionMapConfig = components['schemas']['ChoiceOptionMapConfig'];
-export type ChoiceOptionMapScoringSchemaIn = components['schemas']['ChoiceOptionMapScoringSchemaIn'];
-export type FieldNumericRangesConfig = components['schemas']['FieldNumericRangesConfig'];
-export type FieldNumericRangesScoringSchemaIn = components['schemas']['FieldNumericRangesScoringSchemaIn'];
-export type MatchingAnswerKeyConfig = components['schemas']['MatchingAnswerKeyConfig'];
-export type MatchingAnswerKeyScoringSchemaIn = components['schemas']['MatchingAnswerKeyScoringSchemaIn'];
-export type NumericRangeScoreIn = components['schemas']['NumericRangeScoreIn'];
-export type RatingDirectConfig = components['schemas']['RatingDirectConfig'];
-export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectScoringSchemaIn'];
-export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
-export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
 export type ResponseBadRequestError = components['responses']['BadRequestError'];
 export type ResponseUnauthorizedError = components['responses']['UnauthorizedError'];
 export type ResponseForbiddenError = components['responses']['ForbiddenError'];
@@ -5404,175 +4863,6 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    listNodes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateNodeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateNodeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
     listSurveyMembers: {
         parameters: {
             query?: never;
@@ -5694,140 +4984,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SurveyMemberRoleResponses"];
                 };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listSurveyResultSubjects: {
-        parameters: {
-            query?: {
-                page?: number;
-                page_size?: number;
-                include_decrypted_answer_values?: boolean;
-                include_events?: boolean;
-            };
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedSurveySubjectTreesResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getSubjectTree: {
-        parameters: {
-            query?: {
-                include_decrypted_answer_values?: boolean;
-                include_events?: boolean;
-            };
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                subject_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SurveySubjectTreeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    exportResults: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExportSurveyResultsRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             400: components["responses"]["BadRequestError"];
             401: components["responses"]["UnauthorizedError"];
@@ -6145,142 +5301,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MySurveyPermissionsResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listScoringRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateScoringRuleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                scoring_rule_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                scoring_rule_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateScoringRuleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"];
                 };
             };
             400: components["responses"]["BadRequestError"];

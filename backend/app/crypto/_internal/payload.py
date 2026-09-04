@@ -2,14 +2,11 @@
 
 This layer is deliberately family-agnostic.
 
-The encrypted payload stores ``answer_value`` as plain JSON. It does not record
-the question family. The decrypt service must use the survey definition to
-reconstruct and validate the typed answer model.
+The encrypted payload stores ``answer_value`` as plain JSON. Its trusted
+``field_id`` identifies the response contract in the frozen survey definition.
 """
 
 from __future__ import annotations
-
-from uuid import UUID
 
 from pydantic import ValidationError
 
@@ -20,20 +17,20 @@ from app.crypto._internal.models import (
     PlaintextPayload,
     PlaintextPayloadInput,
 )
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.api.content.common import FieldId
 from app.schema.enums import SubmissionAnswerState
 
 
 def build_plaintext_payload(
     *,
-    question_node_id: UUID,
+    field_id: FieldId,
     answer_state: SubmissionAnswerState,
-    answer_value: SubmissionAnswerValue | PlaintextAnswerValue,
+    answer_value: PlaintextAnswerValue,
 ) -> bytes:
     """Build the current plaintext payload bytes for encryption."""
     payload = PlaintextPayloadInput(
         payload_version=PLAINTEXT_PAYLOAD_VERSION,
-        question_node_id=question_node_id,
+        field_id=field_id,
         answer_state=answer_state,
         answer_value=answer_value,
     ).to_plaintext_payload()

@@ -7,12 +7,15 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.schema.api.content.common import FieldKey
+from app.schema.api.content.survey_document import SurveyDocumentAnswerValue
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import (
     AnswerFamily,
     SubmissionAnswerState,
     SubmissionEventType,
     SubmissionSessionStatus,
+    SurveyResponseType,
 )
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
@@ -159,7 +162,9 @@ class BootstrapCurrentUserResult:
 class AnswerSaveResult:
     """Result of saving a respondent answer."""
 
-    node_key: str
+    field_key: FieldKey
+    response_type: SurveyResponseType
+    value: SurveyDocumentAnswerValue | None
 
 
 @dataclass(frozen=True, slots=True)

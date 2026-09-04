@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from app.schema.orm.core.response_store import ResponseStore
     from app.schema.orm.core.survey import Survey, SurveyVersion
     from app.schema.orm.core.survey_access import SurveyLink
-    from app.schema.orm.core.survey_content import SurveyQuestion
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,7 +139,7 @@ class SubmissionEvent(CoreBase):
     session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     event_type: Mapped[SubmissionEventType] = mapped_column(Text, nullable=False)
-    question_node_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    field_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     event_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -155,18 +154,6 @@ class SubmissionEvent(CoreBase):
             ondelete="CASCADE",
             name="fk_submission_events_session_version",
         ),
-        ForeignKeyConstraint(
-            ["question_node_id"],
-            ["survey_questions.id"],
-            ondelete="SET NULL",
-            name="fk_submission_events_question_node",
-        ),
-        ForeignKeyConstraint(
-            ["survey_version_id", "question_node_id"],
-            ["survey_questions.survey_version_id", "survey_questions.id"],
-            name="fk_submission_events_question_node_same_version",
-        ),
     )
 
     session: Mapped[SubmissionSession] = relationship("SubmissionSession", foreign_keys=[session_id])
-    question: Mapped[SurveyQuestion | None] = relationship("SurveyQuestion", foreign_keys=[question_node_id])
