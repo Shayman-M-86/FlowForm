@@ -2,10 +2,10 @@
 title: Surveys and versioning
 aliases: ["Surveys and versioning"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:82649bcb08dbd5a5a4ffaf7ac679d3c4f53b1e2934e3f9d25e9de895e2f6aa78
-last_edited: 2026-09-05
+verified_evidence_digest: null
+last_edited: 2026-10-21
 tags: [backend]
 related_code:
   - "../../../backend/app/services/surveys.py"
@@ -22,14 +22,16 @@ related_docs:
 
 # Surveys and versioning
 
-This draft owns a survey's durable container, its immutable publication
+This page describes a survey's durable container, its immutable publication
 snapshots, and the lifecycle that pins a respondent attempt to exact content.
-Editing nodes and rule semantics belongs to [[builder-and-rules|Builder and rules]].
+The authoring experience is described in [[builder-and-rules|Builder and rules]];
+that frontend is still being migrated to the document model.
 
 The current model distinguishes draft, published, and archived versions.
-Authoring changes belong to a draft; publication assembles a compiled snapshot,
-selects the active version, and establishes response-store/encryption
-prerequisites. A submission session captures the selected published version, so
+Each version stores one canonical survey document and a revision. Creating a
+version supplies its definition; replacing a draft definition increments the
+revision. Publication checks the stored document, selects the active version,
+and establishes response-store/encryption prerequisites. A submission session captures the selected published version, so
 later authoring does not alter an in-progress attempt.
 
 ```text
@@ -50,6 +52,11 @@ Project permissions control who may perform these operations, while respondent
 entry and answer persistence are separate boundaries. The service, repository,
 ORM, SQL, and lifecycle-test paths in the front matter identify the source to
 check before promoting this draft.
+
+Draft replacement is guarded by survey edit permission and draft status.
+Published definitions are protected against changes in both the service layer
+and database. Copying a version creates a new draft from the complete definition.
+The revision is currently a change counter, not a concurrent-edit conflict check.
 
 ## Related documents
 

@@ -37,7 +37,7 @@ def parse(schema: Any, request_obj: Request) -> Any:
 
 def parse_query[TModel: BaseModel](model_cls: type[TModel], request_obj: Request) -> TModel:
     """Parse the query string into a Pydantic model."""
-    return model_cls.model_validate(request_obj.args.to_dict())
+    return validate(model_cls, request_obj.args.to_dict())
 
 
 # Fields whose Python name differs from their JSON alias.
@@ -47,6 +47,15 @@ _ALIAS_MAP = {"schema_": "schema"}
 # Discriminator values injected by Pydantic into error locs for discriminated unions.
 # These are never present in the request JSON and should be stripped from field paths.
 _UNION_TAGS: frozenset[str] = frozenset({"choice", "field", "matching", "rating", "question", "rule"})
+
+_DOCUMENT_UNION_TAGS = {
+    "blocks": frozenset({"heading", "paragraph", "notice", "image", "divider", "input"}),
+    "interaction": frozenset(
+        {"text", "long_text", "number", "single_choice", "multiple_choice", "rating", "slider", "date"}
+    ),
+    "response": frozenset({"string", "integer", "decimal", "date", "choice", "choice_set"}),
+    "visibility": frozenset({"always", "conditional"}),
+}
 
 
 def _loc_to_field(loc: tuple) -> str | None:
@@ -60,7 +69,19 @@ def _loc_to_field(loc: tuple) -> str | None:
     caller can omit the ``field`` key entirely instead of emitting an empty
     string.
     """
-    cleaned = [part for part in loc if part not in _UNION_TAGS]
+    if "document" in loc:
+        # Strip tags only at union boundaries: names such as `field` and `text`
+        # are also real document properties and must remain in the JSON path.
+        cleaned = []
+        for index, part in enumerate(loc):
+            parent = loc[index - 1] if index else None
+            if isinstance(parent, int) and index >= 2:
+                parent = loc[index - 2]
+            if isinstance(parent, str) and part in _DOCUMENT_UNION_TAGS.get(parent, ()):
+                continue
+            cleaned.append(part)
+    else:
+        cleaned = [part for part in loc if part not in _UNION_TAGS]
     if not cleaned:
         return None
     return ".".join(_ALIAS_MAP.get(str(p), str(p)) for p in cleaned)
@@ -73,7 +94,7 @@ def _clean_message(msg: str) -> str:
     """Strip Pydantic internal prefixes from validator messages."""
     for prefix in _PYDANTIC_MSG_PREFIXES:
         if msg.startswith(prefix):
-            return msg[len(prefix):]
+            return msg[len(prefix) :]
     return msg
 
 

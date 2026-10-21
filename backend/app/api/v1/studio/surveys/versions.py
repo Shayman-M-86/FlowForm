@@ -1,10 +1,12 @@
-from flask import g
+from flask import g, request
 
+from app.api.utils.validation import parse
 from app.api.v1.studio.projects import studio_projects_bp, survey_service
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
+from app.schema.api.requests.surveys import CreateVersionRequest, ReplaceSurveyDefinitionRequest
 from app.schema.api.responses.surveys import SurveyVersionResponses
 from app.services.access.access_service import require_survey_permission
 
@@ -20,6 +22,7 @@ def list_versions(project_id: int, survey_id: int):
 
 @openapi_route(
     summary="Create survey version",
+    request_model=CreateVersionRequest,
     response_model=SurveyVersionResponses,
     status_code=201,
     tags=["Survey Versions"],
@@ -28,7 +31,10 @@ def list_versions(project_id: int, survey_id: int):
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.create)
 def create_version(project_id: int, survey_id: int):
-    version = survey_service.create_version(db=get_core_db(), project_id=project_id, survey_id=survey_id, actor=g.actor)
+    payload = parse(CreateVersionRequest, request)
+    version = survey_service.create_version(
+        db=get_core_db(), project_id=project_id, survey_id=survey_id, definition=payload.definition, actor=g.actor
+    )
     return SurveyVersionResponses.model_validate(version).model_dump(mode="json"), 201
 
 
@@ -90,5 +96,30 @@ def publish_version(project_id: int, survey_id: int, version_number: int):
 def archive_version(project_id: int, survey_id: int, version_number: int):
     version = survey_service.archive_version(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, version_number=version_number, actor=g.actor
+    )
+    return SurveyVersionResponses.model_validate(version).model_dump(mode="json"), 200
+
+
+@openapi_route(
+    summary="Replace survey definition",
+    request_model=ReplaceSurveyDefinitionRequest,
+    response_model=SurveyVersionResponses,
+    tags=["Survey Versions"],
+)
+@studio_projects_bp.route(
+    "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/definition",
+    methods=["PUT"],
+)
+@auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
+def replace_definition(project_id: int, survey_id: int, version_number: int):
+    payload = parse(ReplaceSurveyDefinitionRequest, request)
+    version = survey_service.replace_definition(
+        db=get_core_db(),
+        project_id=project_id,
+        survey_id=survey_id,
+        version_number=version_number,
+        definition=payload.definition,
+        actor=g.actor,
     )
     return SurveyVersionResponses.model_validate(version).model_dump(mode="json"), 200

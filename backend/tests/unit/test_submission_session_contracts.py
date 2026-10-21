@@ -11,7 +11,7 @@ import app.openapi.registry as openapi_registry
 from app.openapi.export import _build_minimal_spec_app
 from app.openapi.spec import _explicit_methods, _flask_path_to_openapi, build_spec
 from app.schema.api.requests.submission_sessions import (
-    SaveSubmissionSessionAnswerRequest,
+    SaveSurveyDocumentAnswerRequest,
     StartSubmissionSessionRequest,
     SubmissionSessionEventRequest,
 )
@@ -102,13 +102,12 @@ def test_submission_session_response_contains_only_acknowledgement_fields() -> N
 
 def test_save_answer_rejects_body_question_identifier() -> None:
     with pytest.raises(ValidationError) as exc_info:
-        SaveSubmissionSessionAnswerRequest.model_validate(
+        SaveSurveyDocumentAnswerRequest.model_validate(
             {
                 "question_node_id": "771ab5a1-462c-4c98-8fe5-dbc2c1939539",
                 "client_mutation_id": "ce823b7d-5295-4ca6-bbb8-cfe367f28b31",
                 "state": "answered",
-                "answer_family": "rating",
-                "answer_value": {"variant": "slider", "number": 8},
+                "value": 8,
             }
         )
 
@@ -117,28 +116,27 @@ def test_save_answer_rejects_body_question_identifier() -> None:
 
 def test_save_answer_requires_answer_payload_when_answered() -> None:
     with pytest.raises(ValidationError) as exc_info:
-        SaveSubmissionSessionAnswerRequest.model_validate(
+        SaveSurveyDocumentAnswerRequest.model_validate(
             {
                 "client_mutation_id": "ce823b7d-5295-4ca6-bbb8-cfe367f28b31",
                 "state": "answered",
             }
         )
 
-    assert "answer_family is required" in exc_info.value.errors()[0]["msg"]
+    assert "value is required" in exc_info.value.errors()[0]["msg"]
 
 
 def test_clear_answer_forbids_answer_payload() -> None:
     with pytest.raises(ValidationError) as exc_info:
-        SaveSubmissionSessionAnswerRequest.model_validate(
+        SaveSurveyDocumentAnswerRequest.model_validate(
             {
                 "client_mutation_id": "b10063cb-9fb4-4ac2-b399-769f8781127f",
                 "state": "cleared",
-                "answer_family": "rating",
-                "answer_value": {"variant": "slider", "number": 8},
+                "value": 8,
             }
         )
 
-    assert "answer_family must be omitted" in exc_info.value.errors()[0]["msg"]
+    assert "value must be omitted" in exc_info.value.errors()[0]["msg"]
 
 
 def test_submission_session_paths_are_in_openapi_spec(restored_openapi_registry: None) -> None:
@@ -150,34 +148,33 @@ def test_submission_session_paths_are_in_openapi_spec(restored_openapi_registry:
     assert "post" in paths["/api/v1/respondent/submission-sessions"]
     assert "/api/v1/respondent/submission-sessions/current" not in paths
     assert "post" in paths["/api/v1/respondent/submission-sessions/current/resolve"]
-    assert "put" in paths["/api/v1/respondent/submission-sessions/current/answers/{question_node_id}"]
+    assert "put" in paths["/api/v1/respondent/submission-sessions/current/answers/{field_id}"]
     assert "post" in paths["/api/v1/respondent/submission-sessions/current/events"]
     assert "post" in paths["/api/v1/respondent/submission-sessions/current/complete"]
 
 
 def test_save_answer_accepts_client_mutation_uuid() -> None:
-    payload = SaveSubmissionSessionAnswerRequest.model_validate(
+    payload = SaveSurveyDocumentAnswerRequest.model_validate(
         {
             "client_mutation_id": "ce823b7d-5295-4ca6-bbb8-cfe367f28b31",
             "state": "answered",
-            "answer_family": "rating",
-            "answer_value": {"variant": "slider", "number": 8},
+            "value": 8,
         }
     )
 
     assert payload.client_mutation_id == UUID("ce823b7d-5295-4ca6-bbb8-cfe367f28b31")
 
 
-def test_submission_session_event_accepts_question_viewed_event() -> None:
+def test_submission_session_event_accepts_field_viewed_event() -> None:
     payload = SubmissionSessionEventRequest.model_validate(
         {
-            "event_type": "question_viewed",
-            "question_node_id": "771ab5a1-462c-4c98-8fe5-dbc2c1939539",
+            "event_type": "field_viewed",
+            "field_id": "field_name",
         }
     )
 
-    assert payload.event_type == "question_viewed"
-    assert payload.question_node_id == UUID("771ab5a1-462c-4c98-8fe5-dbc2c1939539")
+    assert payload.event_type == "field_viewed"
+    assert payload.field_id == "field_name"
 
 
 def test_list_subjects_request_applies_pagination_defaults() -> None:

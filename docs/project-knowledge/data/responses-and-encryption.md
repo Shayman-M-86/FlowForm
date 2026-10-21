@@ -5,7 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-08-04
+last_edited: 2026-10-21
 tags: [security]
 related_code:
   - "../../../backend/app/cache/crypto.py"
@@ -52,7 +52,7 @@ The two stores intentionally know different things:
 | Project, survey, and frozen version | Opaque response envelope |
 | Subject, link, and session metadata | Wrapped per-session key |
 | Browser resume-token hash | Current encrypted answer rows |
-| Answer slots with question identity | Opaque session and answer locators |
+| Answer slots with field identity | Opaque session and answer locators |
 | Wrapped survey key and KMS metadata | Ciphertext, nonce, and mutation identifier |
 
 The response-side ORM and SQL schema model response envelopes and answers rather
@@ -161,20 +161,20 @@ be cached, but the persistent session and envelope remain the durable records.
 ## Current-answer semantics
 
 FlowForm stores one current encrypted row per answer locator. Saving the same
-question again performs an upsert that replaces the previous ciphertext,
+field again performs an upsert that replaces the previous ciphertext,
 nonce, mutation identifier, and update time. There is no encrypted answer
 revision history, revision counter, or latest-revision pointer.
 
 ![Current encrypted answer upsert](../../assets/architecture/current-answer-upsert.svg)
 
-Before writing, the backend checks that the question belongs to the session's
-frozen survey version and validates a non-cleared value against that question's
-schema. A cleared answer is represented as an encrypted cleared state rather
+Before writing, the backend checks that the field belongs to the session's
+frozen survey version and validates a non-cleared value against that field's
+response contract. A cleared answer is represented as an encrypted cleared state rather
 than deletion of the response row. Each encryption uses a fresh nonce, and the
 response schema rejects nonce reuse within one envelope.
 
 ```text
-question in frozen version
+field in frozen version
             |
       validate one answer
             |
@@ -192,11 +192,17 @@ is currently a core session state transition: answers are validated when saved,
 but completion does not evaluate cross-question requirements or reconstruct and
 validate the complete answer set.
 
+Slots are unique per session and field. The field ID also travels inside the
+encrypted payload; results verify it matches the slot before interpreting the
+value. Field keys and response types come from the session's frozen document,
+so later survey edits do not change how an old answer is read. Results and
+exports use field identity rather than the removed question-node tables.
+
 ## Authorized reads and deletion
 
 Studio results routes require the relevant survey permission before calling the
 results service. Result assembly starts with core subjects, sessions, frozen
-questions, and answer slots. It derives response locators, fetches matching
+document fields, and answer slots. It derives response locators, fetches matching
 ciphertext, and decrypts only when the request asks for answer values.
 
 ![Authorized results read](../../assets/architecture/authorized-results-read.svg)

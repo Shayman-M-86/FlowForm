@@ -66,9 +66,7 @@ def resolve_and_decrypt_answers(
 
     decrypted_by_locator: dict[bytes, Any] = {}
     if include_decrypted_answer_values and found:
-        ectx = load_session_envelope_crypto_context(
-            db, response_db, session=session, cache=cache, clients=clients
-        )
+        ectx = load_session_envelope_crypto_context(db, response_db, session=session, cache=cache, clients=clients)
         for raw_locator, answer in found.items():
             decrypted_by_locator[raw_locator] = decrypt_answer_current(
                 ciphertext=answer.ciphertext,

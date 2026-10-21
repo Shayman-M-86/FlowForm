@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schema.api import limits
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.api.content.common import FieldId, FieldKey
+from app.schema.api.content.survey_document import SurveyDocumentAnswerValue
 from app.schema.enums import (
-    AnswerFamily,
     SubmissionAnswerState,
     SubmissionEventType,
     SubmissionSessionStatus,
+    SurveyResponseType,
 )
 
 
@@ -39,13 +39,13 @@ class SurveyAnswerSlotResponses(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    question_node_id: UUID
-    question_key: str | None = None
-    answer_family: AnswerFamily | None = None
+    field_id: FieldId
+    field_key: FieldKey
+    response_type: SurveyResponseType
     has_encrypted_answer: bool
     decrypted: bool
     state: SubmissionAnswerState | None = Field(default=None, validation_alias="answer_state")
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
+    answer_value: SurveyDocumentAnswerValue | None = None
 
 
 class SurveySessionEventResponses(BaseModel):
@@ -54,7 +54,7 @@ class SurveySessionEventResponses(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     event_type: SubmissionEventType
-    question_node_id: UUID | None = None
+    field_id: FieldId | None = None
     received_at: datetime
 
 

@@ -298,7 +298,6 @@ def test_survey_published_version_must_belong_to_survey(
     db_session.flush()
 
     version_b = make_survey_version(survey_b.id, user.id, status="published")
-    version_b.compiled_schema = {"questions": []}
     version_b.published_at = datetime(2024, 1, 1, tzinfo=UTC)
     db_session.add(version_b)
     db_session.flush()
@@ -411,7 +410,6 @@ def test_survey_version_accepts_valid_status_values(
     version = make_survey_version(survey.id, user.id)
     version.status = cast(Any, status)
     if status == "published":
-        version.compiled_schema = {"fields": []}
         version.published_at = datetime(2024, 1, 1, tzinfo=UTC)
     db_session.add(version)
     db_session.flush()
@@ -445,10 +443,10 @@ def test_survey_version_rejects_non_positive_version_number(
 def test_survey_version_published_requires_schema_and_timestamp(
     db_session: Session, survey: Survey, user: User
 ) -> None:
-    """A published version must have compiled_schema and published_at set."""
+    """A published version must have published_at set."""
     version = make_survey_version(survey.id, user.id)
     version.status = "published"
-    # compiled_schema and published_at intentionally omitted
+    # published_at intentionally omitted
     db_session.add(version)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -456,8 +454,8 @@ def test_survey_version_published_requires_schema_and_timestamp(
 
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
-    assert constraint == "ck_survey_versions_published_requires_schema_and_timestamp", (
-        f"Expected constraint 'ck_survey_versions_published_requires_schema_and_timestamp', got '{constraint}'\n"
+    assert constraint == "ck_survey_versions_published_requires_timestamp", (
+        f"Expected constraint 'ck_survey_versions_published_requires_timestamp', got '{constraint}'\n"
         f"DB error: {exc_info.value}"
     )
 
@@ -470,14 +468,12 @@ def test_survey_version_only_one_published_per_survey(
     """Only one non-deleted published version may exist per survey at a time."""
     v1 = make_survey_version(survey.id, user.id, version_number=1)
     v1.status = "published"
-    v1.compiled_schema = {"fields": []}
     v1.published_at = datetime(2024, 1, 1, tzinfo=UTC)
     db_session.add(v1)
     db_session.flush()
 
     v2 = make_survey_version(survey.id, user.id, version_number=2)
     v2.status = "published"
-    v2.compiled_schema = {"fields": []}
     v2.published_at = datetime(2024, 6, 1, tzinfo=UTC)
     db_session.add(v2)
 
@@ -499,7 +495,6 @@ def test_survey_version_deleted_published_does_not_block_new_published(
     """A soft-deleted published version does not count toward the one-published limit."""
     v1 = make_survey_version(survey.id, user.id, version_number=1)
     v1.status = "published"
-    v1.compiled_schema = {"fields": []}
     v1.published_at = datetime(2024, 1, 1, tzinfo=UTC)
     v1.deleted_at = datetime(2024, 3, 1, tzinfo=UTC)  # soft-deleted
     db_session.add(v1)
@@ -507,7 +502,6 @@ def test_survey_version_deleted_published_does_not_block_new_published(
 
     v2 = make_survey_version(survey.id, user.id, version_number=2)
     v2.status = "published"
-    v2.compiled_schema = {"fields": []}
     v2.published_at = datetime(2024, 6, 1, tzinfo=UTC)
     db_session.add(v2)
     db_session.flush()

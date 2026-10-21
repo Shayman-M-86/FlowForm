@@ -220,69 +220,12 @@ export const ResumeSubmissionSessionResponseConstraints = {
   status: { maxLength: 11 },
 } as const;
 
-export const ChoiceAnswerValueConstraints = {
-  selected: { minItems: 1, maxItems: 10 },
-} as const;
-
-export const DateFieldAnswerValueConstraints = {
-  field_type: { maxLength: 4 },
-  date: { maxLength: 10 },
-} as const;
-
-export const EmailFieldAnswerValueConstraints = {
-  field_type: { maxLength: 5 },
-  email: { maxLength: 254 },
-} as const;
-
-export const EmojiRatingAnswerValueConstraints = {
-  variant: { maxLength: 5 },
-  number: { minimum: 1, maximum: 12 },
-} as const;
-
-export const LongTextFieldAnswerValueConstraints = {
-  field_type: { maxLength: 9 },
-  text: { minLength: 1, maxLength: 1000 },
-} as const;
-
-export const MatchingAnswerPairConstraints = {
-  prompt_id: { minLength: 1, maxLength: 128 },
-  match_id: { minLength: 1, maxLength: 128 },
-} as const;
-
-export const MatchingAnswerValueConstraints = {
-  pairs: { minItems: 1, maxItems: 10 },
-} as const;
-
-export const NumberFieldAnswerValueConstraints = {
-  field_type: { maxLength: 6 },
-  number: { minimum: -1000000, maximum: 1000000 },
-} as const;
-
-export const PhoneFieldAnswerValueConstraints = {
-  field_type: { maxLength: 5 },
-  phone: { minLength: 1, maxLength: 64 },
-} as const;
-
-export const ShortTextFieldAnswerValueConstraints = {
-  field_type: { maxLength: 10 },
-  text: { minLength: 1, maxLength: 1000 },
-} as const;
-
-export const SliderRatingAnswerValueConstraints = {
-  variant: { maxLength: 6 },
-  number: { minimum: -1000, maximum: 1000 },
-} as const;
-
-export const StarsRatingAnswerValueConstraints = {
-  variant: { maxLength: 5 },
-  number: { minimum: 1, maximum: 12 },
-} as const;
-
-export const SubmissionSessionAnswerResponseConstraints = {
-  question_node_id: { maxLength: 36 },
-  node_key: { maxLength: 128 },
+export const SurveyDocumentAnswerResponseConstraints = {
+  field_id: { minLength: 6, maxLength: 128, pattern: /^field_[A-Za-z0-9_]+$/ },
+  field_key: { pattern: /^[a-z0-9_]{1,64}$/ },
+  response_type: { maxLength: 10 },
   state: { maxLength: 8 },
-  answer_family: { maxLength: 8 },
+  value: { maxLength: 10000 },
   client_mutation_id: { maxLength: 36 },
   saved_at: { maxLength: 35 },
 } as const;
@@ -342,10 +285,10 @@ export const ResolveSurveyAccessLinkTokenRequestConstraints = {
   token: { minLength: 1, maxLength: 256 },
 } as const;
 
-export const SaveSubmissionSessionAnswerRequestConstraints = {
+export const SaveSurveyDocumentAnswerRequestConstraints = {
   client_mutation_id: { maxLength: 36 },
   state: { maxLength: 8 },
-  answer_family: { maxLength: 8 },
+  value: { maxLength: 10000 },
 } as const;
 
 export const SubmissionSessionEventRequestConstraints = {
@@ -423,6 +366,11 @@ export const AssignSurveyMemberRoleRequestConstraints = {
 
 export const UpdateSurveyMemberRoleRequestConstraints = {
   role_id: { minimum: 1, maximum: 2147483647 },
+} as const;
+
+export const ExportSurveyResultsRequestConstraints = {
+  format: { maxLength: 4 },
+  session_ids: { maxItems: 100 },
 } as const;
 
 export const CreateSurveyRoleRequestConstraints = {
@@ -536,4 +484,38 @@ export const SurveyRoleResponsesConstraints = {
 
 export const SurveyMemberRoleResponsesConstraints = {
   created_at: { maxLength: 35 },
+} as const;
+
+export const SurveyAnswerSlotResponsesConstraints = {
+  field_id: { minLength: 6, maxLength: 128, pattern: /^field_[A-Za-z0-9_]+$/ },
+  field_key: { pattern: /^[a-z0-9_]{1,64}$/ },
+  response_type: { maxLength: 10 },
+  state: { maxLength: 8 },
+  answer_value: { maxLength: 10000 },
+} as const;
+
+export const SurveySessionEventResponsesConstraints = {
+  event_type: { maxLength: 17 },
+  field_id: { minLength: 6, maxLength: 128, pattern: /^field_[A-Za-z0-9_]+$/ },
+  received_at: { maxLength: 35 },
+} as const;
+
+export const SurveySessionResponsesConstraints = {
+  session_id: { maxLength: 36 },
+  status: { maxLength: 11 },
+  started_at: { maxLength: 35 },
+  completed_at: { maxLength: 35 },
+  last_activity_at: { maxLength: 35 },
+} as const;
+
+export const SurveySessionTreeResponsesConstraints = {
+  answers: { maxItems: 50 },
+} as const;
+
+export const SurveySubjectResponsesConstraints = {
+  subject_id: { maxLength: 36 },
+} as const;
+
+export const PaginatedSurveySubjectTreesResponsesConstraints = {
+  items: { maxItems: 100 },
 } as const;

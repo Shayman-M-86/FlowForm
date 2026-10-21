@@ -2,10 +2,10 @@
 title: Backend API contracts and errors
 aliases: ["Backend API contracts and errors", "Backend API contract model", "API error normalization"]
 document_type: implementation
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:409a7c78fb6a4f5c8d1896dffb050f5f2a1242815bcc410431718284809e17b5
-last_edited: 2026-09-05
+verified_evidence_digest: null
+last_edited: 2026-10-21
 tags: [backend, frontend]
 related_code:
   - "../../../../backend/app/api/utils/validation.py"
@@ -112,6 +112,11 @@ constraints and selected driver errors are mapped to domain-appropriate
 application errors around flush or commit. A raw SQLAlchemy integrity error
 that escapes those helpers is treated as an unhandled server defect, preventing
 database diagnostics from becoming a public contract.
+
+Document validation paths omit internal union tags while preserving real
+properties such as `field` and `text`. Respondent answer routes identify fields
+and return the response type resolved by the server; clients do not choose it.
+The existing global envelope and database-error translation remain unchanged.
 
 ## Contract-change implications
 

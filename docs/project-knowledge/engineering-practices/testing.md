@@ -4,8 +4,8 @@ aliases: ["Testing workflow"]
 document_type: workflow
 status: verified
 authority: canonical
-verified_evidence_digest: sha256:f954afd7b0bef30ebf0479442b9deee3e3ec2c7f3b19aa9331a2c4fae4082022
-last_edited: 2026-08-04
+verified_evidence_digest: sha256:f3cc3646ab27bf0fe0e2fd0b956ec8a5ddd2997ce7e1aedf335f5f6d0bb96c80
+last_edited: 2026-10-21
 tags: [tooling]
 related_code:
   - "../../../backend/scripts/run-tests.sh"

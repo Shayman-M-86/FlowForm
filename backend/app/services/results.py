@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel
-
-from app.schema.api.content.common import FieldKey
+from app.schema.api.content.common import FieldId, FieldKey
 from app.schema.api.content.survey_document import SurveyDocumentAnswerValue
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import (
-    AnswerFamily,
     SubmissionAnswerState,
     SubmissionEventType,
     SubmissionSessionStatus,
@@ -172,13 +168,13 @@ class AnswerSlotResult:
     """One answer slot, optionally with its decrypted value."""
 
     slot_id: UUID
-    question_node_id: UUID
-    question_key: str | None
-    answer_family: AnswerFamily | None
+    field_id: FieldId
+    field_key: FieldKey
+    response_type: SurveyResponseType
     has_encrypted_answer: bool
     decrypted: bool
     answer_state: SubmissionAnswerState | None
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None
+    answer_value: SurveyDocumentAnswerValue | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,7 +182,7 @@ class SessionEventResult:
     """One timeline event for a session (no answer values)."""
 
     event_type: SubmissionEventType
-    question_node_id: UUID | None
+    field_id: FieldId | None
     received_at: datetime
 
 
@@ -215,25 +211,27 @@ class ExportRow:
     status: SubmissionSessionStatus
     started_at: datetime
     completed_at: datetime | None
-    question_key: str | None = None
-    answer_family: AnswerFamily | None = None
+    field_id: FieldId | None = None
+    field_key: FieldKey | None = None
+    response_type: SurveyResponseType | None = None
     has_encrypted_answer: bool | None = None
     decrypted: bool | None = None
     answer_state: SubmissionAnswerState | None = None
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
+    answer_value: SurveyDocumentAnswerValue | None = None
 
     def to_json_dict(self) -> dict[str, Any]:
         """Flatten to a JSON/CSV-safe dict, normalising the answer_value union."""
         answer_value: Any = self.answer_value
-        if isinstance(answer_value, BaseModel):
-            answer_value = answer_value.model_dump(mode="json")
+        if isinstance(answer_value, date):
+            answer_value = answer_value.isoformat()
         return {
             "session_id": str(self.session_id),
             "status": self.status,
             "started_at": self.started_at.isoformat(),
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
-            "question_key": self.question_key,
-            "answer_family": self.answer_family,
+            "field_id": self.field_id,
+            "field_key": self.field_key,
+            "response_type": self.response_type,
             "has_encrypted_answer": self.has_encrypted_answer,
             "decrypted": self.decrypted,
             "answer_state": self.answer_state,

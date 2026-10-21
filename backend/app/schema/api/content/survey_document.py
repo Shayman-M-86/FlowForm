@@ -50,11 +50,11 @@ SurveyDocumentStringAnswer = Annotated[
 ]
 SurveyDocumentIntegerAnswer = Annotated[
     int,
-    Field(ge=limits.RESPONSE_NUMBER_MIN, le=limits.RESPONSE_NUMBER_MAX),
+    Field(ge=limits.RESPONSE_NUMBER_MIN, le=limits.RESPONSE_NUMBER_MAX, strict=True),
 ]
-SurveyDocumentDecimalAnswer = Annotated[
-    NumberValue,
-    Field(ge=limits.RESPONSE_NUMBER_MIN, le=limits.RESPONSE_NUMBER_MAX),
+SurveyDocumentDecimalAnswer = SurveyDocumentIntegerAnswer | Annotated[
+    float,
+    Field(ge=limits.RESPONSE_NUMBER_MIN, le=limits.RESPONSE_NUMBER_MAX, allow_inf_nan=False, strict=True),
 ]
 SurveyDocumentChoiceSetAnswer = Annotated[
     list[OptionId],

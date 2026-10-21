@@ -220,8 +220,8 @@ def seed(core_db_session: Session) -> SeedData:
     core_db_session.flush()
 
     version = make_survey_version(survey.id, user.id, status="published")
-    # A published version requires a compiled schema and a publish timestamp.
-    version.compiled_schema = {"nodes": []}
+    # A published version requires a definition and a publish timestamp.
+
     version.published_at = datetime.now(UTC)
     core_db_session.add(version)
     core_db_session.flush()

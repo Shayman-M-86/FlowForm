@@ -82,7 +82,7 @@ def _seed_published_survey(db: Session, slug: str) -> int:
 
     version = make_survey_version(survey.id, user.id)
     version.status = "published"
-    version.compiled_schema = _SCHEMA
+
     version.published_at = datetime.now(UTC)
     db.add(version)
     db.flush()

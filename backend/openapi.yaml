@@ -27,6 +27,7 @@ tags:
 - name: Subjects
 - name: Survey Access Links
 - name: Survey Members
+- name: Survey Results
 - name: Survey Roles
 - name: Survey Versions
 - name: Surveys
@@ -751,7 +752,7 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/v1/respondent/submission-sessions/current/answers/{question_node_id}:
+  /api/v1/respondent/submission-sessions/current/answers/{field_id}:
     put:
       operationId: saveSubmissionSessionAnswer
       summary: Save submission session answer
@@ -760,25 +761,24 @@ paths:
       - Respondent Submission Sessions
       security: []
       parameters:
-      - name: question_node_id
+      - name: field_id
         in: path
         required: true
         schema:
           type: string
-          format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveSubmissionSessionAnswerRequest'
+              $ref: '#/components/schemas/SaveSurveyDocumentAnswerRequest'
       responses:
         '200':
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubmissionSessionAnswerResponse'
+                $ref: '#/components/schemas/SurveyDocumentAnswerResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -2387,6 +2387,250 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects:
+    get:
+      operationId: listSurveyResultSubjects
+      summary: List survey result subjects
+      description: List survey result subjects
+      tags:
+      - Survey Results
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: page
+        in: query
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          title: Page
+          type: integer
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          default: 20
+          maximum: 100
+          minimum: 1
+          title: Page Size
+          type: integer
+      - name: include_decrypted_answer_values
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Decrypted Answer Values
+          type: boolean
+      - name: include_events
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Events
+          type: boolean
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSurveySubjectTreesResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/subjects/{subject_id}:
+    get:
+      operationId: getSubjectTree
+      summary: Get survey result subject tree
+      description: Get survey result subject tree
+      tags:
+      - Survey Results
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: subject_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: include_decrypted_answer_values
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Decrypted Answer Values
+          type: boolean
+      - name: include_events
+        in: query
+        required: false
+        schema:
+          default: false
+          title: Include Events
+          type: boolean
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveySubjectTreeResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/export:
+    post:
+      operationId: exportResults
+      summary: Export survey results
+      description: Streams a CSV or JSON file attachment (one row per answer slot), not a JSON envelope. Use the `format`
+        field on the request body to choose CSV or JSON.
+      tags:
+      - Survey Results
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportSurveyResultsRequest'
+      responses:
+        '200':
+          description: Successful response.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/results/sessions/{session_id}:
+    delete:
+      operationId: deleteSession
+      summary: Delete survey response session
+      description: Delete survey response session
+      tags:
+      - Survey Results
+      x-flowform-rbac:
+        permission: submission:view
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No content.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/studio/projects/{project_id}/survey-roles:
     get:
       operationId: listSurveyRoles
@@ -2914,6 +3158,12 @@ paths:
           type: integer
           minimum: 1
           maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVersionRequest'
       responses:
         '201':
           description: Successful response.
@@ -3130,6 +3380,66 @@ paths:
           type: integer
           minimum: 1
           maximum: 2147483647
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyVersionResponses'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/definition:
+    put:
+      operationId: replaceDefinition
+      summary: Replace survey definition
+      description: Replace survey definition
+      tags:
+      - Survey Versions
+      x-flowform-rbac:
+        permission: survey:edit
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: version_number
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceSurveyDefinitionRequest'
       responses:
         '200':
           description: Successful response.
@@ -4963,231 +5273,9 @@ components:
       - published_version
       title: ResumeSubmissionSessionResponse
       type: object
-    ChoiceAnswerValue:
+    SaveSurveyDocumentAnswerRequest:
       additionalProperties: false
-      description: Answer value for a choice question.
-      properties:
-        selected:
-          items:
-            maxLength: 128
-            minLength: 1
-            type: string
-          maxItems: 10
-          minItems: 1
-          title: Selected
-          type: array
-      required:
-      - selected
-      title: ChoiceAnswerValue
-      type: object
-    DateFieldAnswerValue:
-      additionalProperties: false
-      description: Answer value for a date field question.
-      properties:
-        field_type:
-          const: date
-          title: Field Type
-          type: string
-          maxLength: 4
-        date:
-          maxLength: 10
-          title: Date
-          type: string
-      required:
-      - field_type
-      - date
-      title: DateFieldAnswerValue
-      type: object
-    EmailFieldAnswerValue:
-      additionalProperties: false
-      description: Answer value for an email field question.
-      properties:
-        field_type:
-          const: email
-          title: Field Type
-          type: string
-          maxLength: 5
-        email:
-          format: email
-          title: Email
-          type: string
-          maxLength: 254
-      required:
-      - field_type
-      - email
-      title: EmailFieldAnswerValue
-      type: object
-    EmojiRatingAnswerValue:
-      additionalProperties: false
-      description: Answer value for an emoji rating question.
-      properties:
-        variant:
-          const: emoji
-          title: Variant
-          type: string
-          maxLength: 5
-        number:
-          maximum: 12
-          minimum: 1
-          title: Number
-          type: integer
-      required:
-      - variant
-      - number
-      title: EmojiRatingAnswerValue
-      type: object
-    LongTextFieldAnswerValue:
-      additionalProperties: false
-      description: Answer value for a long-text field question.
-      properties:
-        field_type:
-          const: long_text
-          title: Field Type
-          type: string
-          maxLength: 9
-        text:
-          maxLength: 1000
-          minLength: 1
-          title: Text
-          type: string
-      required:
-      - field_type
-      - text
-      title: LongTextFieldAnswerValue
-      type: object
-    MatchingAnswerPair:
-      additionalProperties: false
-      description: One prompt-to-match pair in a matching answer.
-      properties:
-        prompt_id:
-          maxLength: 128
-          minLength: 1
-          title: Prompt Id
-          type: string
-        match_id:
-          maxLength: 128
-          minLength: 1
-          title: Match Id
-          type: string
-      required:
-      - prompt_id
-      - match_id
-      title: MatchingAnswerPair
-      type: object
-    MatchingAnswerValue:
-      additionalProperties: false
-      description: Answer value for a matching question.
-      properties:
-        pairs:
-          items:
-            $ref: '#/components/schemas/MatchingAnswerPair'
-          maxItems: 10
-          minItems: 1
-          title: Pairs
-          type: array
-      required:
-      - pairs
-      title: MatchingAnswerValue
-      type: object
-    NumberFieldAnswerValue:
-      additionalProperties: false
-      description: Answer value for a numeric field question.
-      properties:
-        field_type:
-          const: number
-          title: Field Type
-          type: string
-          maxLength: 6
-        number:
-          maximum: 1000000
-          minimum: -1000000
-          title: Number
-          type: number
-      required:
-      - field_type
-      - number
-      title: NumberFieldAnswerValue
-      type: object
-    PhoneFieldAnswerValue:
-      additionalProperties: false
-      description: Answer value for a phone field question.
-      properties:
-        field_type:
-          const: phone
-          title: Field Type
-          type: string
-          maxLength: 5
-        phone:
-          maxLength: 64
-          minLength: 1
-          title: Phone
-          type: string
-      required:
-      - field_type
-      - phone
-      title: PhoneFieldAnswerValue
-      type: object
-    ShortTextFieldAnswerValue:
-      additionalProperties: false
-      description: Answer value for a short-text field question.
-      properties:
-        field_type:
-          const: short_text
-          title: Field Type
-          type: string
-          maxLength: 10
-        text:
-          maxLength: 1000
-          minLength: 1
-          title: Text
-          type: string
-      required:
-      - field_type
-      - text
-      title: ShortTextFieldAnswerValue
-      type: object
-    SliderRatingAnswerValue:
-      additionalProperties: false
-      description: Answer value for a slider rating question.
-      properties:
-        variant:
-          const: slider
-          title: Variant
-          type: string
-          maxLength: 6
-        number:
-          maximum: 1000
-          minimum: -1000
-          title: Number
-          type: number
-      required:
-      - variant
-      - number
-      title: SliderRatingAnswerValue
-      type: object
-    StarsRatingAnswerValue:
-      additionalProperties: false
-      description: Answer value for a star rating question.
-      properties:
-        variant:
-          const: stars
-          title: Variant
-          type: string
-          maxLength: 5
-        number:
-          maximum: 12
-          minimum: 1
-          multipleOf: 0.5
-          title: Number
-          type: number
-      required:
-      - variant
-      - number
-      title: StarsRatingAnswerValue
-      type: object
-    SaveSubmissionSessionAnswerRequest:
-      additionalProperties: false
-      description: Request body for saving or clearing one respondent answer revision.
+      description: Request body for saving or clearing one survey document field answer.
       properties:
         client_mutation_id:
           format: uuid
@@ -5201,68 +5289,63 @@ components:
           title: State
           type: string
           maxLength: 8
-        answer_family:
+        value:
           anyOf:
-          - enum:
-            - choice
-            - field
-            - matching
-            - rating
+          - maxLength: 10000
             type: string
-            maxLength: 8
+          - maximum: 1000000000
+            minimum: -1000000000
+            type: integer
+          - maximum: 1000000000
+            minimum: -1000000000
+            type: number
+          - format: date
+            type: string
+            maxLength: 10
+          - maxLength: 128
+            minLength: 7
+            pattern: ^option_[A-Za-z0-9_]+$
+            type: string
+          - items:
+              maxLength: 128
+              minLength: 7
+              pattern: ^option_[A-Za-z0-9_]+$
+              type: string
+            maxItems: 200
+            type: array
           - type: 'null'
           default: null
-          title: Answer Family
-        answer_value:
-          anyOf:
-          - $ref: '#/components/schemas/ChoiceAnswerValue'
-          - discriminator:
-              mapping:
-                date: '#/components/schemas/DateFieldAnswerValue'
-                email: '#/components/schemas/EmailFieldAnswerValue'
-                long_text: '#/components/schemas/LongTextFieldAnswerValue'
-                number: '#/components/schemas/NumberFieldAnswerValue'
-                phone: '#/components/schemas/PhoneFieldAnswerValue'
-                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
-              propertyName: field_type
-            oneOf:
-            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
-            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
-            - $ref: '#/components/schemas/EmailFieldAnswerValue'
-            - $ref: '#/components/schemas/NumberFieldAnswerValue'
-            - $ref: '#/components/schemas/DateFieldAnswerValue'
-            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
-          - $ref: '#/components/schemas/MatchingAnswerValue'
-          - discriminator:
-              mapping:
-                emoji: '#/components/schemas/EmojiRatingAnswerValue'
-                slider: '#/components/schemas/SliderRatingAnswerValue'
-                stars: '#/components/schemas/StarsRatingAnswerValue'
-              propertyName: variant
-            oneOf:
-            - $ref: '#/components/schemas/SliderRatingAnswerValue'
-            - $ref: '#/components/schemas/StarsRatingAnswerValue'
-            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
-          - type: 'null'
-          default: null
-          title: Answer Value
+          title: Value
       required:
       - client_mutation_id
       - state
-      title: SaveSubmissionSessionAnswerRequest
+      title: SaveSurveyDocumentAnswerRequest
       type: object
-    SubmissionSessionAnswerResponse:
-      description: Canonical latest answer state returned to a respondent.
+    SurveyDocumentAnswerResponse:
+      additionalProperties: false
+      description: Latest answer state identified by a canonical survey document field.
       properties:
-        question_node_id:
-          format: uuid
-          title: Question Node Id
-          type: string
-          maxLength: 36
-        node_key:
-          title: Node Key
-          type: string
+        field_id:
           maxLength: 128
+          minLength: 6
+          pattern: ^field_[A-Za-z0-9_]+$
+          title: Field Id
+          type: string
+        field_key:
+          pattern: ^[a-z0-9_]{1,64}$
+          title: Field Key
+          type: string
+        response_type:
+          enum:
+          - string
+          - integer
+          - decimal
+          - date
+          - choice
+          - choice_set
+          title: Response Type
+          type: string
+          maxLength: 10
         state:
           enum:
           - answered
@@ -5270,51 +5353,33 @@ components:
           title: State
           type: string
           maxLength: 8
-        answer_family:
+        value:
           anyOf:
-          - enum:
-            - choice
-            - field
-            - matching
-            - rating
+          - maxLength: 10000
             type: string
-            maxLength: 8
+          - maximum: 1000000000
+            minimum: -1000000000
+            type: integer
+          - maximum: 1000000000
+            minimum: -1000000000
+            type: number
+          - format: date
+            type: string
+            maxLength: 10
+          - maxLength: 128
+            minLength: 7
+            pattern: ^option_[A-Za-z0-9_]+$
+            type: string
+          - items:
+              maxLength: 128
+              minLength: 7
+              pattern: ^option_[A-Za-z0-9_]+$
+              type: string
+            maxItems: 200
+            type: array
           - type: 'null'
           default: null
-          title: Answer Family
-        answer_value:
-          anyOf:
-          - $ref: '#/components/schemas/ChoiceAnswerValue'
-          - discriminator:
-              mapping:
-                date: '#/components/schemas/DateFieldAnswerValue'
-                email: '#/components/schemas/EmailFieldAnswerValue'
-                long_text: '#/components/schemas/LongTextFieldAnswerValue'
-                number: '#/components/schemas/NumberFieldAnswerValue'
-                phone: '#/components/schemas/PhoneFieldAnswerValue'
-                short_text: '#/components/schemas/ShortTextFieldAnswerValue'
-              propertyName: field_type
-            oneOf:
-            - $ref: '#/components/schemas/ShortTextFieldAnswerValue'
-            - $ref: '#/components/schemas/LongTextFieldAnswerValue'
-            - $ref: '#/components/schemas/EmailFieldAnswerValue'
-            - $ref: '#/components/schemas/NumberFieldAnswerValue'
-            - $ref: '#/components/schemas/DateFieldAnswerValue'
-            - $ref: '#/components/schemas/PhoneFieldAnswerValue'
-          - $ref: '#/components/schemas/MatchingAnswerValue'
-          - discriminator:
-              mapping:
-                emoji: '#/components/schemas/EmojiRatingAnswerValue'
-                slider: '#/components/schemas/SliderRatingAnswerValue'
-                stars: '#/components/schemas/StarsRatingAnswerValue'
-              propertyName: variant
-            oneOf:
-            - $ref: '#/components/schemas/SliderRatingAnswerValue'
-            - $ref: '#/components/schemas/StarsRatingAnswerValue'
-            - $ref: '#/components/schemas/EmojiRatingAnswerValue'
-          - type: 'null'
-          default: null
-          title: Answer Value
+          title: Value
         client_mutation_id:
           format: uuid
           title: Client Mutation Id
@@ -5326,12 +5391,13 @@ components:
           type: string
           maxLength: 35
       required:
-      - question_node_id
-      - node_key
+      - field_id
+      - field_key
+      - response_type
       - state
       - client_mutation_id
       - saved_at
-      title: SubmissionSessionAnswerResponse
+      title: SurveyDocumentAnswerResponse
       type: object
     SubmissionSessionEventRequest:
       additionalProperties: false
@@ -6183,6 +6249,279 @@ components:
       - role_id
       title: UpdateSurveyMemberRoleRequest
       type: object
+    SurveyAnswerSlotResponses:
+      description: One answer slot in an admin survey-results view, optionally decrypted.
+      properties:
+        field_id:
+          maxLength: 128
+          minLength: 6
+          pattern: ^field_[A-Za-z0-9_]+$
+          title: Field Id
+          type: string
+        field_key:
+          pattern: ^[a-z0-9_]{1,64}$
+          title: Field Key
+          type: string
+        response_type:
+          enum:
+          - string
+          - integer
+          - decimal
+          - date
+          - choice
+          - choice_set
+          title: Response Type
+          type: string
+          maxLength: 10
+        has_encrypted_answer:
+          title: Has Encrypted Answer
+          type: boolean
+        decrypted:
+          title: Decrypted
+          type: boolean
+        state:
+          anyOf:
+          - enum:
+            - answered
+            - cleared
+            type: string
+            maxLength: 8
+          - type: 'null'
+          default: null
+          title: State
+        answer_value:
+          anyOf:
+          - maxLength: 10000
+            type: string
+          - maximum: 1000000000
+            minimum: -1000000000
+            type: integer
+          - maximum: 1000000000
+            minimum: -1000000000
+            type: number
+          - format: date
+            type: string
+            maxLength: 10
+          - maxLength: 128
+            minLength: 7
+            pattern: ^option_[A-Za-z0-9_]+$
+            type: string
+          - items:
+              maxLength: 128
+              minLength: 7
+              pattern: ^option_[A-Za-z0-9_]+$
+              type: string
+            maxItems: 200
+            type: array
+          - type: 'null'
+          default: null
+          title: Answer Value
+      required:
+      - field_id
+      - field_key
+      - response_type
+      - has_encrypted_answer
+      - decrypted
+      title: SurveyAnswerSlotResponses
+      type: object
+    SurveySessionEventResponses:
+      description: One timeline event for a session. Never carries answer values.
+      properties:
+        event_type:
+          enum:
+          - session_started
+          - field_viewed
+          - answer_saved
+          - session_completed
+          title: Event Type
+          type: string
+          maxLength: 17
+        field_id:
+          anyOf:
+          - maxLength: 128
+            minLength: 6
+            pattern: ^field_[A-Za-z0-9_]+$
+            type: string
+          - type: 'null'
+          default: null
+          title: Field Id
+        received_at:
+          format: date-time
+          title: Received At
+          type: string
+          maxLength: 35
+      required:
+      - event_type
+      - received_at
+      title: SurveySessionEventResponses
+      type: object
+    SurveySessionResponses:
+      description: 'Admin-facing summary of one respondent submission session.
+
+
+        Sourced from core session metadata only; carries no decrypted answer
+
+        payloads and no response-database locators or crypto material.'
+      properties:
+        session_id:
+          format: uuid
+          title: Session Id
+          type: string
+          maxLength: 36
+        survey_id:
+          title: Survey Id
+          type: integer
+        survey_version_id:
+          title: Survey Version Id
+          type: integer
+        status:
+          enum:
+          - in_progress
+          - completed
+          - abandoned
+          title: Status
+          type: string
+          maxLength: 11
+        started_at:
+          format: date-time
+          title: Started At
+          type: string
+          maxLength: 35
+        completed_at:
+          anyOf:
+          - format: date-time
+            type: string
+            maxLength: 35
+          - type: 'null'
+          default: null
+          title: Completed At
+        last_activity_at:
+          format: date-time
+          title: Last Activity At
+          type: string
+          maxLength: 35
+      required:
+      - session_id
+      - survey_id
+      - survey_version_id
+      - status
+      - started_at
+      - last_activity_at
+      title: SurveySessionResponses
+      type: object
+    SurveySessionTreeResponses:
+      description: One session with its answer slots and optional event timeline.
+      properties:
+        session:
+          $ref: '#/components/schemas/SurveySessionResponses'
+        answers:
+          items:
+            $ref: '#/components/schemas/SurveyAnswerSlotResponses'
+          maxItems: 50
+          title: Answers
+          type: array
+        events:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/SurveySessionEventResponses'
+            type: array
+          - type: 'null'
+          default: null
+          title: Events
+      required:
+      - session
+      - answers
+      title: SurveySessionTreeResponses
+      type: object
+    SurveySubjectResponses:
+      description: Admin-facing summary of one project subject.
+      properties:
+        subject_id:
+          format: uuid
+          title: Subject Id
+          type: string
+          maxLength: 36
+        subject_code:
+          title: Subject Code
+          type: string
+      required:
+      - subject_id
+      - subject_code
+      title: SurveySubjectResponses
+      type: object
+    SurveySubjectTreeResponses:
+      description: One subject with all of its sessions for a survey.
+      properties:
+        subject:
+          $ref: '#/components/schemas/SurveySubjectResponses'
+        sessions:
+          items:
+            $ref: '#/components/schemas/SurveySessionTreeResponses'
+          title: Sessions
+          type: array
+      required:
+      - subject
+      - sessions
+      title: SurveySubjectTreeResponses
+      type: object
+    PaginatedSurveySubjectTreesResponses:
+      description: Paginated list of subject result trees.
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/SurveySubjectTreeResponses'
+          maxItems: 100
+          title: Items
+          type: array
+        total:
+          title: Total
+          type: integer
+        page:
+          title: Page
+          type: integer
+        page_size:
+          title: Page Size
+          type: integer
+        include_decrypted_answer_values:
+          title: Include Decrypted Answer Values
+          type: boolean
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      - include_decrypted_answer_values
+      title: PaginatedSurveySubjectTreesResponses
+      type: object
+    ExportSurveyResultsRequest:
+      additionalProperties: false
+      description: Request body for exporting a survey's results.
+      properties:
+        format:
+          default: csv
+          enum:
+          - csv
+          - json
+          title: Format
+          type: string
+          maxLength: 4
+        include_decrypted_answer_values:
+          default: false
+          title: Include Decrypted Answer Values
+          type: boolean
+        session_ids:
+          anyOf:
+          - items:
+              format: uuid
+              type: string
+              maxLength: 36
+            maxItems: 100
+            type: array
+          - type: 'null'
+          default: null
+          title: Session Ids
+      title: ExportSurveyResultsRequest
+      type: object
     CreateSurveyRoleRequest:
       description: Request body for creating a survey role.
       properties:
@@ -6346,6 +6685,24 @@ components:
       required:
       - permissions
       title: MySurveyPermissionsResponses
+      type: object
+    CreateVersionRequest:
+      description: Request body for creating a new survey version.
+      properties:
+        definition:
+          $ref: '#/components/schemas/SurveyDefinition'
+      required:
+      - definition
+      title: CreateVersionRequest
+      type: object
+    ReplaceSurveyDefinitionRequest:
+      description: Request body for replacing one editable version's complete definition.
+      properties:
+        definition:
+          $ref: '#/components/schemas/SurveyDefinition'
+      required:
+      - definition
+      title: ReplaceSurveyDefinitionRequest
       type: object
   responses:
     BadRequestError:
@@ -6536,16 +6893,6 @@ components:
               value:
                 code: NOT_FOUND
                 message: Version 0 was not found in survey 0.
-            node_not_found:
-              summary: NodeNotFoundError
-              value:
-                code: NOT_FOUND
-                message: Node not found
-            scoring_rule_not_found:
-              summary: ScoringRuleNotFoundError
-              value:
-                code: NOT_FOUND
-                message: Scoring rule not found
             submission_not_found:
               summary: SubmissionNotFoundError
               value:
@@ -6645,11 +6992,6 @@ components:
               value:
                 code: VERSION_NOT_EDITABLE
                 message: Version is '<example>' — content can only be edited on draft versions
-            content_key_conflict:
-              summary: ContentKeyConflictError
-              value:
-                code: CONFLICT
-                message: <example>
             participant_identity_not_verifiable:
               summary: ParticipantIdentityNotVerifiableError
               value:
@@ -6979,8 +7321,9 @@ components:
                 message: Request validation failed.
                 details:
                   errors:
-                  - message: Unable to extract tag using discriminator 'node_type'
-                    type: union_tag_not_found
+                  - message: String should have at least 1 character
+                    type: string_too_short
+                    field: definition.document.sections.0.blocks.0.content.text
     RateLimitError:
       description: Rate limit exceeded.
       content:

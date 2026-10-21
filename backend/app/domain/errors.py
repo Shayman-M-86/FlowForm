@@ -405,27 +405,6 @@ class VersionNotEditableError(AppError):
         )
 
 
-class NodeNotFoundError(AppError):
-    """Error raised when a content node (question or rule) cannot be found."""
-
-    def __init__(self) -> None:
-        super().__init__(status_code=404, code="NOT_FOUND", message="Node not found")
-
-
-class ScoringRuleNotFoundError(AppError):
-    """Error raised when a scoring rule cannot be found."""
-
-    def __init__(self) -> None:
-        super().__init__(status_code=404, code="NOT_FOUND", message="Scoring rule not found")
-
-
-class ContentKeyConflictError(AppError):
-    """Error raised when a content key already exists within a version."""
-
-    def __init__(self, message: str) -> None:
-        super().__init__(status_code=409, code="CONFLICT", message=message)
-
-
 class SubmissionInvalidError(AppError):
     """Error raised when a submission is invalid for any reason."""
 

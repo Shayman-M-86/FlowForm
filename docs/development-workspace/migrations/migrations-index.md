@@ -5,10 +5,14 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-10-21
 tags: [meta]
 related_code: []
-related_docs: ["Development workspace"]
+related_docs:
+  - "Development workspace"
+  - "Survey document prototype overview"
+  - "Survey builder and form-filler migration manifest"
+  - "Survey document migration checklist"
 ---
 
 # Engineering migrations
@@ -41,6 +45,18 @@ known start --> transition steps --> compatibility window --> target state
                                                                |
                                                         archive record
 ```
+
+## Survey document migration
+
+- [[survey-document-migration-checklist|Survey document migration checklist]]
+  records the implemented groundwork, open decisions, remaining work, and
+  validation baseline from the 2026-10-21 repository inspection.
+- [[survey-document-prototype-overview|Survey document prototype overview]]
+  preserves the external prototype's explanation of document-based authoring,
+  answer interactions, response data, and known limitations.
+- [[survey-builder-and-form-filler-migration|Survey builder and form-filler migration manifest]]
+  preserves its prepared import boundary, integration sequence, and acceptance
+  gates. Its dated baseline is planning context, not current completion evidence.
 
 ## Related documents
 

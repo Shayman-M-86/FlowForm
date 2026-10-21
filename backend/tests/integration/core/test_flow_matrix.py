@@ -51,7 +51,6 @@ def _publish(
     survey.visibility = visibility
     survey.public_slug = slug if visibility == "public" else None
     survey_version.status = "published"
-    survey_version.compiled_schema = _SCHEMA
     survey_version.published_at = datetime.now(UTC)
     db.flush()
     survey.published_version_id = survey_version.id

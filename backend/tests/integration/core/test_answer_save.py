@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -19,7 +20,9 @@ from app.schema.orm.core.project import Project
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
-from app.schema.orm.response import ResponseAnswer
+from app.schema.orm.response import ResponseAnswer, ResponseEnvelope
+from app.services.admin_results.core.export import to_export_rows
+from app.services.admin_results.core.session_tree import SessionTreeBuilder
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 
 if TYPE_CHECKING:
@@ -155,6 +158,72 @@ def _setup(db_sessions: DbSessions):
 
 
 class TestAnswerSave:
+    def test_latest_encrypted_answer_round_trips_through_results(
+        self, db_sessions: DbSessions, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        core_db, response_db, session, ctx = _setup(db_sessions)
+        service = AnswerSaveService()
+        for value in ("first answer", "latest answer"):
+            service.save_answer(
+                core_db,
+                response_db,
+                ctx=ctx,
+                field_id=_FIELD_ID,
+                answer_state="answered",
+                answer_value=value,
+                client_mutation_id=uuid.uuid4(),
+            )
+
+        module = "app.services.admin_results.core.decryption"
+        monkeypatch.setattr(
+            f"{module}.resolve_answer_locators",
+            lambda _db, _version, slots, **_kwargs: {
+                slot_id: derive_slot_answer_locator(slot_id, ctx.linkage_key) for slot_id in slots
+            },
+        )
+        monkeypatch.setattr(
+            f"{module}.load_session_envelope_crypto_context",
+            lambda *_args, **_kwargs: SimpleNamespace(
+                plaintext_key=ctx.plaintext_session_dek,
+                envelope=response_db.get(ResponseEnvelope, ctx.envelope_id),
+            ),
+        )
+        tree = SessionTreeBuilder()
+        result = tree.build_session_result(
+            core_db,
+            response_db,
+            session=session,
+            include_decrypted_answer_values=True,
+            include_events=True,
+        )
+        assert len(result.answers) == 1
+        assert result.answers[0].field_id == _FIELD_ID
+        assert result.answers[0].field_key == "health"
+        assert result.answers[0].answer_value == "latest answer"
+        assert to_export_rows(result)[0].to_json_dict()["answer_value"] == "latest answer"
+        assert result.events is not None
+        assert any(event.field_id == _FIELD_ID for event in result.events)
+
+        service.save_answer(
+            core_db,
+            response_db,
+            ctx=ctx,
+            field_id=_FIELD_ID,
+            answer_state="cleared",
+            answer_value=None,
+            client_mutation_id=uuid.uuid4(),
+        )
+        cleared = tree.build_session_result(
+            core_db,
+            response_db,
+            session=session,
+            include_decrypted_answer_values=True,
+            include_events=False,
+        )
+        assert len(cleared.answers) == 1
+        assert cleared.answers[0].answer_state == "cleared"
+        assert cleared.answers[0].answer_value is None
+
     def test_save_answer_resolves_field_and_returns_typed_result(self, db_sessions: DbSessions) -> None:
         core_db, response_db, _session, ctx = _setup(db_sessions)
 

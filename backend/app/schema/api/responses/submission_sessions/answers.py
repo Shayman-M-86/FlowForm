@@ -1,24 +1,5 @@
-from __future__ import annotations
-
-from datetime import datetime
-from uuid import UUID
-
-from pydantic import BaseModel
+"""Document-field answer contract exported with session contracts."""
 
 from app.schema.api.responses.survey_document import SurveyDocumentAnswerResponse
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
-from app.schema.enums import AnswerFamily, SubmissionAnswerState
 
-__all__ = ["SubmissionSessionAnswerResponse", "SurveyDocumentAnswerResponse"]
-
-
-class SubmissionSessionAnswerResponse(BaseModel):
-    """Canonical latest answer state returned to a respondent."""
-
-    question_node_id: UUID
-    node_key: str
-    state: SubmissionAnswerState
-    answer_family: AnswerFamily | None = None
-    answer_value: SubmissionAnswerValue | None = None
-    client_mutation_id: UUID
-    saved_at: datetime
+__all__ = ["SurveyDocumentAnswerResponse"]

@@ -3,20 +3,15 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest  # type: ignore[import]
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.repositories import surveys_repo
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.services.surveys import SurveyService
 from tests.integration.core.factories import (
     make_project,
     make_response_store,
     make_survey,
-    make_survey_question,
-    make_survey_rule,
-    make_survey_scoring_rule,
     make_survey_version,
 )
 
@@ -39,7 +34,7 @@ def test_archive_active_published_version_unpublishes_and_archives(
 
     published_at = datetime(2024, 1, 1, tzinfo=UTC)
     version = make_survey_version(survey.id, user.id, version_number=1, status="published")
-    version.compiled_schema = {"questions": []}
+
     version.published_at = published_at
     db_session.add(version)
     db_session.flush()
@@ -49,7 +44,7 @@ def test_archive_active_published_version_unpublishes_and_archives(
 
     service = SurveyService()
     archived = service.archive_version(
-        db=db_session, # type: ignore[arg-type]
+        db=db_session,  # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=1,
@@ -81,7 +76,7 @@ def test_publish_new_version_archives_previous_live_version_in_safe_order(
     db_session.flush()
 
     current = make_survey_version(survey.id, user.id, version_number=1, status="published")
-    current.compiled_schema = {"questions": [{"id": 1}]}
+
     current.published_at = datetime(2024, 1, 1, tzinfo=UTC)
     db_session.add(current)
     db_session.flush()
@@ -91,10 +86,6 @@ def test_publish_new_version_archives_previous_live_version_in_safe_order(
 
     draft = make_survey_version(survey.id, user.id, version_number=2, status="draft")
     db_session.add(draft)
-    db_session.flush()
-
-    question = make_survey_question(draft.id, question_key="q1")
-    db_session.add(question)
     db_session.flush()
 
     service = SurveyService()
@@ -133,14 +124,11 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     db_session.flush()
 
     source = make_survey_version(survey.id, user.id, version_number=2, status="archived")
-    source.compiled_schema = {"questions": [{"id": 1}]}
+
     source.published_at = datetime(2024, 1, 1, tzinfo=UTC)
     db_session.add(source)
     db_session.flush()
 
-    db_session.add(make_survey_question(source.id, question_key="q1"))
-    db_session.add(make_survey_rule(source.id, rule_key="r1"))
-    db_session.add(make_survey_scoring_rule(source.id, scoring_key="s1"))
     db_session.flush()
 
     service = SurveyService()
@@ -156,35 +144,13 @@ def test_copy_version_to_draft_clones_content_and_creates_new_version_number(
     assert draft.status == "draft"
     assert draft.id != source.id
 
-    cloned_version = surveys_repo.get_version(db_session, project.id, survey.id, 3) # type: ignore
+    cloned_version = surveys_repo.get_version(db_session, project.id, survey.id, 3)  # type: ignore
     assert cloned_version is not None
 
-    copied_questions = list(
-        db_session.scalars(
-            select(SurveyQuestion).where(
-                SurveyQuestion.survey_version_id == draft.id,
-                SurveyQuestion.node_type == "question",
-            )
-        )
-    )
-    copied_rules = list(
-        db_session.scalars(
-            select(SurveyQuestion).where(
-                SurveyQuestion.survey_version_id == draft.id,
-                SurveyQuestion.node_type == "rule",
-            )
-        )
-    )
-    copied_scoring_rules = list(
-        db_session.scalars(select(SurveyScoringRule).where(SurveyScoringRule.survey_version_id == draft.id))
-    )
-
-    assert len(copied_questions) == 1
-    assert copied_questions[0].question_key == "q1"
-    assert len(copied_rules) == 1
-    assert copied_rules[0].question_key == "r1"
-    assert len(copied_scoring_rules) == 1
-    assert copied_scoring_rules[0].scoring_key == "s1"
+    assert cloned_version.definition == source.definition
+    assert cloned_version.revision == 0
+    assert cloned_version.published_at is None
+    assert cloned_version.definition is not source.definition
 
 
 def test_direct_active_archive_trigger_translates_to_app_error_not_key_error(
@@ -204,7 +170,7 @@ def test_direct_active_archive_trigger_translates_to_app_error_not_key_error(
     db_session.flush()
 
     version = make_survey_version(survey.id, user.id, version_number=1, status="published")
-    version.compiled_schema = {"questions": []}
+
     version.published_at = datetime(2024, 1, 1, tzinfo=UTC)
     db_session.add(version)
     db_session.flush()
@@ -213,7 +179,7 @@ def test_direct_active_archive_trigger_translates_to_app_error_not_key_error(
     db_session.flush()
 
     with pytest.raises(AppError) as exc_info:
-        surveys_repo.archive_version(db_session, version) # type: ignore
+        surveys_repo.archive_version(db_session, version)  # type: ignore
 
     assert exc_info.value.code == "VERSION_STATE_PROTECTED"
     assert "cannot be unpublished or deleted" in exc_info.value.message

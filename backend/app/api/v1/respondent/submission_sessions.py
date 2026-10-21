@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from uuid import UUID
 
 from flask import request
 
@@ -12,10 +11,12 @@ from app.api.utils.submission_session_cookie import (
 from app.api.utils.validation import parse
 from app.api.v1.respondent import respondent_bp, session_management_service, users_service
 from app.core.extensions import auth
+from app.core.validation import validate
 from app.db.context import get_core_db, get_response_db
 from app.openapi import openapi_route
+from app.schema.api.content.common import FieldId
 from app.schema.api.requests.submission_sessions import (
-    SaveSubmissionSessionAnswerRequest,
+    SaveSurveyDocumentAnswerRequest,
     StartSubmissionSessionRequest,
     SubmissionSessionEventRequest,
 )
@@ -23,7 +24,7 @@ from app.schema.api.responses.submission_sessions import (
     CompleteSubmissionSessionResponse,
     ResumeSubmissionSessionResponse,
     StartSubmissionSessionResponse,
-    SubmissionSessionAnswerResponse,
+    SurveyDocumentAnswerResponse,
 )
 
 
@@ -76,14 +77,15 @@ def resume_submission_session():
 
 @openapi_route(
     summary="Save submission session answer",
-    request_model=SaveSubmissionSessionAnswerRequest,
-    response_model=SubmissionSessionAnswerResponse,
+    request_model=SaveSurveyDocumentAnswerRequest,
+    response_model=SurveyDocumentAnswerResponse,
     tags=["Respondent Submission Sessions"],
     auth_required=False,
 )
-@respondent_bp.route("/submission-sessions/current/answers/<uuid:question_node_id>", methods=["PUT"])
-def save_submission_session_answer(question_node_id: UUID):
-    payload = parse(SaveSubmissionSessionAnswerRequest, request)
+@respondent_bp.route("/submission-sessions/current/answers/<field_id>", methods=["PUT"])
+def save_submission_session_answer(field_id: str):
+    field_id = validate(FieldId, field_id)
+    payload = parse(SaveSurveyDocumentAnswerRequest, request)
     core_db = get_core_db()
     response_db = get_response_db()
 
@@ -91,18 +93,18 @@ def save_submission_session_answer(question_node_id: UUID):
         core_db,
         response_db,
         raw_resume_token=get_submission_session_token(),
-        question_node_id=question_node_id,
+        field_id=field_id,
         answer_state=payload.state,
-        answer_value=payload.answer_value,
+        answer_value=payload.value,
         client_mutation_id=payload.client_mutation_id,
     )
 
-    response = SubmissionSessionAnswerResponse(
-        question_node_id=question_node_id,
-        node_key=result.node_key,
+    response = SurveyDocumentAnswerResponse(
+        field_id=field_id,
+        field_key=result.field_key,
         state=payload.state,
-        answer_family=payload.answer_family,
-        answer_value=payload.answer_value,
+        response_type=result.response_type,
+        value=result.value,
         client_mutation_id=payload.client_mutation_id,
         saved_at=datetime.now(UTC),
     )
@@ -122,11 +124,11 @@ def record_submission_session_event():
     core_db = get_core_db()
     response_db = get_response_db()
 
-    session_management_service.record_question_viewed(
+    session_management_service.record_field_viewed(
         core_db,
         response_db,
         raw_resume_token=get_submission_session_token(),
-        question_node_id=payload.question_node_id,
+        field_id=payload.field_id,
     )
     return "", 204
 

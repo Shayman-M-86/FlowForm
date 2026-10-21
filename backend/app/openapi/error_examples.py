@@ -143,7 +143,7 @@ def _instantiate_for_doc(cls: type[AppError]) -> AppError | None:
 
     try:
         sig = inspect.signature(cls)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         logger.warning("Could not introspect signature for %s", cls.__name__)
         return None
 
@@ -252,7 +252,7 @@ def _iter_db_integrity_examples() -> list[tuple[AppError, str]]:
 def _build_pydantic_example() -> dict[str, Any]:
     """Produce a realistic 422 payload by failing a real request schema.
 
-    Uses ``CreateNodeRequest`` because it exercises nested + discriminated
+    Uses ``CreateVersionRequest`` because it exercises nested + discriminated
     union validation, which produces a rich, representative error array.
     Falls back to a hand-rolled minimal example if the import or the
     validation fails to raise.
@@ -260,15 +260,28 @@ def _build_pydantic_example() -> dict[str, Any]:
     try:
         from pydantic import TypeAdapter
 
-        from app.schema.api.requests.content.node import CreateNodeRequest
-        _ta = TypeAdapter(CreateNodeRequest)
+        from app.schema.api.requests.surveys import CreateVersionRequest
+
+        _ta = TypeAdapter(CreateVersionRequest)
     except ImportError:
-        logger.warning("Could not import CreateNodeRequest for 422 example")
+        logger.warning("Could not import CreateVersionRequest for 422 example")
         return _fallback_pydantic_example()
 
     try:
         _ta.validate_python(
-            {"type": "question", "sort_key": "not-an-int", "content": {}}
+            {
+                "definition": {
+                    "document": {
+                        "sections": [
+                            {
+                                "id": "section_example",
+                                "title": "Example",
+                                "blocks": [{"id": "block_example", "type": "paragraph", "content": {"text": ""}}],
+                            }
+                        ]
+                    }
+                }
+            }
         )
     except ValidationError as exc:
         return {

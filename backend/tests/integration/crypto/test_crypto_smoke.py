@@ -48,10 +48,10 @@ class TestLocalCryptoRoundTrip:
 
     def test_answer_encrypt_decrypt_round_trip(self) -> None:
         plaintext_dek = PlaintextSessionKey(os.urandom(32))
-        question_node_id = uuid.uuid4()
+        field_id = "field_name"
 
         payload_bytes = build_plaintext_payload(
-            question_node_id=question_node_id,
+            field_id=field_id,
             answer_state="answered",
             answer_value={"choice": "option_a"},
         )
@@ -61,7 +61,7 @@ class TestLocalCryptoRoundTrip:
 
         decrypted = decrypt_answer(ciphertext, plaintext_dek, nonce, aad)
         parsed = parse_plaintext_payload(decrypted)
-        assert parsed.question_node_id == question_node_id
+        assert parsed.field_id == field_id
         assert parsed.answer_state == "answered"
         assert parsed.answer_value == {"choice": "option_a"}
 

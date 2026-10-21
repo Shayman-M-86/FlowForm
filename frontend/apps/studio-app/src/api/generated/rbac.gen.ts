@@ -5,6 +5,7 @@ export type FlowFormPermission =
   | "project:edit"
   | "project:manage_members"
   | "project:manage_roles"
+  | "submission:view"
   | "survey:archive"
   | "survey:create"
   | "survey:delete"
@@ -37,9 +38,11 @@ export const operationPermissions: Record<string, FlowFormPermission | null> = {
   deleteParticipant: "project:manage_members",
   deleteProject: "project:delete",
   deleteRole: "project:manage_roles",
+  deleteSession: "submission:view",
   deleteSurvey: "survey:delete",
   deleteSurveyAccessLink: "survey:edit",
   deleteSurveyRole: "project:manage_roles",
+  exportResults: "submission:view",
   getMyInvitations: null,
   getMyProfile: null,
   getMyProjectPermissions: null,
@@ -47,6 +50,7 @@ export const operationPermissions: Record<string, FlowFormPermission | null> = {
   getProject: null,
   getPublicSurvey: null,
   getSubject: "project:manage_members",
+  getSubjectTree: "submission:view",
   getSurvey: "survey:view",
   getVersion: "survey:view",
   healthCheck: null,
@@ -59,6 +63,7 @@ export const operationPermissions: Record<string, FlowFormPermission | null> = {
   listSubjects: "project:manage_members",
   listSurveyAccessLinks: "survey:view",
   listSurveyMembers: "project:manage_members",
+  listSurveyResultSubjects: "submission:view",
   listSurveyRoles: "project:manage_roles",
   listSurveys: "survey:view",
   listVersions: "survey:view",
@@ -67,6 +72,7 @@ export const operationPermissions: Record<string, FlowFormPermission | null> = {
   recordSubmissionSessionEvent: null,
   removeMember: "project:manage_members",
   removeSurveyMemberRole: "project:manage_members",
+  replaceDefinition: "survey:edit",
   resendVerification: null,
   resolveInvitation: null,
   resolveLink: null,
@@ -125,6 +131,10 @@ export const routePermissions: RoutePermissionEntry[] = [
   { method: "POST", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/members$/, permission: "project:manage_members", paramNames: ["project_id","survey_id"] },
   { method: "PATCH", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/members\/(?<membership_id>[^\/]+)$/, permission: "project:manage_members", paramNames: ["project_id","survey_id","membership_id"] },
   { method: "DELETE", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/members\/(?<membership_id>[^\/]+)$/, permission: "project:manage_members", paramNames: ["project_id","survey_id","membership_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/results\/subjects$/, permission: "submission:view", paramNames: ["project_id","survey_id"] },
+  { method: "GET", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/results\/subjects\/(?<subject_id>[^\/]+)$/, permission: "submission:view", paramNames: ["project_id","survey_id","subject_id"] },
+  { method: "POST", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/results\/export$/, permission: "submission:view", paramNames: ["project_id","survey_id"] },
+  { method: "DELETE", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/results\/sessions\/(?<session_id>[^\/]+)$/, permission: "submission:view", paramNames: ["project_id","survey_id","session_id"] },
   { method: "GET", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/survey-roles$/, permission: "project:manage_roles", paramNames: ["project_id"] },
   { method: "POST", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/survey-roles$/, permission: "project:manage_roles", paramNames: ["project_id"] },
   { method: "PATCH", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/survey-roles\/(?<role_id>[^\/]+)$/, permission: "project:manage_roles", paramNames: ["project_id","role_id"] },
@@ -140,4 +150,5 @@ export const routePermissions: RoutePermissionEntry[] = [
   { method: "GET", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)$/, permission: "survey:view", paramNames: ["project_id","survey_id","version_number"] },
   { method: "POST", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/publish$/, permission: "survey:publish", paramNames: ["project_id","survey_id","version_number"] },
   { method: "POST", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/archive$/, permission: "survey:archive", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "PUT", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/definition$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_number"] },
 ];

@@ -4,10 +4,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.schema.api import limits
+from app.schema.api.content.survey_document import ChoiceOption
 from app.schema.api.requests.auth import BootstrapUserRequest
-from app.schema.api.requests.content.questions_schemas import ChoiceOptionIn
-from app.schema.api.requests.content.rule_schemas import RuleSetItemIn
-from app.schema.api.requests.content.scoring_rule_schemas import MatchingPairIn
 from app.schema.api.requests.projects import (
     CreateProjectRequest,
     CreateProjectRoleRequest,
@@ -74,15 +72,7 @@ def _too_long(limit: int) -> str:
             limits.ID_TOKEN_MAX,
         ),
         (
-            lambda value: ChoiceOptionIn(id=value, label="Choice"),
-            limits.SCHEMA_ID_MAX,
-        ),
-        (
-            lambda value: RuleSetItemIn(target_id=value, visible=True),
-            limits.SCHEMA_ID_MAX,
-        ),
-        (
-            lambda value: MatchingPairIn(left_id=value, right_id="right"),
+            lambda value: ChoiceOption(id="option_" + value, label="Choice"),
             limits.SCHEMA_ID_MAX,
         ),
     ],

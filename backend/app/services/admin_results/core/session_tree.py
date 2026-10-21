@@ -3,7 +3,7 @@
 ``SessionTreeBuilder`` turns submission sessions into result trees: per-slot
 answer results (optionally decrypted) plus an optional event timeline. It holds
 the cache and crypto clients and delegates decryption to ``core.decryption`` and
-metadata lookups to ``core.question_meta``.
+metadata lookups to ``core.field_meta``.
 """
 
 from __future__ import annotations
@@ -18,19 +18,20 @@ from sqlalchemy.orm import Session
 from app.cache import get_app_cache
 from app.crypto._internal.client_extension import get_crypto_clients
 from app.crypto.models import AnswerLocator
-from app.repositories import content_repo as cr
+from app.repositories import surveys_repo
 from app.repositories.core import submission_answer_slots, submission_events
 from app.repositories.core import submission_sessions as ssr
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema.api.content.survey_document import (
+    SurveyDefinition,
+    SurveyDocumentAnswerValue,
+    SurveyField,
+    parse_survey_document_answer_value,
+)
 from app.schema.enums import SubmissionAnswerState
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.services.admin_results.core.decryption import resolve_and_decrypt_answers
-from app.services.admin_results.core.question_meta import (
-    QuestionMetaMap,
-    build_question_meta_map,
-    resolve_answer_value,
-)
+from app.services.admin_results.core.field_meta import build_field_map
 from app.services.results import (
     AnswerSlotResult,
     SessionEventResult,
@@ -87,7 +88,10 @@ class SessionTreeBuilder:
         if not slots:
             return SessionTreeResult(session=session, answers=[], events=events)
 
-        question_meta_map = build_question_meta_map(cr.list_question_nodes(db, session.survey_version_id))
+        version = surveys_repo.get_version_by_id(db, session.survey_version_id)
+        if version is None:
+            raise ValueError("The session's frozen survey version is missing.")
+        fields = build_field_map(SurveyDefinition.model_validate(version.definition))
 
         resolved = resolve_and_decrypt_answers(
             db,
@@ -105,7 +109,7 @@ class SessionTreeBuilder:
                 locator=resolved.locators[slot.id],
                 found=resolved.found,
                 decrypted_by_locator=resolved.decrypted_by_locator,
-                question_meta_map=question_meta_map,
+                field=fields[slot.field_id],
             )
             for slot in slots
         ]
@@ -121,7 +125,7 @@ class SessionTreeBuilder:
         return [
             SessionEventResult(
                 event_type=e.event_type,
-                question_node_id=e.question_node_id,
+                field_id=e.field_id,
                 received_at=e.received_at,
             )
             for e in events
@@ -134,28 +138,26 @@ def build_answer_slot_result(
     locator: AnswerLocator,
     found: dict[bytes, Any],
     decrypted_by_locator: dict[bytes, Any],
-    question_meta_map: QuestionMetaMap,
+    field: SurveyField,
 ) -> AnswerSlotResult:
     """Build one answer-slot result, resolving its decrypted value when present."""
     has_encrypted_answer = bytes(locator) in found
     decrypted_payload = decrypted_by_locator.get(bytes(locator))
-    question_key, answer_family = question_meta_map.get(slot.question_node_id, (slot.question_key, None))
 
     answer_state: SubmissionAnswerState | None = None
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
+    answer_value: SurveyDocumentAnswerValue | None = None
     if decrypted_payload is not None:
+        if decrypted_payload.field_id != slot.field_id:
+            raise ValueError("Decrypted answer does not match its field slot.")
         answer_state = decrypted_payload.answer_state
-        answer_value = resolve_answer_value(
-            answer_family=answer_family,
-            answer_state=decrypted_payload.answer_state,
-            raw_value=decrypted_payload.answer_value,
-        )
+        if answer_state == "answered":
+            answer_value = parse_survey_document_answer_value(field.response.type, decrypted_payload.answer_value)
 
     return AnswerSlotResult(
         slot_id=slot.id,
-        question_node_id=slot.question_node_id,
-        question_key=question_key,
-        answer_family=answer_family,
+        field_id=slot.field_id,
+        field_key=field.key,
+        response_type=field.response.type,
         has_encrypted_answer=has_encrypted_answer,
         decrypted=decrypted_payload is not None,
         answer_state=answer_state,

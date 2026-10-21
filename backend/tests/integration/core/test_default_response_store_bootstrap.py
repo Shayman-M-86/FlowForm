@@ -12,7 +12,7 @@ from app.schema.api.requests.projects import CreateProjectRequest
 from app.schema.api.requests.surveys import CreateSurveyRequest
 from app.schema.orm.core.response_store import ResponseStore
 from app.services.surveys import SurveyService
-from tests.integration.core.factories import make_project, make_survey, make_survey_question, make_survey_version
+from tests.integration.core.factories import make_project, make_survey, make_survey_version
 
 
 def test_create_project_bootstraps_platform_primary_response_store(
@@ -82,9 +82,6 @@ def test_publish_version_backfills_missing_survey_response_store(
     db_session.add(version)
     db_session.flush()
 
-    question = make_survey_question(version.id, question_key="q1")
-    db_session.add(question)
-    db_session.flush()
 
     service = SurveyService()
     published = service.publish_version(

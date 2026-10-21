@@ -10,6 +10,7 @@ from app.schema.api.requests.submission_sessions import StartSubmissionSessionRe
 from app.services.public_submissions.api.session_management import (
     SessionManagementService,
 )
+from tests.survey_document import make_definition
 
 
 def _survey() -> SimpleNamespace:
@@ -35,7 +36,8 @@ def _version() -> SimpleNamespace:
         survey_id=20,
         version_number=1,
         status="published",
-        compiled_schema={"nodes": []},
+        definition=make_definition(),
+        revision=0,
         published_at=now,
         created_by_user_id=None,
         created_at=now,
