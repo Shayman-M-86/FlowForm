@@ -172,6 +172,7 @@ Regenerate them from their source definitions.
 | `VITE_AUTH0_DOMAIN`    | Auth0 tenant domain | required                |
 | `VITE_AUTH0_CLIENT_ID` | Auth0 client ID     | required                |
 | `VITE_AUTH0_AUDIENCE`  | Auth0 API audience  | required                |
+| `VITE_PUBLIC_SITE_URL` | Public site origin for "Back to FlowForm" links | derived: `studio.<host>` → `<host>` |
 
 ---
 

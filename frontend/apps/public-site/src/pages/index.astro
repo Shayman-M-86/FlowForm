@@ -5,14 +5,18 @@ import AnimatedApng from "../components/AnimatedApng.astro";
 import AdaptiveHeroDemo from "../components/AdaptiveHeroDemo.astro";
 import QuestionTypeDemos from "../components/QuestionTypeDemos.astro";
 import { NodePageIsland } from "../components/NodePageIsland";
-import { GITHUB_URL } from "@flowform/site-shell";
+import { GITHUB_URL, studioUrl } from "@flowform/site-shell";
 import {
   ArrowRight, CornerDownLeft, Check, CheckCheck,
   Users, UserRound, ClipboardList, LockKeyhole,
-  FilePenLine, Send, CalendarClock,
+  FilePenLine, Send, CalendarClock, UserPlus, ChartColumn,
   Microscope, GraduationCap, MessageSquare, ListFilter,
 } from "@lucide/astro";
 import "../styles/marketing.css";
+
+// Rewritten per-host at runtime by SiteHeader (see data-studio-link).
+const studioSignupHref = studioUrl("signup", null);
+const studioLoginHref = studioUrl("login", null);
 ---
 
 <Layout
@@ -27,12 +31,12 @@ import "../styles/marketing.css";
           <span class="marketing-beta">In beta · Free to explore</span>
           <p class="marketing-eyebrow">INTELLIGENT SURVEYS. REAL PEOPLE.</p>
           <h1>Smarter forms.<br /><span>Simpler workflows.</span></h1>
-          <p class="hero-description">Build surveys that adapt to each person. Bring your forms, participants, and responses together in one place.</p>
+          <p class="hero-description">Build surveys that adapt to each person. Then publish, share, and review every response in FlowForm Studio, your team’s workspace.</p>
           <div class="marketing-actions">
             <a href="#builder" class="ui-button-primary marketing-primary">Start building <ArrowRight size={18} aria-hidden="true" /></a>
-            <a href="#features" class="ui-button-secondary marketing-secondary">See what you can create</a>
+            <a href={studioSignupHref} data-studio-link="signup" class="ui-button-secondary marketing-secondary">Create a free account</a>
           </div>
-          <p class="hero-reassurance">No account needed to try the builder.</p>
+          <p class="hero-reassurance">No account needed to try the builder. <a href="#studio">See what Studio adds →</a></p>
           <ul class="hero-benefits" aria-label="FlowForm benefits">
             <li><AnimatedApng src="/icons/icons8-settings-48.webp" alt="Adaptive questions" width={25} height={25} /> Questions that adapt</li>
             <li><AnimatedApng src="/icons/icons8-paper-48.webp" alt="Organised projects" width={25} height={25} /> Everything organised</li>
@@ -52,7 +56,7 @@ import "../styles/marketing.css";
         </div>
         <aside class="handwritten-note builder-note" aria-hidden="true">Build it. Preview it.<br />See where it takes you.<CornerDownLeft size={38} stroke-width={1.3} /></aside>
       </div>
-      <div class="marketing-container builder-demo-label"><span>YOUR PLAYGROUND</span><p>Saved in this browser · No sign-up · Nothing published</p></div>
+      <div class="marketing-container builder-demo-label"><span>YOUR PLAYGROUND</span><p>Saved in this browser · No sign-up · Nothing published · <a href={studioSignupHref} data-studio-link="signup">Ready to publish? Use Studio</a></p></div>
       <NodePageIsland client:only="react">
         <div slot="fallback" class="builder-loading" aria-hidden="true">
           <div class="builder-loading__body"><div class="builder-loading__card"><div class="builder-loading__wave"></div></div></div>
@@ -83,10 +87,20 @@ import "../styles/marketing.css";
     <section id="studio" class="marketing-section marketing-soft-section">
       <div class="marketing-container">
         <div class="section-heading">
-          <p class="marketing-eyebrow">BEYOND THE FORM</p>
-          <h2>Less scattered.<br />More connected.</h2>
-          <p class="section-description">A survey is often just the beginning. FlowForm Studio brings your forms, the people taking part, and the answers they share into one workspace.</p>
+          <p class="marketing-eyebrow">FLOWFORM STUDIO</p>
+          <h2>Try it here.<br />Run it in Studio.</h2>
+          <p class="section-description">The playground above is a taste. FlowForm Studio is the workspace you sign in to: build and publish real surveys, invite your team, share them with participants, and review every response in one place.</p>
         </div>
+        <ul class="studio-capabilities" aria-label="What you can do in FlowForm Studio">
+          {[
+            { Icon: FilePenLine, title: "Build & publish", detail: "Use the full builder, then publish a version when it’s ready to collect responses." },
+            { Icon: UserPlus, title: "Invite your team", detail: "Add collaborators and choose who can edit, publish, or review responses." },
+            { Icon: Send, title: "Share with participants", detail: "Send a public link, or give each participant their own private access link." },
+            { Icon: ChartColumn, title: "Review responses", detail: "See answers as they arrive, each linked to the version that collected it." },
+          ].map(({ Icon, title, detail }) => (
+            <li><span class="studio-capability-icon"><Icon size={20} stroke-width={1.75} aria-hidden="true" /></span><h3>{title}</h3><p>{detail}</p></li>
+          ))}
+        </ul>
         <div class="workspace-features">
           <article class="marketing-feature project-feature">
             <span class="feature-icon"><AnimatedApng src="/icons/icons8-settings-48.webp" alt="settings" width={36} height={36} /></span>
@@ -111,9 +125,15 @@ import "../styles/marketing.css";
             </ul>
           </article>
         </div>
-        <div class="team-strip">
-          <span class="feature-icon"><AnimatedApng src="/icons/icons8-verified-account-48.webp" alt="Team access" width={34} height={34} /></span>
-          <div><h3>The right people. The right access.</h3><p>Invite your team and choose who can edit, publish, or review responses. Keep working together without giving everyone the keys to everything.</p></div>
+        <div class="studio-cta">
+          <div>
+            <h3>Your workspace is waiting.</h3>
+            <p>FlowForm Studio is free during beta. Create an account to build, publish, and share your first survey.</p>
+          </div>
+          <div class="marketing-actions">
+            <a href={studioSignupHref} data-studio-link="signup" class="ui-button-primary marketing-primary">Create a free account <ArrowRight size={18} aria-hidden="true" /></a>
+            <a href={studioLoginHref} data-studio-link="login" class="ui-button-secondary marketing-secondary">Sign in to Studio</a>
+          </div>
         </div>
       </div>
     </section>
@@ -197,7 +217,10 @@ import "../styles/marketing.css";
         <p class="marketing-eyebrow">GOOD QUESTIONS ARE A GOOD START</p>
         <h2>Make collecting information<br />the easy part.</h2>
         <p>Start with one question. See where it takes you.</p>
-        <a href="#builder" class="ui-button-primary marketing-primary">Start building <ArrowRight size={18} aria-hidden="true" /></a>
+        <div class="marketing-actions final-cta-actions">
+          <a href="#builder" class="ui-button-primary marketing-primary">Start building <ArrowRight size={18} aria-hidden="true" /></a>
+          <a href={studioSignupHref} data-studio-link="signup" class="ui-button-secondary marketing-secondary">Create a free account</a>
+        </div>
         <p class="cta-reassurance">Free during beta · No account needed for the demo</p>
       </div>
     </section>
@@ -206,7 +229,7 @@ import "../styles/marketing.css";
       <div class="marketing-container footer-top">
         <a href="/" class="footer-brand"><img src="/FlowForm_logo.png" alt="" width="28" height="28" /><span>FlowForm</span></a>
         <p>Better questions. A more connected way to work.</p>
-        <nav aria-label="Footer"><a href="#features">Features</a><a href="#roadmap">What’s next</a><a href="/docs/introduction">Docs</a><a href={GITHUB_URL} target="_blank" rel="noopener">GitHub<span class="sr-only"> (opens a new tab)</span></a><a href="mailto:support@flow-form.com.au">Get in touch</a></nav>
+        <nav aria-label="Footer"><a href="#features">Features</a><a href="#roadmap">What’s next</a><a href="/docs/introduction">Docs</a><a href={studioLoginHref} data-studio-link="login">Studio</a><a href={GITHUB_URL} target="_blank" rel="noopener">GitHub<span class="sr-only"> (opens a new tab)</span></a><a href="mailto:support@flow-form.com.au">Get in touch</a></nav>
       </div>
       <div class="marketing-container footer-bottom"><span>© {new Date().getFullYear()} FlowForm</span><span>Built with people in mind.</span></div>
     </footer>

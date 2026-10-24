@@ -1,6 +1,11 @@
 ---
 import "@flowform/site-shell/header.css";
-import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from "@flowform/site-shell";
+import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS, studioUrl } from "@flowform/site-shell";
+
+// Build-time hrefs point at production Studio; the script below rewrites them
+// for the current host (staging, local dev) once the page loads.
+const studioLoginHref = studioUrl("login", null);
+const studioSignupHref = studioUrl("signup", null);
 ---
 
 <style is:inline>
@@ -126,6 +131,14 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from "@flowform/site-shell";
         </svg>
       </button>
 
+      <a
+        href={studioLoginHref}
+        class="site-header__nav-link site-header__signin"
+        data-studio-link="login"
+      >
+        Sign in
+      </a>
+
       <a href="/#builder" class="site-header__cta">Try it free</a>
     </div>
   </div>
@@ -144,8 +157,40 @@ import { BRAND, GITHUB_URL, PUBLIC_NAV_LINKS } from "@flowform/site-shell";
         </a>
       ))
     }
+    <div class="site-header__nav-dropdown-studio">
+      <a
+        href={studioSignupHref}
+        class="site-header__nav-dropdown-cta"
+        data-studio-link="signup"
+      >
+        Create a free account
+      </a>
+      <a
+        href={studioLoginHref}
+        class="site-header__nav-dropdown-link"
+        data-studio-link="login"
+      >
+        Sign in to Studio
+      </a>
+    </div>
   </nav>
 </header>
+
+<script>
+  import { studioUrl, type StudioAuthIntent } from "@flowform/site-shell";
+
+  const syncStudioLinks = () => {
+    document
+      .querySelectorAll<HTMLAnchorElement>("a[data-studio-link]")
+      .forEach((link) => {
+        const intent = link.dataset.studioLink as StudioAuthIntent | "";
+        link.href = studioUrl(intent || undefined);
+      });
+  };
+
+  syncStudioLinks();
+  document.addEventListener("astro:page-load", syncStudioLinks);
+</script>
 
 <script is:inline>
   (() => {

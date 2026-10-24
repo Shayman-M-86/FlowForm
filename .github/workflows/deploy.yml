@@ -91,8 +91,13 @@ jobs:
         working-directory: frontend
         run: pnpm run build:site
 
+      # Staging Studio links back to the live public site (still the hand-made
+      # Amplify app on the apex) rather than deriving staging.flow-form.com.au.
+      # Drop this once each environment pairs studio.<host> with <host>.
       - name: Build studio-app
         working-directory: frontend
+        env:
+          VITE_PUBLIC_SITE_URL: https://flow-form.com.au
         run: pnpm run build:studio
 
       # Assets first, index.html last: HTML references content-hashed asset
