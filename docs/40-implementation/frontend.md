@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [frontend]
 related_code:
   - "../../frontend/package.json"
@@ -83,9 +83,14 @@ package source are handwritten. The following checked-in files are generated:
 - `studio-app/src/api/generated/rbac.gen.ts` and
   `packages/schema/src/generated/` by `frontend/scripts/generate-types.mjs`.
 
-The generator reads `backend/openapi.yaml`. If builder schema output changes it
-also warns that the handcrafted AI-import prompt requires review; that prompt
-is not generated.
+The generator reads `backend/openapi.yaml`. It also generates the complete
+node-array input JSON Schema in `packages/schema/src/generated/survey-node-import.gen.ts`,
+including every nested question and rule variant. Both AI-import generation and
+repair prompts include that schema and validated examples from
+`packages/builder/src/components/Utils/ai-import/surveyNodePrompt.ts`. Repair
+prompts include the original survey request, every validation issue, and the
+JSON to repair. Semantic guidance and examples remain handwritten; the generator
+warns to review them when builder contracts change.
 
 ## Tests and validation
 

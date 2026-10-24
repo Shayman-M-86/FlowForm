@@ -9,48 +9,9 @@ import {
   type SurveyNodeImportIssue,
 } from "./surveyNodeImport";
 
+import { buildSurveyNodePrompt, buildSurveyNodeFixPrompt } from "./surveyNodePrompt";
+
 const AI_IMPORT_STORAGE_KEY = "flowform.ai-import.pending";
-
-const SCHEMA_PROMPT = `You are a survey schema generator for FlowForm.
-
-Return ONLY a JSON array of survey nodes — no explanation, no markdown, no code fences.
-
-Each node is either a question node or a rule node. Every node has:
-  "id": "<unique UUID string>", "node_key": "<unique string>", "node_type": "question" | "rule",
-  "sort_key": <number>, "content": <Content>
-
-QUESTION NODE
-{ "id": "11111111-1111-4111-8111-111111111111", "node_key": "question_id_1", "node_type": "question", "sort_key": 100000, "content": <QuestionContent> }
-
-QuestionContent shapes (note: family/label/title/definition live in content; the identifier is node_key, not inside content):
-
-Choice (single or multi-select):
-{ "family": "choice", "title": "Section heading", "label": "Question text", "definition": { "min": 1, "max": 1, "options": [{ "id": "opt_1", "label": "Option text" }] } }
-
-Field (text / number / date):
-{ "family": "field", "title": "Section heading", "label": "Question text", "definition": { "field_type": "short_text", "ui": { "placeholder": "Optional" } } }
-field_type options: short_text | long_text | email | phone | number | date
-
-Rating:
-{ "family": "rating", "title": "Section heading", "label": "Question text", "definition": { "variant": "stars", "stars": 5, "ui": { "left_label": "Poor", "right_label": "Excellent" } } }
-variant options: stars | slider | emoji
-
-Matching:
-{ "family": "matching", "title": "Section heading", "label": "Question text", "definition": { "prompts": [{ "id": "p1", "label": "Prompt" }], "matches": [{ "id": "m1", "label": "Match" }] } }
-
-RULE NODE
-{ "id": "99999999-9999-4999-8999-999999999999", "node_key": "r1", "node_type": "rule", "sort_key": 250000, "content": { "if": { "match": "ALL", "conditions": [{ "target_id": "question_id_1", "family": "choice", "requirements": { "required": ["opt_1"] } }] }, "then": { "do": { "skip_to": "question_id_3" } } } }
-
-RULES
-- "id" is a unique UUID string per node. "node_key" is a unique string per node.
-- target_id and skip_to reference another node's "node_key" (e.g. "question_id_1"), not its id.
-- node_key suggestions: question_id_1, question_id_2, ...  Rules: r1, r2, ...
-- Rule conditions may only reference EARLIER questions; rule actions (skip_to / set) may only reference LATER questions.
-- sort_key: position × 100000 (first node = 100000), strictly increasing.
-- Only include "then.set", "then.do", "else" when needed.
-
-USER REQUEST
-`;
 
 interface AiImportModalProps {
   open: boolean;
@@ -118,7 +79,7 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
   }, [pasteValue]);
 
   async function handleCopy() {
-    const text = `${SCHEMA_PROMPT}${description.trim()}`;
+    const text = buildSurveyNodePrompt(description);
     try { await navigator.clipboard.writeText(text); } catch { /* ignore */ }
     savePending(description);
     setCopied(true);
@@ -255,7 +216,7 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
           <div className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/40 px-3.5 py-3">
             <Sparkles size={15} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
             <p className="m-0 text-sm text-muted-foreground">
-              Describe your survey. Click <strong className="text-foreground font-medium">Copy prompt</strong> — then paste into any AI assistant and bring back the JSON.
+              Describe your survey. Click <strong className="text-foreground font-medium">Copy prompt</strong> to include the complete schema and examples — then paste into any AI assistant and bring back the JSON.
             </p>
           </div>
           <textarea
@@ -277,7 +238,7 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
           <textarea
             ref={pasteRef}
             className="flex-1 w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder={'[{ "type": "question", "sort_key": 100000, ... }]'}
+            placeholder="Paste the complete JSON array from your AI assistant"
             value={pasteValue}
             onChange={(e) => setPasteValue(e.target.value)}
             spellCheck={false}
@@ -295,18 +256,7 @@ export function AiImportModal({ open, hasExistingQuestions, onClose, onImport }:
             </div>
           )}
           {error && (() => {
-            const issueSummary = error.issues
-              .slice(0, 12)
-              .map((issue, index) => {
-                const location = [
-                  issue.path,
-                  issue.line ? `line ${issue.line}${issue.column ? ` col ${issue.column}` : ""}` : null,
-                  issue.nodeIndex !== null ? `node index ${issue.nodeIndex}` : null,
-                ].filter(Boolean).join(", ");
-                return `${index + 1}. ${location}: ${issue.message}${issue.suggestion ? ` Suggested fix: ${issue.suggestion}` : ""}`;
-              })
-              .join("\n");
-            const fixPrompt = `The JSON you gave me failed FlowForm import validation.\n\nErrors:\n${issueSummary}\n\nFix the JSON below and return the complete corrected JSON array only — no explanation, no markdown.\n\n${pasteValue}`;
+            const fixPrompt = buildSurveyNodeFixPrompt(pasteValue, error.issues, description);
             const visibleIssues = error.issues.slice(0, 8);
             const hiddenCount = error.issues.length - visibleIssues.length;
             return (
