@@ -65,6 +65,25 @@ Maps frontend concepts to verified repository implementation.
 - `packages/schema/src/index.ts` exposes generated TypeScript and Zod contracts
   derived from backend OpenAPI schemas.
 
+## Public homepage experience
+
+The homepage uses benefit-led sections for adaptive forms, project and participant
+management, publishing, privacy, and use cases. Automation progression,
+follow-ups, and reminders are explicitly labelled as planned capabilities.
+`AdaptiveHeroDemo.astro` is a browser-only example: role selection changes the
+follow-up field without submitting information. The actual shared builder remains
+embedded below it in the normal page flow. Its section clips the decorative
+background without becoming an independently scrolling container.
+
+On a first visit, `NodePageIsland.tsx` starts with an editable three-node survey
+showing a conditional follow-up. An existing local draft, including an intentionally
+cleared array, takes priority. Demo drafts stay in browser storage; they are not
+published or copied to Studio. `QuestionTypeDemos.astro` retains the animated
+recordings, horizontal dragging, click-to-centre, and navigation dots. Existing
+animated icon assets are reused through `AnimatedApng.astro`; its resize handler
+redraws the loaded still frame rather than an animation image with no source.
+Handwritten annotations use the locally hosted Caveat font and its bundled licence.
+
 ## Dependency direction
 
 Applications import shared workspace packages as source dependencies. Builder

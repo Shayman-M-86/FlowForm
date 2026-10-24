@@ -1,0 +1,132 @@
+---
+import { CornerDownLeft, Check, ArrowRight } from "@lucide/astro";
+---
+
+<div class="adaptive-demo" data-adaptive-demo>
+  <form class="adaptive-demo-form" aria-label="Try an adaptive survey example">
+    <div class="adaptive-question-card">
+      <div class="demo-card-heading">
+        <span>YOUR SURVEY, THEIR PATH</span>
+        <span>1 of 2</span>
+      </div>
+      <progress class="demo-progress" value="1" max="2" aria-label="Example survey progress: question 1 of 2"></progress>
+      <fieldset>
+        <legend>What’s your current role?</legend>
+        {[
+          { value: "student", label: "Student" },
+          { value: "professional", label: "Working professional" },
+          { value: "freelancer", label: "Freelancer" },
+        ].map(({ value, label }) => (
+          <label class="demo-option">
+            <input type="radio" name="example-role" value={value} checked={value === "professional"} />
+            <span>{label}</span>
+            <Check class="demo-option-check" size={16} aria-hidden="true" />
+          </label>
+        ))}
+      </fieldset>
+    </div>
+
+    <div class="adaptive-follow-up" aria-live="polite" aria-atomic="true">
+      <span class="demo-followup-eyebrow"><ArrowRight size={14} aria-hidden="true" /> YOUR NEXT QUESTION</span>
+      <label for="hero-experience" data-followup-label>How many years of experience do you have?</label>
+      <div data-followup="professional" class="demo-answer-row">
+        <input id="hero-experience" type="number" min="0" max="80" value="5" aria-label="Years of professional experience" />
+        <span>years</span>
+      </div>
+      <div data-followup="student" hidden>
+        <select id="hero-study" aria-label="What are you studying?">
+          <option>Choose your area of study</option>
+          <option>Arts &amp; humanities</option>
+          <option>Science &amp; technology</option>
+          <option>Business &amp; economics</option>
+          <option>Something else</option>
+        </select>
+      </div>
+      <div data-followup="freelancer" hidden>
+        <input id="hero-work" type="text" placeholder="e.g. Design, writing, consulting" aria-label="What kind of work do you do?" />
+      </div>
+      <p data-followup-reason>Shown because you chose “Working professional”.</p>
+    </div>
+  </form>
+  <aside class="handwritten-note hero-demo-note" aria-hidden="true">
+    The next question<br />follows your answer.
+    <CornerDownLeft size={54} stroke-width={1.3} />
+  </aside>
+</div>
+
+<script>
+  function initAdaptiveDemo() {
+    document.querySelectorAll<HTMLElement>("[data-adaptive-demo]").forEach((root) => {
+      if (root.dataset.initialized) return;
+      root.dataset.initialized = "true";
+      const questions = {
+        student: { label: "What are you studying?", input: "hero-study", role: "Student" },
+        professional: { label: "How many years of experience do you have?", input: "hero-experience", role: "Working professional" },
+        freelancer: { label: "What kind of work do you do?", input: "hero-work", role: "Freelancer" },
+      };
+      root.querySelector("form")?.addEventListener("submit", (event) => event.preventDefault());
+      root.querySelectorAll<HTMLInputElement>('input[name="example-role"]').forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (!(radio.value in questions)) return;
+          const key = radio.value as keyof typeof questions;
+          const next = questions[key];
+          root.querySelectorAll<HTMLElement>("[data-followup]").forEach((panel) => {
+            panel.hidden = panel.dataset.followup !== key;
+          });
+          const label = root.querySelector<HTMLLabelElement>("[data-followup-label]");
+          if (label) { label.textContent = next.label; label.htmlFor = next.input; }
+          const reason = root.querySelector("[data-followup-reason]");
+          if (reason) reason.textContent = `Shown because you chose “${next.role}”.`;
+        });
+      });
+    });
+  }
+  document.addEventListener("astro:page-load", initAdaptiveDemo);
+  initAdaptiveDemo();
+</script>
+
+<style>
+  .adaptive-demo { position: relative; width: 100%; max-width: 570px; padding: 30px 0 30px; }
+  .adaptive-question-card { width: calc(100% - 88px); padding: 22px; border: 1px solid var(--border); border-radius: 22px; background: var(--card); box-shadow: var(--app-shadow-lg); }
+  .demo-card-heading { display: flex; justify-content: space-between; gap: 12px; font-size: 10px; font-weight: 700; letter-spacing: .07em; color: var(--muted-foreground); }
+  .demo-progress { display: block; width: 100%; height: 6px; margin: 12px 0 18px; appearance: none; border: 0; border-radius: 999px; overflow: hidden; background: var(--muted); }
+  .demo-progress::-webkit-progress-bar { background: var(--muted); }
+  .demo-progress::-webkit-progress-value { background: var(--primary); border-radius: 999px; }
+  .demo-progress::-moz-progress-bar { background: var(--primary); border-radius: 999px; }
+  fieldset { min-width: 0; border: 0; }
+  legend { margin-bottom: 12px; font-size: 18px; line-height: 1.4; font-weight: 700; }
+  .demo-option { display: flex; align-items: center; gap: 12px; margin-top: 9px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 9px; font-size: 14px; cursor: pointer; transition: background-color 140ms ease, border-color 140ms ease; }
+  .demo-option:has(input:checked) { background: color-mix(in srgb, var(--primary) 12%, var(--card)); border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+  .demo-option:hover { border-color: var(--primary); }
+  .demo-option:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 3px; }
+  .demo-option input { accent-color: var(--primary); width: 16px; height: 16px; flex-shrink: 0; }
+  .demo-option-check { margin-left: auto; color: var(--primary); visibility: hidden; }
+  .demo-option:has(input:checked) .demo-option-check { visibility: visible; }
+  .demo-example-label { margin-top: 17px; font-size: 11px; color: var(--muted-foreground); }
+  .adaptive-follow-up { position: relative; width: calc(100% - 72px); min-height: 170px; margin: -9px 0 0 72px; padding: 20px; border: 1px solid var(--border); border-radius: 18px; background: var(--card); box-shadow: var(--app-shadow-md); }
+  .demo-followup-eyebrow { display: flex; align-items: center; gap: 7px; margin-bottom: 13px; font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--primary); }
+  .adaptive-follow-up label { display: block; margin-bottom: 14px; font-size: 15px; line-height: 1.4; font-weight: 650; }
+  .adaptive-follow-up input, .adaptive-follow-up select { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--foreground); padding: 10px 12px; font-size: 14px; }
+  .adaptive-follow-up input:focus-visible, .adaptive-follow-up select:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .demo-answer-row { display: flex; align-items: center; gap: 14px; }
+  .demo-answer-row > span { font-size: 12px; color: var(--muted-foreground); }
+  [data-followup][hidden] { display: none; }
+  .adaptive-follow-up p { margin-top: 12px; font-size: 11px; color: var(--muted-foreground); }
+  .hero-demo-note { position: absolute; right: -20px; top: 114px; width: 125px; transform: rotate(-7deg); text-align: center; }
+  .hero-demo-note svg { display: block; margin: 6px auto 0; transform: rotate(-12deg); }
+  @media (max-width: 1100px) and (min-width: 901px) {
+    .adaptive-question-card { padding: 21px; width: calc(100% - 50px); }
+    .hero-demo-note { top: -18px; right: 0; width: 185px; font-size: 21px; }
+    .hero-demo-note br { display: none; }
+    .hero-demo-note svg { display: none; }
+    .adaptive-follow-up { width: calc(100% - 38px); margin-left: 38px; }
+  }
+  @media (max-width: 600px) {
+    .adaptive-demo { max-width: 450px; padding-top: 6px; }
+    .adaptive-question-card { width: calc(100% - 20px); padding: 22px; }
+    .adaptive-follow-up { width: calc(100% - 22px); margin-left: 22px; min-height: 170px; padding: 20px; }
+    .hero-demo-note { position: static; width: auto; margin: 14px 0 0 36px; font-size: 23px; transform: rotate(-3deg); }
+    .hero-demo-note br { display: none; }
+    .hero-demo-note svg { display: inline-block; width: 28px; height: 28px; margin: 0 0 -7px 7px; transform: rotate(160deg); }
+  }
+</style>
