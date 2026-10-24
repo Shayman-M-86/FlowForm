@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
+import QuestionTypeDemos from "../components/QuestionTypeDemos.astro";
 import { NodePageIsland } from "../components/NodePageIsland";
 import AnimatedApng from "../components/AnimatedApng.astro";
 import {
@@ -219,7 +220,7 @@ import {
 <!-- ─── Question Types ─────────────────────────────────────── -->
 <section
 id="features"
-class="border-t border-border bg-background px-12 pb-10 pt-16"
+class="border-t border-border bg-background px-6 pb-10 pt-16 sm:px-12"
 >
 <div class="mx-auto max-w-7xl">
   <div class="mb-14 max-w-3xl">
@@ -240,77 +241,7 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
           </p>
         </div>
 
-        <div class="qt-track grid grid-cols-5 gap-6">
-          {
-            [
-              {
-                num: "01",
-                title: "Choice",
-                body: "Single-select and multi-select questions for preferences, eligibility checks, and scored answers.",
-                img: "/screenshots/qt-choice.png",
-              },
-              {
-                num: "02",
-                title: "Matching",
-                body: "Pair items across columns for knowledge checks, terminology tests, and association questions.",
-                img: "/screenshots/qt-matching.png",
-              },
-              {
-                num: "03",
-                title: "Rating",
-                body: "Use scales, sliders, or star-style ratings for Likert items, satisfaction scores, and quick assessments.",
-                img: "/screenshots/qt-rating.png",
-              },
-              {
-                num: "04",
-                title: "Field",
-                body: "Capture short text, numbers, dates, email addresses, and structured free-form responses.",
-                img: "/screenshots/qt-field.png",
-              },
-              {
-                num: "05",
-                title: "Rules",
-                body: "Branch the form with conditional logic using grouped AND / OR / NOT conditions.",
-                img: "/screenshots/qt-rules.png",
-              },
-            ].map(({ num, title, body, img }) => (
-              <div id={`qt-${num}`} class="qt-col flex flex-col">
-                <div class="min-h-80 flex-1 overflow-hidden rounded-2xl bg-muted">
-                  <img
-                    src={img}
-                    alt={title}
-                    class="block h-full w-full object-cover"
-                    loading="lazy"
-                    onerror="this.style.display='none'"
-                  />
-                </div>
-                <div class="pt-4">
-                  <span class="mb-1.5 block text-xs font-extrabold uppercase tracking-widest text-accent">
-                    {num}
-                  </span>
-                  <h3 class="mb-1.5 text-sm font-bold leading-tight text-foreground">
-                    {title}
-                  </h3>
-                  <p class="text-sm leading-relaxed text-muted-foreground">
-                    {body}
-                  </p>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-        <nav class="qt-dots" aria-label="Question type slides">
-          {
-            ["01", "02", "03", "04", "05"].map((num) => (
-              <a
-                href={`#qt-${num}`}
-                class="ui-action"
-                aria-label={`Show question type ${num}`}
-                aria-current={num === "01" ? "true" : undefined}
-              />
-            ))
-          }
-        </nav>
+        <QuestionTypeDemos />
       </div>
     </section>
 
@@ -1151,6 +1082,9 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
         }
       });
 
+      cards.forEach((card, index) => {
+        card.dataset.active = String(index === activeIndex);
+      });
       dots.forEach((dot, index) => {
         if (index === activeIndex) {
           dot.setAttribute("aria-current", "true");
@@ -1238,7 +1172,6 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
     );
   }
 
-  .qt-dots,
   .logic-dots {
     display: none;
   }
@@ -1255,40 +1188,6 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
   }
 
   @media (max-width: 860px) {
-    #features {
-      padding-inline: 0;
-    }
-    #features > div > div:first-child {
-      padding-inline: 24px;
-    }
-    .qt-track {
-      --carousel-card-width: min(82vw, 340px);
-      display: flex;
-      gap: 16px;
-      margin-inline: -24px;
-      overflow-x: auto;
-      padding-inline: 0;
-      padding-bottom: 14px;
-      scroll-padding-inline: 0;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-    }
-    .qt-track::before,
-    .qt-track::after {
-      content: "";
-      flex: 0 0 max(24px, calc((100% - var(--carousel-card-width)) / 2));
-    }
-    .qt-col {
-      flex: 0 0 var(--carousel-card-width);
-      scroll-snap-align: center;
-    }
-    .qt-dots {
-      display: flex;
-      justify-content: center;
-      gap: 4px;
-      margin-top: 10px;
-    }
-    .qt-dots a,
     .logic-dots a {
       position: relative;
       width: 36px;
@@ -1296,7 +1195,6 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
       border-radius: 999px;
       -webkit-tap-highlight-color: transparent;
     }
-    .qt-dots a::before,
     .logic-dots a::before {
       content: "";
       position: absolute;
@@ -1306,19 +1204,16 @@ class="border-t border-border bg-background px-12 pb-10 pt-16"
       border: 1px solid var(--accent);
       opacity: 0.7;
     }
-    .qt-dots a:focus-visible,
     .logic-dots a:focus-visible {
       opacity: 1;
       outline: 2px solid var(--accent);
       outline-offset: -6px;
     }
-    .qt-dots a[aria-current="true"]::before,
     .logic-dots a[aria-current="true"]::before {
       background: var(--accent);
       opacity: 1;
     }
     @media (hover: hover) {
-      .qt-dots a:hover::before,
       .logic-dots a:hover::before {
         background: var(--accent-muted);
         opacity: 1;
