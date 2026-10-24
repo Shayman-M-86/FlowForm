@@ -9,44 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StudioRouteImport } from './routes/_studio'
-import { Route as RespondentRouteImport } from './routes/_respondent'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as RespondentRouteImport } from './routes/_respondent'
+import { Route as StudioRouteImport } from './routes/_studio'
 import { Route as StudioIndexRouteImport } from './routes/_studio/index'
-import { Route as StudioUiTestIndexRouteImport } from './routes/_studio/ui-test/index'
-import { Route as StudioUiTest2IndexRouteImport } from './routes/_studio/ui-test-2/index'
-import { Route as StudioProjectsIndexRouteImport } from './routes/_studio/projects/index'
-import { Route as StudioAccountIndexRouteImport } from './routes/_studio/account/index'
-import { Route as StudioProjectsSlugRouteImport } from './routes/_studio/projects/$slug'
-import { Route as RespondentRespondTokenRouteImport } from './routes/_respondent/respond/$token'
 import { Route as PublicInvitationsTokenRouteImport } from './routes/_public/invitations/$token'
+import { Route as RespondentRespondTokenRouteImport } from './routes/_respondent/respond/$token'
+import { Route as StudioAccountIndexRouteImport } from './routes/_studio/account/index'
+import { Route as StudioProjectsIndexRouteImport } from './routes/_studio/projects/index'
+import { Route as StudioProjectsSlugRouteImport } from './routes/_studio/projects/$slug'
+import { Route as StudioUiTest2IndexRouteImport } from './routes/_studio/ui-test-2/index'
+import { Route as StudioUiTestIndexRouteImport } from './routes/_studio/ui-test/index'
 import { Route as StudioProjectsSlugIndexRouteImport } from './routes/_studio/projects/$slug/index'
-import { Route as StudioProjectsSlugSurveysRouteImport } from './routes/_studio/projects/$slug/surveys'
-import { Route as StudioProjectsSlugSubjectsRouteImport } from './routes/_studio/projects/$slug/subjects'
-import { Route as StudioProjectsSlugSettingsRouteImport } from './routes/_studio/projects/$slug/settings'
-import { Route as StudioProjectsSlugRolesRouteImport } from './routes/_studio/projects/$slug/roles'
 import { Route as StudioProjectsSlugMembersRouteImport } from './routes/_studio/projects/$slug/members'
+import { Route as StudioProjectsSlugRolesRouteImport } from './routes/_studio/projects/$slug/roles'
+import { Route as StudioProjectsSlugSettingsRouteImport } from './routes/_studio/projects/$slug/settings'
+import { Route as StudioProjectsSlugSubjectsRouteImport } from './routes/_studio/projects/$slug/subjects'
+import { Route as StudioProjectsSlugSurveysRouteImport } from './routes/_studio/projects/$slug/surveys'
 import { Route as StudioProjectsSlugSurveysIndexRouteImport } from './routes/_studio/projects/$slug/surveys/index'
 import { Route as StudioProjectsSlugSurveysSurveySlugRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug'
 import { Route as StudioProjectsSlugSurveysSurveySlugIndexRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/index'
-import { Route as StudioProjectsSlugSurveysSurveySlugVersionsRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/versions'
-import { Route as StudioProjectsSlugSurveysSurveySlugSettingsRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/settings'
-import { Route as StudioProjectsSlugSurveysSurveySlugRolesRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/roles'
-import { Route as StudioProjectsSlugSurveysSurveySlugResponsesRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/responses'
-import { Route as StudioProjectsSlugSurveysSurveySlugOverviewRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/overview'
-import { Route as StudioProjectsSlugSurveysSurveySlugBuilderRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/builder'
 import { Route as StudioProjectsSlugSurveysSurveySlugAccessRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/access'
+import { Route as StudioProjectsSlugSurveysSurveySlugBuilderRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/builder'
+import { Route as StudioProjectsSlugSurveysSurveySlugOverviewRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/overview'
+import { Route as StudioProjectsSlugSurveysSurveySlugResponsesRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/responses'
+import { Route as StudioProjectsSlugSurveysSurveySlugRolesRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/roles'
+import { Route as StudioProjectsSlugSurveysSurveySlugSettingsRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/settings'
+import { Route as StudioProjectsSlugSurveysSurveySlugVersionsRouteImport } from './routes/_studio/projects/$slug/surveys/$surveySlug/versions'
 
-const StudioRoute = StudioRouteImport.update({
-  id: '/_studio',
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RespondentRoute = RespondentRouteImport.update({
   id: '/_respondent',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PublicRoute = PublicRouteImport.update({
-  id: '/_public',
+const StudioRoute = StudioRouteImport.update({
+  id: '/_studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudioIndexRoute = StudioIndexRouteImport.update({
@@ -54,14 +54,19 @@ const StudioIndexRoute = StudioIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StudioRoute,
 } as any)
-const StudioUiTestIndexRoute = StudioUiTestIndexRouteImport.update({
-  id: '/ui-test/',
-  path: '/ui-test/',
-  getParentRoute: () => StudioRoute,
+const PublicInvitationsTokenRoute = PublicInvitationsTokenRouteImport.update({
+  id: '/invitations/$token',
+  path: '/invitations/$token',
+  getParentRoute: () => PublicRoute,
 } as any)
-const StudioUiTest2IndexRoute = StudioUiTest2IndexRouteImport.update({
-  id: '/ui-test-2/',
-  path: '/ui-test-2/',
+const RespondentRespondTokenRoute = RespondentRespondTokenRouteImport.update({
+  id: '/respond/$token',
+  path: '/respond/$token',
+  getParentRoute: () => RespondentRoute,
+} as any)
+const StudioAccountIndexRoute = StudioAccountIndexRouteImport.update({
+  id: '/account/',
+  path: '/account/',
   getParentRoute: () => StudioRoute,
 } as any)
 const StudioProjectsIndexRoute = StudioProjectsIndexRouteImport.update({
@@ -69,35 +74,41 @@ const StudioProjectsIndexRoute = StudioProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => StudioRoute,
 } as any)
-const StudioAccountIndexRoute = StudioAccountIndexRouteImport.update({
-  id: '/account/',
-  path: '/account/',
-  getParentRoute: () => StudioRoute,
-} as any)
 const StudioProjectsSlugRoute = StudioProjectsSlugRouteImport.update({
   id: '/projects/$slug',
   path: '/projects/$slug',
   getParentRoute: () => StudioRoute,
 } as any)
-const RespondentRespondTokenRoute = RespondentRespondTokenRouteImport.update({
-  id: '/respond/$token',
-  path: '/respond/$token',
-  getParentRoute: () => RespondentRoute,
+const StudioUiTest2IndexRoute = StudioUiTest2IndexRouteImport.update({
+  id: '/ui-test-2/',
+  path: '/ui-test-2/',
+  getParentRoute: () => StudioRoute,
 } as any)
-const PublicInvitationsTokenRoute = PublicInvitationsTokenRouteImport.update({
-  id: '/invitations/$token',
-  path: '/invitations/$token',
-  getParentRoute: () => PublicRoute,
+const StudioUiTestIndexRoute = StudioUiTestIndexRouteImport.update({
+  id: '/ui-test/',
+  path: '/ui-test/',
+  getParentRoute: () => StudioRoute,
 } as any)
 const StudioProjectsSlugIndexRoute = StudioProjectsSlugIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => StudioProjectsSlugRoute,
 } as any)
-const StudioProjectsSlugSurveysRoute =
-  StudioProjectsSlugSurveysRouteImport.update({
-    id: '/surveys',
-    path: '/surveys',
+const StudioProjectsSlugMembersRoute =
+  StudioProjectsSlugMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => StudioProjectsSlugRoute,
+  } as any)
+const StudioProjectsSlugRolesRoute = StudioProjectsSlugRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => StudioProjectsSlugRoute,
+} as any)
+const StudioProjectsSlugSettingsRoute =
+  StudioProjectsSlugSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
     getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
 const StudioProjectsSlugSubjectsRoute =
@@ -106,21 +117,10 @@ const StudioProjectsSlugSubjectsRoute =
     path: '/subjects',
     getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
-const StudioProjectsSlugSettingsRoute =
-  StudioProjectsSlugSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => StudioProjectsSlugRoute,
-  } as any)
-const StudioProjectsSlugRolesRoute = StudioProjectsSlugRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => StudioProjectsSlugRoute,
-} as any)
-const StudioProjectsSlugMembersRoute =
-  StudioProjectsSlugMembersRouteImport.update({
-    id: '/members',
-    path: '/members',
+const StudioProjectsSlugSurveysRoute =
+  StudioProjectsSlugSurveysRouteImport.update({
+    id: '/surveys',
+    path: '/surveys',
     getParentRoute: () => StudioProjectsSlugRoute,
   } as any)
 const StudioProjectsSlugSurveysIndexRoute =
@@ -141,34 +141,10 @@ const StudioProjectsSlugSurveysSurveySlugIndexRoute =
     path: '/',
     getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
   } as any)
-const StudioProjectsSlugSurveysSurveySlugVersionsRoute =
-  StudioProjectsSlugSurveysSurveySlugVersionsRouteImport.update({
-    id: '/versions',
-    path: '/versions',
-    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const StudioProjectsSlugSurveysSurveySlugSettingsRoute =
-  StudioProjectsSlugSurveysSurveySlugSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const StudioProjectsSlugSurveysSurveySlugRolesRoute =
-  StudioProjectsSlugSurveysSurveySlugRolesRouteImport.update({
-    id: '/roles',
-    path: '/roles',
-    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const StudioProjectsSlugSurveysSurveySlugResponsesRoute =
-  StudioProjectsSlugSurveysSurveySlugResponsesRouteImport.update({
-    id: '/responses',
-    path: '/responses',
-    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
-  } as any)
-const StudioProjectsSlugSurveysSurveySlugOverviewRoute =
-  StudioProjectsSlugSurveysSurveySlugOverviewRouteImport.update({
-    id: '/overview',
-    path: '/overview',
+const StudioProjectsSlugSurveysSurveySlugAccessRoute =
+  StudioProjectsSlugSurveysSurveySlugAccessRouteImport.update({
+    id: '/access',
+    path: '/access',
     getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
   } as any)
 const StudioProjectsSlugSurveysSurveySlugBuilderRoute =
@@ -177,10 +153,34 @@ const StudioProjectsSlugSurveysSurveySlugBuilderRoute =
     path: '/builder',
     getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
   } as any)
-const StudioProjectsSlugSurveysSurveySlugAccessRoute =
-  StudioProjectsSlugSurveysSurveySlugAccessRouteImport.update({
-    id: '/access',
-    path: '/access',
+const StudioProjectsSlugSurveysSurveySlugOverviewRoute =
+  StudioProjectsSlugSurveysSurveySlugOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugResponsesRoute =
+  StudioProjectsSlugSurveysSurveySlugResponsesRouteImport.update({
+    id: '/responses',
+    path: '/responses',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugRolesRoute =
+  StudioProjectsSlugSurveysSurveySlugRolesRouteImport.update({
+    id: '/roles',
+    path: '/roles',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugSettingsRoute =
+  StudioProjectsSlugSurveysSurveySlugSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
+  } as any)
+const StudioProjectsSlugSurveysSurveySlugVersionsRoute =
+  StudioProjectsSlugSurveysSurveySlugVersionsRouteImport.update({
+    id: '/versions',
+    path: '/versions',
     getParentRoute: () => StudioProjectsSlugSurveysSurveySlugRoute,
   } as any)
 
@@ -352,11 +352,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_studio': {
-      id: '/_studio'
+    '/_public': {
+      id: '/_public'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof StudioRouteImport
+      preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_respondent': {
@@ -366,11 +366,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RespondentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_public': {
-      id: '/_public'
+    '/_studio': {
+      id: '/_studio'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof PublicRouteImport
+      preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_studio/': {
@@ -380,18 +380,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioIndexRouteImport
       parentRoute: typeof StudioRoute
     }
-    '/_studio/ui-test/': {
-      id: '/_studio/ui-test/'
-      path: '/ui-test'
-      fullPath: '/ui-test/'
-      preLoaderRoute: typeof StudioUiTestIndexRouteImport
-      parentRoute: typeof StudioRoute
+    '/_public/invitations/$token': {
+      id: '/_public/invitations/$token'
+      path: '/invitations/$token'
+      fullPath: '/invitations/$token'
+      preLoaderRoute: typeof PublicInvitationsTokenRouteImport
+      parentRoute: typeof PublicRoute
     }
-    '/_studio/ui-test-2/': {
-      id: '/_studio/ui-test-2/'
-      path: '/ui-test-2'
-      fullPath: '/ui-test-2/'
-      preLoaderRoute: typeof StudioUiTest2IndexRouteImport
+    '/_respondent/respond/$token': {
+      id: '/_respondent/respond/$token'
+      path: '/respond/$token'
+      fullPath: '/respond/$token'
+      preLoaderRoute: typeof RespondentRespondTokenRouteImport
+      parentRoute: typeof RespondentRoute
+    }
+    '/_studio/account/': {
+      id: '/_studio/account/'
+      path: '/account'
+      fullPath: '/account/'
+      preLoaderRoute: typeof StudioAccountIndexRouteImport
       parentRoute: typeof StudioRoute
     }
     '/_studio/projects/': {
@@ -401,13 +408,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioProjectsIndexRouteImport
       parentRoute: typeof StudioRoute
     }
-    '/_studio/account/': {
-      id: '/_studio/account/'
-      path: '/account'
-      fullPath: '/account/'
-      preLoaderRoute: typeof StudioAccountIndexRouteImport
-      parentRoute: typeof StudioRoute
-    }
     '/_studio/projects/$slug': {
       id: '/_studio/projects/$slug'
       path: '/projects/$slug'
@@ -415,19 +415,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioProjectsSlugRouteImport
       parentRoute: typeof StudioRoute
     }
-    '/_respondent/respond/$token': {
-      id: '/_respondent/respond/$token'
-      path: '/respond/$token'
-      fullPath: '/respond/$token'
-      preLoaderRoute: typeof RespondentRespondTokenRouteImport
-      parentRoute: typeof RespondentRoute
+    '/_studio/ui-test-2/': {
+      id: '/_studio/ui-test-2/'
+      path: '/ui-test-2'
+      fullPath: '/ui-test-2/'
+      preLoaderRoute: typeof StudioUiTest2IndexRouteImport
+      parentRoute: typeof StudioRoute
     }
-    '/_public/invitations/$token': {
-      id: '/_public/invitations/$token'
-      path: '/invitations/$token'
-      fullPath: '/invitations/$token'
-      preLoaderRoute: typeof PublicInvitationsTokenRouteImport
-      parentRoute: typeof PublicRoute
+    '/_studio/ui-test/': {
+      id: '/_studio/ui-test/'
+      path: '/ui-test'
+      fullPath: '/ui-test/'
+      preLoaderRoute: typeof StudioUiTestIndexRouteImport
+      parentRoute: typeof StudioRoute
     }
     '/_studio/projects/$slug/': {
       id: '/_studio/projects/$slug/'
@@ -436,25 +436,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioProjectsSlugIndexRouteImport
       parentRoute: typeof StudioProjectsSlugRoute
     }
-    '/_studio/projects/$slug/surveys': {
-      id: '/_studio/projects/$slug/surveys'
-      path: '/surveys'
-      fullPath: '/projects/$slug/surveys'
-      preLoaderRoute: typeof StudioProjectsSlugSurveysRouteImport
-      parentRoute: typeof StudioProjectsSlugRoute
-    }
-    '/_studio/projects/$slug/subjects': {
-      id: '/_studio/projects/$slug/subjects'
-      path: '/subjects'
-      fullPath: '/projects/$slug/subjects'
-      preLoaderRoute: typeof StudioProjectsSlugSubjectsRouteImport
-      parentRoute: typeof StudioProjectsSlugRoute
-    }
-    '/_studio/projects/$slug/settings': {
-      id: '/_studio/projects/$slug/settings'
-      path: '/settings'
-      fullPath: '/projects/$slug/settings'
-      preLoaderRoute: typeof StudioProjectsSlugSettingsRouteImport
+    '/_studio/projects/$slug/members': {
+      id: '/_studio/projects/$slug/members'
+      path: '/members'
+      fullPath: '/projects/$slug/members'
+      preLoaderRoute: typeof StudioProjectsSlugMembersRouteImport
       parentRoute: typeof StudioProjectsSlugRoute
     }
     '/_studio/projects/$slug/roles': {
@@ -464,11 +450,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioProjectsSlugRolesRouteImport
       parentRoute: typeof StudioProjectsSlugRoute
     }
-    '/_studio/projects/$slug/members': {
-      id: '/_studio/projects/$slug/members'
-      path: '/members'
-      fullPath: '/projects/$slug/members'
-      preLoaderRoute: typeof StudioProjectsSlugMembersRouteImport
+    '/_studio/projects/$slug/settings': {
+      id: '/_studio/projects/$slug/settings'
+      path: '/settings'
+      fullPath: '/projects/$slug/settings'
+      preLoaderRoute: typeof StudioProjectsSlugSettingsRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
+    }
+    '/_studio/projects/$slug/subjects': {
+      id: '/_studio/projects/$slug/subjects'
+      path: '/subjects'
+      fullPath: '/projects/$slug/subjects'
+      preLoaderRoute: typeof StudioProjectsSlugSubjectsRouteImport
+      parentRoute: typeof StudioProjectsSlugRoute
+    }
+    '/_studio/projects/$slug/surveys': {
+      id: '/_studio/projects/$slug/surveys'
+      path: '/surveys'
+      fullPath: '/projects/$slug/surveys'
+      preLoaderRoute: typeof StudioProjectsSlugSurveysRouteImport
       parentRoute: typeof StudioProjectsSlugRoute
     }
     '/_studio/projects/$slug/surveys/': {
@@ -492,39 +492,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugIndexRouteImport
       parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/_studio/projects/$slug/surveys/$surveySlug/versions': {
-      id: '/_studio/projects/$slug/surveys/$surveySlug/versions'
-      path: '/versions'
-      fullPath: '/projects/$slug/surveys/$surveySlug/versions'
-      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugVersionsRouteImport
-      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
-    }
-    '/_studio/projects/$slug/surveys/$surveySlug/settings': {
-      id: '/_studio/projects/$slug/surveys/$surveySlug/settings'
-      path: '/settings'
-      fullPath: '/projects/$slug/surveys/$surveySlug/settings'
-      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugSettingsRouteImport
-      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
-    }
-    '/_studio/projects/$slug/surveys/$surveySlug/roles': {
-      id: '/_studio/projects/$slug/surveys/$surveySlug/roles'
-      path: '/roles'
-      fullPath: '/projects/$slug/surveys/$surveySlug/roles'
-      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugRolesRouteImport
-      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
-    }
-    '/_studio/projects/$slug/surveys/$surveySlug/responses': {
-      id: '/_studio/projects/$slug/surveys/$surveySlug/responses'
-      path: '/responses'
-      fullPath: '/projects/$slug/surveys/$surveySlug/responses'
-      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugResponsesRouteImport
-      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
-    }
-    '/_studio/projects/$slug/surveys/$surveySlug/overview': {
-      id: '/_studio/projects/$slug/surveys/$surveySlug/overview'
-      path: '/overview'
-      fullPath: '/projects/$slug/surveys/$surveySlug/overview'
-      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugOverviewRouteImport
+    '/_studio/projects/$slug/surveys/$surveySlug/access': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/access'
+      path: '/access'
+      fullPath: '/projects/$slug/surveys/$surveySlug/access'
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugAccessRouteImport
       parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
     '/_studio/projects/$slug/surveys/$surveySlug/builder': {
@@ -534,11 +506,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugBuilderRouteImport
       parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
-    '/_studio/projects/$slug/surveys/$surveySlug/access': {
-      id: '/_studio/projects/$slug/surveys/$surveySlug/access'
-      path: '/access'
-      fullPath: '/projects/$slug/surveys/$surveySlug/access'
-      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugAccessRouteImport
+    '/_studio/projects/$slug/surveys/$surveySlug/overview': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/overview'
+      path: '/overview'
+      fullPath: '/projects/$slug/surveys/$surveySlug/overview'
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugOverviewRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
+    }
+    '/_studio/projects/$slug/surveys/$surveySlug/responses': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/responses'
+      path: '/responses'
+      fullPath: '/projects/$slug/surveys/$surveySlug/responses'
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugResponsesRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
+    }
+    '/_studio/projects/$slug/surveys/$surveySlug/roles': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/roles'
+      path: '/roles'
+      fullPath: '/projects/$slug/surveys/$surveySlug/roles'
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugRolesRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
+    }
+    '/_studio/projects/$slug/surveys/$surveySlug/settings': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/settings'
+      path: '/settings'
+      fullPath: '/projects/$slug/surveys/$surveySlug/settings'
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugSettingsRouteImport
+      parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
+    }
+    '/_studio/projects/$slug/surveys/$surveySlug/versions': {
+      id: '/_studio/projects/$slug/surveys/$surveySlug/versions'
+      path: '/versions'
+      fullPath: '/projects/$slug/surveys/$surveySlug/versions'
+      preLoaderRoute: typeof StudioProjectsSlugSurveysSurveySlugVersionsRouteImport
       parentRoute: typeof StudioProjectsSlugSurveysSurveySlugRoute
     }
   }
