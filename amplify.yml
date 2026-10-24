@@ -1,0 +1,32 @@
+# Build spec for the hand-made Amplify app that still serves the public site on
+# the apex (flow-form.com.au). CDK + deploy.yml own the staging frontends; this
+# file only exists until the prod apex cutover described in
+# infra/deployment/aws/cdk/docs/manual-prerequisites.md, then delete it.
+# Without it, Amplify falls back to its console build spec (`npm ci`), which
+# cannot work in this pnpm workspace.
+version: 1
+
+applications:
+  - appRoot: frontend/apps/public-site
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - nvm install 22.12.0
+            - nvm use 22.12.0
+            # Same pin as frontend/package.json packageManager; installed via npm
+            # because corepack's registry signature check is broken (see deploy.yml).
+            - npm install -g pnpm@10.24.0
+            - cd ../.. && pnpm install --frozen-lockfile --store-dir .pnpm-store
+        build:
+          commands:
+            # The apex public site pairs with staging Studio until a prod Studio
+            # exists; drop this override then (siteUrls.ts derives studio.<host>).
+            - cd ../.. && PUBLIC_STUDIO_URL=https://studio.staging.flow-form.com.au pnpm run build:site
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - ../../.pnpm-store/**/*
