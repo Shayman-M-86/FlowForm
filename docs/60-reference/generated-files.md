@@ -5,7 +5,7 @@ aliases:
 document_type: reference
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [tooling]
 related_code:
   - "../../backend/scripts/export-openapi.sh"
@@ -39,6 +39,7 @@ The generator and its scanned inputs are authoritative. A committed output is a 
 | `frontend/apps/studio-app/src/api/generated/schema.ts` | `openapi-typescript` via Studio `openapi:types` / `openapi:generate` | Committed; do not hand-edit. |
 | `frontend/apps/studio-app/src/api/generated/rbac.gen.ts` | `frontend/scripts/generate-types.mjs` from `backend/openapi.yaml` | Committed; do not hand-edit. |
 | `frontend/packages/schema/src/generated/*.gen.ts` | `frontend/scripts/generate-types.mjs` from builder schemas/extensions in `backend/openapi.yaml` | Committed; do not hand-edit. |
+| `frontend/packages/schema/src/generated/survey-node-import.gen.ts` | Same generator; the two create-node request schemas and all referenced definitions | Complete input JSON Schema embedded in both AI-import generation and repair prompts; regenerate with `pnpm run generate:types` from `frontend/`. |
 | `docs/90-generated/repository-tree.md` | `scripts/docs/generate-repository-tree.py` | Committed generated documentation. |
 | `docs/90-generated/documentation-index.json` | `PYTHONPATH=scripts/docs python3 -m docsys index` | Committed machine-readable documentation index. |
 | `docs/90-generated/documentation-dashboard.md`, `documentation-health.json` | `PYTHONPATH=scripts/docs python3 -m docsys health` | Committed health snapshot; do not hand-edit. |

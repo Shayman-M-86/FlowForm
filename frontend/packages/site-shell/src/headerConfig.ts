@@ -7,8 +7,9 @@ export const BRAND = {
 
 export const PUBLIC_NAV_LINKS = [
   { href: "/#features", label: "Features" },
-  { href: "/#security", label: "Security" },
-  { href: "/#pricing", label: "Pricing" },
+  { href: "/#studio", label: "Studio" },
+  { href: "/#security", label: "Privacy" },
+  { href: "/#roadmap", label: "What’s next" },
   { href: "/docs/introduction", label: "Docs" },
 ] as const;
 

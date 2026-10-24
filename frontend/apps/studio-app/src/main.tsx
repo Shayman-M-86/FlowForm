@@ -19,7 +19,16 @@ const ReactQueryDevtools = import.meta.env.DEV
     )
   : null
 
-createRoot(document.getElementById('root')!).render(
+// auth0-spa-js throws on insecure origins (plain http on anything but
+// localhost), e.g. when opened via a LAN/WSL IP. Bounce to localhost instead.
+const needsSecureOrigin = !window.isSecureContext && window.location.hostname !== 'localhost'
+if (needsSecureOrigin) {
+  const url = new URL(window.location.href)
+  url.hostname = 'localhost'
+  window.location.replace(url.toString())
+}
+
+if (!needsSecureOrigin) createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Auth0Provider
       domain={auth0Domain}

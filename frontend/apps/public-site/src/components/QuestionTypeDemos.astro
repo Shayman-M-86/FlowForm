@@ -1,0 +1,280 @@
+---
+const demos = [
+  { key: "choice", title: "Choice", description: "Let people choose one answer or a few. Great for preferences, quick check-ins, and finding out what matters.", width: 750, height: 700 },
+  { key: "matching", title: "Matching", description: "Make learning hands-on. Let people connect related ideas, terms, or answers with a simple drag and drop.", width: 1006, height: 708 },
+  { key: "rating", title: "Rating", description: "A little more detail than yes or no. Capture how people feel with stars, sliders, or expressive ratings.", width: 839, height: 473 },
+  { key: "field", title: "Field", description: "A few words or the whole story. Ask for written answers, numbers, dates, and contact details.", width: 839, height: 473 },
+  { key: "rules", title: "Rules", description: "Make the next question the right one. Show helpful follow-ups and skip what doesn’t apply.", width: 825, height: 753 },
+];
+---
+
+<div class="qt-demos" data-question-demos>
+  <div class="qt-track flex flex-nowrap overflow-x-auto" tabindex="0" role="region" aria-label="Question type demonstrations — scroll to explore">
+    {demos.map(({ key, title, description, width, height }, index) => (
+      <section id={`qt-${index + 1}`} class="qt-col flex min-w-0 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card" data-active={index === 0 ? "true" : "false"} aria-label={`${title} demonstration`}>
+        <button
+          type="button"
+          class="qt-preview block w-full select-none overflow-hidden border-b border-border bg-muted/15 p-2"
+          aria-label={`Center ${title} demonstration`}
+        >
+          <img
+            src={`/screenshots/qt-${key}.png`}
+            alt={`${title} question demonstration`}
+            width={width}
+            height={height}
+            class="block h-full w-full object-contain"
+            loading="lazy"
+            decoding="async"
+            draggable="false"
+          />
+        </button>
+        <div class="p-5 sm:p-6">
+          <span class="mb-2 block text-xs font-extrabold uppercase tracking-widest text-accent">{String(index + 1).padStart(2, "0")}</span>
+          <h3 class="mb-2 text-xl font-bold text-foreground">{title}</h3>
+          <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+        </div>
+      </section>
+    ))}
+  </div>
+  <nav class="qt-dots mt-4 flex justify-center gap-1" aria-label="Question type slides">
+    {demos.map(({ title }, index) => (
+      <a
+        href={`#qt-${index + 1}`}
+        class="qt-dot"
+        aria-label={`Show ${title} demonstration`}
+        aria-current={index === 0 ? "true" : undefined}
+      />
+    ))}
+  </nav>
+</div>
+
+<script>
+  function initDemoDragging() {
+    document.querySelectorAll<HTMLElement>("[data-question-demos]").forEach((root) => {
+      if (root.dataset.dragInitialized) return;
+      root.dataset.dragInitialized = "true";
+      const trackElement = root.querySelector<HTMLElement>(".qt-track");
+      if (!trackElement) return;
+      const track = trackElement;
+      const cards = Array.from(track.querySelectorAll<HTMLElement>(".qt-col"));
+      let drag: { pointerId: number; x: number; y: number; scrollLeft: number; moved: boolean } | null = null;
+      let suppressClick = false;
+      let snapFrame: number | null = null;
+
+      function cancelSnap() {
+        if (snapFrame !== null) window.cancelAnimationFrame(snapFrame);
+        snapFrame = null;
+      }
+
+      function centerCard(card: HTMLElement) {
+        cancelSnap();
+        // Keep native snapping off until the animated scroll reaches its target.
+        track.dataset.settling = "true";
+        const trackRect = track.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const from = track.scrollLeft;
+        const target = Math.max(0, Math.min(
+          track.scrollWidth - track.clientWidth,
+          from + cardRect.left + cardRect.width / 2 - trackRect.left - track.clientWidth / 2,
+        ));
+        if (Math.abs(target - from) < 1 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          track.scrollLeft = target;
+          delete track.dataset.settling;
+          return;
+        }
+        const started = performance.now();
+        function animate(now: number) {
+          const progress = Math.min((now - started) / 320, 1);
+          const eased = 1 - (1 - progress) ** 3;
+          track.scrollLeft = from + (target - from) * eased;
+          if (progress < 1) {
+            snapFrame = window.requestAnimationFrame(animate);
+          } else {
+            snapFrame = null;
+            delete track.dataset.settling;
+          }
+        }
+        snapFrame = window.requestAnimationFrame(animate);
+      }
+
+      track.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "mouse" || event.button !== 0) return;
+        if (!(event.target instanceof Element) || !event.target.closest(".qt-preview")) return;
+        event.preventDefault();
+        drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, scrollLeft: track.scrollLeft, moved: false };
+      });
+
+      track.addEventListener("pointermove", (event) => {
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        const dx = event.clientX - drag.x;
+        if (!drag.moved) {
+          if (Math.abs(dx) < 6 || Math.abs(dx) <= Math.abs(event.clientY - drag.y)) return;
+          cancelSnap();
+          drag.scrollLeft = track.scrollLeft;
+          drag.moved = true;
+          track.dataset.dragging = "true";
+          delete track.dataset.settling;
+          track.setPointerCapture(event.pointerId);
+        }
+        event.preventDefault();
+        track.scrollLeft = drag.scrollLeft - dx;
+      });
+
+      function finishDrag(event: PointerEvent) {
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        const moved = drag.moved;
+        drag = null;
+        if (track.hasPointerCapture(event.pointerId)) track.releasePointerCapture(event.pointerId);
+        if (!moved) return;
+        suppressClick = true;
+        window.setTimeout(() => { suppressClick = false; }, 0);
+        const center = track.getBoundingClientRect().left + track.clientWidth / 2;
+        const nearest = cards.reduce((best, card) => {
+          const distance = (item: HTMLElement) => {
+            const rect = item.getBoundingClientRect();
+            return Math.abs(rect.left + rect.width / 2 - center);
+          };
+          return distance(card) < distance(best) ? card : best;
+        });
+        centerCard(nearest);
+        delete track.dataset.dragging;
+      }
+
+      const interruptSnap = () => {
+        cancelSnap();
+        delete track.dataset.settling;
+      };
+      track.addEventListener("wheel", interruptSnap, { passive: true });
+      track.addEventListener("touchstart", interruptSnap, { passive: true });
+      root.querySelectorAll(".qt-dot").forEach((dot) => dot.addEventListener("click", interruptSnap));
+      window.addEventListener("resize", interruptSnap);
+      document.addEventListener("astro:before-swap", interruptSnap, { once: true });
+      track.addEventListener("pointerup", finishDrag);
+      track.addEventListener("pointercancel", finishDrag);
+      track.addEventListener("lostpointercapture", finishDrag);
+      track.addEventListener("click", (event) => {
+        if (suppressClick) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+        if (!(event.target instanceof Element) || !event.target.closest(".qt-preview")) return;
+        const card = event.target.closest<HTMLElement>(".qt-col");
+        if (card) centerCard(card);
+      }, true);
+      track.addEventListener("dragstart", (event) => event.preventDefault());
+    });
+  }
+
+  document.addEventListener("astro:page-load", initDemoDragging);
+  initDemoDragging();
+</script>
+
+<style>
+  .qt-track {
+    --qt-card-width: min(78vw, 760px);
+    display: flex;
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    gap: 28px;
+    overflow-x: auto;
+    padding-inline: calc((100vw - var(--qt-card-width)) / 2);
+    padding-top: 12px;
+    padding-bottom: 20px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .qt-col {
+    flex: 0 0 var(--qt-card-width);
+    scroll-snap-align: center;
+    transform: scale(0.94);
+    transform-origin: center bottom;
+    opacity: 0.78;
+    transition: transform 180ms ease, opacity 180ms ease, border-color 180ms ease;
+  }
+
+  .qt-col[data-active="true"] {
+    transform: scale(1);
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+  }
+
+  .qt-col:hover {
+    opacity: 1;
+  }
+
+  .qt-preview {
+    aspect-ratio: 4 / 3;
+    cursor: grab;
+  }
+
+  .qt-track[data-dragging],
+  .qt-track[data-settling] {
+    scroll-snap-type: none;
+  }
+
+  .qt-track[data-dragging] {
+    user-select: none;
+  }
+
+  .qt-track[data-dragging],
+  .qt-track[data-dragging] .qt-preview {
+    cursor: grabbing;
+  }
+
+  .qt-preview img {
+    -webkit-user-drag: none;
+  }
+
+  .qt-preview:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -3px;
+  }
+
+  .qt-dot {
+    position: relative;
+    display: block;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .qt-dot::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: var(--border);
+  }
+
+  .qt-dot[aria-current="true"]::before {
+    background: var(--accent);
+  }
+
+  .qt-dot:hover::before {
+    background: var(--accent-muted);
+  }
+
+  .qt-dot:focus-visible,
+  .qt-track:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .qt-col {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .qt-track {
+      gap: 16px;
+    }
+  }
+</style>

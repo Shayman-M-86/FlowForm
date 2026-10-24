@@ -199,7 +199,9 @@ const { src, alt = '', width = 200, height = 200, class: className, style } = As
 
     window.addEventListener('resize', () => {
       if (!isLoaded) return;
-      drawToCanvas(animatedImage);
+      // The animation image has no source until its first play. Keep the
+      // loaded still frame visible when resizing before that happens.
+      drawToCanvas(staticFrame);
     });
 
     startAutoPlayLoop();

@@ -5,7 +5,7 @@ aliases:
 document_type: implementation
 status: draft
 authority: canonical
-verified_against_commit: ad26b87e9820
+verified_against_commit: null
 tags: [frontend]
 related_code:
   - "../../frontend/package.json"
@@ -65,6 +65,25 @@ Maps frontend concepts to verified repository implementation.
 - `packages/schema/src/index.ts` exposes generated TypeScript and Zod contracts
   derived from backend OpenAPI schemas.
 
+## Public homepage experience
+
+The homepage uses benefit-led sections for adaptive forms, project and participant
+management, publishing, privacy, and use cases. Automation progression,
+follow-ups, and reminders are explicitly labelled as planned capabilities.
+`AdaptiveHeroDemo.astro` is a browser-only example: role selection changes the
+follow-up field without submitting information. The actual shared builder remains
+embedded below it in the normal page flow. Its section clips the decorative
+background without becoming an independently scrolling container.
+
+On a first visit, `NodePageIsland.tsx` starts with an editable three-node survey
+showing a conditional follow-up. An existing local draft, including an intentionally
+cleared array, takes priority. Demo drafts stay in browser storage; they are not
+published or copied to Studio. `QuestionTypeDemos.astro` retains the animated
+recordings, horizontal dragging, click-to-centre, and navigation dots. Existing
+animated icon assets are reused through `AnimatedApng.astro`; its resize handler
+redraws the loaded still frame rather than an animation image with no source.
+Handwritten annotations use the locally hosted Caveat font and its bundled licence.
+
 ## Dependency direction
 
 Applications import shared workspace packages as source dependencies. Builder
@@ -83,9 +102,14 @@ package source are handwritten. The following checked-in files are generated:
 - `studio-app/src/api/generated/rbac.gen.ts` and
   `packages/schema/src/generated/` by `frontend/scripts/generate-types.mjs`.
 
-The generator reads `backend/openapi.yaml`. If builder schema output changes it
-also warns that the handcrafted AI-import prompt requires review; that prompt
-is not generated.
+The generator reads `backend/openapi.yaml`. It also generates the complete
+node-array input JSON Schema in `packages/schema/src/generated/survey-node-import.gen.ts`,
+including every nested question and rule variant. Both AI-import generation and
+repair prompts include that schema and validated examples from
+`packages/builder/src/components/Utils/ai-import/surveyNodePrompt.ts`. Repair
+prompts include the original survey request, every validation issue, and the
+JSON to repair. Semantic guidance and examples remain handwritten; the generator
+warns to review them when builder contracts change.
 
 ## Tests and validation
 

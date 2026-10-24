@@ -359,3 +359,17 @@ body {
     transition: color 100ms var(--ease-out);
   }
 }
+
+/* ── Logged-out sign-in screen (StudioLanding) ──────────────── */
+
+@layer components {
+  .studio-landing {
+    background:
+      radial-gradient(40rem 28rem at 50% -8rem, color-mix(in srgb, var(--primary) 10%, transparent), transparent 70%),
+      var(--background);
+  }
+
+  .studio-landing__card {
+    box-shadow: var(--app-shadow-xl);
+  }
+}
