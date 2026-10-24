@@ -6,7 +6,7 @@ alembic==1.18.4
     # via flask-migrate
 annotated-types==0.7.0
     # via pydantic
-anyio==4.13.0
+anyio==4.14.2
     # via httpx
 apispec==6.10.0
     # via backend
@@ -32,7 +32,7 @@ botocore-stubs==1.43.14
     # via boto3-stubs
 cachetools==5.5.2
     # via backend
-certifi==2026.2.25
+certifi==2026.10.23
     # via
     #   httpcore
     #   httpx
@@ -55,7 +55,7 @@ coverage==7.13.5
     # via
     #   backend
     #   pytest-cov
-cryptography==49.0.0
+cryptography==50.0.2
     # via
     #   authlib
     #   backend
@@ -76,8 +76,12 @@ flask-migrate==4.1.0
     # via backend
 flask-sqlalchemy==3.1.1
     # via flask-migrate
+googleapis-common-protos==1.75.0
+    # via opentelemetry-exporter-otlp-proto-grpc
 greenlet==3.3.2 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
     # via sqlalchemy
+grpcio==1.82.1
+    # via opentelemetry-exporter-otlp-proto-grpc
 gunicorn==25.1.0
     # via backend
 h11==0.16.0
@@ -125,15 +129,87 @@ mypy-boto3-sesv2==1.43.18
     # via backend
 nodeenv==1.10.0
     # via pyright
+opentelemetry-api==1.45.1
+    # via
+    #   opentelemetry-exporter-otlp-proto-grpc
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-botocore
+    #   opentelemetry-instrumentation-flask
+    #   opentelemetry-instrumentation-logging
+    #   opentelemetry-instrumentation-requests
+    #   opentelemetry-instrumentation-sqlalchemy
+    #   opentelemetry-instrumentation-wsgi
+    #   opentelemetry-propagator-aws-xray
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
+opentelemetry-exporter-otlp-common==0.66b1
+    # via opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-exporter-otlp-proto-common==1.45.1
+    # via opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-exporter-otlp-proto-grpc==1.45.1
+    # via backend
+opentelemetry-instrumentation==0.66b1
+    # via
+    #   opentelemetry-instrumentation-botocore
+    #   opentelemetry-instrumentation-flask
+    #   opentelemetry-instrumentation-logging
+    #   opentelemetry-instrumentation-requests
+    #   opentelemetry-instrumentation-sqlalchemy
+    #   opentelemetry-instrumentation-wsgi
+opentelemetry-instrumentation-botocore==0.66b1
+    # via backend
+opentelemetry-instrumentation-flask==0.66b1
+    # via backend
+opentelemetry-instrumentation-logging==0.66b1
+    # via backend
+opentelemetry-instrumentation-requests==0.66b1
+    # via backend
+opentelemetry-instrumentation-sqlalchemy==0.66b1
+    # via backend
+opentelemetry-instrumentation-wsgi==0.66b1
+    # via opentelemetry-instrumentation-flask
+opentelemetry-propagator-aws-xray==1.0.2
+    # via opentelemetry-instrumentation-botocore
+opentelemetry-proto==1.45.1
+    # via
+    #   opentelemetry-exporter-otlp-proto-common
+    #   opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-sdk==1.45.1
+    # via
+    #   backend
+    #   opentelemetry-exporter-otlp-common
+    #   opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-semantic-conventions==0.66b1
+    # via
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-botocore
+    #   opentelemetry-instrumentation-flask
+    #   opentelemetry-instrumentation-logging
+    #   opentelemetry-instrumentation-requests
+    #   opentelemetry-instrumentation-sqlalchemy
+    #   opentelemetry-instrumentation-wsgi
+    #   opentelemetry-sdk
+opentelemetry-util-http==0.66b1
+    # via
+    #   opentelemetry-instrumentation-flask
+    #   opentelemetry-instrumentation-requests
+    #   opentelemetry-instrumentation-wsgi
 packaging==26.0
     # via
     #   apispec
     #   gunicorn
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-flask
+    #   opentelemetry-instrumentation-sqlalchemy
     #   pytest
 pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
+protobuf==7.35.1
+    # via
+    #   googleapis-common-protos
+    #   opentelemetry-proto
 psycopg==3.3.3
     # via backend
 psycopg-binary==3.3.3 ; implementation_name != 'pypy'
@@ -192,6 +268,11 @@ types-s3transfer==0.16.0
 typing-extensions==4.15.0
     # via
     #   alembic
+    #   grpcio
+    #   opentelemetry-api
+    #   opentelemetry-exporter-otlp-proto-grpc
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
     #   pydantic
     #   pydantic-core
     #   pyright
@@ -203,12 +284,17 @@ typing-inspection==0.4.2
     #   pydantic-settings
 tzdata==2025.3 ; sys_platform == 'win32'
     # via psycopg
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   backend
     #   botocore
     #   requests
-werkzeug==3.1.6
+werkzeug==3.1.9
     # via
     #   flask
     #   flask-cors
+wrapt==2.2.2
+    # via
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-botocore
+    #   opentelemetry-instrumentation-sqlalchemy
