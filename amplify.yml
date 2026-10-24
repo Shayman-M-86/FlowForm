@@ -17,12 +17,14 @@ applications:
             # Same pin as frontend/package.json packageManager; installed via npm
             # because corepack's registry signature check is broken (see deploy.yml).
             - npm install -g pnpm@10.24.0
-            - cd ../.. && pnpm install --frozen-lockfile --store-dir .pnpm-store
+            # Amplify runs every phase in ONE shell, so `cd` leaks into later
+            # commands. `--dir` targets the workspace root without moving.
+            - pnpm --dir ../.. install --frozen-lockfile --store-dir ../../.pnpm-store
         build:
           commands:
             # The apex public site pairs with staging Studio until a prod Studio
             # exists; drop this override then (siteUrls.ts derives studio.<host>).
-            - cd ../.. && PUBLIC_STUDIO_URL=https://studio.staging.flow-form.com.au pnpm run build:site
+            - PUBLIC_STUDIO_URL=https://studio.staging.flow-form.com.au pnpm --dir ../.. run build:site
       artifacts:
         baseDirectory: dist
         files:
