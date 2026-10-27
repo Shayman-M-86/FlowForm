@@ -10,6 +10,7 @@ tags: [meta]
 related_code:
   - "../scripts/docs/"
 related_docs:
+  - "FlowForm engineering tour"
   - "Documentation model"
   - "Documentation generator guide"
   - "Repository map"
@@ -43,6 +44,8 @@ Documents reference each other with Obsidian-compatible `[[note-filename|display
 - [[90-generated/README|90 Generated]]: reproducible output with its generator and scanned sources identified.
 
 ## Suggested reading paths
+
+For a product introduction, start with the repository's [project README](../README.md). For a guided explanation of the implementation and its tradeoffs, continue with the [[project-tour|FlowForm engineering tour]].
 
 For repository orientation, start with the [[repository-map|repository map]] and [[system-summary|system summary]], then follow the relevant architecture, domain, workflow, implementation, or reference page. Draft pages are intentionally concise and should be deepened only when the owning implementation is being reviewed. Some pages under [[90-generated/README|Generated documentation]] remain generator scaffolds until a reproducible generator is implemented.
 
