@@ -12,7 +12,7 @@ apispec==6.10.0
     # via backend
 auth0-api-python==1.0.0b7
     # via backend
-authlib==1.7.2
+authlib==1.9.5
     # via
     #   auth0-api-python
     #   backend
@@ -60,7 +60,7 @@ cryptography==50.0.2
     #   authlib
     #   backend
     #   joserfc
-dnspython==2.8.0
+dnspython==2.9.2
     # via email-validator
 email-validator==2.3.0
     # via backend
@@ -107,7 +107,7 @@ jmespath==1.1.0
     # via
     #   boto3
     #   botocore
-joserfc==1.7.2
+joserfc==1.8.0
     # via
     #   authlib
     #   backend
