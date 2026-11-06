@@ -5,7 +5,7 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-06
 tags: [frontend]
 related_code:
   - "../../../frontend/package.json"
@@ -55,6 +55,16 @@ Application manifests provide lint and build workflows, and Studio has focused
 tests around API, identity bootstrap, query, and persisted draft behaviour. The
 public site and shared packages need separate evidence before claiming broader
 automated test coverage.
+
+The public demo starts with an editable example when no saved draft exists;
+its browser storage is independent of Studio persistence. The shared AI-import
+flow includes a generated JSON Schema alongside the builder types and Zod
+validators. Regenerate these together from the backend contract.
+
+Site-shell URL helpers derive the sibling public or Studio origin from the
+current hostname, with explicit build-time overrides for deployments that do
+not use the paired-host convention. Local development uses the frontend
+dev-server ports.
 
 ## Related documents
 

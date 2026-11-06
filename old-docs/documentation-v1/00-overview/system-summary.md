@@ -67,8 +67,6 @@ This is an orientation path, not a complete workflow contract. Permission checks
 
 This summary was checked against the application source, frontend manifests and routes, ORM models, infrastructure tree, and repository automation at commit `ed0fb65df856e18807ee243b4bca512a8d0442b0`. Static repository evidence establishes implemented code and declared infrastructure, but does not prove which environment is currently deployed or healthy.
 
-The root `README.md` says that public form filling is embedded in the Astro public site. The current route tree instead places `/respond/$token` and `RespondPage` in the Studio application, while the public site has only product and documentation routes. This summary follows the current source; the intended long-term ownership of that respondent route remains unresolved documentation drift.
-
 ## Open questions
 
 - Which checked-in deployment model, if any, exactly matches the currently running production environment?

@@ -7,7 +7,7 @@ requires-python = ">=3.14"
 dependencies = [
     "apispec>=6.6.1",
     "auth0-api-python>=1.0.0b7",
-    "authlib>=1.7.1",
+    "authlib>=1.9.1",
     "cryptography>=48.0.1",
     "email-validator>=2.3.0",
     "flask>=3.1.3",
@@ -37,7 +37,7 @@ dependencies = [
     "boto3[crt]>=1.38.0",
     "cachetools>=5.5,<6",
     "sqlalchemy-utils>=0.42.1",
-    "joserfc>=1.6.8",
+    "joserfc>=1.7.6",
     "urllib3>=2.7.0",
 ]
 
@@ -57,6 +57,12 @@ test = [
     "pygments>=2.20.0",
     "pytest>=9.0.3",
     "pytest-cov>=6.2.1",
+]
+
+[tool.uv]
+constraint-dependencies = [
+    # email-validator's transitive DNS dependency; patched for CVE-2026-114605.
+    "dnspython>=2.9.0",
 ]
 
 [tool.pytest.ini_options]

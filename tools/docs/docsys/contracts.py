@@ -538,7 +538,7 @@ def _section_body(body: str, requested: str) -> str:
                 start = index
                 level = current_level
             continue
-        if current_level <= int(level):
+        if level is not None and current_level <= level:
             return "".join(lines[start:index]).rstrip()
     if start is None:
         raise ValueError(f"section not found: {requested}")

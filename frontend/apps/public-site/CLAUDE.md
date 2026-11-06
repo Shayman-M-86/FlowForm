@@ -82,3 +82,13 @@ or reorder it in the integrations array.
   - `@flowform/styles/tokens.css` — CSS variables only
   - `@flowform/styles/fonts.css` — Geist font face declarations
   - `@flowform/builder/node-page.css` — builder component styles
+
+---
+
+## Environment variables
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `PUBLIC_STUDIO_URL` | Studio origin for Sign in / Create account links | derived: `<host>` → `studio.<host>` (`localhost:5174` in dev) |
+
+Cross-app URL logic lives in `@flowform/site-shell` (`siteUrls.ts`).

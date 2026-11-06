@@ -56,8 +56,12 @@ bandit_app_status=0
 bandit_tests_status=0
 
 echo "==> Running pip-audit..."
+# pip-audit dry-run installs the requirements, so it must use the runtime
+# interpreter (backend.Dockerfile: python:3.14). Left unpinned, uvx picks the
+# newest Python, where older locked wheels (e.g. psycopg-binary) may not exist
+# yet and the install failure is misreported as a vulnerability.
 set +e
-uvx pip-audit -r requirements.txt
+uvx --python 3.14 pip-audit -r requirements.txt
 pip_audit_status=$?
 set -e
 

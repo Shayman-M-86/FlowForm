@@ -78,8 +78,6 @@ The two databases are separate application connections and transaction boundarie
 
 The repository provides several realizations of this logical system: local Compose definitions, shared app/proxy runtime Compose definitions, Proxmox rehearsal tooling, and AWS CDK stacks. They are not interchangeable evidence of a live environment. In particular, the CDK database stack remains a stub and the application stack leaves runtime bootstrap wiring separate, so the checkout does not prove a complete or currently deployed cloud topology.
 
-The root `README.md` assigns public form filling to the Astro site, while the current frontend route tree places the token-based respondent page in Studio. This page follows the route tree and treats the intended long-term ownership as unresolved.
-
 ## Open questions
 
 - Which declared topology matches the currently running production system?
