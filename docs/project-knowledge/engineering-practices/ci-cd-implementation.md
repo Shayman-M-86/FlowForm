@@ -5,11 +5,12 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-06
 tags: [ci-cd]
 related_code:
   - "../../../.github/workflows/ci.yml"
   - "../../../.github/workflows/deploy.yml"
+  - "../../../amplify.yml"
   - "../../../.github/workflows/publish-staging-images.yml"
   - "../../../tools/docs/docsys/ci.py"
 change_triggers:
@@ -45,6 +46,11 @@ manual runtime-image publication. Shared contract checks live in `scripts/ci/`;
 backend, frontend, CDK, and Docsys each keep detailed validation beside the
 implementation they exercise. AWS image and deployment helpers under
 `infra/deployment/aws/` provide the infrastructure delivery boundary.
+
+The root `amplify.yml` separately describes the public-site build for the
+existing Amplify application. It does not replace the staging frontend
+publication workflow. Its public site explicitly links to staging Studio;
+the staging workflow uses the paired staging host convention.
 
 ## Dependency direction
 
