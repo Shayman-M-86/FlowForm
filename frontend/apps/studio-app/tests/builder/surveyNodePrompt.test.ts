@@ -70,7 +70,7 @@ describe('AI import prompt contract', () => {
     delete broken[9].content.definition.range
     delete broken[10].content.definition.emoji_list
     const raw = JSON.stringify(broken)
-    let issues: SurveyNodeImportIssue[] = []
+    let issues: SurveyNodeImportIssue[]
     try {
       parseSurveyNodeJson(raw)
       throw new Error('Expected import failure')
