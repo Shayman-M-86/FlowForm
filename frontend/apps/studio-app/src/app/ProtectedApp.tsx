@@ -5,6 +5,7 @@ import { getAuthReturnTo } from '@/auth/redirect'
 import { useBootstrap } from '@/auth/bootstrap/useBootstrap'
 import { BACKEND_UNAVAILABLE_CODE } from '@/auth/bootstrap/api'
 import { UserProvider } from '@/auth/UserContext'
+import { StudioLanding } from '@/components/StudioLanding'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 
 type Props = { children: ReactNode }
@@ -63,28 +64,7 @@ function AuthenticatedProtectedApp({ children }: Props) {
     )
   }
 
-  if (!isAuthenticated) {
-    return (
-      <AuthGate>
-        <p className="auth-eyebrow">FlowForm Studio</p>
-        <h1 className="text-2xl font-semibold mt-1 mb-3">Sign in to continue</h1>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          You need to log in to access your projects, surveys, and submissions.
-        </p>
-        <div className="flex gap-3 mt-6 flex-wrap">
-          <Button variant="primary" onClick={() => loginWithRedirect({ appState: { returnTo: getAuthReturnTo() } })}>
-            Log in
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => loginWithRedirect({ appState: { returnTo: getAuthReturnTo() }, authorizationParams: { screen_hint: 'signup' } })}
-          >
-            Create account
-          </Button>
-        </div>
-      </AuthGate>
-    )
-  }
+  if (!isAuthenticated) return <StudioLanding />
 
   const needsLogin = errorCode === 'AUTH0_CLIENT_ID_NOT_CONFIGURED'
   const backendUnavailable = errorCode === BACKEND_UNAVAILABLE_CODE

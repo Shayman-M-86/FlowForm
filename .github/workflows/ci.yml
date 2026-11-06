@@ -40,6 +40,10 @@ env:
   BACKEND_CONTAINER: flowform-backend-test
   NODE_VERSION: "22"
   PNPM_VERSION: "10.24.0"
+  # Match the backend runtime (backend.Dockerfile: python:3.14). Unpinned, uv
+  # grabs the newest CPython, where locked wheels (e.g. psycopg-binary) may
+  # not exist yet and `uv sync` fails. .python-version is gitignored, so pin here.
+  UV_PYTHON: "3.14"
 
 concurrency:
   group: ci-${{ github.ref }}
