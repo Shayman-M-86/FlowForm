@@ -99,12 +99,38 @@ install_role() {
   [[ "${csr_subject}" == "subject=CN=${cn}" ]] || fail "unexpected CSR subject: ${csr_subject}"
 
   # 2. Sign a client certificate that satisfies Roles Anywhere's constraints.
-  printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature' \
-    'extendedKeyUsage=clientAuth' 'subjectKeyIdentifier=hash' 'authorityKeyIdentifier=keyid' \
-    > "${work}/client.ext"
-  openssl x509 -req -in "${work}/host.csr" -CA "${ca_cert}" -CAkey "${ca_key}" \
-    -set_serial "0x$(openssl rand -hex 16)" -sha384 -days "${cert_days}" \
-    -extfile "${work}/client.ext" -out "${work}/cert.pem" 2>/dev/null
+  #    `openssl ca` (unlike OpenSSL 3.0 `x509 -req`) can backdate notBefore,
+  #    so small clock differences with AWS cannot make a new certificate
+  #    "not yet valid" ("Untrusted signing certificate").
+  install -d "${work}/ca/newcerts"
+  : > "${work}/ca/index.txt"
+  openssl rand -hex 16 > "${work}/ca/serial"
+  cat > "${work}/ca.cnf" <<CNF
+[ca]
+default_ca = hybrid
+[hybrid]
+dir = ${work}/ca
+database = \$dir/index.txt
+new_certs_dir = \$dir/newcerts
+serial = \$dir/serial
+default_md = sha384
+policy = cn_only
+unique_subject = no
+copy_extensions = none
+[cn_only]
+commonName = supplied
+[client]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = clientAuth
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid
+CNF
+  openssl ca -batch -notext -config "${work}/ca.cnf" -extensions client \
+    -cert "${ca_cert}" -keyfile "${ca_key}" -in "${work}/host.csr" -out "${work}/cert.pem" \
+    -startdate "$(date -u -d '-10 minutes' +%Y%m%d%H%M%SZ)" \
+    -enddate "$(date -u -d "+${cert_days} days" +%Y%m%d%H%M%SZ)" 2>/dev/null ||
+    fail 'certificate signing failed'
   openssl verify -CAfile "${ca_cert}" "${work}/cert.pem" >/dev/null
 
   # 3. Standard AWS profile; absolute paths also resolve inside the app's

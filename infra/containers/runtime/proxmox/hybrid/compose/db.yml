@@ -38,7 +38,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - /opt/flowform/hybrid/database-init:/docker-entrypoint-initdb.d:ro
       - /opt/flowform/hybrid/db-entrypoint.sh:/opt/flowform/db-entrypoint.sh:ro
-      - /opt/flowform/hybrid/99-hybrid-ready.sh:/docker-entrypoint-initdb.d/99-hybrid-ready.sh:ro
       - /etc/flowform/db:/run/flowform-db-source:ro
     tmpfs:
       - /run/flowform-db

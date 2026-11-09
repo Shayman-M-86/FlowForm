@@ -55,6 +55,42 @@ ensure_db_tls() {
   printf 'Generated PostgreSQL TLS material for %s\n' "${HYBRID_DB_IP}"
 }
 
+write_if_changed() { # $1 = path, $2 = content; returns 0 when the file changed
+  [[ -f "$1" ]] && [[ "$(cat "$1")" == "$2" ]] && return 1
+  install -d -m 0755 "$(dirname -- "$1")"
+  printf '%s\n' "$2" > "$1.tmp"
+  chmod 0644 "$1.tmp"
+  mv -f "$1.tmp" "$1"
+}
+
+# Time: the VLANs have no general NTP egress. The proxy syncs from Cloudflare
+# and serves only the app; the app syncs from the proxy. Amazon Linux links
+# its default pool into /run/chrony.d on every chronyd start, so a drop-in
+# disables that and the image's copy of the pool file is removed.
+configure_time() { # $1 = sources content, $2 = extra chrony.conf content (optional)
+  local changed=0
+  write_if_changed /etc/systemd/system/chronyd.service.d/flowform-hybrid.conf "$(printf '%s\n' \
+    '[Service]' 'ExecStartPre=' 'ExecStartPre=/usr/bin/mkdir -p /run/chrony.d' \
+    'ExecStartPre=/usr/bin/rm -f /run/chrony.d/ntp-pool.sources')" && changed=1
+  if [[ -e /etc/chrony.d/ntp-pool.sources ]]; then rm -f /etc/chrony.d/ntp-pool.sources; changed=1; fi
+  write_if_changed /etc/chrony.d/flowform-hybrid.sources "$1" && changed=1
+  if [[ -n "${2:-}" ]]; then
+    write_if_changed /etc/chrony.d/flowform-hybrid.conf "$2" && changed=1
+  elif [[ -e /etc/chrony.d/flowform-hybrid.conf ]]; then
+    rm -f /etc/chrony.d/flowform-hybrid.conf; changed=1
+  fi
+  if (( changed )); then
+    systemctl daemon-reload
+    systemctl restart chronyd
+    printf 'Reconfigured chrony time sources\n'
+  fi
+}
+
+case "${role}" in
+  proxy) configure_time 'server time.cloudflare.com iburst' "allow ${APP_PRIVATE_IP:?set APP_PRIVATE_IP}" ;;
+  app) configure_time "server ${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP} iburst" ;;
+esac
+
 case "${role}" in
   db)
     install -d -m 0700 "${db_dir}"

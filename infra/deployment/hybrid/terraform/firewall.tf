@@ -6,11 +6,19 @@ locals {
     db     = split("/", var.database_cidr)[0]
   }
   service_rules = {
-    proxy = [{
-      source  = local.role_ips.app
-      ports   = "3128,3500,4317"
-      comment = "Squid and Alloy from the app"
-    }]
+    proxy = [
+      {
+        source  = local.role_ips.app
+        ports   = "3128,3500,4317"
+        comment = "Squid and Alloy from the app"
+      },
+      {
+        source  = local.role_ips.app
+        ports   = "123"
+        proto   = "udp"
+        comment = "NTP from the app (chrony on the proxy serves only the app)"
+      }
+    ]
     app = [{
       source  = local.role_ips.proxy
       ports   = "5000"
@@ -73,7 +81,7 @@ resource "proxmox_virtual_environment_firewall_rules" "guest" {
       type    = "in"
       action  = "ACCEPT"
       iface   = "net0"
-      proto   = "tcp"
+      proto   = lookup(rule.value, "proto", "tcp")
       source  = "${rule.value.source}/32"
       dest    = "${local.role_ips[each.key]}/32"
       dport   = rule.value.ports

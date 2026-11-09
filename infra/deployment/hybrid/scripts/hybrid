@@ -64,7 +64,15 @@ load_postgres() {
   docker pull --platform linux/amd64 "${ref}"
   docker image inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "${ref}" | grep -Fx 'PG_MAJOR=17' >/dev/null ||
     fail 'the selected PostgreSQL image must use major version 17'
-  image_id="$(docker image inspect --format '{{.Id}}' "${ref}")"
+  # Compare the linux/amd64 config digest from the registry. A classic Docker
+  # store (the DB guest) reports that as the image ID, while a containerd store
+  # (e.g. Docker Desktop) reports the multi-platform index digest instead.
+  local amd64_manifest
+  amd64_manifest="$(docker buildx imagetools inspect "${ref}" --raw |
+    jq -er '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64")][0].digest')" ||
+    fail 'the selected PostgreSQL image has no linux/amd64 manifest'
+  image_id="$(docker buildx imagetools inspect "${ref%@*}@${amd64_manifest}" --raw | jq -er '.config.digest')" ||
+    fail 'could not read the PostgreSQL image config digest'
   remote_id="$(ssh_role db "sudo docker image inspect --format '{{.Id}}' ${postgres_image} 2>/dev/null || true" < /dev/null)"
   if [[ "${remote_id}" != "${image_id}" ]]; then
     docker tag "${ref}" "${postgres_image}"
@@ -97,7 +105,7 @@ deliver_db_secrets() (
       install -d -m 0700 -o root -g root /etc/flowform /etc/flowform/db
       chmod 0755 /etc/flowform
       umask 077
-      tar --no-same-owner --no-same-permissions -xf - -C /etc/flowform/db \
+      tar --no-same-owner --no-same-permissions -m -xf - -C /etc/flowform/db \
         DATABASE_CORE_APP_PASSWORD.secret.txt DATABASE_RESPONSE_APP_PASSWORD.secret.txt
       chmod 0600 /etc/flowform/db/DATABASE_CORE_APP_PASSWORD.secret.txt /etc/flowform/db/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
     '"
@@ -113,8 +121,11 @@ stage_role() (
       mkdir "${payload}/database-init"
       cp -r "${root}/infra/database/init/"{schema,templates} "${payload}/database-init/"
       install -m 0755 "${root}/infra/database/init/00-render-and-run.sh" "${payload}/database-init/"
+      # The init directory is mounted read-only, so the readiness marker ships
+      # inside it rather than as a nested bind mount.
+      install -m 0755 "${runtime}/services/postgres/99-hybrid-ready.sh" "${payload}/database-init/"
       cp "${runtime}/compose/db.yml" \
-        "${runtime}/services/postgres/"{db-entrypoint.sh,99-hybrid-ready.sh} "${payload}/"
+        "${runtime}/services/postgres/db-entrypoint.sh" "${payload}/"
       ;;
     app|proxy)
       cp "${images}/shared/host-assets/bin/bootstrap-common.sh" \
@@ -157,7 +168,7 @@ ENV
     flock 9
     release=\$(mktemp -d /opt/flowform/hybrid-release.XXXXXX)
     trap \"rm -rf -- \\\"\$release\\\"\" EXIT
-    tar --no-same-owner -xf - -C \"\$release\"
+    tar --no-same-owner -m -xf - -C \"\$release\"
     chmod 0755 \"\$release\"
     previous=\$(readlink /opt/flowform/hybrid || true)
     ln -s \"\$release\" \"\$release.next\"

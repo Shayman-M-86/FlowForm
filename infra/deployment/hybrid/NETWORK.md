@@ -38,7 +38,9 @@ UniFi never sees it.
 | App VM | Proxy VM | TCP 3128 for Squid, TCP 3500 and 4317 for Alloy. |
 | App database NIC | DB VM | TCP 5432 for PostgreSQL. PostgreSQL also limits access by source, database, role and TLS. |
 | Approved DB admin path | DB VM | TCP 22 solely for deployment and maintenance. |
-| Proxy and app | Site infrastructure | DNS and time to the designated internal endpoints, with DHCP only if used. |
+| Proxy and app | Site infrastructure | DNS to the designated internal resolver, with DHCP only if used. |
+| Proxy VM | `time.cloudflare.com` (162.159.200.1, 162.159.200.123) | UDP `123`. Chrony on the proxy syncs here and serves time only to the app. |
+| App VLAN address | Proxy VM | UDP `123` for time from the proxy's chrony. The proxy's guest firewall admits only the app. |
 | Proxy VM | Approved external HTTPS endpoints | TCP 443 for AWS, Grafana Cloud and registry access. Include the approved domains served by Squid below. |
 | Proxy VM | Cloudflare Tunnel endpoints | TCP/UDP 7844 for HTTP/2 or QUIC. [Cloudflare firewall requirements](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/tunnel-with-firewall/) |
 
