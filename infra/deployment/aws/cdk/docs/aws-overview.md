@@ -11,12 +11,14 @@ secret values.
 |---|---|---|---|---|
 | Security | `flowform_infra/stacks/security_stack.py` | Built | per scope: nonprod (dev+staging), prod | KMS key, Secrets Manager entries, SSM params, app IAM role, GitHub OIDC roles — dev and staging share one `FlowForm-Nonprod-Security` stack |
 | Registry | `flowform_infra/stacks/registry_stack.py` | Built | staging/prod | KMS-encrypted immutable ECR repositories for Backend, Caddy, Squid, and Alloy; exact image-publisher policy |
-| Network | `flowform_infra/stacks/network_stack.py` | Built | staging/prod | VPC, subnet groups, security groups, S3 gateway endpoint, EC2 Instance Connect Endpoint |
-| Database | `flowform_infra/stacks/database_stack.py` | Stub | staging/prod | RDS PostgreSQL (core + response) |
-| Application | `flowform_infra/stacks/application_stack.py` | Partial | staging/prod | Public proxy and private app EC2 instances, Elastic IP, roles, and exact host-specific ECR pulls; bootstrap and API DNS remain |
+| HybridRuntime | `flowform_infra/stacks/hybrid_runtime_stack.py` | Built | staging | Parameter Store configuration for the Proxmox app and proxy |
+| HybridIdentity | `flowform_infra/stacks/hybrid_identity_stack.py` | Built | staging | Roles Anywhere trust anchor, profiles, and workload roles |
+| Network | `flowform_infra/stacks/network_stack.py` | Built | prod | VPC, subnet groups, security groups, S3 gateway endpoint, EC2 Instance Connect Endpoint |
+| Database | `flowform_infra/stacks/database_stack.py` | Built | prod | RDS PostgreSQL (core and response) |
+| App and Proxy | `flowform_infra/stacks/app_stack.py` and `flowform_infra/stacks/proxy_stack.py` | Built | prod | Private app and public proxy EC2 instances, role policies, and API DNS |
 | FrontendCert | `flowform_infra/stacks/frontend_cert_stack.py` | Built | staging/prod | ACM cert for CloudFront (us-east-1) |
 | Frontend | `flowform_infra/stacks/frontend_stack.py` | Built | staging/prod | S3 + CloudFront hosting for `public-site` and `studio-app` |
-| Observability | `flowform_infra/stacks/observability_stack.py` | Stub | staging/prod | CloudWatch log groups, alarms, dashboard |
+| Observability | `flowform_infra/stacks/observability_stack.py` | Stub | prod | CloudWatch log groups, alarms, dashboard |
 
 Security is deployed first; Registry consumes its KMS key and image-publisher
 role, and Application consumes the resulting repositories. **dev deploys the Security stack only**: the app,
@@ -24,11 +26,9 @@ databases, and frontends run locally, so dev's AWS footprint is just the
 resources the backend can't fake locally (KMS, secrets, SES send access).
 See [`environments.md`](environments.md).
 
-The overall shape — single public EC2 with Caddy instead of ALB/ECS, no
-NAT Gateway, one small RDS instance — is a deliberate budget decision,
-not a stopgap. [`cost-model.md`](cost-model.md) records the monthly
-target, the isolation trade-off accepted, and the triggers for upgrading
-past it.
+The production AWS runtime uses a single public EC2 proxy with Caddy, an
+isolated app subnet, and one RDS instance. [`cost-model.md`](cost-model.md)
+records the cost and isolation decisions for that architecture.
 
 ## What's NOT in CDK
 
@@ -70,9 +70,9 @@ parameters published by the frontend stack, builds both apps, then
 The Auth0 values come from `EnvConfig.auth0_public`, loaded at synth time
 from the gitignored `infra/deployment/aws/cdk/.env.<env>` file — the frontend stack fails
 synth with a clear error if that file (or its `AUTH0_*` keys) is missing.
-**`VITE_API_BASE_URL` points at the planned API hostname**
-(`api.<public-site-domain>`) which doesn't resolve until
-`application_stack.py`'s EC2 instance and Route 53 record exist.
+`VITE_API_BASE_URL` points at the Cloudflare Tunnel hostname
+`https://api-staging.flow-form.com.au` for staging and the AWS proxy's
+API hostname for production.
 
 ## Regions and accounts
 

@@ -493,6 +493,24 @@ jobs:
         id: diff_staging
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
+          set -o pipefail
+          # Local deploys use .env.staging. The read-only CI preview uses
+          # the deployed public runtime values for fields kept out of git.
+          aws ssm get-parameters --region ap-southeast-2 --names \
+            /flowform/nonprod/backend/FLOWFORM_AUTH0_MGMT_DOMAIN \
+            /flowform/nonprod/backend/FLOWFORM_AUTH0_MGMT_ID \
+            /flowform/nonprod/backend/FLOWFORM_EMAIL_FROM_ADDRESS \
+            /flowform/nonprod/proxy/GRAFANA_CLOUD_LOKI_URL \
+            /flowform/nonprod/proxy/GRAFANA_CLOUD_LOKI_USER \
+            /flowform/nonprod/proxy/GRAFANA_CLOUD_TEMPO_ENDPOINT \
+            /flowform/nonprod/proxy/GRAFANA_CLOUD_TEMPO_USER \
+            --output json | jq -er '
+              if (.InvalidParameters | length) != 0 or (.Parameters | length) != 7 then
+                error("missing staging runtime parameters")
+              else
+                .Parameters[] | (.Name | split("/") | last | sub("^FLOWFORM_"; "")) + "=" + .Value
+              end
+            ' >> .env.staging
           diff_output_path="$RUNNER_TEMP/cdk-diff-staging.txt"
           npx --no-install cdk diff -c env=staging --method=template 2>&1 | tee "$diff_output_path"
           echo "diff_output_path=$diff_output_path" >> "$GITHUB_OUTPUT"

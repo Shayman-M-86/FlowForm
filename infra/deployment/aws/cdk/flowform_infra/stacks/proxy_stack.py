@@ -12,6 +12,7 @@ from flowform_infra.config import EnvConfig, runtime_group_logical_names, runtim
 from flowform_infra.stacks.host_stack import RoleHostStack, pascal_case
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.registry_stack import RegistryStack
+from flowform_infra.stacks.runtime_parameters import proxy_runtime_values
 
 
 class ProxyStack(RoleHostStack):
@@ -163,18 +164,7 @@ class ProxyStack(RoleHostStack):
 
     def _publish_runtime_parameters(self) -> None:
         env_config = self.env_config
-        runtime_public = env_config.runtime_public
-        assert runtime_public is not None
-        assert env_config.api_domain is not None
-
-        values = {
-            "runtime_environment": env_config.env_name,
-            "api_domain": env_config.api_domain,
-            "grafana_cloud_loki_url": runtime_public.grafana_cloud_loki_url,
-            "grafana_cloud_loki_user": runtime_public.grafana_cloud_loki_user,
-            "grafana_cloud_tempo_endpoint": runtime_public.grafana_cloud_tempo_endpoint,
-            "grafana_cloud_tempo_user": runtime_public.grafana_cloud_tempo_user,
-        }
+        values = proxy_runtime_values(env_config)
         unknown = set(values) - runtime_group_logical_names("proxy")
         if unknown:
             raise ValueError(f"proxy runtime parameters not in the contract: {sorted(unknown)}")

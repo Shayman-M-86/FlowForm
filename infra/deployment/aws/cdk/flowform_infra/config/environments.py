@@ -64,6 +64,7 @@ class EnvConfig:
     db_backup_retention_days: int
     db_log_retention: logs.RetentionDays
     database_removal_policy: RemovalPolicy
+    hybrid_runtime: bool = False
     # Build-time env vars for the studio-app SPA, published as SSM params by
     # the frontend stack for CI builds. None for dev (local frontend env
     # files own these). For staging/prod this is filled at lookup time from
@@ -189,10 +190,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         ec2_app_ami_ssm_parameter=ami_parameter_name("dev", "app"),
         ec2_proxy_ami_ssm_parameter=ami_parameter_name("dev", "proxy"),
     ),
-    # staging doubles as the shared integration environment — the one
-    # non-prod cloud deployment. Anything that would want a "deployed dev"
-    # (frontend previews, integration testing against real ECS/RDS)
-    # happens here instead of in a second paid-for environment.
+    # Staging hosts its runtime on Proxmox and its frontends on AWS.
     "staging": EnvConfig(
         env_name="staging",
         account=_ACCOUNT,
@@ -207,6 +205,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         db_backup_retention_days=7,
         db_log_retention=logs.RetentionDays.ONE_WEEK,
         database_removal_policy=RemovalPolicy.SNAPSHOT,
+        hybrid_runtime=True,
         auth0_public=None,  # loaded from .env.staging by get_env_config()
         public_site_domain=f"staging.{DOMAIN_NAME}",
         studio_domain=f"studio.staging.{DOMAIN_NAME}",

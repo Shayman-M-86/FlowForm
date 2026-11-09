@@ -11,6 +11,7 @@ from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
 from flowform_infra.stacks.frontend_stack import FrontendStack
 from flowform_infra.stacks.hybrid_identity_stack import HybridIdentityStack
+from flowform_infra.stacks.hybrid_runtime_stack import HybridRuntimeStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.observability_stack import ObservabilityStack
 from flowform_infra.stacks.proxy_stack import ProxyStack
@@ -45,8 +46,8 @@ cdk.Tags.of(security_stack).add("flowform:env", scope_config.scope_name)
 
 # dev stops here: the app, both databases, and the frontends all run
 # locally (infra/containers/runtime/development/compose/ + Vite dev servers),
-# so dev's AWS footprint is the Security stack only. staging/prod get the full
-# compute/hosting set.
+# so dev's AWS footprint is the Security stack only. Staging and prod both
+# have AWS-hosted frontends and use different runtime stacks.
 if env_config.full_deployment:
     registry_stack = RegistryStack(
         app,
@@ -58,72 +59,93 @@ if env_config.full_deployment:
     )
     registry_stack.add_dependency(security_stack)
 
-    network_stack = NetworkStack(
-        app,
-        f"{name_prefix}-Network",
-        env_config=env_config,
-        env=cdk_env,
-    )
-
-    database_stack = DatabaseStack(
-        app,
-        f"{name_prefix}-Database",
-        env_config=env_config,
-        network_stack=network_stack,
-        kms_key=security_stack.kms_key,
-        task_role=security_stack.task_role,
-        env=cdk_env,
-    )
-    database_stack.add_dependency(network_stack)
-    database_stack.add_dependency(security_stack)
-
-    if str(app.node.try_get_context("databaseBootstrap")).lower() == "true":
-        database_bootstrap_stack = DatabaseBootstrapStack(
+    if env_config.hybrid_runtime:
+        hybrid_runtime_stack = HybridRuntimeStack(
             app,
-            f"{name_prefix}-DatabaseBootstrap",
+            f"{name_prefix}-HybridRuntime",
             env_config=env_config,
-            network_stack=network_stack,
-            database_stack=database_stack,
-            kms_key=security_stack.kms_key,
+            security_stack=security_stack,
             env=cdk_env,
         )
-        database_bootstrap_stack.add_dependency(network_stack)
-        database_bootstrap_stack.add_dependency(database_stack)
-        database_bootstrap_stack.add_dependency(security_stack)
-        all_stacks.append(database_bootstrap_stack)
+        all_stacks.append(hybrid_runtime_stack)
+    else:
+        network_stack = NetworkStack(
+            app,
+            f"{name_prefix}-Network",
+            env_config=env_config,
+            env=cdk_env,
+        )
 
-    proxy_stack = ProxyStack(
-        app,
-        f"{name_prefix}-Proxy",
-        env_config=env_config,
-        network_stack=network_stack,
-        registry_stack=registry_stack,
-        kms_key=security_stack.kms_key,
-        observability_secret_arn=security_stack.observability_secret.secret_arn,
-        hosted_zone=security_stack.email_identity.hosted_zone,
-        env=cdk_env,
-    )
-    proxy_stack.add_dependency(network_stack)
-    proxy_stack.add_dependency(registry_stack)
-    proxy_stack.add_dependency(security_stack)
+        database_stack = DatabaseStack(
+            app,
+            f"{name_prefix}-Database",
+            env_config=env_config,
+            network_stack=network_stack,
+            kms_key=security_stack.kms_key,
+            task_role=security_stack.task_role,
+            env=cdk_env,
+        )
+        database_stack.add_dependency(network_stack)
+        database_stack.add_dependency(security_stack)
 
-    app_stack = AppStack(
-        app,
-        f"{name_prefix}-App",
-        env_config=env_config,
-        network_stack=network_stack,
-        registry_stack=registry_stack,
-        database_stack=database_stack,
-        task_role=security_stack.task_role,
-        kms_key=security_stack.kms_key,
-        linkage_secret_arn=security_stack.linkage_secret.secret_arn,
-        env=cdk_env,
-    )
-    app_stack.add_dependency(network_stack)
-    app_stack.add_dependency(registry_stack)
-    app_stack.add_dependency(security_stack)
-    app_stack.add_dependency(database_stack)
-    app_stack.add_dependency(proxy_stack)
+        if str(app.node.try_get_context("databaseBootstrap")).lower() == "true":
+            database_bootstrap_stack = DatabaseBootstrapStack(
+                app,
+                f"{name_prefix}-DatabaseBootstrap",
+                env_config=env_config,
+                network_stack=network_stack,
+                database_stack=database_stack,
+                kms_key=security_stack.kms_key,
+                env=cdk_env,
+            )
+            database_bootstrap_stack.add_dependency(network_stack)
+            database_bootstrap_stack.add_dependency(database_stack)
+            database_bootstrap_stack.add_dependency(security_stack)
+            all_stacks.append(database_bootstrap_stack)
+
+        proxy_stack = ProxyStack(
+            app,
+            f"{name_prefix}-Proxy",
+            env_config=env_config,
+            network_stack=network_stack,
+            registry_stack=registry_stack,
+            kms_key=security_stack.kms_key,
+            observability_secret_arn=security_stack.observability_secret.secret_arn,
+            hosted_zone=security_stack.email_identity.hosted_zone,
+            env=cdk_env,
+        )
+        proxy_stack.add_dependency(network_stack)
+        proxy_stack.add_dependency(registry_stack)
+        proxy_stack.add_dependency(security_stack)
+
+        app_stack = AppStack(
+            app,
+            f"{name_prefix}-App",
+            env_config=env_config,
+            network_stack=network_stack,
+            registry_stack=registry_stack,
+            database_stack=database_stack,
+            task_role=security_stack.task_role,
+            kms_key=security_stack.kms_key,
+            linkage_secret_arn=security_stack.linkage_secret.secret_arn,
+            env=cdk_env,
+        )
+        app_stack.add_dependency(network_stack)
+        app_stack.add_dependency(registry_stack)
+        app_stack.add_dependency(security_stack)
+        app_stack.add_dependency(database_stack)
+        app_stack.add_dependency(proxy_stack)
+
+        observability_stack = ObservabilityStack(
+            app,
+            f"{name_prefix}-Observability",
+            env_config=env_config,
+            env=cdk_env,
+        )
+        observability_stack.add_dependency(proxy_stack)
+        observability_stack.add_dependency(app_stack)
+
+        all_stacks += [network_stack, database_stack, proxy_stack, app_stack, observability_stack]
 
     # CloudFront only accepts ACM certs from us-east-1, so the cert lives
     # in its own stack there; cross_region_references wires it into the
@@ -148,17 +170,8 @@ if env_config.full_deployment:
     frontend_stack.add_dependency(frontend_cert_stack)
     frontend_stack.add_dependency(security_stack)
 
-    observability_stack = ObservabilityStack(
-        app,
-        f"{name_prefix}-Observability",
-        env_config=env_config,
-        env=cdk_env,
-    )
-    observability_stack.add_dependency(proxy_stack)
-    observability_stack.add_dependency(app_stack)
-
     # Proxmox hybrid hosts authenticate through IAM Roles Anywhere. The stack
-    # exists only for environments whose public CA certificate is committed
+    # exists only for environments with a local copy of the public CA certificate
     # (created by infra/deployment/hybrid/scripts/identity ca).
     hybrid_ca_certificate = (
         Path(__file__).resolve().parents[2] / "hybrid" / "identity" / f"{env_config.env_name}-ca.crt"
@@ -177,16 +190,7 @@ if env_config.full_deployment:
         hybrid_identity_stack.add_dependency(registry_stack)
         all_stacks.append(hybrid_identity_stack)
 
-    all_stacks += [
-        registry_stack,
-        network_stack,
-        database_stack,
-        proxy_stack,
-        app_stack,
-        frontend_cert_stack,
-        frontend_stack,
-        observability_stack,
-    ]
+    all_stacks += [registry_stack, frontend_cert_stack, frontend_stack]
 
 for stack in all_stacks:
     for key, value in env_config.tags.items():
