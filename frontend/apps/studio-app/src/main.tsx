@@ -3,9 +3,8 @@ import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Auth0Provider } from '@auth0/auth0-react'
 import { QueryProvider } from './app/providers/QueryProvider'
-import { RouterProvider } from '@tanstack/react-router'
 import { ThemeProvider } from '@flowform/ui'
-import { router } from './lib/router'
+import { AppRouter } from './app/AppRouter'
 
 const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN as string
 const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID as string
@@ -43,7 +42,7 @@ if (!needsSecureOrigin) createRoot(document.getElementById('root')!).render(
     >
       <QueryProvider>
         <ThemeProvider>
-          <RouterProvider router={router} />
+          <AppRouter />
         </ThemeProvider>
         {ReactQueryDevtools && (
           <Suspense>
