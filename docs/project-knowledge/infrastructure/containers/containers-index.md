@@ -5,10 +5,13 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-09
 tags: [infrastructure]
 related_code:
   - "../../../../infra/containers/README.md"
+  - "../../../../infra/containers/runtime/proxmox/hybrid/compose/app.override.yml"
+  - "../../../../infra/containers/runtime/proxmox/hybrid/compose/proxy.override.yml"
+  - "../../../../infra/containers/runtime/proxmox/hybrid/compose/db.yml"
 change_triggers:
   - "../../../../infra/containers/images/"
   - "../../../../infra/containers/runtime/"
@@ -42,6 +45,12 @@ credentials are supplied by the selected environment.
 The checked-in Compose and image definitions specify intended service
 boundaries, including constrained privileges, mounts, and logging. They are not
 proof that an external telemetry destination, registry, or deployment is live.
+
+The Proxmox hybrid adapter layers app and proxy overrides on the shared AWS
+Compose definitions. Cloudflared connects to Caddy over the proxy's internal
+network. The app's external HTTPS uses Squid and its PostgreSQL connections
+use verified TLS over an internal Proxmox bridge. The DB guest uses a persistent
+volume and an image staged offline by the deployment workstation.
 
 ## Related documents
 

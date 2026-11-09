@@ -81,6 +81,11 @@ class EnvConfig:
     # (e.g. ("www",) for prod).
     public_site_extra_prefixes: tuple[str, ...] = ()
     studio_domain: str | None = None
+    # Public API hostname (Caddy site address, proxy SSM API_DOMAIN and the
+    # frontends' API base URL). Keep it one label below DOMAIN_NAME: the
+    # Cloudflare-proxied tunnel hostname must be covered by the zone's
+    # *.DOMAIN_NAME edge certificate.
+    api_domain: str | None = None
     # VPC-only service discovery zone. ProxyStack and AppStack publish their
     # instance addresses here so host replacement does not change the
     # cross-host addressing contract.
@@ -205,6 +210,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         auth0_public=None,  # loaded from .env.staging by get_env_config()
         public_site_domain=f"staging.{DOMAIN_NAME}",
         studio_domain=f"studio.staging.{DOMAIN_NAME}",
+        api_domain=f"api-staging.{DOMAIN_NAME}",
         private_dns_zone=f"internal.staging.{DOMAIN_NAME}",
         tags={"flowform:env": "staging"},
         security_scope="nonprod",
@@ -233,6 +239,7 @@ _ENVIRONMENTS: dict[EnvName, EnvConfig] = {
         public_site_domain=DOMAIN_NAME,
         public_site_extra_prefixes=("www",),
         studio_domain=f"studio.{DOMAIN_NAME}",
+        api_domain=f"api.{DOMAIN_NAME}",
         private_dns_zone=f"internal.{DOMAIN_NAME}",
         tags={"flowform:env": "prod"},
         security_scope="prod",

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+from pathlib import Path
 
 import aws_cdk as cdk
 
@@ -9,6 +10,7 @@ from flowform_infra.stacks.database_bootstrap_stack import DatabaseBootstrapStac
 from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.frontend_cert_stack import FrontendCertStack
 from flowform_infra.stacks.frontend_stack import FrontendStack
+from flowform_infra.stacks.hybrid_identity_stack import HybridIdentityStack
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.observability_stack import ObservabilityStack
 from flowform_infra.stacks.proxy_stack import ProxyStack
@@ -154,6 +156,26 @@ if env_config.full_deployment:
     )
     observability_stack.add_dependency(proxy_stack)
     observability_stack.add_dependency(app_stack)
+
+    # Proxmox hybrid hosts authenticate through IAM Roles Anywhere. The stack
+    # exists only for environments whose public CA certificate is committed
+    # (created by infra/deployment/hybrid/scripts/identity ca).
+    hybrid_ca_certificate = (
+        Path(__file__).resolve().parents[2] / "hybrid" / "identity" / f"{env_config.env_name}-ca.crt"
+    )
+    if hybrid_ca_certificate.is_file():
+        hybrid_identity_stack = HybridIdentityStack(
+            app,
+            f"{name_prefix}-HybridIdentity",
+            env_config=env_config,
+            security_stack=security_stack,
+            registry_stack=registry_stack,
+            ca_certificate_pem=hybrid_ca_certificate.read_text(encoding="utf-8"),
+            env=cdk_env,
+        )
+        hybrid_identity_stack.add_dependency(security_stack)
+        hybrid_identity_stack.add_dependency(registry_stack)
+        all_stacks.append(hybrid_identity_stack)
 
     all_stacks += [
         registry_stack,

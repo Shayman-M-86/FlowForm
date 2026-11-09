@@ -13,7 +13,8 @@ set -Eeuo pipefail
 #      the Docker daemon (HTTP(S)_PROXY -> Squid on the proxy box).
 #   2. Render /opt/flowform/backend.env from SSM /flowform/<scope>/backend/*.
 #   3. Materialise common Secrets Manager values into tmpfs secret files
-#      (0600), plus database passwords only for the rehearsal password strategy.
+#      (0600), plus database passwords for the password strategy (rehearsal
+#      and hybrid).
 #   4. Pull the backend image (with backoff), then docker compose up the stack.
 #      The pull retries so a not-yet-published image is a wait, not a failure:
 #      in prod the image is already in ECR (first attempt succeeds); in the
@@ -23,11 +24,12 @@ set -Eeuo pipefail
 # orchestration remains shared:
 #   aws       -> both databases must use IAM; no DB password is fetched/mounted.
 #   rehearsal -> both databases must use passwords from LocalStack db-secrets.
+#   hybrid    -> both databases must use passwords from AWS db-secrets.
 # Endpoint and Compose overrides remain transport/runtime seams, not implicit
 # environment detection.
 #
 # Required environment (from user-data / deploy caller):
-#   FLOWFORM_DEPLOYMENT_TARGET "aws" | "rehearsal"
+#   FLOWFORM_DEPLOYMENT_TARGET "aws" | "rehearsal" | "hybrid"
 #   FLOWFORM_SCOPE          security scope namespace, e.g. "nonprod" | "prod"
 #   PROXY_PRIVATE_IP        private IP of the proxy box running Squid :3128
 #   APP_PRIVATE_IP          this host's private IP (compose binds backend here)
@@ -75,14 +77,14 @@ install_err_trap
 # 0. Inputs
 # ---------------------------------------------------------------------------
 : "${FLOWFORM_SCOPE:?set FLOWFORM_SCOPE (e.g. nonprod)}"
-: "${FLOWFORM_DEPLOYMENT_TARGET:?set FLOWFORM_DEPLOYMENT_TARGET (aws or rehearsal)}"
+: "${FLOWFORM_DEPLOYMENT_TARGET:?set FLOWFORM_DEPLOYMENT_TARGET (aws, rehearsal, or hybrid)}"
 : "${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP (Squid host)}"
 : "${APP_PRIVATE_IP:?set APP_PRIVATE_IP}"
 : "${AWS_REGION:?set AWS_REGION}"
 
 case "${FLOWFORM_DEPLOYMENT_TARGET}" in
-  aws|rehearsal) ;;
-  *) die "FLOWFORM_DEPLOYMENT_TARGET must be 'aws' or 'rehearsal'" ;;
+  aws|rehearsal|hybrid) ;;
+  *) die "FLOWFORM_DEPLOYMENT_TARGET must be 'aws', 'rehearsal', or 'hybrid'" ;;
 esac
 
 SECRET_DIR="${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}"
@@ -169,12 +171,15 @@ configure_docker_daemon_proxy() {
   # and pushes traverse the proxy exactly as prod's ECR-over-HTTPS pulls do. The
   # hostname-suffix exemptions below keep RDS and the S3 gateway path direct;
   # IMDS + localhost stay direct; the proxy is dialed AS the proxy, not exempted.
-  local content
+  local content s3_no_proxy=""
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" != hybrid ]]; then
+    s3_no_proxy=",.s3.${AWS_REGION}.amazonaws.com"
+  fi
   content="$(cat <<EOF
 [Service]
 Environment="HTTP_PROXY=http://${PROXY_PRIVATE_IP}:3128"
 Environment="HTTPS_PROXY=http://${PROXY_PRIVATE_IP}:3128"
-Environment="NO_PROXY=localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com,.s3.${AWS_REGION}.amazonaws.com"
+Environment="NO_PROXY=localhost,127.0.0.1,169.254.169.254,.rds.amazonaws.com${s3_no_proxy}"
 EOF
 )"
   if [[ "${DRY_RUN}" == "1" ]]; then
@@ -229,12 +234,22 @@ render_backend_env() {
   printf '%s' "${raw}" | jq -e '.Parameters | length > 0' >/dev/null 2>&1 \
     || die "no SSM parameters under ${param_path} — seed them first"
 
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" == hybrid ]]; then
+    : "${HYBRID_DB_HOST:?set HYBRID_DB_HOST}"
+    raw="$(jq '.Parameters |= map(select(.Name | split("/") | last |
+      (startswith("DATABASE_") | not) or test("^DATABASE_(CORE|RESPONSE)_(NAME|APP_USER)$")))' <<<"${raw}")"
+  fi
   printf '%s' "${raw}" | render_ssm_path_to_env "${tmp}" \
     || die "failed to render SSM parameters under ${param_path} into ${BACKEND_ENV}"
 
   # Inject values only the host knows and immutable refs selected by the role
   # release manifest.
   {
+    if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" == hybrid ]]; then
+      printf 'DATABASE_CORE_HOST=%s\nDATABASE_RESPONSE_HOST=%s\n' "${HYBRID_DB_HOST}" "${HYBRID_DB_HOST}"
+      printf 'DATABASE_CORE_PORT=5432\nDATABASE_RESPONSE_PORT=5432\n'
+      printf 'DATABASE_CORE_AUTH_MODE=password\nDATABASE_RESPONSE_AUTH_MODE=password\n'
+    fi
     printf 'APP_PRIVATE_IP=%s\n'  "${APP_PRIVATE_IP}"
     printf 'PROXY_PRIVATE_IP=%s\n' "${PROXY_PRIVATE_IP}"
     printf 'PROXY_GATEWAY_HOST=%s\n' "${PROXY_GATEWAY_HOST:-${PROXY_PRIVATE_IP}}"
@@ -255,6 +270,14 @@ render_backend_env() {
     || die "backend.env must set DATABASE_CORE_AUTH_MODE to password or iam"
   grep -Eq '^DATABASE_RESPONSE_AUTH_MODE=(password|iam)$' "${tmp}" \
     || die "backend.env must set DATABASE_RESPONSE_AUTH_MODE to password or iam"
+
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" == hybrid ]]; then
+    grep -Fxq 'DATABASE_CORE_NAME=flowform_core' "${tmp}" &&
+      grep -Fxq 'DATABASE_CORE_APP_USER=flowform_core_app' "${tmp}" &&
+      grep -Fxq 'DATABASE_RESPONSE_NAME=flowform_response' "${tmp}" &&
+      grep -Fxq 'DATABASE_RESPONSE_APP_USER=flowform_response_app' "${tmp}" ||
+      die 'SSM database names and users must match the hybrid PostgreSQL initializer'
+  fi
 
   mv "${tmp}" "${BACKEND_ENV}"
   chmod 0600 "${BACKEND_ENV}"
@@ -282,7 +305,7 @@ validate_database_auth_strategy() {
   local expected core_mode response_mode
   case "${FLOWFORM_DEPLOYMENT_TARGET}" in
     aws) expected="iam" ;;
-    rehearsal) expected="password" ;;
+    rehearsal|hybrid) expected="password" ;;
   esac
 
   if [[ "${DRY_RUN}" == "1" ]]; then
@@ -368,12 +391,10 @@ materialise_secrets() {
     db_json="$(fetch_secret_string db-secrets)"
   fi
 
-  # JSON blobs reach jq on stdin via write_secret_key's builtin-printf pipe —
-  # never on argv, never in a here-string temp file — so no secret touches the
-  # process table or disk outside the tmpfs target.
-  umask 177  # -> files 0600
-  write_secret_key "${app_json}" app_secret_key           "${SECRET_DIR}/FLOWFORM_APP_SECRET_KEY.secret.txt"
-  write_secret_key "${app_json}" auth0_mgmt_secret        "${SECRET_DIR}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt"
+  # write_secret_key passes JSON to jq on stdin and writes to the tmpfs.
+  umask 177
+  write_secret_key "${app_json}" app_secret_key "${SECRET_DIR}/FLOWFORM_APP_SECRET_KEY.secret.txt"
+  write_secret_key "${app_json}" auth0_mgmt_secret "${SECRET_DIR}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt"
   if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
     write_secret_key "${db_json}" db_core_app_password \
       "${SECRET_DIR}/DATABASE_CORE_APP_PASSWORD.secret.txt"

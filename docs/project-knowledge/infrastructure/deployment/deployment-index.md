@@ -5,11 +5,13 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-09
 tags: [infrastructure, ci-cd]
 related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"
   - "../../../../infra/deployment/aws/operations/README.md"
+  - "../../../../infra/deployment/hybrid/README.md"
+  - "../../../../infra/deployment/hybrid/scripts/hybrid"
 change_triggers:
   - "../../../../infra/deployment/aws/"
   - "../../../../infra/deployment/bootstrap/"
@@ -110,6 +112,13 @@ recovery procedures change with the implementation and belong next to those
 operations.
 
 ## Other environments
+
+The hybrid operator entry point under `infra/deployment/hybrid` builds a
+dedicated Proxmox template and provisions separate proxy, app and database
+guests from its own Terraform state. It uses existing AWS release manifests,
+configuration and secret readers. The runbook describes AWS identity
+prerequisites, offline database image staging and the manual network setup
+that precedes convergence. Live guest deployment remains to be verified.
 
 The local Proxmox rehearsal has a separate lifecycle and topology, but consumes
 the same broad artifact and runtime boundaries. Development and test

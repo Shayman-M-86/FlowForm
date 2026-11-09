@@ -169,5 +169,18 @@ if (( operation_status != 0 )); then
   collect_failure_events
 fi
 
+# CDK writes public records to Route 53, but Cloudflare is authoritative for
+# the zone. Report drift after every deployment; the deploy itself already
+# succeeded, so drift is a warning to mirror the change in Cloudflare.
+dns_sync="${SCRIPT_DIR}/../../../dns/dns-sync"
+if (( operation_status == 0 )) && [[ "${mode}" == "deploy" && -x "${dns_sync}" ]]; then
+  if dns_report="$("${dns_sync}" check 2>&1)"; then
+    operation_log "info" "${dns_report##*$'\n'}"
+  else
+    operation_log "warn" "Route 53 and Cloudflare are out of sync (or the check could not run):"
+    printf '%s\n' "${dns_report}" >&2
+  fi
+fi
+
 operation_finish "${operation_status}"
 exit "${operation_status}"

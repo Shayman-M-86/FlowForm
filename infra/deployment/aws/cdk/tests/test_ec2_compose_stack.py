@@ -286,7 +286,7 @@ def test_network_private_dns_zone_and_application_records_track_instance_address
     }
     assert set(app_records) == {"app.internal.staging.flow-form.com.au."}
     assert set(proxy_records) == {
-        "api.staging.flow-form.com.au.",
+        "api-staging.flow-form.com.au.",
         "proxy.internal.staging.flow-form.com.au.",
     }
     app_target = records["app.internal.staging.flow-form.com.au."]["ResourceRecords"][0]["Fn::GetAtt"]
@@ -298,7 +298,7 @@ def test_network_private_dns_zone_and_application_records_track_instance_address
     assert {record["TTL"] for record in records.values()} == {"60"}
     assert {record["Type"] for record in records.values()} == {"A"}
 
-    public_api = records["api.staging.flow-form.com.au."]
+    public_api = records["api-staging.flow-form.com.au."]
     assert public_api["HostedZoneId"] == "Z1234567890ABC"
     assert public_api["ResourceRecords"][0]["Ref"].startswith("ProxyElasticIp")
 
@@ -636,7 +636,7 @@ def test_backend_parameters_are_published_under_the_contract_path():
 def test_proxy_runtime_parameters_include_domain_and_observability_routes():
     template = _synth_proxy_stack()
     expected = {
-        "API_DOMAIN": "api.staging.flow-form.com.au",
+        "API_DOMAIN": "api-staging.flow-form.com.au",
         "FLOWFORM_ENV": "staging",
         "GRAFANA_CLOUD_LOKI_URL": "https://logs.example.test/loki/api/v1/push",
         "GRAFANA_CLOUD_LOKI_USER": "loki-user",

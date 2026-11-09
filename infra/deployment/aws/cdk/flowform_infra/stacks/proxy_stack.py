@@ -34,6 +34,8 @@ class ProxyStack(RoleHostStack):
 
         if env_config.public_site_domain is None:
             raise ValueError("ProxyStack requires public_site_domain")
+        if env_config.api_domain is None:
+            raise ValueError("ProxyStack requires api_domain")
         if env_config.runtime_public is None:
             raise ValueError(f"ProxyStack requires runtime public configuration for {env_config.env_name}")
 
@@ -144,7 +146,7 @@ class ProxyStack(RoleHostStack):
             self,
             "ApiDnsRecord",
             zone=hosted_zone,
-            record_name=f"api.{env_config.public_site_domain}",
+            record_name=env_config.api_domain,
             target=route53.RecordTarget.from_ip_addresses(self.proxy_elastic_ip.ref),
             ttl=Duration.minutes(1),
         )
@@ -163,11 +165,11 @@ class ProxyStack(RoleHostStack):
         env_config = self.env_config
         runtime_public = env_config.runtime_public
         assert runtime_public is not None
-        assert env_config.public_site_domain is not None
+        assert env_config.api_domain is not None
 
         values = {
             "runtime_environment": env_config.env_name,
-            "api_domain": f"api.{env_config.public_site_domain}",
+            "api_domain": env_config.api_domain,
             "grafana_cloud_loki_url": runtime_public.grafana_cloud_loki_url,
             "grafana_cloud_loki_user": runtime_public.grafana_cloud_loki_user,
             "grafana_cloud_tempo_endpoint": runtime_public.grafana_cloud_tempo_endpoint,

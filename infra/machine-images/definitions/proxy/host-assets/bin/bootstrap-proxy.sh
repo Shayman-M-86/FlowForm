@@ -51,12 +51,17 @@ install_err_trap
 : "${APP_PRIVATE_IP:?set APP_PRIVATE_IP}"
 : "${AWS_REGION:?set AWS_REGION}"
 
-# tmpfs-backed secret dir for the proxy box. Only the Grafana Cloud token lives
-# here (materialised from the observability-secrets Secrets Manager entry); the
-# proxy holds no other secret. Kept OUT of proxy.env so the token is never an
-# environment variable — Alloy reads it from this file via a Docker secret.
+# tmpfs-backed secret dir for the proxy box. The Grafana Cloud token lives here
+# (materialised from the observability-secrets Secrets Manager entry), plus the
+# Cloudflare Tunnel token on the hybrid target (tunnel-secrets). Kept OUT of
+# proxy.env so no token is ever an environment variable — the containers read
+# them from these files via Docker secrets.
 SECRET_DIR="${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}"
 GRAFANA_TOKEN_FILE="${SECRET_DIR}/GRAFANA_CLOUD_TOKEN.secret.txt"
+TUNNEL_TOKEN_FILE="${SECRET_DIR}/CLOUDFLARE_TUNNEL_TOKEN.secret.txt"
+# cloudflared's distroless image runs as nonroot (UID/GID 65532). Compose
+# file-backed secrets are bind mounts that keep host ownership and mode.
+TUNNEL_TOKEN_UID="${BOOTSTRAP_TUNNEL_TOKEN_UID:-65532}"
 COMPOSE_FILE="${COMPOSE_FILE:-/opt/flowform/runtime/compose/proxy.yml}"
 # AWS service configuration is embedded in the container images, so it needs
 # no host bind-mount override. Rehearsal explicitly supplies its own override.
@@ -77,7 +82,19 @@ fi
 # (python3 is not on minimal AL2023).
 extract_key() { # $1 = json key ; JSON object on stdin
   jq -je --arg k "$1" '.[$k] // "" | select(length > 0)' \
-    || die "observability secret JSON is missing or has an empty value for key: $1. $(secret_recovery_guidance)"
+    || die "secret JSON is missing or has an empty value for key: $1. $(secret_recovery_guidance)"
+}
+
+fetch_proxy_secret() { # $1 = secret id suffix
+  local secret_id="flowform/${FLOWFORM_SCOPE}/$1" output
+  output="$(aws_cli_retry "Secrets Manager $1" \
+    secretsmanager get-secret-value \
+    --secret-id "${secret_id}" \
+    --query SecretString --output text)" \
+    || die "could not fetch ${secret_id}. $(secret_recovery_guidance)"
+  [[ -n "${output}" && "${output}" != None ]] \
+    || die "${secret_id} returned an empty SecretString. $(secret_recovery_guidance)"
+  printf '%s' "${output}"
 }
 
 # The Grafana Cloud token is the proxy's only secret. Fetch the
@@ -97,19 +114,33 @@ materialise_observability_secret() {
   chmod 0700 "${SECRET_DIR}"
 
   local obs_json
-  obs_json="$(aws_cli_retry "Secrets Manager observability secret" \
-    secretsmanager get-secret-value \
-    --secret-id "flowform/${FLOWFORM_SCOPE}/observability-secrets" \
-    --query SecretString --output text)" \
-    || die "could not fetch flowform/${FLOWFORM_SCOPE}/observability-secrets. $(secret_recovery_guidance)"
-  [[ -n "${obs_json}" && "${obs_json}" != None ]] \
-    || die "flowform/${FLOWFORM_SCOPE}/observability-secrets returned an empty SecretString. $(secret_recovery_guidance)"
+  obs_json="$(fetch_proxy_secret observability-secrets)"
 
   umask 177  # -> 0600
   # Builtin printf into the pipe: no fork, no argv exposure, no temp file.
   printf '%s' "${obs_json}" | extract_key grafana_cloud_token > "${GRAFANA_TOKEN_FILE}"
   umask 022
   log "materialised Grafana Cloud token into ${GRAFANA_TOKEN_FILE} (0600)"
+}
+
+# Hybrid ingress runs cloudflared instead of public Caddy TLS. Its remotely
+# managed tunnel token follows the same Secrets Manager -> tmpfs path as the
+# Grafana token, readable only by the container's nonroot identity.
+materialise_tunnel_secret() {
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    log "DRY_RUN: would write ${TUNNEL_TOKEN_FILE} (0400 uid ${TUNNEL_TOKEN_UID}) from Secrets Manager tunnel-secrets"
+    return
+  fi
+
+  local tunnel_json
+  tunnel_json="$(fetch_proxy_secret tunnel-secrets)"
+
+  umask 177
+  printf '%s' "${tunnel_json}" | extract_key cloudflare_tunnel_token > "${TUNNEL_TOKEN_FILE}"
+  umask 022
+  chown "${TUNNEL_TOKEN_UID}:${TUNNEL_TOKEN_UID}" "${TUNNEL_TOKEN_FILE}"
+  chmod 0400 "${TUNNEL_TOKEN_FILE}"
+  log "materialised Cloudflare Tunnel token into ${TUNNEL_TOKEN_FILE} (0400)"
 }
 
 render_proxy_env() {
@@ -212,9 +243,15 @@ compose_up() {
   # so the container healthchecks (via --wait) are the only reachable local
   # signal. Squid end-to-end reachability is verified from the workstation by
   # `rehearsal verify`, not from inside this bootstrap.
+  local up_args=(up -d --wait --wait-timeout "${health_timeout}")
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET:-}" == hybrid ]]; then
+    up_args+=(--force-recreate)
+    retry_with_backoff "proxy image pull" 5 5 300 env FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
+      docker compose --env-file "${PROXY_ENV}" "${compose_args[@]}" pull >/dev/null
+  fi
   if ! FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
       docker compose --env-file "${PROXY_ENV}" "${compose_args[@]}" \
-      up -d --wait --wait-timeout "${health_timeout}"; then
+      "${up_args[@]}"; then
     collect_compose_diagnostics "${PROXY_ENV}" "${compose_args[@]}"
     die "proxy compose stack did not become healthy within ${health_timeout}s"
   fi
@@ -237,12 +274,27 @@ main() {
   materialise_observability_secret
   end_step
 
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET:-}" == hybrid ]]; then
+    begin_step "Materialising tunnel secret"
+    materialise_tunnel_secret
+    end_step
+  fi
+
   begin_step "Rendering proxy.env from SSM"
   render_proxy_env
   end_step
 
   begin_step "Authenticating private image registries"
-  login_ecr_for_images "${PROXY_ENV}" CADDY_IMAGE SQUID_IMAGE ALLOY_IMAGE
+  local -a image_keys=(CADDY_IMAGE SQUID_IMAGE ALLOY_IMAGE)
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET:-}" == hybrid ]]; then
+    local tunnel_image
+    tunnel_image="$(runtime_env_value "${PROXY_ENV}" CLOUDFLARED_IMAGE)" ||
+      die "set CLOUDFLARED_IMAGE in the existing proxy SSM parameter group"
+    [[ "${tunnel_image}" =~ ^[a-z0-9._:/-]+@sha256:[a-f0-9]{64}$ ]] ||
+      die "CLOUDFLARED_IMAGE must be pinned by digest"
+    image_keys+=(CLOUDFLARED_IMAGE)
+  fi
+  login_ecr_for_images "${PROXY_ENV}" "${image_keys[@]}"
   end_step
 
   begin_step "Starting proxy containers"

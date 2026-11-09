@@ -1,0 +1,36 @@
+services:
+  backend:
+    ports: !override
+      - "${APP_PRIVATE_IP:?set the application VM IPv4 address}:5000:5000/tcp"
+    environment:
+      AWS_CONFIG_FILE: /etc/flowform/aws/config
+      AWS_PROFILE: flowform-runtime
+      AWS_SHARED_CREDENTIALS_FILE: /dev/null
+      AWS_EC2_METADATA_DISABLED: "true"
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/secrets/DATABASE_CORE_APP_PASSWORD
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/secrets/DATABASE_RESPONSE_APP_PASSWORD
+      PGSSLMODE: verify-full
+      PGSSLROOTCERT: /run/secrets/db_ca
+    volumes:
+      - type: bind
+        source: /etc/flowform/aws
+        target: /etc/flowform/aws
+        read_only: true
+        bind:
+          create_host_path: false
+    secrets:
+      - DATABASE_CORE_APP_PASSWORD
+      - DATABASE_RESPONSE_APP_PASSWORD
+      - db_ca
+
+secrets:
+  # Materialised by bootstrap-app.sh from Secrets Manager db-secrets, exactly as
+  # the rehearsal password strategy does.
+  DATABASE_CORE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_CORE_APP_PASSWORD.secret.txt
+  DATABASE_RESPONSE_APP_PASSWORD:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
+  # Public CA certificate generated on the DB VM. `hybrid deploy` copies it into
+  # each app release over the verified SSH path.
+  db_ca:
+    file: /opt/flowform/hybrid/db-ca.crt

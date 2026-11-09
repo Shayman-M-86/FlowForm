@@ -49,6 +49,12 @@ run_packer_build() (
   local -a validate_args
   local -a extra_args=("$@")
 
+  # Packer loads the shared AWS declarations even for a Proxmox-only target.
+  # Satisfy the required HCL input without selecting an AWS build.
+  if [[ "${only_target}" == *.proxmox-clone.* ]]; then
+    extra_args+=(-var aws_subnet_id=subnet-00000000000000000)
+  fi
+
   require_command packer
   require_command git
   if [[ "${only_target}" == *.amazon-ebs.* ]] \

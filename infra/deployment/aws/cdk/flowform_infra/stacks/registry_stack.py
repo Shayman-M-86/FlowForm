@@ -49,6 +49,16 @@ class RegistryStack(Stack):
             release_retention_count=release_retention_count,
         )
 
+        # Upstream cloudflared mirrored for the hybrid proxy's tunnel connector.
+        # It is selected by digest through CLOUDFLARED_IMAGE in the proxy SSM
+        # group, not through the shared release manifests, so it stays outside
+        # the CI publisher's four-image release set.
+        self.cloudflared_repository = self._create_repository(
+            "CloudflaredRepository",
+            repository_suffix="cloudflared",
+            release_retention_count=release_retention_count,
+        )
+
         self.repositories: tuple[ecr.IRepository, ...] = (
             self.backend_repository,
             self.caddy_repository,

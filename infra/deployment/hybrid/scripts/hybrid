@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+here="$(dirname -- "${scripts}")"
+root="$(cd -- "${here}/../../.." && pwd)"
+runtime="${root}/infra/containers/runtime/proxmox/hybrid"
+images="${root}/infra/machine-images"
+tf=(terraform "-chdir=${here}/terraform")
+
+usage() {
+  cat <<'USAGE'
+Usage: hybrid image [--validate-only|--syntax-only]
+       hybrid vm init|validate|plan|apply [terraform arguments]
+       hybrid deploy [all|proxy|db|app]
+       hybrid status
+
+Use the dedicated Terraform state and trusted SSH host aliases described in README.md.
+Set HYBRID_POSTGRES_REF to an approved postgres:17 digest for db or all deployments.
+db and all deployments read flowform/<scope>/db-secrets with the workstation's AWS session.
+USAGE
+}
+
+fail() { printf 'hybrid: %s\n' "$*" >&2; exit 1; }
+
+ssh_role() {
+  local role="$1"; shift
+  ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "flowform-hybrid-${role}" "$@"
+}
+
+load_topology() {
+  local outputs
+  outputs="$("${tf[@]}" output -json)"
+  proxy_ip="$(jq -er '.addresses.value.proxy' <<<"${outputs}")"
+  app_ip="$(jq -er '.addresses.value.app' <<<"${outputs}")"
+  app_db_ip="$(jq -er '.addresses.value.app_db' <<<"${outputs}")"
+  db_ip="$(jq -er '.addresses.value.db' <<<"${outputs}")"
+  environment="$(jq -er '.aws.value.environment' <<<"${outputs}")"
+  region="$(jq -er '.aws.value.region' <<<"${outputs}")"
+  case "${environment}" in
+    staging) scope=nonprod ;;
+    prod) scope=prod ;;
+    *) fail 'Terraform must select staging or prod' ;;
+  esac
+}
+
+verify_target() {
+  local role="$1"; shift
+  local actual expected_ip
+  actual="$(ssh_role "${role}" 'hostname -s; ip -4 -o addr show scope global' < /dev/null)"
+  [[ "${actual%%$'\n'*}" == "flowform-hybrid-${role}" ]] ||
+    fail "SSH alias resolved to the wrong hostname for ${role}"
+  for expected_ip in "$@"; do
+    awk -v ip="${expected_ip}" '$3 == "inet" {split($4, a, "/"); if (a[1] == ip) found=1} END {exit !found}' <<<"${actual}" ||
+      fail "SSH host for ${role} does not have Terraform address ${expected_ip}"
+  done
+}
+
+load_postgres() {
+  local ref="${HYBRID_POSTGRES_REF:?set HYBRID_POSTGRES_REF to postgres@sha256:<digest>}" image_id remote_id
+  [[ "${ref}" =~ ^(docker.io/library/)?postgres@sha256:[0-9a-f]{64}$ ]] ||
+    fail 'HYBRID_POSTGRES_REF must be a pinned official PostgreSQL image'
+  postgres_image="flowform/hybrid-postgres:${ref##*:}"
+  docker pull --platform linux/amd64 "${ref}"
+  docker image inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "${ref}" | grep -Fx 'PG_MAJOR=17' >/dev/null ||
+    fail 'the selected PostgreSQL image must use major version 17'
+  # Compare the linux/amd64 config digest from the registry. A classic Docker
+  # store (the DB guest) reports that as the image ID, while a containerd store
+  # (e.g. Docker Desktop) reports the multi-platform index digest instead.
+  local amd64_manifest
+  amd64_manifest="$(docker buildx imagetools inspect "${ref}" --raw |
+    jq -er '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64")][0].digest')" ||
+    fail 'the selected PostgreSQL image has no linux/amd64 manifest'
+  image_id="$(docker buildx imagetools inspect "${ref%@*}@${amd64_manifest}" --raw | jq -er '.config.digest')" ||
+    fail 'could not read the PostgreSQL image config digest'
+  remote_id="$(ssh_role db "sudo docker image inspect --format '{{.Id}}' ${postgres_image} 2>/dev/null || true" < /dev/null)"
+  if [[ "${remote_id}" != "${image_id}" ]]; then
+    docker tag "${ref}" "${postgres_image}"
+    docker save "${postgres_image}" | ssh_role db 'sudo docker load'
+    remote_id="$(ssh_role db "sudo docker image inspect --format '{{.Id}}' ${postgres_image}" < /dev/null)"
+    [[ "${remote_id}" == "${image_id}" ]] || fail 'loaded PostgreSQL image ID differs from the approved image'
+  fi
+}
+
+# The DB VM has no route to AWS, so the deployment workstation delivers its two
+# managed role passwords from the same db-secrets entry the app bootstrap reads.
+# Values travel on stdin only and land root-owned 0600 on the DB host.
+deliver_db_secrets() (
+  local work secret_json
+  work="$(mktemp -d)"
+  trap 'rm -rf -- "${work}"' EXIT
+  secret_json="$(aws --region "${region}" secretsmanager get-secret-value \
+    --secret-id "flowform/${scope}/db-secrets" --query SecretString --output text)" ||
+    fail "could not read flowform/${scope}/db-secrets with the current AWS session"
+  umask 077
+  printf '%s' "${secret_json}" | jq -je '.db_core_app_password // "" | select(length > 0)' \
+    > "${work}/DATABASE_CORE_APP_PASSWORD.secret.txt" ||
+    fail "db-secrets has no db_core_app_password; seed it with seed-secrets.sh"
+  printf '%s' "${secret_json}" | jq -je '.db_response_app_password // "" | select(length > 0)' \
+    > "${work}/DATABASE_RESPONSE_APP_PASSWORD.secret.txt" ||
+    fail "db-secrets has no db_response_app_password; seed it with seed-secrets.sh"
+  tar -C "${work}" -cf - DATABASE_CORE_APP_PASSWORD.secret.txt DATABASE_RESPONSE_APP_PASSWORD.secret.txt |
+    ssh_role db "sudo bash -c '
+      set -Eeuo pipefail
+      install -d -m 0700 -o root -g root /etc/flowform /etc/flowform/db
+      chmod 0755 /etc/flowform
+      umask 077
+      tar --no-same-owner --no-same-permissions -m -xf - -C /etc/flowform/db \
+        DATABASE_CORE_APP_PASSWORD.secret.txt DATABASE_RESPONSE_APP_PASSWORD.secret.txt
+      chmod 0600 /etc/flowform/db/DATABASE_CORE_APP_PASSWORD.secret.txt /etc/flowform/db/DATABASE_RESPONSE_APP_PASSWORD.secret.txt
+    '"
+)
+
+stage_role() (
+  local role="$1" payload
+  payload="$(mktemp -d)"
+  trap 'rm -rf -- "${payload}"' EXIT
+  cp "${scripts}/converge" "${here}/flowform-hybrid@.service" "${payload}/"
+  case "${role}" in
+    db)
+      mkdir "${payload}/database-init"
+      cp -r "${root}/infra/database/init/"{schema,templates} "${payload}/database-init/"
+      install -m 0755 "${root}/infra/database/init/00-render-and-run.sh" "${payload}/database-init/"
+      # The init directory is mounted read-only, so the readiness marker ships
+      # inside it rather than as a nested bind mount.
+      install -m 0755 "${runtime}/services/postgres/99-hybrid-ready.sh" "${payload}/database-init/"
+      cp "${runtime}/compose/db.yml" \
+        "${runtime}/services/postgres/db-entrypoint.sh" "${payload}/"
+      ;;
+    app|proxy)
+      cp "${images}/shared/host-assets/bin/bootstrap-common.sh" \
+        "${root}/infra/containers/runtime/common/scripts/load-release-manifest.sh" \
+        "${images}/definitions/${role}/host-assets/bin/bootstrap-${role}.sh" \
+        "${root}/infra/containers/runtime/aws/common/compose/${role}.yml" \
+        "${runtime}/compose/${role}.override.yml" "${payload}/"
+      if [[ "${role}" == proxy ]]; then
+        cp "${runtime}/services/caddy/Caddyfile" "${payload}/"
+      else
+        cp "${runtime}/services/app/app-forwarding.sh" "${payload}/"
+        # Public CA generated by the DB host's converge, fetched over the
+        # verified SSH path for libpq verify-full.
+        ssh_role db 'sudo cat /etc/flowform/db/ca.crt' < /dev/null > "${payload}/db-ca.crt" ||
+          fail 'could not read the DB CA certificate; deploy the db role first'
+        openssl x509 -in "${payload}/db-ca.crt" -noout 2>/dev/null ||
+          fail 'the DB host returned an invalid CA certificate'
+        chmod 0644 "${payload}/db-ca.crt"
+      fi
+      ;;
+  esac
+
+  cat > "${payload}/host.env" <<ENV
+FLOWFORM_ENV=${environment}
+FLOWFORM_SCOPE=${scope}
+AWS_REGION=${region}
+FLOWFORM_PARAMETER_ROOT=/flowform/${environment}
+APP_PRIVATE_IP=${app_ip}
+PROXY_PRIVATE_IP=${proxy_ip}
+HYBRID_DB_HOST=${db_ip}
+HYBRID_DB_IP=${db_ip}
+HYBRID_APP_DB_IP=${app_db_ip}
+HYBRID_POSTGRES_IMAGE=${postgres_image:-}
+ENV
+
+  tar -C "${payload}" -cf - . | ssh_role "${role}" "sudo bash -c '
+    set -Eeuo pipefail
+    install -d -m 0755 /opt/flowform
+    exec 9>/run/lock/flowform-hybrid-deploy.lock
+    flock 9
+    release=\$(mktemp -d /opt/flowform/hybrid-release.XXXXXX)
+    trap \"rm -rf -- \\\"\$release\\\"\" EXIT
+    tar --no-same-owner -m -xf - -C \"\$release\"
+    chmod 0755 \"\$release\"
+    previous=\$(readlink /opt/flowform/hybrid || true)
+    ln -s \"\$release\" \"\$release.next\"
+    mv -Tf \"\$release.next\" /opt/flowform/hybrid
+    trap - EXIT
+    install -m 0644 \"\$release/flowform-hybrid@.service\" /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable flowform-hybrid@${role}.service
+    systemctl restart flowform-hybrid@${role}.service
+    if [[ \$previous == /opt/flowform/hybrid-release.* ]]; then rm -rf -- \"\$previous\"; fi
+  '"
+)
+
+case "${1:---help}" in
+  -h|--help|help) usage ;;
+  image) shift; exec "${images}/tooling/image" build proxmox hybrid "$@" ;;
+  vm)
+    shift
+    case "${1:-}" in
+      init|validate|plan|apply) exec "${tf[@]}" "$@" ;;
+      *) fail 'use vm init, validate, plan, or apply' ;;
+    esac
+    ;;
+  deploy)
+    [[ $# -le 2 ]] || fail 'deploy accepts one optional role'
+    case "${2:-all}" in
+      all) roles=(proxy db app) ;;
+      proxy|db|app) roles=("$2") ;;
+      *) fail 'choose all, proxy, db, or app' ;;
+    esac
+    load_topology
+    for role in "${roles[@]}"; do
+      case "${role}" in
+        proxy) verify_target proxy "${proxy_ip}" ;;
+        db) verify_target db "${db_ip}" ;;
+        app) verify_target app "${app_ip}" "${app_db_ip}" ;;
+      esac
+    done
+    # The app release carries the DB host's CA, so an app-only deploy reads it
+    # from the verified DB host too.
+    if [[ " ${roles[*]} " == *" app "* && " ${roles[*]} " != *" db "* ]]; then
+      verify_target db "${db_ip}"
+    fi
+    if [[ " ${roles[*]} " == *" db "* ]]; then
+      command -v aws >/dev/null || fail 'the AWS CLI is required for db deployments'
+      load_postgres
+      deliver_db_secrets
+    fi
+    for role in "${roles[@]}"; do stage_role "${role}"; done
+    ;;
+  status)
+    result=0
+    for role in proxy db app; do
+      printf '\n%s\n' "${role}"
+      ssh_role "${role}" "systemctl status --no-pager flowform-hybrid@${role}.service" < /dev/null || result=1
+    done
+    exit "${result}"
+    ;;
+  *) usage >&2; exit 2 ;;
+esac

@@ -141,3 +141,6 @@ infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.key
 infra/containers/runtime/proxmox/rehearsal/services/tls-shim/ca/rehearsal-ca.srl
 !infra/deployment/proxmox/scripts/lib
 !infra/machine-images/tooling/lib
+
+# Cloudflare CLI (cf) per-directory cache: account ID and name
+.cloudflare/
