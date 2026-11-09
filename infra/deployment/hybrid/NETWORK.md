@@ -97,6 +97,14 @@ and mirrors Route 53, where CDK still writes. After any change to Route 53,
 runs it after each deployment. Names that Cloudflare owns are listed in
 `infra/deployment/dns/cloudflare-owned.txt`.
 
+The zone's "Add visitor location headers" managed transform is enabled. The
+backend records only the client's country and region from those headers, plus
+the edge data centre (from `CF-Ray`) and client IP version, on its server span.
+Some ISPs, notably Telstra over IPv4, reach Free-plan addresses through
+Singapore or other Asian data centres, while IPv6 stays in Melbourne. The
+Grafana dashboard "FlowForm – API edge routing"
+(`infra/deployment/grafana/`) tracks this.
+
 Before enabling the public route, check each allowed flow and deliberately test
 these denials from the guest or container that would originate the connection.
 
