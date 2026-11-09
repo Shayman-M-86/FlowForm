@@ -1,4 +1,7 @@
-http://{$API_DOMAIN} {
+# Hybrid ingress: Caddy's port is unpublished and only cloudflared reaches it.
+# The tunnel's ingress rules decide which public hostnames are forwarded, so
+# serve any Host here; public TLS terminates at Cloudflare.
+:80 {
 	encode zstd gzip
 
 	tracing {

@@ -83,7 +83,9 @@ class FrontendStack(Stack):
         # workflow reads these before running vite build.
         #
         # application_stack.py owns the API hostname and Route 53 record.
-        api_base_url = f"https://api.{env_config.public_site_domain}"
+        if env_config.api_domain is None:
+            raise ValueError("FrontendStack requires api_domain")
+        api_base_url = f"https://{env_config.api_domain}"
         frontend_params = {
             "vite-auth0-domain": env_config.auth0_public.domain,
             "vite-auth0-client-id": env_config.auth0_public.client_id,

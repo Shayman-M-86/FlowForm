@@ -88,10 +88,14 @@ listens on HTTP inside that network and forwards over HTTP on the private
 proxy-to-app path. Public TLS terminates at Cloudflare. PostgreSQL traffic uses
 verified TLS on the database bridge.
 
-If Route 53 is authoritative for the public API hostname, arrange a supported
-Cloudflare partial DNS setup before cutover. Cloudflare's partial DNS setup
-requires Business or Enterprise. Confirm the actual hostname and certificate
-before changing the authoritative record. [Cloudflare partial DNS](https://developers.cloudflare.com/dns/zone-setups/partial-setup/)
+Cloudflare is authoritative for `flow-form.com.au` (free plan). The staging
+API is `api-staging.flow-form.com.au`, a proxied Cloudflare Tunnel route to
+`http://caddy:80`. It sits one label below the zone so the zone's
+`*.flow-form.com.au` edge certificate covers it. Every other record is DNS-only
+and mirrors Route 53, where CDK still writes. After any change to Route 53,
+`infra/deployment/dns/dns-sync check` reports drift; `operations/stacks/deploy.sh`
+runs it after each deployment. Names that Cloudflare owns are listed in
+`infra/deployment/dns/cloudflare-owned.txt`.
 
 Before enabling the public route, check each allowed flow and deliberately test
 these denials from the guest or container that would originate the connection.
