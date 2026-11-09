@@ -16,7 +16,9 @@ below allow one installation per cluster.
   and its source preparation procedure if the source template is missing.
 - Use a deployment workstation with Packer, Terraform, SSH, jq and Docker.
   Set the Proxmox Terraform API token through `PROXMOX_VE_API_TOKEN`. Both tools
-  must trust the Proxmox API certificate.
+  must trust the Proxmox API certificate. If you use a private CA, source your
+  ignored `infra/deployment/hybrid/.local/terraform.env` to export the token
+  and `SSL_CERT_FILE` before running Terraform.
 - Have the existing AWS scope configuration, frontend and ECR repositories
   available. Promote the app and proxy digest manifests to
   `/flowform/<environment>/app/release` and `/flowform/<environment>/proxy/release`
@@ -28,6 +30,32 @@ below allow one installation per cluster.
 
 ## Build and provision
 
+Prepare the Proxmox node after the UniFi trunk and zone policies are in place.
+The two host scripts in `scripts/` are independent. Run each as root on the node, or stream it
+over the existing Proxmox SSH connection.
+
+| Script | Owns |
+| --- | --- |
+| [`setup-host.sh`](scripts/setup-host.sh) | VLAN-aware `vmbr1`, private `vmbr2`, and host IPv6 settings for those bridges and `nic0` |
+| [`setup-firewall.sh`](scripts/setup-firewall.sh) | Standalone Proxmox node and Datacenter firewall activation |
+| [`terraform/firewall.tf`](terraform/firewall.tf) | Guest SSH security group, VM firewall policies, and per-NIC source address filters |
+| [`converge`](scripts/converge) | Guest service startup, including installation of the app's forwarding guard |
+
+Both host scripts default to `--check`. For the first host firewall activation,
+keep local console access available and run `setup-firewall.sh --apply
+192.168.68.106` using the authorized workstation. The script enables Proxmox
+filtering with a default-drop host input policy and a five-minute rollback. It
+allows TCP `22` and `8006` from that workstation on `vmbr0`, including access
+for Packer and Terraform, and overrides Proxmox's broader built-in management
+exceptions. It refuses to replace an existing policy. The GUI's browser console
+uses the web UI connection. A separate SPICE client requires its own rule.
+
+Verify fresh SSH and web UI connections from the authorized workstation, and
+test denial from another LAN device. From the authorized workstation, run
+`setup-firewall.sh --confirm 192.168.68.106` within five minutes to keep the
+policy. Wait for rollback if a check fails. Avoid rebooting or editing firewall
+rules during this verification window.
+
 Use the existing Proxmox Packer variables as the starting point for a protected,
 dedicated hybrid `.pkrvars.hcl` file. Select the temporary build bridge and
 address in that file. The hybrid target fixes the output at
@@ -35,8 +63,8 @@ address in that file. The hybrid target fixes the output at
 
 ```sh
 export FLOWFORM_HYBRID_PACKER_VARS=/absolute/path/hybrid.pkrvars.hcl
-infra/deployment/hybrid/hybrid image --validate-only
-infra/deployment/hybrid/hybrid image
+infra/deployment/hybrid/scripts/hybrid image --validate-only
+infra/deployment/hybrid/scripts/hybrid image
 ```
 
 Put cluster, storage, SSH keys and network values in
@@ -46,11 +74,21 @@ before applying. Set `vm_sizes` for the expected database growth and verify the
 guest root filesystem has expanded after cloning. Keep the state private and
 backed up.
 
+Set `admin_ipv4` to the deployment workstation's source address. In UniFi, add
+the two scoped TCP `22` rules from this workstation to the ingress and app IPs.
+Confirm the guest time source and any required NTP policy before convergence.
+
 ```sh
-infra/deployment/hybrid/hybrid vm init
-infra/deployment/hybrid/hybrid vm plan
-infra/deployment/hybrid/hybrid vm apply
+infra/deployment/hybrid/scripts/hybrid vm init
+infra/deployment/hybrid/scripts/hybrid vm plan
+infra/deployment/hybrid/scripts/hybrid vm apply
 ```
+
+The first apply creates the VMs powered off so Terraform can install their
+firewall policies before they have network access. Verify filtering is enabled
+on the Proxmox host and the three VM policies are enabled, then start the guests
+in Proxmox. Set **Start at boot** there if wanted. Later Terraform applies
+preserve the operator's power and boot settings.
 
 Configure trusted SSH aliases `flowform-hybrid-proxy`, `flowform-hybrid-app`
 and `flowform-hybrid-db` for the admin deployment path. Use the `ec2-user`
@@ -121,8 +159,8 @@ runtime declares `pull_policy: never`.
 
 ```sh
 export HYBRID_POSTGRES_REF='postgres@sha256:<approved-digest>'
-infra/deployment/hybrid/hybrid deploy all
-infra/deployment/hybrid/hybrid status
+infra/deployment/hybrid/scripts/hybrid deploy all
+infra/deployment/hybrid/scripts/hybrid status
 ```
 
 The wrapper installs and restarts the role services in proxy, DB, app order.

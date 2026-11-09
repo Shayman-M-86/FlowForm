@@ -2,6 +2,7 @@
 proxmox_endpoint = "https://pve.example.invalid:8006/"
 proxmox_node     = "pve"
 storage_pool     = "local-zfs"
+admin_ipv4       = "192.168.68.106"
 ssh_public_keys  = ["REPLACE_WITH_ADMIN_SSH_PUBLIC_KEY"]
 
 vlan_bridge       = "vmbr1"

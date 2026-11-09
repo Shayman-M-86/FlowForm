@@ -11,7 +11,7 @@ related_code:
   - "../../../../infra/deployment/aws/cdk/app.py"
   - "../../../../infra/deployment/aws/operations/README.md"
   - "../../../../infra/deployment/hybrid/README.md"
-  - "../../../../infra/deployment/hybrid/hybrid"
+  - "../../../../infra/deployment/hybrid/scripts/hybrid"
 change_triggers:
   - "../../../../infra/deployment/aws/"
   - "../../../../infra/deployment/bootstrap/"

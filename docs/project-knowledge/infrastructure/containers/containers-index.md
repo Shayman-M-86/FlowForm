@@ -9,9 +9,9 @@ last_edited: 2026-11-09
 tags: [infrastructure]
 related_code:
   - "../../../../infra/containers/README.md"
-  - "../../../../infra/containers/runtime/proxmox/hybrid/app.override.yml"
-  - "../../../../infra/containers/runtime/proxmox/hybrid/proxy.override.yml"
-  - "../../../../infra/containers/runtime/proxmox/hybrid/db.yml"
+  - "../../../../infra/containers/runtime/proxmox/hybrid/compose/app.override.yml"
+  - "../../../../infra/containers/runtime/proxmox/hybrid/compose/proxy.override.yml"
+  - "../../../../infra/containers/runtime/proxmox/hybrid/compose/db.yml"
 change_triggers:
   - "../../../../infra/containers/images/"
   - "../../../../infra/containers/runtime/"

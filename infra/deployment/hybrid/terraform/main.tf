@@ -29,8 +29,9 @@ resource "proxmox_virtual_environment_vm" "role" {
   name      = "flowform-hybrid-${each.key}"
   node_name = var.proxmox_node
   vm_id     = each.value.vm_id
-  started   = true
-  on_boot   = true
+  # The operator starts new guests after their firewall policies are installed.
+  started = false
+  on_boot = false
 
   # The database is persistent. Require deliberate maintenance to delete or
   # replace any role VM through this state.
@@ -38,6 +39,7 @@ resource "proxmox_virtual_environment_vm" "role" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [started, on_boot]
 
     precondition {
       condition     = var.database_bridge != var.vlan_bridge && var.proxy_network.vlan != var.app_network.vlan
@@ -84,6 +86,13 @@ resource "proxmox_virtual_environment_vm" "role" {
   initialization {
     datastore_id = var.storage_pool
 
+    dynamic "dns" {
+      for_each = each.key == "db" ? [] : [each.value.nics[0].gateway]
+      content {
+        servers = [dns.value]
+      }
+    }
+
     dynamic "ip_config" {
       for_each = each.value.nics
       content {
@@ -103,12 +112,12 @@ resource "proxmox_virtual_environment_vm" "role" {
 
 output "addresses" {
   value = {
-    proxy  = split("/", var.proxy_network.cidr)[0]
-    app    = split("/", var.app_network.cidr)[0]
-    app_db = split("/", var.app_database_cidr)[0]
-    db     = split("/", var.database_cidr)[0]
+    proxy  = local.role_ips.proxy
+    app    = local.role_ips.app
+    app_db = local.role_ips.app_db
+    db     = local.role_ips.db
   }
-  depends_on = [proxmox_virtual_environment_vm.role]
+  depends_on = [proxmox_virtual_environment_firewall_options.guest]
 }
 
 output "aws" {

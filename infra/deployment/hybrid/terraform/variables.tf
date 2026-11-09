@@ -22,6 +22,15 @@ variable "ssh_public_keys" {
   }
 }
 
+variable "admin_ipv4" {
+  type        = string
+  description = "Trusted workstation IPv4 address allowed to SSH to ingress and app."
+  validation {
+    condition     = can(cidrnetmask("${var.admin_ipv4}/32"))
+    error_message = "Supply one IPv4 address without a CIDR suffix."
+  }
+}
+
 variable "vlan_bridge" {
   type    = string
   default = "vmbr1"

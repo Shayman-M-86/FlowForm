@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+here="$(dirname -- "${scripts}")"
 root="$(cd -- "${here}/../../.." && pwd)"
 runtime="${root}/infra/containers/runtime/proxmox/hybrid"
 images="${root}/infra/machine-images"
@@ -76,21 +77,26 @@ stage_role() (
   local role="$1" payload
   payload="$(mktemp -d)"
   trap 'rm -rf -- "${payload}"' EXIT
-  cp "${here}/converge" "${here}/flowform-hybrid@.service" "${payload}/"
+  cp "${scripts}/converge" "${here}/flowform-hybrid@.service" "${payload}/"
   case "${role}" in
     db)
       mkdir "${payload}/database-init"
       cp -r "${root}/infra/database/init/"{schema,templates} "${payload}/database-init/"
       install -m 0755 "${root}/infra/database/init/00-render-and-run.sh" "${payload}/database-init/"
-      cp "${runtime}/"{db.yml,db-entrypoint.sh,99-hybrid-ready.sh} "${payload}/"
+      cp "${runtime}/compose/db.yml" \
+        "${runtime}/services/postgres/"{db-entrypoint.sh,99-hybrid-ready.sh} "${payload}/"
       ;;
     app|proxy)
       cp "${images}/shared/host-assets/bin/bootstrap-common.sh" \
         "${root}/infra/containers/runtime/common/scripts/load-release-manifest.sh" \
         "${images}/definitions/${role}/host-assets/bin/bootstrap-${role}.sh" \
         "${root}/infra/containers/runtime/aws/common/compose/${role}.yml" \
-        "${runtime}/${role}.override.yml" "${payload}/"
-      if [[ "${role}" == proxy ]]; then cp "${runtime}/Caddyfile" "${payload}/"; fi
+        "${runtime}/compose/${role}.override.yml" "${payload}/"
+      if [[ "${role}" == proxy ]]; then
+        cp "${runtime}/services/caddy/Caddyfile" "${payload}/"
+      else
+        cp "${runtime}/services/app/app-forwarding.sh" "${payload}/"
+      fi
       ;;
   esac
 
