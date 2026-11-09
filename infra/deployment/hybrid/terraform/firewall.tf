@@ -41,7 +41,8 @@ locals {
 }
 
 resource "proxmox_virtual_environment_cluster_firewall_security_group" "guest_ssh" {
-  name    = "flowform-hybrid-ssh"
+  # Proxmox limits security group names to 18 characters.
+  name    = "ff-hybrid-ssh"
   comment = "Trusted deployment workstation access to ingress and app"
 
   rule {
@@ -89,7 +90,9 @@ resource "proxmox_virtual_environment_firewall_ipset" "guest_nic" {
   comment   = "Static address for this guest NIC"
 
   cidr {
-    name = "${each.value.ip}/32"
+    # Proxmox stores single-host IP set entries without /32; matching that
+    # form keeps later plans from replacing the set.
+    name = each.value.ip
   }
 }
 

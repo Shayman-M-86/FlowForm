@@ -106,6 +106,40 @@ through a trusted path. The deploy wrapper checks both the hostname and its
 Terraform address before sending any artifacts. Use the restricted DB admin
 path described in the network guide.
 
+### QEMU guest agent
+
+The hybrid guests run without the QEMU guest agent. Amazon Linux 2023 does not
+package `qemu-guest-agent` (its repositories ship only `qemu-img`), so the
+template cannot install it with `dnf`. Proxmox shuts guests down through ACPI,
+and the UI does not report guest addresses.
+
+Snapshot-mode backups of the DB VM are crash-consistent rather than
+filesystem-frozen. PostgreSQL recovers from a crash-consistent copy of its
+single data disk through WAL replay. Take scheduled logical backups as well
+before production use.
+
+To add the agent later, supply a maintained build first, for example compiling
+`qemu-ga` from a pinned and checksummed QEMU release during the image build.
+Then change these places together:
+
+- [`configure-proxmox-guest.sh`](../../machine-images/packer/provisioners/proxmox/configure-proxmox-guest.sh):
+  install the agent and run `systemctl enable qemu-guest-agent`. This
+  provisioner runs only for Proxmox builds, so AWS AMIs are unaffected.
+- [`proxmox.pkr.hcl`](../../machine-images/packer/sources/proxmox.pkr.hcl):
+  `qemu_agent = false` can stay, because the build uses a static address and
+  Terraform sets the clones' agent option.
+- [`terraform/main.tf`](terraform/main.tf): add `agent { enabled = true }`
+  (optionally `trim = true`) to `proxmox_virtual_environment_vm.role`, where
+  the comment marks the omission.
+- Rebuild template `9100`, then recreate or update the guests. The VMs have
+  `prevent_destroy` and the DB VM has Proxmox protection. Stop the guests,
+  update the option and confirm the agent responds with `qm agent <id> ping`.
+  If guests are instead destroyed in Proxmox and recreated, also remove
+  `proxmox_virtual_environment_firewall_rules.guest` and
+  `proxmox_virtual_environment_firewall_options.guest` from Terraform state.
+  Destroying a VM deletes its firewall file, but Terraform does not detect that
+  and would otherwise leave the new guests without their rules.
+
 ## Provision the host inputs
 
 Application and proxy environment files are rendered on the VMs by the
@@ -136,33 +170,28 @@ rotate PostgreSQL credentials. The initializer uses the shared schema and role
 SQL and runs only on empty data storage, so preserve the DB volume and back it
 up.
 
-Workload identity is the only per-host input. Provision it once per host
-through the administrative channel, outside the repository, images and
-Terraform state.
+Workload identity is the only per-host input. IAM Roles Anywhere replaces
+the EC2 instance role: each host holds an X.509 certificate from a private CA
+and exchanges it for temporary credentials through `aws_signing_helper`.
 
-| Host | File or directory | Purpose |
-| --- | --- | --- |
-| Proxy and app | `/etc/flowform/aws/config` and associated helper/certificate/key files | A standard AWS profile named `flowform-runtime` on each host, replacing the EC2 instance role. |
+| Piece | Where |
+| --- | --- |
+| Private CA | `identity/<env>-ca.crt` (public certificate) and `.local/identity/<env>-ca.key`. Both are gitignored. Keep the key offline between renewals. |
+| Trust anchor, roles, profiles | CDK stack `FlowForm-<Env>-HybridIdentity`, synthesized only when the CA certificate exists. The proxy role mirrors the EC2 proxy role without Route 53, plus the tunnel secret and cloudflared repository. The app role mirrors `AppTaskRole`. Each role trusts only this anchor and its host's certificate CN. |
+| Host files | `/etc/flowform/aws/{config,cert.pem,key.pem,aws_signing_helper}` on the proxy and app, defining the `flowform-runtime` profile. The app profile adds `--with-proxy`, and the backend uses it through its read-only mount. |
 
-For unattended AWS access, configure two scoped IAM Roles Anywhere roles and
-issue separate workload certificates. In each standard AWS profile, set
-`credential_process` to the approved Linux x86-64 `aws_signing_helper
-credential-process` command with that role's trust anchor, profile, role,
-certificate and key arguments. Use absolute paths within `/etc/flowform/aws` so
-the app's profile works on the host and in its read-only backend mount. Include
-`--with-proxy` on the app helper command. Verify the selected role with STS
-through the same path that the workload uses. Keep the deployment operator
-identity separate from both runtime profiles. Schedule certificate renewals
-before expiry. [AWS credential helper](https://docs.aws.amazon.com/rolesanywhere/latest/userguide/credential-helper.html)
+```sh
+infra/deployment/hybrid/scripts/identity ca            # once per environment
+# deploy FlowForm-<Env>-HybridIdentity with operations/stacks/deploy.sh
+infra/deployment/hybrid/scripts/identity install proxy
+infra/deployment/hybrid/scripts/identity install app   # after the proxy runs Squid
+```
 
-Scope each role to its release manifest, its SSM config group and approved ECR
-repositories. The app needs its application, database and linkage secrets, the
-applicable KMS cryptographic operations and SES sending. The proxy needs the
-observability and tunnel secrets. When a secret uses a customer-managed key, include the applicable
-Secrets Manager decrypt grants and key policy access. Use the existing CDK app,
-proxy, and security role grants as references for those service operations. The
-Roles Anywhere trust anchor, profiles, role policies and certificate issuance
-are AWS operator prerequisites.
+`install` asks the host to generate its own key and CSR, signs a two-year
+client certificate after checking the CN, installs the pinned and checksummed
+helper with the profile, and then reads the role's release parameter through
+that profile. Rerun it to renew before expiry. The app check reaches AWS through
+Squid, so deploy the proxy role first.
 
 ## Converge and verify
 

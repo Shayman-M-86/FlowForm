@@ -57,6 +57,9 @@ resource "proxmox_virtual_environment_vm" "role" {
     datastore_id = var.storage_pool
   }
 
+  # No QEMU guest agent: Amazon Linux 2023 does not package one. See
+  # "QEMU guest agent" in ../README.md before adding an agent block here.
+
   cpu {
     cores = var.vm_sizes[each.key].cores
     type  = "x86-64-v2-AES"

@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# FlowForm hybrid workload identity (IAM Roles Anywhere).
+#
+#   identity ca                 Create the environment's private CA once.
+#   identity install proxy|app  Issue or renew a host certificate and install
+#                               the flowform-runtime AWS profile on that host.
+#
+# The CA certificate is the trust anchor input for the FlowForm-<Env>-HybridIdentity
+# CDK stack. It is public but kept local (gitignored), like the CA key; deploy
+# that stack from a checkout that has it. The CA key stays in the ignored
+# .local/identity directory; move it to offline storage between renewals.
+# Each host generates its own private key; only its CSR and certificate cross
+# the network. Rerun `install` to renew before the certificate expires.
+set -Eeuo pipefail
+
+scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+here="$(dirname -- "${scripts}")"
+environment="${FLOWFORM_HYBRID_ENVIRONMENT:-staging}"
+region="${AWS_REGION:-ap-southeast-2}"
+local_dir="${here}/.local/identity"
+ca_key="${FLOWFORM_HYBRID_CA_KEY:-${local_dir}/${environment}-ca.key}"
+ca_cert="${here}/identity/${environment}-ca.crt"
+helper_version=1.8.6
+helper_sha256=3553fdc515e5682541a9ebdd37031ec7f461169aa13ccbb6fbd5b7259644113d
+helper_url="https://rolesanywhere.amazonaws.com/releases/${helper_version}/X86_64/Linux/Amzn2023/aws_signing_helper"
+helper_cache="${here}/.local/tools/aws_signing_helper-${helper_version}"
+cert_days="${FLOWFORM_HYBRID_CERT_DAYS:-730}"
+
+fail() { printf 'identity: %s\n' "$*" >&2; exit 1; }
+stack_name() { local e="${environment^}"; printf 'FlowForm-%s-HybridIdentity' "${e}"; }
+
+ssh_role() {
+  local role="$1"; shift
+  ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "flowform-hybrid-${role}" "$@"
+}
+
+create_ca() {
+  [[ ! -e "${ca_key}" && ! -e "${ca_cert}" ]] || fail "a ${environment} CA already exists; refusing to replace it"
+  install -d -m 0700 "${local_dir}"
+  install -d -m 0755 "$(dirname -- "${ca_cert}")"
+  (
+    umask 077
+    openssl req -x509 -new -nodes -newkey ec -pkeyopt ec_paramgen_curve:P-384 -sha384 \
+      -keyout "${ca_key}" -out "${ca_cert}" -days 3650 \
+      -subj "/O=FlowForm/OU=Hybrid ${environment}/CN=FlowForm hybrid ${environment} workload CA" \
+      -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' \
+      -addext 'keyUsage=critical,keyCertSign,cRLSign' \
+      -addext 'subjectKeyIdentifier=hash'
+  )
+  chmod 0644 "${ca_cert}"
+  printf 'Created %s (local, gitignored) and %s (keep offline).\n' "${ca_cert}" "${ca_key}"
+  openssl x509 -in "${ca_cert}" -noout -subject -enddate -fingerprint -sha256
+}
+
+ensure_helper() {
+  if [[ ! -x "${helper_cache}" ]]; then
+    install -d -m 0755 "$(dirname -- "${helper_cache}")"
+    curl -fsSL -o "${helper_cache}.download" "${helper_url}"
+    mv "${helper_cache}.download" "${helper_cache}"
+  fi
+  printf '%s  %s\n' "${helper_sha256}" "${helper_cache}" | sha256sum -c --quiet - ||
+    fail "aws_signing_helper checksum mismatch; delete ${helper_cache} and retry"
+  chmod 0755 "${helper_cache}"
+}
+
+stack_output() { # $1 = output key
+  aws cloudformation describe-stacks --region "${region}" --stack-name "$(stack_name)" \
+    --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue | [0]" --output text
+}
+
+install_role() {
+  local role="$1"
+  local cn="flowform-hybrid-${role}" work csr_subject trust_anchor profile role_arn proxy_flag=""
+  [[ -r "${ca_key}" && -r "${ca_cert}" ]] || fail "CA key or certificate missing; restore ${ca_key} first"
+  command -v aws >/dev/null || fail 'the AWS CLI is required'
+  trust_anchor="$(stack_output TrustAnchorArn)"
+  profile="$(stack_output "$(tr '[:lower:]' '[:upper:]' <<<"${role:0:1}")${role:1}ProfileArn")"
+  role_arn="$(stack_output "$(tr '[:lower:]' '[:upper:]' <<<"${role:0:1}")${role:1}RoleArn")"
+  for value in "${trust_anchor}" "${profile}" "${role_arn}"; do
+    [[ "${value}" == arn:aws:* ]] || fail "missing $(stack_name) outputs; deploy the stack first"
+  done
+  # The app reaches AWS only through Squid; the helper then honours HTTPS_PROXY.
+  [[ "${role}" == app ]] && proxy_flag=" --with-proxy"
+  ensure_helper
+
+  work="$(mktemp -d)"
+  trap 'rm -rf -- "${work}"' RETURN
+
+  # 1. The host creates its key (kept root-only) and returns only a CSR.
+  ssh_role "${role}" "sudo bash -c '
+    set -Eeuo pipefail
+    install -d -m 0700 -o root -g root /etc/flowform/aws
+    umask 077
+    openssl req -new -nodes -newkey ec -pkeyopt ec_paramgen_curve:P-256 -sha256 \
+      -keyout /etc/flowform/aws/key.pem.next -subj /CN=${cn} 2>/dev/null
+  '" < /dev/null > "${work}/host.csr"
+  openssl req -in "${work}/host.csr" -noout -verify 2>/dev/null || fail 'host returned an invalid CSR'
+  csr_subject="$(openssl req -in "${work}/host.csr" -noout -subject -nameopt RFC2253)"
+  [[ "${csr_subject}" == "subject=CN=${cn}" ]] || fail "unexpected CSR subject: ${csr_subject}"
+
+  # 2. Sign a client certificate that satisfies Roles Anywhere's constraints.
+  printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature' \
+    'extendedKeyUsage=clientAuth' 'subjectKeyIdentifier=hash' 'authorityKeyIdentifier=keyid' \
+    > "${work}/client.ext"
+  openssl x509 -req -in "${work}/host.csr" -CA "${ca_cert}" -CAkey "${ca_key}" \
+    -set_serial "0x$(openssl rand -hex 16)" -sha384 -days "${cert_days}" \
+    -extfile "${work}/client.ext" -out "${work}/cert.pem" 2>/dev/null
+  openssl verify -CAfile "${ca_cert}" "${work}/cert.pem" >/dev/null
+
+  # 3. Standard AWS profile; absolute paths also resolve inside the app's
+  #    read-only backend mount of /etc/flowform/aws.
+  cat > "${work}/config" <<CONFIG
+[profile flowform-runtime]
+region = ${region}
+credential_process = /etc/flowform/aws/aws_signing_helper credential-process --certificate /etc/flowform/aws/cert.pem --private-key /etc/flowform/aws/key.pem --trust-anchor-arn ${trust_anchor} --profile-arn ${profile} --role-arn ${role_arn}${proxy_flag}
+CONFIG
+  cp "${helper_cache}" "${work}/aws_signing_helper"
+
+  tar -C "${work}" -cf - cert.pem config aws_signing_helper | ssh_role "${role}" "sudo bash -c '
+    set -Eeuo pipefail
+    stage=\$(mktemp -d)
+    trap \"rm -rf -- \\\"\$stage\\\"\" EXIT
+    tar --no-same-owner -m -xf - -C \"\$stage\"
+    install -m 0755 \"\$stage/aws_signing_helper\" /etc/flowform/aws/aws_signing_helper
+    install -m 0644 \"\$stage/cert.pem\" /etc/flowform/aws/cert.pem.next
+    install -m 0644 \"\$stage/config\" /etc/flowform/aws/config.next
+    mv -f /etc/flowform/aws/key.pem.next /etc/flowform/aws/key.pem
+    mv -f /etc/flowform/aws/cert.pem.next /etc/flowform/aws/cert.pem
+    mv -f /etc/flowform/aws/config.next /etc/flowform/aws/config
+    chmod 0600 /etc/flowform/aws/key.pem
+  '"
+
+  # 4. Prove the profile through the same path the workload uses.
+  local check_env="AWS_CONFIG_FILE=/etc/flowform/aws/config AWS_PROFILE=flowform-runtime AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_EC2_METADATA_DISABLED=true"
+  [[ "${role}" == app ]] && check_env+=" HTTPS_PROXY=http://10.30.0.10:3128"
+  if ssh_role "${role}" "sudo env ${check_env} aws ssm get-parameter --region ${region} --name /flowform/${environment}/${role}/release --query Parameter.Name --output text" < /dev/null; then
+    printf 'Installed %s identity; certificate expires %s.\n' "${role}" \
+      "$(openssl x509 -in "${work}/cert.pem" -noout -enddate | cut -d= -f2)"
+  else
+    printf 'Installed %s identity, but the AWS check failed.\n' "${role}" >&2
+    [[ "${role}" == app ]] && printf 'The app check needs Squid running on the proxy.\n' >&2
+    return 1
+  fi
+}
+
+case "${1:-}" in
+  ca) create_ca ;;
+  install)
+    case "${2:-}" in
+      proxy|app) install_role "$2" ;;
+      *) fail 'use: identity install proxy|app' ;;
+    esac
+    ;;
+  *) sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

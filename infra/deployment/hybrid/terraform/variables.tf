@@ -108,8 +108,14 @@ variable "vm_sizes" {
     disk_gb   = number
   }))
   default = {
-    proxy = { cores = 2, memory_mb = 2048, disk_gb = 24 }
+    proxy = { cores = 2, memory_mb = 2048, disk_gb = 32 }
     app   = { cores = 2, memory_mb = 2048, disk_gb = 32 }
     db    = { cores = 2, memory_mb = 4096, disk_gb = 80 }
+  }
+
+  # Proxmox cannot shrink a cloned disk; template 9100 has a 25 GB root disk.
+  validation {
+    condition     = alltrue([for size in values(var.vm_sizes) : size.disk_gb >= 25])
+    error_message = "Each vm_sizes disk_gb must be at least 25, the hybrid template's root disk size."
   }
 }

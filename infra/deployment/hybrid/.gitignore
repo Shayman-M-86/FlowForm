@@ -1,2 +1,5 @@
 .local/
 __pycache__/
+# Hybrid workload CA certificates. Public, but kept local by choice; the CDK
+# HybridIdentity stack is synthesized only where the file exists.
+identity/
