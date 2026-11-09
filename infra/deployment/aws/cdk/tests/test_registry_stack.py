@@ -29,15 +29,16 @@ def _synth_registry_stack(env_name: str = "staging") -> Template:
     return Template.from_stack(stack)
 
 
-def test_staging_registry_creates_four_hardened_repositories():
+def test_staging_registry_creates_five_hardened_repositories():
     template = _synth_registry_stack()
-    template.resource_count_is("AWS::ECR::Repository", 4)
+    template.resource_count_is("AWS::ECR::Repository", 5)
 
     for repository_name in (
         "flowform-staging-backend",
         "flowform-staging-caddy",
         "flowform-staging-squid",
         "flowform-staging-alloy",
+        "flowform-staging-cloudflared",
     ):
         template.has_resource_properties(
             "AWS::ECR::Repository",
@@ -141,7 +142,7 @@ def test_prod_registry_retains_repositories_and_more_release_images():
         if resource["Type"] == "AWS::ECR::Repository"
     ]
 
-    assert len(repositories) == 4
+    assert len(repositories) == 5
     for repository in repositories:
         assert repository["DeletionPolicy"] == "Retain"
         assert repository["UpdateReplacePolicy"] == "Retain"
