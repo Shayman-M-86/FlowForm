@@ -20,7 +20,11 @@ below allow one installation per cluster.
   ignored `infra/deployment/hybrid/.local/terraform.env` to export the token
   and `SSL_CERT_FILE` before running Terraform.
 - Have the existing AWS scope configuration, frontend and ECR repositories
-  available. Promote the app and proxy digest manifests to
+  available. For staging, deploy `FlowForm-Staging-HybridRuntime` to publish
+  the backend and proxy runtime parameters from the CDK `.env.staging` inputs.
+  This stack depends on the shared security stack. The Proxmox bootstrap
+  supplies the PostgreSQL address and authentication mode locally.
+  Promote the app and proxy digest manifests to
   `/flowform/<environment>/app/release` and `/flowform/<environment>/proxy/release`
   through the [AWS container release operations](../aws/operations/README.md).
   Use the same scope for application config, encryption resources and secrets.
@@ -222,7 +226,8 @@ private API readiness pass. Then map the existing `API_DOMAIN` hostname to
 HTTPS readiness, browser CORS and Auth0 sign-in, a real encrypted survey flow,
 SES delivery and Alloy telemetry. If the public API hostname changes, update
 the existing frontend configuration and publish through the normal frontend
-workflow. Inventory and retire AWS compute or RDS separately after cutover.
+workflow. Staging CDK provisions AWS frontend hosting and hybrid dependencies.
+The staging API and database run on Proxmox.
 
 KMS is used to wrap new survey keys and unwrap existing ones on a cache miss.
 Process-local cached keys can serve some requests through a short outage.

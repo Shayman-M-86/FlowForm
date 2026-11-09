@@ -31,7 +31,7 @@ Security, Registry, Network, Database, Application, and frontend hosting have
 substantive resources. Observability remains a structural boundary. See
 `aws-overview.md` for the current stack map.
 
-The app and proxy consume distinct role AMIs published through
+The AWS app and proxy consume distinct role AMIs published through
 `/flowform/<environment>/ec2/appAmiId` and `proxyAmiId`. Both descend from the
 shared base built under `infra/machine-images/definitions/`, but CDK never
 launches that base directly. Each instance requests a 10 GiB encrypted gp3
@@ -43,7 +43,8 @@ root volume, which cannot be smaller than its role AMI snapshot.
   The app, both databases, and the frontends run locally
   (`infra/containers/runtime/development/compose/` + Vite dev servers) — no
   VPC, RDS, ECS, or Amplify.
-- **staging** is the one shared non-prod cloud environment: full stack set,
-  doubles as the integration environment.
-- **prod** is the same stack set as staging with retention/protection
-  turned on.
+- **staging** hosts the app, proxy, and PostgreSQL on Proxmox. CDK deploys
+  AWS frontend hosting, ECR, shared security, hybrid runtime parameters,
+  and Roles Anywhere identity. See the [hybrid runbook](../../hybrid/README.md).
+- **prod** defines the AWS VPC, EC2 hosts, RDS, and frontend stacks, with
+  retention and database deletion protection enabled.

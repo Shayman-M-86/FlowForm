@@ -1,5 +1,3 @@
-import json
-
 from aws_cdk import Duration
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_iam as iam
@@ -13,6 +11,7 @@ from flowform_infra.stacks.database_stack import DatabaseStack
 from flowform_infra.stacks.host_stack import RoleHostStack, pascal_case
 from flowform_infra.stacks.network_stack import NetworkStack
 from flowform_infra.stacks.registry_stack import RegistryStack
+from flowform_infra.stacks.runtime_parameters import backend_runtime_values
 
 
 class AppStack(RoleHostStack):
@@ -87,47 +86,12 @@ class AppStack(RoleHostStack):
 
     def _publish_runtime_parameters(self) -> None:
         env_config = self.env_config
-        auth0_public = env_config.auth0_public
-        runtime_public = env_config.runtime_public
-        assert auth0_public is not None
-        assert runtime_public is not None
-        assert env_config.public_site_domain is not None
-
-        values: dict[str, str] = {
-            "runtime_environment": env_config.env_name,
-            "logging_json": "true",
-            "logging_level": "INFO",
-            "tracing_enabled": "true",
-            "tracing_otlp_endpoint": "http://alloy:4317",
-            "tracing_sample_ratio": "1.0",
-            "tracing_service_name": "backend",
-            "site_url": f"https://{env_config.studio_domain}",
-            "aws_region": env_config.region,
-            "kms_key_arn": self.kms_key.key_arn,
-            "cors_supports_credentials": "true",
-            "auth0_domain": auth0_public.domain,
-            "auth0_audience": auth0_public.audience,
-            "auth0_client_id": auth0_public.client_id,
-            "auth0_management_domain": runtime_public.auth0_management_domain,
-            "auth0_management_id": runtime_public.auth0_management_id,
-            "auth0_management_validate_on_startup": "true",
-            "email_from_address": runtime_public.email_from_address,
-            "database_core_name": "flowform_core",
-            "database_core_app_user": DatabaseStack.CORE_APP_USER,
-            "database_response_name": "flowform_response",
-            "database_response_app_user": DatabaseStack.RESPONSE_APP_USER,
-            "database_core_auth_mode": "iam",
-            "database_response_auth_mode": "iam",
-            "database_core_host": self.database_stack.endpoint_address,
-            "database_response_host": self.database_stack.endpoint_address,
-            "linkage_secret_arn": self.linkage_secret_arn,
-        }
-
-        if env_config.studio_domain is not None:
-            values["cors_origins"] = json.dumps(
-                [f"https://{env_config.studio_domain}", f"https://{env_config.public_site_domain}"]
-            )
-
+        values = backend_runtime_values(
+            env_config,
+            kms_key_arn=self.kms_key.key_arn,
+            linkage_secret_arn=self.linkage_secret_arn,
+            database_host=self.database_stack.endpoint_address,
+        )
         unknown = set(values) - runtime_group_logical_names("backend")
         if unknown:
             raise ValueError(f"backend runtime parameters not in the contract: {sorted(unknown)}")

@@ -1,30 +1,48 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Pushes real secret values from infra/platforms/aws/cdk/.env.<env> into the two Secrets
-# Manager entries security_stack.py creates (flowform/<env>/app-secrets and
-# flowform/<env>/db-secrets). CDK only provisions the secrets with generated
-# placeholder values — it never seeds real values, so this script is the
-# out-of-band step that fills them in.
+# Pushes real secret values from infra/deployment/aws/cdk/.env.<env> into the
+# two multi-key Secrets Manager entries security_stack.py creates for the
+# environment's security scope:
 #
-# Dry run by default: prints the AWS CLI calls it would make without sending
-# anything. Pass --send to actually call Secrets Manager — you'll still be
-# asked to confirm y/n for each secret before it's written.
+#   flowform/<scope>/app-secrets  {app_secret_key, auth0_mgmt_secret}
+#   flowform/<scope>/db-secrets   {db_core_app_password, db_response_app_password}
+#
+# dev and staging share the nonprod scope; prod uses prod. CDK only provisions
+# placeholders, so this is the out-of-band step that fills them in. The linkage,
+# observability and tunnel secrets have their own formats and seed scripts.
+#
+# Dry run by default: prints what it would write without sending anything. Pass
+# --send to write; each secret still asks for y/n confirmation. Values reach
+# the AWS CLI through mode-0600 temporary files, never as arguments.
 #
 # Usage:
-#   infra/platforms/aws/scripts/seed-secrets.sh [--env dev] [--send]
+#   infra/deployment/aws/scripts/seed-secrets.sh [--env dev|staging|prod] [--send]
 
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-# This script lives at infra/platforms/aws/scripts/; the CDK root (where .env.<env>
-# lives) is infra/platforms/aws/cdk/.
-CDK_ROOT="$(cd "$SCRIPT_DIR/../../cdk" >/dev/null 2>&1 && pwd)"
+CDK_ROOT="$(cd "$SCRIPT_DIR/../cdk" >/dev/null 2>&1 && pwd)"
+AWS_REGION="${AWS_REGION:-ap-southeast-2}"
 
 ENV_NAME="dev"
 SEND=false
+TEMP_DIR=""
+
+cleanup() {
+  if [[ -n "$TEMP_DIR" && -d "$TEMP_DIR" ]]; then
+    rm -rf -- "$TEMP_DIR"
+  fi
+}
+trap cleanup EXIT
+
+die() {
+  echo "error: $*" >&2
+  exit 1
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --env)
+      [[ $# -ge 2 ]] || die "--env requires a value"
       ENV_NAME="$2"
       shift 2
       ;;
@@ -33,78 +51,67 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
-      echo "error: unknown argument '$1'" >&2
-      exit 1
+      die "unknown argument '$1'"
       ;;
   esac
 done
 
+case "$ENV_NAME" in
+  dev|staging) SCOPE="nonprod" ;;
+  prod) SCOPE="prod" ;;
+  *) die "unsupported environment: $ENV_NAME" ;;
+esac
+
+command -v aws >/dev/null 2>&1 || die "'aws' CLI not found on PATH."
+command -v jq >/dev/null 2>&1 || die "'jq' not found on PATH."
+
 ENV_FILE="$CDK_ROOT/.env.$ENV_NAME"
-
-if ! command -v aws >/dev/null 2>&1; then
-  echo "error: 'aws' CLI not found on PATH." >&2
-  exit 1
-fi
-
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "error: $ENV_FILE not found. Copy .env.dev.example to .env.$ENV_NAME and fill in real values first." >&2
-  exit 1
-fi
+[[ -f "$ENV_FILE" ]] \
+  || die "$ENV_FILE not found. Copy .env.dev.example to .env.$ENV_NAME and fill in real values first."
 
 set -a
 # shellcheck source=/dev/null
 source "$ENV_FILE"
 set +a
 
-required_vars=(
-  APP_SECRET_KEY
-  AUTH0_MGMT_SECRET
-  LINKAGE_SECRET
-  DB_CORE_APP_PASSWORD
-  DB_RESPONSE_APP_PASSWORD
-)
-for var in "${required_vars[@]}"; do
-  if [[ -z "${!var:-}" ]]; then
-    echo "error: $var is empty in $ENV_FILE" >&2
-    exit 1
-  fi
+for var in APP_SECRET_KEY AUTH0_MGMT_SECRET DB_CORE_APP_PASSWORD DB_RESPONSE_APP_PASSWORD; do
+  [[ -n "${!var:-}" ]] || die "$var is empty in $ENV_FILE"
 done
 
-app_secrets_json=$(printf '{"app_secret_key":%s,"auth0_mgmt_secret":%s,"linkage_secret":%s}' \
-  "$(printf '%s' "$APP_SECRET_KEY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
-  "$(printf '%s' "$AUTH0_MGMT_SECRET" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
-  "$(printf '%s' "$LINKAGE_SECRET" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')")
-
-db_secrets_json=$(printf '{"db_core_app_password":%s,"db_response_app_password":%s}' \
-  "$(printf '%s' "$DB_CORE_APP_PASSWORD" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
-  "$(printf '%s' "$DB_RESPONSE_APP_PASSWORD" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')")
-
-app_secret_id="flowform/$ENV_NAME/app-secrets"
-db_secret_id="flowform/$ENV_NAME/db-secrets"
+TEMP_DIR="$(mktemp -d)"
+chmod 700 "$TEMP_DIR"
+umask 077
+jq -n --arg app_secret_key "$APP_SECRET_KEY" --arg auth0_mgmt_secret "$AUTH0_MGMT_SECRET" \
+  '{app_secret_key: $app_secret_key, auth0_mgmt_secret: $auth0_mgmt_secret}' > "$TEMP_DIR/app-secrets.json"
+jq -n --arg core "$DB_CORE_APP_PASSWORD" --arg response "$DB_RESPONSE_APP_PASSWORD" \
+  '{db_core_app_password: $core, db_response_app_password: $response}' > "$TEMP_DIR/db-secrets.json"
+unset APP_SECRET_KEY AUTH0_MGMT_SECRET DB_CORE_APP_PASSWORD DB_RESPONSE_APP_PASSWORD
 
 confirm() {
-  local prompt="$1"
   local reply
-  read -r -p "$prompt [y/N] " reply
+  read -r -p "$1 [y/N] " reply
   [[ "$reply" =~ ^[Yy]$ ]]
 }
 
-seed_one() {
-  local secret_id="$1"
-  local secret_json="$2"
+seed_one() { # $1 = secret name suffix, $2 = extra warning (optional)
+  local secret_id="flowform/$SCOPE/$1" file="$TEMP_DIR/$1.json"
+
+  aws secretsmanager describe-secret --region "$AWS_REGION" --secret-id "$secret_id" >/dev/null \
+    || die "$secret_id does not exist; deploy the security stack first."
 
   if [[ "$SEND" == false ]]; then
-    echo "aws secretsmanager put-secret-value --secret-id '$secret_id' --secret-string '<${#secret_json} bytes>'"
+    echo "would write $secret_id ($(jq -r 'keys | join(", ")' "$file"))"
     return
   fi
 
+  [[ -n "${2:-}" ]] && echo "note: $2"
   if ! confirm "Seed $secret_id? This overwrites its current value in AWS."; then
     echo "Skipped $secret_id."
     return
   fi
 
-  echo "Seeding $secret_id ..."
-  aws secretsmanager put-secret-value --secret-id "$secret_id" --secret-string "$secret_json" >/dev/null
+  aws secretsmanager put-secret-value --region "$AWS_REGION" --secret-id "$secret_id" \
+    --secret-string "file://$file" >/dev/null
   echo "Done: $secret_id."
 }
 
@@ -113,5 +120,5 @@ if [[ "$SEND" == false ]]; then
   echo
 fi
 
-seed_one "$app_secret_id" "$app_secrets_json"
-seed_one "$db_secret_id" "$db_secrets_json"
+seed_one app-secrets
+seed_one db-secrets "an initialized database keeps the role passwords it was created with; changing db-secrets alone does not rotate them, and the app would then fail to connect."
