@@ -93,6 +93,9 @@ jobs:
 
       - name: Build studio-app
         working-directory: frontend
+        env:
+          VITE_FARO_URL: ${{ vars.STUDIO_FARO_URL }}
+          VITE_DEPLOYMENT_ENVIRONMENT: ${{ env.ENV_NAME }}
         run: pnpm run build:studio
 
       # Assets first, index.html last: HTML references content-hashed asset
