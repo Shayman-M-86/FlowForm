@@ -67,7 +67,7 @@ without creating a second implementation layer. The operations area owns
 workflow boundaries and safety checks; Packer, container tooling, deployment
 code, and host automation continue to own execution details. Its README and
 command help are authoritative for which actions are currently available.
-Proxmox retains its separate rehearsal lifecycle.
+Proxmox staging and rehearsal each have their own operator lifecycle.
 
 ## AWS boundary
 
@@ -111,14 +111,15 @@ already deployed hosts. Exact command sequences, account prerequisites, and
 recovery procedures change with the implementation and belong next to those
 operations.
 
-## Other environments
+## Proxmox staging and local environments
 
 The hybrid operator entry point under `infra/deployment/hybrid` builds a
 dedicated Proxmox template and provisions separate proxy, app and database
-guests from its own Terraform state. It uses existing AWS release manifests,
-configuration and secret readers. The runbook describes AWS identity
-prerequisites, offline database image staging and the manual network setup
-that precedes convergence. Live guest deployment remains to be verified.
+guests from its own Terraform state. Staging runs on these guests behind a
+Cloudflare Tunnel. CDK manages the runtime parameters in `HybridRuntime` and
+the Roles Anywhere trust and profiles in `HybridIdentity`. It also manages the AWS
+frontend hosting and image registry. The [hybrid runbook](../../../../infra/deployment/hybrid/README.md)
+covers VM provisioning, network setup and guest convergence.
 
 The local Proxmox rehearsal has a separate lifecycle and topology, but consumes
 the same broad artifact and runtime boundaries. Development and test

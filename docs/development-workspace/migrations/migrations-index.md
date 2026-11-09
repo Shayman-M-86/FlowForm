@@ -5,7 +5,7 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-11-09
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]
@@ -41,6 +41,10 @@ known start --> transition steps --> compatibility window --> target state
                                                                |
                                                         archive record
 ```
+
+## Active migrations
+
+- [[staging-hybrid-cutover|Staging cutover to the Proxmox hybrid stack]]
 
 ## Related documents
 

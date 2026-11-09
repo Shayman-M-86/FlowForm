@@ -5,8 +5,8 @@ Defined in [`infra/deployment/aws/cdk/flowform_infra/config/environments.py`](..
 | Env | Account | Deployment | Removal policy | Deletion protection | DB instance |
 |---|---|---|---|---|---|
 | `dev` | `908123139858` | Security stack only | Destroy | Off | *n/a (local Postgres)* |
-| `staging` | `908123139858` | Full | Destroy | Off | `db.t4g.small` |
-| `prod` | `908123139858` | Full | Retain | On | `db.t4g.medium` |
+| `staging` | `908123139858` | Proxmox runtime and AWS frontends | Per stack | Off | Proxmox PostgreSQL |
+| `prod` | `908123139858` | Full AWS deployment | Retain | On | `db.t4g.small` |
 
 All environments share one AWS account — the one already visible in the KMS
 key / Secrets Manager ARNs the backend uses locally
@@ -23,18 +23,16 @@ permission — so `-c env=dev` synthesizes the Security stack and nothing
 else (`full_deployment=False` in `environments.py`). No VPC, RDS, ECS,
 ALB, or Amplify apps exist for dev.
 
-**staging is the shared integration environment.** It's the single
-non-prod cloud deployment: full stack set including Amplify hosting for
-both frontends, served at `staging.flow-form.com.au` (public site) and
-`studio.staging.flow-form.com.au` (studio) — DNS records are created
-automatically by Amplify's domain association. Anything that would otherwise justify a "deployed dev"
-(branch previews, integration testing against real ECS/RDS) happens in
-staging rather than in a second paid-for environment.
+**staging is the shared integration environment.** The proxy, app and
+PostgreSQL run on Proxmox. S3 and CloudFront host both frontends at
+`staging.flow-form.com.au` and `studio.staging.flow-form.com.au`.
+AWS also supplies ECR, Parameter Store, Roles Anywhere, and the shared
+security services. See the [hybrid runbook](../../../hybrid/README.md).
 
-**prod matches staging's shape**, with `RemovalPolicy.RETAIN` on the KMS
-key/secrets and RDS deletion protection.
+**prod uses the AWS runtime**, with `RemovalPolicy.RETAIN` on the KMS
+key and secrets and with RDS deletion protection.
 
-The Amplify stack fails synth with a clear error for any full-deployment
+The frontend stack fails synth with a clear error for any full-deployment
 env whose `auth0_public` config is still `None`. Those values load at
 synth time from the gitignored `infra/deployment/aws/cdk/.env.<env>` file
 (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_AUDIENCE` — see
@@ -65,8 +63,8 @@ Defaults to `dev` if `-c env=` is omitted (see `cdk.json` context and
 
 ## Removal policy behavior
 
-- `dev` / `staging`: KMS keys, secrets, and (once built) RDS instances are
-  destroyed on `cdk destroy` — fine for throwaway environments.
+- `dev` and `staging` share the nonprod Security stack. Staging's
+  `HybridRuntime` stack retains the Parameter Store entries on deletion.
 - `prod`: KMS keys and secrets are retained even if the stack is destroyed;
   RDS has deletion protection enabled. This is intentional — production
   data and encryption keys should never be removable by a single

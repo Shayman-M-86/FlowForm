@@ -3,51 +3,17 @@
 Destroying environments and individual stacks. Read the gotchas at the
 bottom before running anything against `prod`.
 
-The stacks, and their deploy order (destroy is the reverse):
-
-```
-Security → Network → Database → Application → FrontendCert → Frontend → Observability
-```
-
 `FrontendCert` lives in **us-east-1** (CloudFront requires it); every other
 stack is in `ap-southeast-2`. `cdk destroy` targets a stack by name and
 figures out the region itself, so you don't pass region flags.
 
-## Tear down a whole environment
+## Staging scope
 
-`cdk destroy` respects dependency order automatically, so you can hand it
-every stack at once and it destroys them in the right sequence:
-
-```bash
-cd infra/deployment/aws/cdk
-npx cdk destroy -c env=staging --all
-```
-
-`--all` selects every stack for that environment. You'll be prompted once
-to confirm; add `--force` to skip the prompt (scripts/CI only — think
-before using it interactively).
-
-If you'd rather be explicit (e.g. to watch the order), list them in
-reverse-dependency order:
-
-```bash
-npx cdk destroy -c env=staging \
-  FlowForm-Staging-Observability \
-  FlowForm-Staging-Frontend \
-  FlowForm-Staging-FrontendCert \
-  FlowForm-Staging-Application \
-  FlowForm-Staging-Database \
-  FlowForm-Staging-Network \
-  FlowForm-Nonprod-Security
-```
-
-**dev** has only one stack — and it's the SAME `FlowForm-Nonprod-Security`
-stack staging uses (shared nonprod security scope), so destroying it takes
-out dev's KMS/secrets/app-role AND staging's:
-
-```bash
-npx cdk destroy -c env=dev FlowForm-Nonprod-Security
-```
+Staging runs the proxy, app and PostgreSQL on Proxmox. Its AWS stacks provide
+the frontend, container registry, runtime parameters and workload identity.
+The [hybrid runbook](../../../../hybrid/README.md) covers the Proxmox side.
+`cdk destroy --all` also selects the Security stack shared with dev. Use
+explicit stack names when retiring a subset of AWS services.
 
 ## Tear down individual stacks
 
