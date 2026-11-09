@@ -41,7 +41,7 @@ build {
   }
 
   post-processor "manifest" {
-    output     = "${var.image_root}/packer/manifests/base-manifest.json"
+    output     = "${var.image_root}/packer/manifests/${var.base_manifest_name}.json"
     strip_path = true
     custom_data = {
       architecture  = var.aws_architecture

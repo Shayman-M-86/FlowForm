@@ -23,7 +23,7 @@ for role in app proxy; do
   [[ -f "${unit}" ]] || fail "missing ${role} systemd unit"
   [[ -f "${compose}" ]] || fail "missing runtime-owned ${role} Compose topology"
 
-  grep -Fq 'infra/containers/runtime/common/.' "${build}" \
+  grep -Fq 'infra/containers/runtime/common/' "${build}" \
     || fail "${role} Packer build does not stage common runtime assets"
   grep -Fq "infra/containers/runtime/aws/common/compose/${role}.yml" "${build}" \
     || fail "${role} Packer build does not stage runtime-owned Compose topology"

@@ -1,0 +1,45 @@
+services:
+  caddy:
+    ports: !reset []
+    volumes:
+      - type: bind
+        source: /opt/flowform/hybrid/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: false
+  squid:
+    ports: !override
+      - "${PROXY_PRIVATE_IP:?set the proxy VM IPv4 address}:3128:3128/tcp"
+    volumes:
+      - type: bind
+        source: /etc/flowform/allowed-domains.txt
+        target: /etc/squid/allowed-domains.txt
+        read_only: true
+        bind:
+          create_host_path: false
+  alloy:
+    ports: !override
+      - "${PROXY_PRIVATE_IP}:3500:3500/tcp"
+      - "${PROXY_PRIVATE_IP}:4317:4317/tcp"
+  cloudflared:
+    image: ${CLOUDFLARED_IMAGE:?select a pinned cloudflared image}
+    command: [tunnel, --no-autoupdate, run, --token-file, /run/secrets/tunnel_token]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    secrets: [tunnel_token]
+    networks: [proxy_net]
+    depends_on:
+      caddy:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+secrets:
+  tunnel_token:
+    file: /etc/flowform/tunnel/token

@@ -212,9 +212,15 @@ compose_up() {
   # so the container healthchecks (via --wait) are the only reachable local
   # signal. Squid end-to-end reachability is verified from the workstation by
   # `rehearsal verify`, not from inside this bootstrap.
+  local up_args=(up -d --wait --wait-timeout "${health_timeout}")
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET:-}" == hybrid ]]; then
+    up_args+=(--force-recreate)
+    retry_with_backoff "proxy image pull" 5 5 300 env FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
+      docker compose --env-file "${PROXY_ENV}" "${compose_args[@]}" pull >/dev/null
+  fi
   if ! FLOWFORM_SECRET_DIR="${SECRET_DIR}" \
       docker compose --env-file "${PROXY_ENV}" "${compose_args[@]}" \
-      up -d --wait --wait-timeout "${health_timeout}"; then
+      "${up_args[@]}"; then
     collect_compose_diagnostics "${PROXY_ENV}" "${compose_args[@]}"
     die "proxy compose stack did not become healthy within ${health_timeout}s"
   fi
@@ -242,7 +248,16 @@ main() {
   end_step
 
   begin_step "Authenticating private image registries"
-  login_ecr_for_images "${PROXY_ENV}" CADDY_IMAGE SQUID_IMAGE ALLOY_IMAGE
+  local -a image_keys=(CADDY_IMAGE SQUID_IMAGE ALLOY_IMAGE)
+  if [[ "${FLOWFORM_DEPLOYMENT_TARGET:-}" == hybrid ]]; then
+    local tunnel_image
+    tunnel_image="$(runtime_env_value "${PROXY_ENV}" CLOUDFLARED_IMAGE)" ||
+      die "set CLOUDFLARED_IMAGE in the existing proxy SSM parameter group"
+    [[ "${tunnel_image}" =~ ^[a-z0-9._:/-]+@sha256:[a-f0-9]{64}$ ]] ||
+      die "CLOUDFLARED_IMAGE must be pinned by digest"
+    image_keys+=(CLOUDFLARED_IMAGE)
+  fi
+  login_ecr_for_images "${PROXY_ENV}" "${image_keys[@]}"
   end_step
 
   begin_step "Starting proxy containers"

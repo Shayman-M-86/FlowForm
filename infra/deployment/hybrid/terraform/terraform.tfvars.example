@@ -1,0 +1,15 @@
+# Confirm the proposed addresses against the site before applying.
+proxmox_endpoint = "https://pve.example.invalid:8006/"
+proxmox_node     = "pve"
+storage_pool     = "local-zfs"
+ssh_public_keys  = ["REPLACE_WITH_ADMIN_SSH_PUBLIC_KEY"]
+
+vlan_bridge       = "vmbr1"
+database_bridge   = "vmbr2"
+proxy_network     = { vlan = 30, cidr = "10.30.0.10/24", gateway = "10.30.0.1" }
+app_network       = { vlan = 40, cidr = "10.40.0.10/24", gateway = "10.40.0.1" }
+app_database_cidr = "172.20.50.10/24"
+database_cidr     = "172.20.50.20/24"
+
+flowform_environment = "staging"
+aws_region           = "ap-southeast-2"

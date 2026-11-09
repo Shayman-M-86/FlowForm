@@ -1,0 +1,59 @@
+name: flowform-hybrid-db
+
+services:
+  postgres:
+    image: ${HYBRID_POSTGRES_IMAGE:?load the approved offline PostgreSQL image}
+    pull_policy: never
+    restart: unless-stopped
+    network_mode: host
+    entrypoint: [/opt/flowform/db-entrypoint.sh]
+    command:
+      - postgres
+      - -c
+      - listen_addresses=${HYBRID_DB_IP:?set the database VM IPv4 address},127.0.0.1
+      - -c
+      - hba_file=/run/flowform-db/pg_hba.conf
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/run/flowform-db/server.crt
+      - -c
+      - ssl_key_file=/run/flowform-db/server.key
+      - -c
+      - password_encryption=scram-sha-256
+    environment:
+      HYBRID_APP_DB_IP: ${HYBRID_APP_DB_IP:?set the application DB interface IPv4 address}
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/flowform-db/DATABASE_INIT_PASSWORD
+      DATABASE_INIT_TARGET: all
+      DATABASE_CORE_NAME: flowform_core
+      DATABASE_CORE_APP_USER: flowform_core_app
+      DATABASE_CORE_APP_PASSWORD_FILE: /run/flowform-db/DATABASE_CORE_APP_PASSWORD
+      DATABASE_CORE_SCHEMA_FILE: schema/flowform_core_db_schema_v4.sql
+      DATABASE_RESPONSE_NAME: flowform_response
+      DATABASE_RESPONSE_APP_USER: flowform_response_app
+      DATABASE_RESPONSE_APP_PASSWORD_FILE: /run/flowform-db/DATABASE_RESPONSE_APP_PASSWORD
+      DATABASE_RESPONSE_SCHEMA_FILE: schema/flowform_response_db_schema_v4.sql
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - /opt/flowform/hybrid/database-init:/docker-entrypoint-initdb.d:ro
+      - /opt/flowform/hybrid/db-entrypoint.sh:/opt/flowform/db-entrypoint.sh:ro
+      - /opt/flowform/hybrid/99-hybrid-ready.sh:/docker-entrypoint-initdb.d/99-hybrid-ready.sh:ro
+      - /etc/flowform/db:/run/flowform-db-source:ro
+    tmpfs:
+      - /run/flowform-db
+      - /tmp
+    healthcheck:
+      test: [CMD-SHELL, 'test -f "$$PGDATA/.flowform-initialized" && bash -c "exec 3<>/dev/tcp/127.0.0.1/5432" && gosu postgres pg_isready -q -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  postgres_data:

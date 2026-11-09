@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+runtime=/opt/flowform/hybrid
+role="${1:?specify proxy, db, or app}"
+
+require_files() {
+  local file
+  for file in "$@"; do
+    [[ -s "${file}" ]] || { printf 'Missing host prerequisite: %s\n' "${file}" >&2; exit 1; }
+  done
+}
+
+case "${role}" in
+  db)
+    require_files /etc/flowform/db/{server.crt,server.key,DATABASE_INIT_PASSWORD.secret.txt,DATABASE_CORE_APP_PASSWORD.secret.txt,DATABASE_RESPONSE_APP_PASSWORD.secret.txt}
+    exec docker compose -f "${runtime}/db.yml" up -d --wait --wait-timeout 240
+    ;;
+  proxy)
+    require_files /etc/flowform/{allowed-domains.txt,tunnel/token}
+    export APP_UPSTREAM_HOST="${APP_PRIVATE_IP}"
+    ;;
+  app)
+    require_files /etc/flowform/db/{ca.crt,DATABASE_CORE_APP_PASSWORD.secret.txt,DATABASE_RESPONSE_APP_PASSWORD.secret.txt}
+    export HTTP_PROXY="http://${PROXY_PRIVATE_IP}:3128" HTTPS_PROXY="http://${PROXY_PRIVATE_IP}:3128"
+    export http_proxy="${HTTP_PROXY}" https_proxy="${HTTPS_PROXY}"
+    export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
+    export COMPOSE_FORCE_RECREATE=1
+    ;;
+  *) exit 2 ;;
+esac
+
+require_files /etc/flowform/aws/config
+export AWS_CONFIG_FILE=/etc/flowform/aws/config AWS_PROFILE=flowform-runtime
+export AWS_EC2_METADATA_DISABLED=true AWS_SHARED_CREDENTIALS_FILE=/dev/null
+export AWS_REGION FLOWFORM_SCOPE FLOWFORM_ENV FLOWFORM_PARAMETER_ROOT PROXY_PRIVATE_IP APP_PRIVATE_IP HYBRID_DB_HOST
+export FLOWFORM_PLATFORM=proxmox FLOWFORM_DEPLOYMENT_TARGET=hybrid
+export FLOWFORM_SHARED_SCRIPT_DIR="${runtime}"
+export COMPOSE_FILE="${runtime}/${role}.yml" COMPOSE_OVERRIDE_FILE="${runtime}/${role}.override.yml"
+
+# shellcheck source=/dev/null
+source "${runtime}/load-release-manifest.sh"
+flowform_load_release_manifest "${role}"
+exec "${runtime}/bootstrap-${role}.sh"

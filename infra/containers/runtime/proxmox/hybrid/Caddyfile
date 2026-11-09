@@ -1,0 +1,33 @@
+http://{$API_DOMAIN} {
+	encode zstd gzip
+
+	tracing {
+		span caddy.request
+	}
+
+	log {
+		output stdout
+		format filter {
+			request>uri regexp "^(/api/v1/account/invitations/resolve/)[^/?]+" "${1}[REDACTED]"
+			request>headers>Referer replace REDACTED
+			wrap json
+		}
+	}
+
+	log_append request_id {http.request.uuid}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy http://{$APP_UPSTREAM_HOST}:5000 {
+		header_up X-Request-ID {http.request.uuid}
+
+		health_uri /api/v1/system/health/ready
+		health_interval 30s
+		health_timeout 5s
+	}
+}
