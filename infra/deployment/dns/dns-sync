@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Keep the Cloudflare zone (authoritative) in step with Route 53 (where CDK
+# writes records).
+#
+#   dns-sync export   Print a BIND zone file of the Route 53 records for a
+#                     Cloudflare DNS import. Route 53 aliases become CNAMEs.
+#   dns-sync check    Compare Route 53 with Cloudflare. Exit 1 on any drift:
+#                     missing, extra or different records, or a proxied record
+#                     that is not listed in cloudflare-owned.txt.
+#
+# Names in cloudflare-owned.txt (one per line) are owned by Cloudflare, such as
+# the proxied tunnel hostname, and are skipped on both sides.
+#
+# Requires the AWS CLI with Route 53 read access, jq and curl. `check` also
+# needs CLOUDFLARE_API_TOKEN with Zone:DNS:Read on the zone (or a `cf auth login`
+# session); set the token directly
+# or put it in infra/deployment/dns/.local/cloudflare.env (gitignored).
+set -Eeuo pipefail
+
+here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+zone="${FLOWFORM_DNS_ZONE:-flow-form.com.au}"
+owned_file="${here}/cloudflare-owned.txt"
+
+fail() { printf 'dns-sync: %s\n' "$*" >&2; exit 2; }
+
+owned_names_json() {
+  if [[ -f "${owned_file}" ]]; then
+    grep -vE '^\s*(#|$)' "${owned_file}" | tr 'A-Z' 'a-z' | jq -Rsc 'split("\n") | map(select(length > 0))'
+  else
+    printf '[]'
+  fi
+}
+
+route53_records() { # normalized JSON array of {type,name,content,priority,ttl}
+  local zone_id raw
+  if [[ -n "${FLOWFORM_DNS_ROUTE53_FILE:-}" ]]; then # test seam: raw list-resource-record-sets JSON
+    raw="$(cat "${FLOWFORM_DNS_ROUTE53_FILE}")"
+  else
+  zone_id="$(aws route53 list-hosted-zones-by-name --dns-name "${zone}" \
+    --query "HostedZones[?Name=='${zone}.'] | [0].Id" --output text)"
+  [[ "${zone_id}" == /hostedzone/* ]] || fail "Route 53 zone ${zone} not found"
+  raw="$(aws route53 list-resource-record-sets --hosted-zone-id "${zone_id}" --output json)"
+  fi
+  jq -c '
+    def bare: ascii_downcase | rtrimstr(".");
+    def txt: [scan("\"((?:[^\"\\\\]|\\\\.)*)\"") | .[0]] | join("");
+    [.ResourceRecordSets[]
+      | select(.Type != "NS" and .Type != "SOA")
+      | (.Name | bare) as $name
+      | if .AliasTarget then
+          {type: "CNAME", name: $name, content: (.AliasTarget.DNSName | bare | ltrimstr("dualstack.")), priority: null, ttl: 300}
+        else
+          .Type as $type | .TTL as $ttl | .ResourceRecords[].Value
+          | if $type == "MX" then
+              split(" ") as $p | {type: "MX", name: $name, content: ($p[1] | bare), priority: ($p[0] | tonumber), ttl: $ttl}
+            elif $type == "TXT" then
+              {type: "TXT", name: $name, content: txt, priority: null, ttl: $ttl}
+            elif $type == "CNAME" then
+              {type: "CNAME", name: $name, content: bare, priority: null, ttl: $ttl}
+            else
+              {type: $type, name: $name, content: ., priority: null, ttl: $ttl}
+            end
+        end]
+    | unique_by([.type, .name, .content])' <<<"${raw}"
+}
+
+cloudflare_records() {
+  local token="${CLOUDFLARE_API_TOKEN:-}" zone_id api=https://api.cloudflare.com/client/v4 raw
+  if [[ -n "${FLOWFORM_DNS_CLOUDFLARE_FILE:-}" ]]; then # test seam: raw dns_records API JSON
+    raw="$(cat "${FLOWFORM_DNS_CLOUDFLARE_FILE}")"
+  else
+  if [[ -z "${token}" && -f "${here}/.local/cloudflare.env" ]]; then
+    # shellcheck source=/dev/null
+    token="$(set -a; source "${here}/.local/cloudflare.env"; printf '%s' "${CLOUDFLARE_API_TOKEN:-}")"
+  fi
+  if [[ -n "${token}" ]]; then
+    cf_api() { curl -fsS -H "Authorization: Bearer ${token}" "${api}$1"; }
+    zone_id="$(cf_api "/zones?name=${zone}" | jq -er '.result[0].id')" || fail "Cloudflare zone ${zone} not found"
+    raw="$(cf_api "/zones/${zone_id}/dns_records?per_page=5000")"
+  elif command -v cf >/dev/null && command cf auth whoami >/dev/null 2>&1; then
+    # Fall back to the operator's Cloudflare CLI login (cf auth login).
+    raw="$(command cf dns records list --zone "${zone}" 2>/dev/null |
+      jq -c 'if type == "array" then {result: .} else . end')" ||
+      fail "could not list Cloudflare records for ${zone} with the cf CLI"
+  else
+    fail 'set CLOUDFLARE_API_TOKEN (Zone:DNS:Read), create .local/cloudflare.env, or run cf auth login'
+  fi
+  fi
+  jq -c '
+    def bare: ascii_downcase | rtrimstr(".");
+    def txt: if test("^\"") then [scan("\"((?:[^\"\\\\]|\\\\.)*)\"") | .[0]] | join("") else . end;
+    [.result[]
+      | select(.type != "NS" and .type != "SOA")
+      | {type, name: (.name | bare),
+         content: (if .type == "TXT" then (.content | txt) elif .type == "CNAME" or .type == "MX" then (.content | bare) else .content end),
+         priority: (if .type == "MX" then .priority else null end),
+         proxied: (.proxied // false)}]' <<<"${raw}"
+}
+
+cmd_export() {
+  local owned
+  owned="$(owned_names_json)"
+  printf ';; %s exported from Route 53 for Cloudflare import on %s\n' "${zone}" "$(date -u +%FT%TZ)"
+  printf ';; Import with "Proxy status" off; Cloudflare-owned names are omitted.\n'
+  route53_records | jq -r --argjson owned "${owned}" '
+    .[] | select(.name as $n | $owned | index($n) | not)
+    | (.name + ".") as $owner
+    | if .type == "MX" then "\($owner)\t\(.ttl)\tIN\tMX\t\(.priority) \(.content)."
+      elif .type == "TXT" then "\($owner)\t\(.ttl)\tIN\tTXT\t\(.content | @json)"
+      elif .type == "CNAME" then "\($owner)\t\(.ttl)\tIN\tCNAME\t\(.content)."
+      else "\($owner)\t\(.ttl)\tIN\t\(.type)\t\(.content)" end'
+}
+
+cmd_check() {
+  local owned r53 cfl report
+  owned="$(owned_names_json)"
+  r53="$(route53_records)"
+  cfl="$(cloudflare_records)"
+  report="$(jq -nr --argjson owned "${owned}" --argjson r53 "${r53}" --argjson cf "${cfl}" '
+    def key: "\(.type) \(.name) \(.priority // "") \(.content)";
+    def keep: select(.name as $n | $owned | index($n) | not);
+    ([$r53[] | keep | key] | unique) as $want
+    | ([$cf[] | keep | key] | unique) as $have
+    | ([$want[] | select(. as $k | $have | index($k) | not) | "missing in Cloudflare:  \(.)"]
+       + [$have[] | select(. as $k | $want | index($k) | not) | "only in Cloudflare:     \(.)"]
+       + [$cf[] | keep | select(.proxied) | "proxied but not owned:  \(key)"])
+    | .[]')"
+  if [[ -n "${report}" ]]; then
+    printf '%s\n' "${report}"
+    printf 'dns-sync: %s drifted from Route 53 (%s difference(s)).\n' "${zone}" "$(wc -l <<<"${report}")" >&2
+    exit 1
+  fi
+  printf 'dns-sync: Cloudflare matches Route 53 for %s (%s records compared, %s Cloudflare-owned name(s) skipped).\n' \
+    "${zone}" "$(jq --argjson owned "${owned}" '[.[] | select(.name as $n | $owned | index($n) | not)] | length' <<<"${r53}")" \
+    "$(jq length <<<"${owned}")"
+}
+
+case "${1:-}" in
+  export) cmd_export ;;
+  check) cmd_check ;;
+  *) sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

@@ -30,7 +30,7 @@ const schemaPackageDir = resolve(
 );
 const aiImportPromptPath = resolve(
   __dirname,
-  "../packages/builder/src/components/Utils/ai-import/AiImportModal.tsx",
+  "../packages/builder/src/components/Utils/ai-import/surveyNodePrompt.ts",
 );
 
 mkdirSync(schemaPackageDir, { recursive: true });
@@ -169,6 +169,33 @@ const builderZodFile = `${schemaPackageDir}/builder-zod.gen.ts`;
 const builderZodChanged = writeGeneratedFile(builderZodFile, zodLines.join("\n"));
 console.log(`Generated ${builderZodFile}`);
 
+// Full input contract for copied AI prompts, including every nested variant.
+// Keep the original OpenAPI constraints and make all references self-contained.
+const importRoots = ["CreateQuestionNodeRequest", "CreateRuleNodeRequest"];
+for (const name of importRoots) {
+  if (!allSchemas[name]) throw new Error(`Missing AI import schema: ${name}`);
+}
+const importDependencies = collectTransitiveDeps(importRoots, allSchemas);
+const importSchema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  type: "array",
+  minItems: 1,
+  maxItems: 500,
+  items: { oneOf: importRoots.map((name) => ({ $ref: `#/$defs/${name}` })) },
+  $defs: Object.fromEntries(
+    [...importDependencies].sort().map((name) => [name, allSchemas[name]]),
+  ),
+};
+const importSchemaJson = JSON.stringify(importSchema, null, 2)
+  .replaceAll("#/components/schemas/", "#/$defs/");
+const importSchemaFile = `${schemaPackageDir}/survey-node-import.gen.ts`;
+const importSchemaChanged = writeGeneratedFile(
+  importSchemaFile,
+  `// This file is auto-generated — do not edit manually\n` +
+    `export const surveyNodeImportJsonSchema = ${importSchemaJson} as const;\n`,
+);
+console.log(`Generated ${importSchemaFile}`);
+
 // ─── packages/schema/src/generated/constraints.gen.ts ────────────────────────
 // ─── packages/schema/src/generated/builder-constraints.gen.ts ────────────────
 // Runtime constraint objects (*Constraints). Full set and builder-scoped set.
@@ -216,11 +243,12 @@ const builderConstraintsChanged = writeGeneratedFile(
 );
 console.log(`Generated ${builderConstraintsFile}`);
 
-if (builderTypesChanged || builderZodChanged || builderConstraintsChanged) {
+if (builderTypesChanged || builderZodChanged || builderConstraintsChanged || importSchemaChanged) {
   warnAiImportPromptReview({
     builderTypesChanged,
     builderZodChanged,
     builderConstraintsChanged,
+    importSchemaChanged,
   });
 }
 
@@ -299,12 +327,13 @@ function warnAiImportPromptReview(changes) {
     changes.builderTypesChanged ? "packages/schema/src/generated/builder.gen.ts" : null,
     changes.builderZodChanged ? "packages/schema/src/generated/builder-zod.gen.ts" : null,
     changes.builderConstraintsChanged ? "packages/schema/src/generated/builder-constraints.gen.ts" : null,
+    changes.importSchemaChanged ? "packages/schema/src/generated/survey-node-import.gen.ts" : null,
   ].filter(Boolean);
 
   console.warn("");
   console.warn("============================================================");
   console.warn("WARNING: Builder node schema output changed.");
-  console.warn("Review the handcrafted AI import schema prompt for drift:");
+  console.warn("The AI import JSON Schema is generated. Review its semantic guidance and examples:");
   console.warn(`  ${aiImportPromptPath}`);
   console.warn("Changed generated builder artifacts:");
   for (const file of changedFiles) console.warn(`  - ${file}`);

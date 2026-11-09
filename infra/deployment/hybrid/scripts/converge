@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+runtime=/opt/flowform/hybrid
+db_dir=/etc/flowform/db
+role="${1:?specify proxy, db, or app}"
+
+require_files() {
+  local file
+  for file in "$@"; do
+    [[ -s "${file}" ]] || { printf 'Missing host prerequisite: %s\n' "${file}" >&2; exit 1; }
+  done
+}
+
+# The PostgreSQL superuser password is used only by initdb; administration uses
+# local peer authentication. Generate it once on the DB host and keep it there.
+ensure_db_init_password() {
+  local file="${db_dir}/DATABASE_INIT_PASSWORD.secret.txt"
+  [[ -s "${file}" ]] && return
+  (umask 077 && openssl rand -hex 32 > "${file}")
+}
+
+db_tls_is_current() {
+  [[ -s "${db_dir}/ca.crt" && -s "${db_dir}/server.crt" && -s "${db_dir}/server.key" ]] &&
+    openssl verify -CAfile "${db_dir}/ca.crt" "${db_dir}/server.crt" >/dev/null 2>&1 &&
+    openssl x509 -in "${db_dir}/server.crt" -noout -checkip "${HYBRID_DB_IP}" 2>/dev/null | grep -q 'does match' &&
+    openssl x509 -in "${db_dir}/server.crt" -noout -checkend 2592000 >/dev/null
+}
+
+# A private CA signs the server certificate for the DB bridge address, then its
+# key is discarded. Only the public CA certificate leaves this host: `hybrid
+# deploy` copies it into the app release for libpq verify-full.
+ensure_db_tls() {
+  db_tls_is_current && return
+  local work
+  work="$(mktemp -d)"
+  trap 'rm -rf -- "${work}"' RETURN
+  openssl req -x509 -new -nodes -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -keyout "${work}/ca.key" -out "${work}/ca.crt" -days 3650 \
+    -subj '/CN=FlowForm hybrid PostgreSQL CA' \
+    -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' \
+    -addext 'keyUsage=critical,keyCertSign,cRLSign' 2>/dev/null
+  openssl req -new -nodes -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -keyout "${work}/server.key" -out "${work}/server.csr" \
+    -subj '/CN=flowform-hybrid-db' 2>/dev/null
+  printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature' \
+    'extendedKeyUsage=serverAuth' "subjectAltName=IP:${HYBRID_DB_IP}" > "${work}/server.ext"
+  openssl x509 -req -in "${work}/server.csr" -CA "${work}/ca.crt" -CAkey "${work}/ca.key" \
+    -CAcreateserial -days 3650 -extfile "${work}/server.ext" -out "${work}/server.crt" 2>/dev/null
+  install -m 0600 "${work}/server.key" "${db_dir}/server.key"
+  install -m 0644 "${work}/server.crt" "${db_dir}/server.crt"
+  install -m 0644 "${work}/ca.crt" "${db_dir}/ca.crt"
+  rm -rf -- "${work}"
+  trap - RETURN
+  printf 'Generated PostgreSQL TLS material for %s\n' "${HYBRID_DB_IP}"
+}
+
+write_if_changed() { # $1 = path, $2 = content; returns 0 when the file changed
+  [[ -f "$1" ]] && [[ "$(cat "$1")" == "$2" ]] && return 1
+  install -d -m 0755 "$(dirname -- "$1")"
+  printf '%s\n' "$2" > "$1.tmp"
+  chmod 0644 "$1.tmp"
+  mv -f "$1.tmp" "$1"
+}
+
+# Time: the VLANs have no general NTP egress. The proxy syncs from Cloudflare
+# and serves only the app; the app syncs from the proxy. Amazon Linux links
+# its default pool into /run/chrony.d on every chronyd start, so a drop-in
+# disables that and the image's copy of the pool file is removed.
+configure_time() { # $1 = sources content, $2 = extra chrony.conf content (optional)
+  local changed=0
+  write_if_changed /etc/systemd/system/chronyd.service.d/flowform-hybrid.conf "$(printf '%s\n' \
+    '[Service]' 'ExecStartPre=' 'ExecStartPre=/usr/bin/mkdir -p /run/chrony.d' \
+    'ExecStartPre=/usr/bin/rm -f /run/chrony.d/ntp-pool.sources')" && changed=1
+  if [[ -e /etc/chrony.d/ntp-pool.sources ]]; then rm -f /etc/chrony.d/ntp-pool.sources; changed=1; fi
+  write_if_changed /etc/chrony.d/flowform-hybrid.sources "$1" && changed=1
+  if [[ -n "${2:-}" ]]; then
+    write_if_changed /etc/chrony.d/flowform-hybrid.conf "$2" && changed=1
+  elif [[ -e /etc/chrony.d/flowform-hybrid.conf ]]; then
+    rm -f /etc/chrony.d/flowform-hybrid.conf; changed=1
+  fi
+  if (( changed )); then
+    systemctl daemon-reload
+    systemctl restart chronyd
+    printf 'Reconfigured chrony time sources\n'
+  fi
+}
+
+case "${role}" in
+  proxy) configure_time 'server time.cloudflare.com iburst' "allow ${APP_PRIVATE_IP:?set APP_PRIVATE_IP}" ;;
+  app) configure_time "server ${PROXY_PRIVATE_IP:?set PROXY_PRIVATE_IP} iburst" ;;
+esac
+
+case "${role}" in
+  db)
+    install -d -m 0700 "${db_dir}"
+    ensure_db_init_password
+    ensure_db_tls
+    # `hybrid deploy db` delivers the two managed role passwords from AWS
+    # db-secrets; this VM deliberately has no route to AWS.
+    require_files "${db_dir}"/{DATABASE_CORE_APP_PASSWORD,DATABASE_RESPONSE_APP_PASSWORD}.secret.txt
+    exec docker compose -f "${runtime}/db.yml" up -d --wait --wait-timeout 240
+    ;;
+  proxy)
+    export APP_UPSTREAM_HOST="${APP_PRIVATE_IP}"
+    ;;
+  app)
+    require_files "${runtime}/db-ca.crt"
+    "${runtime}/app-forwarding.sh"
+    export HTTP_PROXY="http://${PROXY_PRIVATE_IP}:3128" HTTPS_PROXY="http://${PROXY_PRIVATE_IP}:3128"
+    export http_proxy="${HTTP_PROXY}" https_proxy="${HTTPS_PROXY}"
+    export NO_PROXY=localhost,127.0.0.1 no_proxy=localhost,127.0.0.1
+    export COMPOSE_FORCE_RECREATE=1
+    ;;
+  *) exit 2 ;;
+esac
+
+# Workload identity is the one per-host difference from AWS: an IAM Roles
+# Anywhere profile replaces the EC2 instance role. Everything else is fetched
+# from SSM and Secrets Manager by the shared AWS bootstraps.
+require_files /etc/flowform/aws/config
+export AWS_CONFIG_FILE=/etc/flowform/aws/config AWS_PROFILE=flowform-runtime
+export AWS_EC2_METADATA_DISABLED=true AWS_SHARED_CREDENTIALS_FILE=/dev/null
+export AWS_REGION FLOWFORM_SCOPE FLOWFORM_ENV FLOWFORM_PARAMETER_ROOT PROXY_PRIVATE_IP APP_PRIVATE_IP HYBRID_DB_HOST
+export FLOWFORM_PLATFORM=proxmox FLOWFORM_DEPLOYMENT_TARGET=hybrid
+export FLOWFORM_SHARED_SCRIPT_DIR="${runtime}"
+export COMPOSE_FILE="${runtime}/${role}.yml" COMPOSE_OVERRIDE_FILE="${runtime}/${role}.override.yml"
+
+# shellcheck source=/dev/null
+source "${runtime}/load-release-manifest.sh"
+flowform_load_release_manifest "${role}"
+exec "${runtime}/bootstrap-${role}.sh"

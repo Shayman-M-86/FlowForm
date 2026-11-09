@@ -68,6 +68,11 @@ rehearsal_output="$(run_valid_case rehearsal password password password)"
 grep -F 'write 4 secret files' <<<"${rehearsal_output}" >/dev/null
 grep -F 'DATABASE_CORE_APP_PASSWORD, DATABASE_RESPONSE_APP_PASSWORD' <<<"${rehearsal_output}" >/dev/null
 
+hybrid_output="$(run_valid_case hybrid password password password)"
+grep -F 'write 4 secret files' <<<"${hybrid_output}" >/dev/null
+grep -F 'DATABASE_CORE_APP_PASSWORD, DATABASE_RESPONSE_APP_PASSWORD' <<<"${hybrid_output}" >/dev/null
+
+run_invalid_case hybrid iam iam
 run_invalid_case aws password password
 run_invalid_case rehearsal iam iam
 run_invalid_case aws iam password
@@ -176,5 +181,33 @@ run_materialise_case rehearsal password password
 [[ "$(sort "${TEST_DIR}/materialise-rehearsal/fetches")" == $'app-secrets\ndb-secrets' ]]
 [[ -f "${TEST_DIR}/materialise-rehearsal/secrets/DATABASE_CORE_APP_PASSWORD.secret.txt" ]]
 [[ -f "${TEST_DIR}/materialise-rehearsal/secrets/DATABASE_RESPONSE_APP_PASSWORD.secret.txt" ]]
+
+run_materialise_case hybrid password password
+[[ "$(sort "${TEST_DIR}/materialise-hybrid/fetches")" == $'app-secrets\ndb-secrets' ]]
+[[ -f "${TEST_DIR}/materialise-hybrid/secrets/FLOWFORM_APP_SECRET_KEY.secret.txt" ]]
+[[ "$(cat "${TEST_DIR}/materialise-hybrid/secrets/DATABASE_CORE_APP_PASSWORD.secret.txt")" == core ]]
+[[ "$(cat "${TEST_DIR}/materialise-hybrid/secrets/DATABASE_RESPONSE_APP_PASSWORD.secret.txt")" == response ]]
+
+(
+  export FLOWFORM_DEPLOYMENT_TARGET=hybrid FLOWFORM_ENV=staging FLOWFORM_PLATFORM=proxmox
+  export FLOWFORM_SCOPE=nonprod AWS_REGION=ap-southeast-2
+  export APP_PRIVATE_IP=10.40.0.10 PROXY_PRIVATE_IP=10.30.0.10 HYBRID_DB_HOST=172.20.50.20
+  export BOOTSTRAP_BACKEND_ENV="${TEST_DIR}/backend.env" BOOTSTRAP_DRY_RUN=0
+  export BACKEND_IMAGE=backend ALLOY_IMAGE=alloy
+  source "${BOOTSTRAP}"
+  aws_cli_retry() {
+    jq -n '$ARGS.named | to_entries | {Parameters: map({Name: ("/flowform/nonprod/backend/" + .key), Value: .value})}' \
+      --arg DATABASE_CORE_NAME flowform_core --arg DATABASE_CORE_APP_USER flowform_core_app \
+      --arg DATABASE_RESPONSE_NAME flowform_response --arg DATABASE_RESPONSE_APP_USER flowform_response_app \
+      --arg DATABASE_CORE_HOST rds --arg DATABASE_CORE_AUTH_MODE iam --arg DATABASE_RESPONSE_AUTH_MODE iam \
+      --arg DATABASE_CORE_URL ignored --arg FLOWFORM_AUTH0_DOMAIN auth.example.invalid
+  }
+  render_backend_env
+  validate_database_auth_strategy
+  grep -Fxq 'DATABASE_CORE_HOST=172.20.50.20' "${BOOTSTRAP_BACKEND_ENV}"
+  grep -Fxq 'DATABASE_RESPONSE_HOST=172.20.50.20' "${BOOTSTRAP_BACKEND_ENV}"
+  grep -Fxq 'FLOWFORM_AUTH0_DOMAIN=auth.example.invalid' "${BOOTSTRAP_BACKEND_ENV}"
+  ! grep -Eq '^DATABASE_CORE_URL=|^DATABASE_CORE_HOST=rds$' "${BOOTSTRAP_BACKEND_ENV}"
+)
 
 printf '[test-bootstrap-app-auth-strategy] PASS\n'

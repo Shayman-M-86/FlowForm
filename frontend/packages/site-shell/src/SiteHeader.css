@@ -138,13 +138,31 @@
   @apply flex size-full select-none items-center justify-center bg-primary text-[0.78rem] font-semibold tracking-[0.01em] text-primary-foreground;
 }
 
+/* Collapse the primary nav into the hamburger before the row can overflow.
+   Nav links and Studio sign-in move into the dropdown at this width. */
+@media (max-width: 1100px) {
+  .site-header__nav,
+  .site-header__signin {
+    display: none;
+  }
+
+  .site-header__nav-dropdown-button {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 1101px) {
+  .site-header__nav-dropdown-menu {
+    display: none;
+  }
+}
+
 @media (max-width: 767px) {
   .site-header__inner {
     @apply gap-2 px-4;
   }
 
-  .site-header__badge,
-  .site-header__cta {
+  .site-header__badge {
     display: none;
   }
 }
@@ -155,24 +173,27 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 480px) {
+  .site-header__cta {
+    display: none;
+  }
+}
+
+@media (max-width: 400px) {
   .site-header__theme-toggle {
     display: none;
   }
 }
 
-@media (max-width: 520px) {
-  .site-header__nav {
-    display: none;
-  }
-
-  .site-header__nav-dropdown-button {
-    display: inline-flex;
-  }
+/* Studio entry points (public site) */
+.site-header__signin {
+  @apply min-h-[34px] text-[0.86rem];
 }
 
-@media (min-width: 520px) {
-  .site-header__nav-dropdown-menu {
-    display: none;
-  }
+.site-header__nav-dropdown-studio {
+  @apply mt-2 flex flex-col gap-1 border-t border-border pt-3;
+}
+
+.site-header__nav-dropdown-cta {
+  @apply ui-button-primary flex items-center justify-center rounded-2xl px-4 py-4 text-lg font-semibold leading-[1.2] text-primary-foreground no-underline;
 }

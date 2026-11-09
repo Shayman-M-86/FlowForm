@@ -12,3 +12,8 @@ ec2messages.ap-southeast-2.amazonaws.com
 email.ap-southeast-2.amazonaws.com
 api.ecr.ap-southeast-2.amazonaws.com
 908123139858.dkr.ecr.ap-southeast-2.amazonaws.com
+# Hybrid (Proxmox) app hosts have no VPC endpoints: workload credentials come
+# from IAM Roles Anywhere, and ECR image layers are served from the regional
+# S3 layer bucket. On AWS these are unused (instance role; S3 gateway endpoint).
+rolesanywhere.ap-southeast-2.amazonaws.com
+prod-ap-southeast-2-starport-layer-bucket.s3.ap-southeast-2.amazonaws.com

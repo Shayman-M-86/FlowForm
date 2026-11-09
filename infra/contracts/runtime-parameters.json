@@ -157,7 +157,8 @@
     "app": "app-secrets",
     "database": "db-secrets",
     "linkage": "linkage-secret",
-    "observability": "observability-secrets"
+    "observability": "observability-secrets",
+    "tunnel": "tunnel-secrets"
   },
   "secret_seed_value_keys": []
 }

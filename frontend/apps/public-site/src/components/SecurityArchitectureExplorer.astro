@@ -1,0 +1,146 @@
+---
+import { Monitor, Server, Database, KeyRound, LockKeyhole, ArrowRight, ArrowDown, ShieldCheck, Fingerprint, FileLock2, UserRound, Braces, Check, CircleCheck } from "@lucide/astro";
+const tabs = [
+  { id: "architecture", label: "Data flow" },
+  { id: "keys", label: "Key hierarchy" },
+  { id: "reading", label: "Authorized reading" },
+  { id: "integrity", label: "Integrity" },
+];
+const steps = [
+  { title: "Receive the answer", detail: "The respondent sends an answer to FlowForm. The browser and the backend see plaintext; encryption happens in the application before response storage.", parts: "browser" },
+  { title: "Check the request", detail: "The backend resolves survey access and the submission session, then validates the answer against the published question. Respondent access and Studio permissions are different checks.", parts: "backend" },
+  { title: "Encrypt in the backend", detail: "A session key encrypts the answer payload with AES-256-GCM. Survey and session keys are loaded or unwrapped when needed and may be cached; KMS is not called for every answer.", parts: "backend keys" },
+  { title: "Write to separate stores", detail: "Core receives the answer-slot reference and session metadata. The response store receives ciphertext, a nonce, and opaque locators. The backend coordinates these writes; there is no cross-database foreign key or distributed transaction.", parts: "core response" },
+];
+---
+
+<div class="architecture-explorer" data-architecture-explorer>
+  <div class="architecture-tabs" role="tablist" aria-label="Explore the security architecture">
+    {tabs.map(({ id, label }, index) => (
+      <button type="button" role="tab" id={`architecture-tab-${id}`} aria-controls={`architecture-panel-${id}`} aria-selected={index === 0 ? "true" : "false"} tabindex={index === 0 ? 0 : -1}>
+        <span>0{index + 1}</span>{label}
+      </button>
+    ))}
+  </div>
+
+  <section class="architecture-panel" id="architecture-panel-architecture" role="tabpanel" aria-labelledby="architecture-tab-architecture" tabindex="0">
+    <div class="flow-controls" aria-label="Follow an answer through the system">
+      {steps.map(({ title, detail, parts }, index) => (
+        <button type="button" aria-pressed={index === 0 ? "true" : "false"} data-flow-step={index} data-title={title} data-detail={detail} data-parts={parts}>
+          <span>{index + 1}</span>{title}
+        </button>
+      ))}
+    </div>
+    <div class="architecture-map" aria-label="Logical application architecture: browser to backend, external key services, and two separate databases">
+      <div class="request-path">
+        <article class="architecture-node" data-flow-part="browser" data-highlight="true">
+          <Monitor size={27} stroke-width={1.5} aria-hidden="true" />
+          <span class="node-eyebrow">RESPONDENT</span><h3>Browser</h3><p>Survey answers start here.<br />Plaintext exists in the browser.</p>
+        </article>
+        <div class="flow-arrow"><span>Request</span><ArrowRight size={30} stroke-width={1.3} aria-hidden="true" /></div>
+        <article class="architecture-node backend-node" data-flow-part="backend">
+          <Server size={27} stroke-width={1.5} aria-hidden="true" />
+          <span class="node-eyebrow">APPLICATION TRUST BOUNDARY</span><h3>FlowForm backend</h3><p>Check access. Validate answers.<br />Derive locators. Encrypt payloads.</p>
+        </article>
+        <div class="flow-arrow"><span>Key operations</span><ArrowRight size={30} stroke-width={1.3} aria-hidden="true" /></div>
+        <article class="architecture-node key-services-node" data-flow-part="keys">
+          <KeyRound size={27} stroke-width={1.5} aria-hidden="true" />
+          <span class="node-eyebrow">EXTERNAL KEY SERVICES</span><h3>AWS KMS &amp;<br />Secrets Manager</h3><p>Key wrapping and versioned linkage secrets. Used when needed.</p>
+        </article>
+      </div>
+      <p class="storage-branch"><ArrowDown size={20} aria-hidden="true" /> The backend writes metadata and encrypted answers separately</p>
+      <div class="store-pair">
+        <article class="architecture-node core-store" data-flow-part="core">
+          <div class="store-title"><Database size={25} stroke-width={1.5} aria-hidden="true" /><div><span class="node-eyebrow">CORE DATABASE</span><h3>People, structure &amp; context</h3></div></div>
+          <ul><li>Accounts, projects, permissions</li><li>Survey definitions and published versions</li><li>Participant and submission metadata</li><li>Answer slots and KMS-wrapped survey keys</li></ul>
+          <span class="store-caption">Answer values are not stored in these core answer slots.</span>
+        </article>
+        <article class="architecture-node response-store" data-flow-part="response">
+          <div class="store-title"><Database size={25} stroke-width={1.5} aria-hidden="true" /><div><span class="node-eyebrow">RESPONSE DATABASE</span><h3>Protected answer storage</h3></div></div>
+          <ul><li>Opaque session and answer locators</li><li>Session envelopes with wrapped session keys</li><li>Answer ciphertext and nonces</li><li>Response-side metadata, including update time</li></ul>
+          <span class="store-caption">No dedicated user ID or email columns in these response tables.</span>
+        </article>
+      </div>
+      <p class="diagram-boundary"><LockKeyhole size={15} aria-hidden="true" /> No cross-database foreign keys. The trusted backend reconstructs the relationship.</p>
+    </div>
+    <div class="flow-readout" aria-live="polite" aria-atomic="true"><span data-step-number>01</span><div><h3 data-step-title>{steps[0].title}</h3><p data-step-detail>{steps[0].detail}</p></div><button type="button" data-next-step>Next step <ArrowRight size={17} aria-hidden="true" /></button></div>
+  </section>
+
+  <section class="architecture-panel" id="architecture-panel-keys" role="tabpanel" aria-labelledby="architecture-tab-keys" tabindex="0" hidden>
+    <div class="panel-intro"><span class="node-eyebrow">THREE LAYERS, DIFFERENT JOBS</span><h3>The keys protect each other.</h3><p>FlowForm generates random 256-bit survey and session keys. KMS wraps the survey key; the survey key wraps the session key; the session key encrypts answers.</p></div>
+    <div class="key-flow">
+      <article class="architecture-node"><KeyRound size={30} aria-hidden="true" /><span class="node-eyebrow">01 · AWS KMS</span><h3>Protect the survey key</h3><p>The backend calls KMS Encrypt with project and survey context. The wrapped survey key is stored in core.</p><span class="store-caption">KMS key material is managed by AWS KMS.</span></article>
+      <div class="flow-arrow"><ArrowRight size={28} aria-hidden="true" /></div>
+      <article class="architecture-node"><KeyRound size={30} aria-hidden="true" /><span class="node-eyebrow">02 · SURVEY KEY</span><h3>Wrap each session key</h3><p>A separate random key is made for each submission session, then wrapped using the survey key and AES-GCM.</p><span class="store-caption">Wrapped session key: response envelope.</span></article>
+      <div class="flow-arrow"><ArrowRight size={28} aria-hidden="true" /></div>
+      <article class="architecture-node"><FileLock2 size={30} aria-hidden="true" /><span class="node-eyebrow">03 · SESSION KEY</span><h3>Encrypt each answer</h3><p>The session key encrypts the question identifier, answer state, and answer value using AES-256-GCM.</p><span class="store-caption">Ciphertext and a fresh nonce: response answer row.</span></article>
+    </div>
+    <div class="diagram-note"><ShieldCheck size={22} aria-hidden="true" /><p><strong>Wrapped means encrypted, not removed.</strong> Encrypted keys are stored in the databases. Plaintext survey and session keys exist in backend memory while in use and may be cached.</p></div>
+  </section>
+
+  <section class="architecture-panel" id="architecture-panel-reading" role="tabpanel" aria-labelledby="architecture-tab-reading" tabindex="0" hidden>
+    <div class="panel-intro"><span class="node-eyebrow">A DELIBERATE, AUTHORIZED READ PATH</span><h3>Encryption still lets the right people do their work.</h3><p>Studio result routes check authentication and survey-level submission-view permission. When decrypted values are requested, the backend resolves and decrypts the corresponding answers.</p></div>
+    <ol class="read-sequence">
+      {[
+        { Icon: UserRound, title: "Verify the reader", detail: "An authenticated Studio request must pass the survey permission check. A valid login alone does not grant access to a project’s responses." },
+        { Icon: Fingerprint, title: "Resolve the records", detail: "The backend reads core session and answer-slot metadata, loads the correct linkage-secret version, and re-derives opaque locators." },
+        { Icon: KeyRound, title: "Recover the session key", detail: "The response envelope supplies the wrapped session key. The backend loads or unwraps the survey key, then unwraps the session key using the expected context." },
+        { Icon: FileLock2, title: "Decrypt the requested answers", detail: "AES-GCM verifies the ciphertext and associated data. The backend can return plaintext answer values through the authorized results view or export." },
+      ].map(({ Icon, title, detail }, index) => (<li><span class="read-step-number">0{index + 1}</span><Icon size={23} aria-hidden="true" /><div><h3>{title}</h3><p>{detail}</p></div></li>))}
+    </ol>
+    <div class="diagram-note"><LockKeyhole size={22} aria-hidden="true" /><p><strong>This is server-side encryption, not end-to-end encryption.</strong> The trusted backend can decrypt, and authorized users can receive readable answers. Their browsers and exports then become places where that information needs care.</p></div>
+  </section>
+
+  <section class="architecture-panel" id="architecture-panel-integrity" role="tabpanel" aria-labelledby="architecture-tab-integrity" tabindex="0" hidden>
+    <div class="panel-intro"><span class="node-eyebrow">MORE THAN HIDING THE CONTENT</span><h3>Bind each encrypted answer to its context.</h3><p>AES-GCM authenticates both the ciphertext and additional data. In FlowForm, the additional authenticated data (AAD) binds an answer to its response envelope, answer locator, and crypto version.</p></div>
+    <div class="integrity-grid">
+      <article class="architecture-node"><Braces size={28} aria-hidden="true" /><h3>What is encrypted</h3><ul><li>Payload version</li><li>Question node identifier</li><li>Answer state</li><li>Answer value</li></ul></article>
+      <article class="architecture-node"><Fingerprint size={28} aria-hidden="true" /><h3>What is authenticated</h3><ul><li>Crypto version</li><li>Response envelope ID</li><li>Opaque answer locator</li></ul><span class="store-caption">AAD is authenticated, not itself encrypted.</span></article>
+      <article class="architecture-node"><CircleCheck size={28} aria-hidden="true" /><h3>What is checked</h3><ul><li>A fresh random 12-byte nonce per encryption</li><li>AES-GCM authentication tag</li><li>The same bound context at decryption</li></ul></article>
+    </div>
+    <div class="diagram-note"><Check size={22} aria-hidden="true" /><p><strong>Changed ciphertext or mismatched AAD fails authenticated decryption.</strong> This does not by itself prove that a record was never deleted, rolled back, or accessed through an authorized account.</p></div>
+  </section>
+</div>
+
+<script>
+  function initArchitectureExplorer() {
+    document.querySelectorAll<HTMLElement>("[data-architecture-explorer]").forEach((root) => {
+      if (root.dataset.initialized) return;
+      root.dataset.initialized = "true";
+      const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+      const panels = Array.from(root.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+      const steps = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-flow-step]"));
+      let stepIndex = 0;
+      function selectTab(index: number, focus = false) {
+        const selected = (index + tabs.length) % tabs.length;
+        tabs.forEach((tab, i) => { tab.setAttribute("aria-selected", String(i === selected)); tab.tabIndex = i === selected ? 0 : -1; panels[i].hidden = i !== selected; });
+        if (focus) tabs[selected].focus({ preventScroll: true });
+      }
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => selectTab(index));
+        tab.addEventListener("keydown", (event) => {
+          const next = event.key === "ArrowRight" ? index + 1 : event.key === "ArrowLeft" ? index - 1 : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : null;
+          if (next === null) return;
+          event.preventDefault(); selectTab(next, true);
+        });
+      });
+      function selectStep(index: number) {
+        stepIndex = index % steps.length;
+        const step = steps[stepIndex];
+        steps.forEach((button, i) => button.setAttribute("aria-pressed", String(i === stepIndex)));
+        const activeParts = (step.dataset.parts ?? "").split(" ");
+        root.querySelectorAll<HTMLElement>("[data-flow-part]").forEach((part) => { part.dataset.highlight = String(activeParts.includes(part.dataset.flowPart ?? "")); });
+        const title = root.querySelector("[data-step-title]");
+        const detail = root.querySelector("[data-step-detail]");
+        const number = root.querySelector("[data-step-number]");
+        if (title) title.textContent = step.dataset.title ?? "";
+        if (detail) detail.textContent = step.dataset.detail ?? "";
+        if (number) number.textContent = String(stepIndex + 1).padStart(2, "0");
+      }
+      steps.forEach((button, index) => button.addEventListener("click", () => selectStep(index)));
+      root.querySelector("[data-next-step]")?.addEventListener("click", () => selectStep(stepIndex + 1));
+    });
+  }
+  document.addEventListener("astro:page-load", initArchitectureExplorer);
+  initArchitectureExplorer();
+</script>

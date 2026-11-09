@@ -200,7 +200,7 @@ function parseNode(
     return null;
   }
 
-  const parsed = schema.safeParse(normalized);
+  const parsed = schema.safeParse(normalized, { reportInput: true });
 
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
@@ -622,13 +622,10 @@ function throwImport(issues: SurveyNodeImportIssue[]): never {
 }
 
 function annotateZodMessage(issue: ZodIssue): string {
-  if (issue.code === "invalid_type") {
-    const received = "received" in issue ? String(issue.received) : "unknown";
-    return `${issue.message} (received ${received})`;
-  }
-  if (issue.code === "invalid_literal") {
-    const received = "received" in issue ? JSON.stringify(issue.received) : "unknown";
-    return `${issue.message} (received ${received})`;
+  // Zod 4 invalid_type messages already name the received type; literal/enum
+  // mismatches don't, so append the offending value (needs `reportInput`).
+  if (issue.code === "invalid_value" && issue.input !== undefined) {
+    return `${issue.message} (received ${JSON.stringify(issue.input)})`;
   }
   return issue.message;
 }

@@ -61,14 +61,27 @@ _image_aws_builder_preflight() {
 
 _image_build_proxmox_target() { # target verify-after
   local target="$1" verify_after="$2" vars_file build_file only_target vmids
+  local -a build_args=()
   vars_file="${PACKER_DIR}/variables/proxmox.auto.pkrvars.hcl"
-  require_vars_file "${vars_file}" "proxmox.auto.pkrvars.hcl.example"
+  if [[ "${target}" == hybrid ]]; then
+    vars_file="${FLOWFORM_HYBRID_PACKER_VARS:?set FLOWFORM_HYBRID_PACKER_VARS to the dedicated hybrid Packer var file}"
+    [[ -f "${vars_file}" ]] || die "hybrid Packer var file does not exist"
+  else
+    require_vars_file "${vars_file}" "proxmox.auto.pkrvars.hcl.example"
+  fi
   assert_proxmox_build_ip_available "${vars_file}"
   case "${target}" in
     golden)
       build_file="${IMAGE_ROOT}/definitions/base/build.pkr.hcl"
       only_target="flowform-base.proxmox-clone.amazon_linux_2023"
       vmids="8999 9000"
+      ;;
+    hybrid)
+      build_file="${IMAGE_ROOT}/definitions/base/build.pkr.hcl"
+      only_target="flowform-base.proxmox-clone.amazon_linux_2023"
+      build_args=(-var proxmox_vm_id=9100 -var proxmox_template_name=flowform-hybrid-al2023
+        -var proxmox_insecure_skip_tls_verify=false -var base_manifest_name=hybrid-base-manifest)
+      vmids="9100"
       ;;
     localstack)
       build_file="${PACKER_DIR}/builds/localstack-fixture.pkr.hcl"
@@ -83,7 +96,7 @@ _image_build_proxmox_target() { # target verify-after
     *) die "unknown Proxmox build target: ${target}" ;;
   esac
   phase "build Proxmox ${target} image"
-  run_packer_build "${build_file}" "${only_target}" "${vars_file}"
+  run_packer_build "${build_file}" "${only_target}" "${vars_file}" "${build_args[@]}"
   if [[ "${PACKER_VALIDATE_ONLY:-0}" != 1 && "${verify_after}" == 1 ]]; then
     phase "verify Proxmox disk policy after ${target} build"
     # shellcheck disable=SC2086
@@ -97,7 +110,7 @@ cmd_build_main() {
   local on_error="cleanup"
   if [[ "${platform}" == -h || "${platform}" == --help ]]; then
     printf '%s\n' 'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnostics|--no-diagnostics] [--on-error MODE]' \
-      '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]'
+      '       image build proxmox <golden|localstack|db|hybrid|all> [--validate-only] [--syntax-only]'
     return
   fi
   [[ $# -gt 0 ]] && shift || true
@@ -108,7 +121,7 @@ cmd_build_main() {
   if [[ "${target}" == -h || "${target}" == --help ]]; then
     printf '%s\n' \
       'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnostics|--no-diagnostics] [--on-error MODE]' \
-      '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
+      '       image build proxmox <golden|localstack|db|hybrid|all> [--validate-only] [--syntax-only]' \
       '' \
       '  --diagnostics  Explicitly enable the diagnostics used by default for live AWS builds.' \
       '  --no-diagnostics  Disable live AWS EC2, boot, Session Manager, and Packer debug diagnostics.' \
@@ -133,7 +146,7 @@ cmd_build_main() {
       -h|--help)
         printf '%s\n' \
           'Usage: image build aws <base|app|proxy|all> [--validate-only] [--syntax-only] [--diagnostics|--no-diagnostics] [--on-error MODE]' \
-          '       image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]' \
+          '       image build proxmox <golden|localstack|db|hybrid|all> [--validate-only] [--syntax-only]' \
           '' \
           '  --diagnostics  Explicitly enable the diagnostics used by default for live AWS builds.' \
           '  --no-diagnostics  Disable live AWS EC2, boot, Session Manager, and Packer debug diagnostics.' \
@@ -217,6 +230,7 @@ cmd_build_main() {
       (( diagnostics == 0 )) || die "--diagnostics is available only for AWS builds"
       [[ "${on_error}" == cleanup ]] || die "--on-error is available only for AWS builds"
       case "${target}" in
+        hybrid) _image_build_proxmox_target "${target}" 0 ;;
         golden|localstack|db) _image_build_proxmox_target "${target}" 1 ;;
         all)
           if (( validate_only == 0 )); then
@@ -234,7 +248,7 @@ cmd_build_main() {
             _image_verify_proxmox 8999 9000 9001 9002
           fi
           ;;
-        *) die "usage: image build proxmox <golden|localstack|db|all> [--validate-only] [--syntax-only]" ;;
+        *) die "usage: image build proxmox <golden|localstack|db|hybrid|all> [--validate-only] [--syntax-only]" ;;
       esac
       ;;
     *) die "usage: image build <aws|proxmox> ..." ;;

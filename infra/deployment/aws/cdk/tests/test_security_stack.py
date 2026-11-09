@@ -50,11 +50,13 @@ def test_creates_expected_secrets_under_nonprod_namespace():
     template = _synth_security_stack("dev")
     # app-secrets (app_secret_key, auth0_mgmt_secret), db-secrets
     # (db_core_app_password, db_response_app_password), observability-secrets
-    # (grafana_cloud_token), and the standalone versioned linkage secret
-    template.resource_count_is("AWS::SecretsManager::Secret", 4)
+    # (grafana_cloud_token), tunnel-secrets (cloudflare_tunnel_token), and the
+    # standalone versioned linkage secret
+    template.resource_count_is("AWS::SecretsManager::Secret", 5)
     template.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/app-secrets"})
     template.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/linkage-secret"})
     template.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/observability-secrets"})
+    template.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "flowform/nonprod/tunnel-secrets"})
 
 
 def test_nonprod_app_role_assumable_by_ec2_and_account():

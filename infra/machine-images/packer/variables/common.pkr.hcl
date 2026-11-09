@@ -32,3 +32,8 @@ variable "repo_root" {
   type        = string
   description = "Absolute path to the repository root, supplied by the build scripts"
 }
+
+variable "base_manifest_name" {
+  type    = string
+  default = "base-manifest"
+}

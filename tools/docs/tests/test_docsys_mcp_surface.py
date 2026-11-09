@@ -3,12 +3,20 @@ from __future__ import annotations
 import json
 import unittest
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import patch
 
 from docsys import mcp_server
 
 
-def _call(name: str, arguments: object) -> dict:
+def _response_result(response: dict[str, object] | None) -> dict[str, Any]:
+    assert response is not None
+    result = response["result"]
+    assert isinstance(result, dict)
+    return result
+
+
+def _call(name: str, arguments: object) -> dict[str, Any]:
     response = mcp_server.handle_request(
         {
             "jsonrpc": "2.0",
@@ -17,8 +25,7 @@ def _call(name: str, arguments: object) -> dict:
             "params": {"name": name, "arguments": arguments},
         }
     )
-    assert response is not None
-    return response["result"]
+    return _response_result(response)
 
 
 class McpSurfaceTests(unittest.TestCase):
@@ -70,12 +77,14 @@ class McpSurfaceTests(unittest.TestCase):
                 {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
             )
 
+        initialized_result = _response_result(initialized)
+        listed_result = _response_result(listed)
         self.assertEqual(
-            initialized["result"]["serverInfo"]["name"],
+            initialized_result["serverInfo"]["name"],
             "flowform-docsys",
         )
         self.assertEqual(
-            [tool["name"] for tool in listed["result"]["tools"]],
+            [tool["name"] for tool in listed_result["tools"]],
             ["find", "read"],
         )
         find.assert_not_called()
