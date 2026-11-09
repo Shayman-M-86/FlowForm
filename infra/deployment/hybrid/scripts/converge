@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 runtime=/opt/flowform/hybrid
+db_dir=/etc/flowform/db
 role="${1:?specify proxy, db, or app}"
 
 require_files() {
@@ -11,17 +12,64 @@ require_files() {
   done
 }
 
+# The PostgreSQL superuser password is used only by initdb; administration uses
+# local peer authentication. Generate it once on the DB host and keep it there.
+ensure_db_init_password() {
+  local file="${db_dir}/DATABASE_INIT_PASSWORD.secret.txt"
+  [[ -s "${file}" ]] && return
+  (umask 077 && openssl rand -hex 32 > "${file}")
+}
+
+db_tls_is_current() {
+  [[ -s "${db_dir}/ca.crt" && -s "${db_dir}/server.crt" && -s "${db_dir}/server.key" ]] &&
+    openssl verify -CAfile "${db_dir}/ca.crt" "${db_dir}/server.crt" >/dev/null 2>&1 &&
+    openssl x509 -in "${db_dir}/server.crt" -noout -checkip "${HYBRID_DB_IP}" 2>/dev/null | grep -q 'does match' &&
+    openssl x509 -in "${db_dir}/server.crt" -noout -checkend 2592000 >/dev/null
+}
+
+# A private CA signs the server certificate for the DB bridge address, then its
+# key is discarded. Only the public CA certificate leaves this host: `hybrid
+# deploy` copies it into the app release for libpq verify-full.
+ensure_db_tls() {
+  db_tls_is_current && return
+  local work
+  work="$(mktemp -d)"
+  trap 'rm -rf -- "${work}"' RETURN
+  openssl req -x509 -new -nodes -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -keyout "${work}/ca.key" -out "${work}/ca.crt" -days 3650 \
+    -subj '/CN=FlowForm hybrid PostgreSQL CA' \
+    -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' \
+    -addext 'keyUsage=critical,keyCertSign,cRLSign' 2>/dev/null
+  openssl req -new -nodes -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+    -keyout "${work}/server.key" -out "${work}/server.csr" \
+    -subj '/CN=flowform-hybrid-db' 2>/dev/null
+  printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature' \
+    'extendedKeyUsage=serverAuth' "subjectAltName=IP:${HYBRID_DB_IP}" > "${work}/server.ext"
+  openssl x509 -req -in "${work}/server.csr" -CA "${work}/ca.crt" -CAkey "${work}/ca.key" \
+    -CAcreateserial -days 3650 -extfile "${work}/server.ext" -out "${work}/server.crt" 2>/dev/null
+  install -m 0600 "${work}/server.key" "${db_dir}/server.key"
+  install -m 0644 "${work}/server.crt" "${db_dir}/server.crt"
+  install -m 0644 "${work}/ca.crt" "${db_dir}/ca.crt"
+  rm -rf -- "${work}"
+  trap - RETURN
+  printf 'Generated PostgreSQL TLS material for %s\n' "${HYBRID_DB_IP}"
+}
+
 case "${role}" in
   db)
-    require_files /etc/flowform/db/{server.crt,server.key,DATABASE_INIT_PASSWORD.secret.txt,DATABASE_CORE_APP_PASSWORD.secret.txt,DATABASE_RESPONSE_APP_PASSWORD.secret.txt}
+    install -d -m 0700 "${db_dir}"
+    ensure_db_init_password
+    ensure_db_tls
+    # `hybrid deploy db` delivers the two managed role passwords from AWS
+    # db-secrets; this VM deliberately has no route to AWS.
+    require_files "${db_dir}"/{DATABASE_CORE_APP_PASSWORD,DATABASE_RESPONSE_APP_PASSWORD}.secret.txt
     exec docker compose -f "${runtime}/db.yml" up -d --wait --wait-timeout 240
     ;;
   proxy)
-    require_files /etc/flowform/{allowed-domains.txt,tunnel/token}
     export APP_UPSTREAM_HOST="${APP_PRIVATE_IP}"
     ;;
   app)
-    require_files /etc/flowform/db/{ca.crt,DATABASE_CORE_APP_PASSWORD.secret.txt,DATABASE_RESPONSE_APP_PASSWORD.secret.txt}
+    require_files "${runtime}/db-ca.crt"
     "${runtime}/app-forwarding.sh"
     export HTTP_PROXY="http://${PROXY_PRIVATE_IP}:3128" HTTPS_PROXY="http://${PROXY_PRIVATE_IP}:3128"
     export http_proxy="${HTTP_PROXY}" https_proxy="${HTTPS_PROXY}"
@@ -31,6 +79,9 @@ case "${role}" in
   *) exit 2 ;;
 esac
 
+# Workload identity is the one per-host difference from AWS: an IAM Roles
+# Anywhere profile replaces the EC2 instance role. Everything else is fetched
+# from SSM and Secrets Manager by the shared AWS bootstraps.
 require_files /etc/flowform/aws/config
 export AWS_CONFIG_FILE=/etc/flowform/aws/config AWS_PROFILE=flowform-runtime
 export AWS_EC2_METADATA_DISABLED=true AWS_SHARED_CREDENTIALS_FILE=/dev/null

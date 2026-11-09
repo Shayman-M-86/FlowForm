@@ -27,6 +27,15 @@ below allow one installation per cluster.
   In the existing `/flowform/<scope>/proxy/` Parameter Store group, set
   `CLOUDFLARED_IMAGE` to a full image digest for cloudflared 2025.4.0 or later.
   An approved ECR mirror can supply this image.
+- Seed the scope's secrets the same way as for AWS. Deploy the security stack,
+  then run `infra/deployment/aws/scripts/seed-secrets.sh` for `app-secrets` and
+  `db-secrets`, `seed-observability-secret.sh` for the Grafana token, and
+  `seed-tunnel-secret.sh --environment <env> --apply` with
+  `CLOUDFLARE_TUNNEL_TOKEN_FILE` for the remotely managed Cloudflare Tunnel
+  token. Hybrid hosts read the same entries as AWS.
+- Publish a Squid image built from the current
+  [allow-list](../../containers/images/squid/allowed-domains.txt). It includes
+  the Roles Anywhere and ECR layer-bucket hosts that hybrid app hosts need.
 
 ## Build and provision
 
@@ -110,25 +119,30 @@ the common application secrets and Grafana token into file-backed runtime
 mounts. The backend retrieves the linkage secret directly through its normal
 AWS client.
 
-Provision these inputs through the administrative channel, outside the
-repository, images and Terraform state.
+The hybrid hosts use the AWS secret flow unchanged. The proxy bootstrap
+materialises the Grafana token from `observability-secrets` and the Cloudflare
+Tunnel token from `tunnel-secrets` into tmpfs. The app bootstrap materialises
+`app-secrets` and `db-secrets` into tmpfs, as the rehearsal password strategy
+does. Squid uses the allow-list built into its image.
+
+The DB VM has no route to AWS. `hybrid deploy db` reads `db-secrets` with the
+workstation's AWS session and streams the two role passwords to
+`/etc/flowform/db` on the DB host (root-owned, mode 0600). On its first
+convergence the DB host generates its own PostgreSQL superuser password and a
+private CA and server certificate for its bridge address, then discards the CA
+key. `hybrid deploy app` copies only the public CA certificate into the app
+release for libpq `verify-full`. Changing the password files alone does not
+rotate PostgreSQL credentials. The initializer uses the shared schema and role
+SQL and runs only on empty data storage, so preserve the DB volume and back it
+up.
+
+Workload identity is the only per-host input. Provision it once per host
+through the administrative channel, outside the repository, images and
+Terraform state.
 
 | Host | File or directory | Purpose |
 | --- | --- | --- |
-| Proxy and app | `/etc/flowform/aws/config` and associated helper/certificate/key files | A standard AWS profile named `flowform-runtime` on each host. |
-| Proxy | `/etc/flowform/allowed-domains.txt` | Root-owned Squid allow-list. Use exact endpoint names from the network guide. |
-| Proxy | `/etc/flowform/tunnel/token` | Remotely managed tunnel token. Make the parent directory root-only and the file readable by container UID 65532 (for example owner 65532 and mode 0400). |
-| DB | `/etc/flowform/db/server.crt`, `server.key` | PostgreSQL server certificate, chain if needed, and private key. Include the DB bridge IPv4 address as an IP subject alternative name. |
-| App | `/etc/flowform/db/ca.crt` | CA for the PostgreSQL server certificate. libpq uses `verify-full`. |
-| DB | `/etc/flowform/db/DATABASE_INIT_PASSWORD.secret.txt` | PostgreSQL bootstrap password. |
-| App and DB | `/etc/flowform/db/DATABASE_CORE_APP_PASSWORD.secret.txt` and `DATABASE_RESPONSE_APP_PASSWORD.secret.txt` | Separate core and response role passwords. Place each corresponding value on both hosts. |
-
-Use root-owned private directories and files for AWS and database credentials.
-For a fresh database generate each password independently with
-`openssl rand -hex 32` through the existing secure provisioning channel.
-Preserve those files and the database backup together. Changes to the files on
-their own do not rotate PostgreSQL credentials. The initializer uses the shared
-schema and role SQL and runs only on empty data storage.
+| Proxy and app | `/etc/flowform/aws/config` and associated helper/certificate/key files | A standard AWS profile named `flowform-runtime` on each host, replacing the EC2 instance role. |
 
 For unattended AWS access, configure two scoped IAM Roles Anywhere roles and
 issue separate workload certificates. In each standard AWS profile, set
@@ -142,9 +156,9 @@ identity separate from both runtime profiles. Schedule certificate renewals
 before expiry. [AWS credential helper](https://docs.aws.amazon.com/rolesanywhere/latest/userguide/credential-helper.html)
 
 Scope each role to its release manifest, its SSM config group and approved ECR
-repositories. The app needs its application and linkage secrets, the applicable
-KMS cryptographic operations and SES sending. The proxy needs the observability
-secret. When a secret uses a customer-managed key, include the applicable
+repositories. The app needs its application, database and linkage secrets, the
+applicable KMS cryptographic operations and SES sending. The proxy needs the
+observability and tunnel secrets. When a secret uses a customer-managed key, include the applicable
 Secrets Manager decrypt grants and key policy access. Use the existing CDK app,
 proxy, and security role grants as references for those service operations. The
 Roles Anywhere trust anchor, profiles, role policies and certificate issuance

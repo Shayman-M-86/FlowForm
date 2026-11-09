@@ -59,10 +59,10 @@ private bridge. It does not require guest IP forwarding.
 
 ## App egress through Squid
 
-Install a root-owned `/etc/flowform/allowed-domains.txt` on the proxy with one
-exact DNS name per line. Start with the service families below and substitute
-the approved region, account and tenant. The regional STS host is useful for
-checking workload identity if permitted.
+Squid uses the same allow-list as AWS, built into its image from
+[`allowed-domains.txt`](../../containers/images/squid/allowed-domains.txt).
+Each line is one exact DNS name. The list covers these service families for the
+approved region, account and tenant:
 
 - The configured Auth0 issuer and canonical Management API tenant.
 - `rolesanywhere.<region>.amazonaws.com`, `ssm.<region>.amazonaws.com`,
@@ -73,7 +73,6 @@ checking workload identity if permitted.
   HTTPS hostname for the region, typically
   `prod-<region>-starport-layer-bucket.s3.<region>.amazonaws.com`.
   [AWS ECR layer storage](https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html)
-- `sts.<region>.amazonaws.com` for the regional STS probe when enabled.
 
 The app uses Squid for host AWS CLI requests, backend HTTPS requests and Docker
 ECR pulls, including their S3 layer redirects. Proxy-host AWS, ECR,

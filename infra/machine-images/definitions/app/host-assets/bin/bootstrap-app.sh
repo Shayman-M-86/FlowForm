@@ -13,7 +13,8 @@ set -Eeuo pipefail
 #      the Docker daemon (HTTP(S)_PROXY -> Squid on the proxy box).
 #   2. Render /opt/flowform/backend.env from SSM /flowform/<scope>/backend/*.
 #   3. Materialise common Secrets Manager values into tmpfs secret files
-#      (0600), plus database passwords only for the rehearsal password strategy.
+#      (0600), plus database passwords for the password strategy (rehearsal
+#      and hybrid).
 #   4. Pull the backend image (with backoff), then docker compose up the stack.
 #      The pull retries so a not-yet-published image is a wait, not a failure:
 #      in prod the image is already in ECR (first attempt succeeds); in the
@@ -23,11 +24,12 @@ set -Eeuo pipefail
 # orchestration remains shared:
 #   aws       -> both databases must use IAM; no DB password is fetched/mounted.
 #   rehearsal -> both databases must use passwords from LocalStack db-secrets.
+#   hybrid    -> both databases must use passwords from AWS db-secrets.
 # Endpoint and Compose overrides remain transport/runtime seams, not implicit
 # environment detection.
 #
 # Required environment (from user-data / deploy caller):
-#   FLOWFORM_DEPLOYMENT_TARGET "aws" | "rehearsal"
+#   FLOWFORM_DEPLOYMENT_TARGET "aws" | "rehearsal" | "hybrid"
 #   FLOWFORM_SCOPE          security scope namespace, e.g. "nonprod" | "prod"
 #   PROXY_PRIVATE_IP        private IP of the proxy box running Squid :3128
 #   APP_PRIVATE_IP          this host's private IP (compose binds backend here)
@@ -365,9 +367,7 @@ write_secret_key() { # $1 = json blob  $2 = json key  $3 = out file
 
 materialise_secrets() {
   if [[ "${DRY_RUN}" == "1" ]]; then
-    if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" == hybrid ]]; then
-      log "DRY_RUN: would write two common app secret files to tmpfs; DB credentials come from local files"
-    elif [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
+    if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
       log "DRY_RUN: would mount tmpfs at ${SECRET_DIR} (0700) and write 4 secret files (0600):"
       log "    FLOWFORM_APP_SECRET_KEY, FLOWFORM_AUTH0_MGMT_SECRET, DATABASE_CORE_APP_PASSWORD, DATABASE_RESPONSE_APP_PASSWORD"
     else
@@ -387,7 +387,7 @@ materialise_secrets() {
 
   local app_json db_json=""
   app_json="$(fetch_secret_string app-secrets)"
-  if [[ "${DATABASE_AUTH_STRATEGY}" == "password" && "${FLOWFORM_DEPLOYMENT_TARGET}" != hybrid ]]; then
+  if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
     db_json="$(fetch_secret_string db-secrets)"
   fi
 
@@ -395,11 +395,6 @@ materialise_secrets() {
   umask 177
   write_secret_key "${app_json}" app_secret_key "${SECRET_DIR}/FLOWFORM_APP_SECRET_KEY.secret.txt"
   write_secret_key "${app_json}" auth0_mgmt_secret "${SECRET_DIR}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt"
-  if [[ "${FLOWFORM_DEPLOYMENT_TARGET}" == hybrid ]]; then
-    umask 022
-    log "materialised 2 common secret files under ${SECRET_DIR} (0600)"
-    return
-  fi
   if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
     write_secret_key "${db_json}" db_core_app_password \
       "${SECRET_DIR}/DATABASE_CORE_APP_PASSWORD.secret.txt"

@@ -69,7 +69,8 @@ grep -F 'write 4 secret files' <<<"${rehearsal_output}" >/dev/null
 grep -F 'DATABASE_CORE_APP_PASSWORD, DATABASE_RESPONSE_APP_PASSWORD' <<<"${rehearsal_output}" >/dev/null
 
 hybrid_output="$(run_valid_case hybrid password password password)"
-grep -F 'DB credentials come from local files' <<<"${hybrid_output}" >/dev/null
+grep -F 'write 4 secret files' <<<"${hybrid_output}" >/dev/null
+grep -F 'DATABASE_CORE_APP_PASSWORD, DATABASE_RESPONSE_APP_PASSWORD' <<<"${hybrid_output}" >/dev/null
 
 run_invalid_case hybrid iam iam
 run_invalid_case aws password password
@@ -182,10 +183,10 @@ run_materialise_case rehearsal password password
 [[ -f "${TEST_DIR}/materialise-rehearsal/secrets/DATABASE_RESPONSE_APP_PASSWORD.secret.txt" ]]
 
 run_materialise_case hybrid password password
-[[ "$(cat "${TEST_DIR}/materialise-hybrid/fetches")" == "app-secrets" ]]
+[[ "$(sort "${TEST_DIR}/materialise-hybrid/fetches")" == $'app-secrets\ndb-secrets' ]]
 [[ -f "${TEST_DIR}/materialise-hybrid/secrets/FLOWFORM_APP_SECRET_KEY.secret.txt" ]]
-[[ ! -s "${TEST_DIR}/materialise-hybrid/secrets/DATABASE_CORE_APP_PASSWORD.secret.txt" ]]
-[[ ! -s "${TEST_DIR}/materialise-hybrid/secrets/DATABASE_RESPONSE_APP_PASSWORD.secret.txt" ]]
+[[ "$(cat "${TEST_DIR}/materialise-hybrid/secrets/DATABASE_CORE_APP_PASSWORD.secret.txt")" == core ]]
+[[ "$(cat "${TEST_DIR}/materialise-hybrid/secrets/DATABASE_RESPONSE_APP_PASSWORD.secret.txt")" == response ]]
 
 (
   export FLOWFORM_DEPLOYMENT_TARGET=hybrid FLOWFORM_ENV=staging FLOWFORM_PLATFORM=proxmox

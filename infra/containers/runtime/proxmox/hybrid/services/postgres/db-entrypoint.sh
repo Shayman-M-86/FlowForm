@@ -11,10 +11,15 @@ runtime_dir=/run/flowform-db
 for file in server.crt server.key; do
   install -m 0600 -o postgres -g postgres "$source_dir/$file" "$runtime_dir/$file"
 done
+# The init SQL embeds role passwords in single-quoted literals. Require one line
+# of at least 16 printable characters without quotes or backslashes, which
+# covers the generated and seeded db-secrets values.
 for key in DATABASE_INIT_PASSWORD DATABASE_CORE_APP_PASSWORD DATABASE_RESPONSE_APP_PASSWORD; do
-  if ! grep -Eq '^[a-f0-9]{64}$' "$source_dir/$key.secret.txt" ||
-    [ "$(tr -d '\r\n' < "$source_dir/$key.secret.txt" | wc -c)" -ne 64 ]; then
-    echo "Invalid password file format: $key (expected 64 lowercase hex characters)" >&2
+  file="$source_dir/$key.secret.txt"
+  if [ "$(wc -l < "$file")" -gt 1 ] ||
+    ! LC_ALL=C grep -Eq '^[[:graph:]]{16,}$' "$file" ||
+    LC_ALL=C grep -q "['\\\\\"]" "$file"; then
+    echo "Invalid password file format: $key (expected one line of 16+ printable characters without quotes or backslashes)" >&2
     exit 1
   fi
   install -m 0600 -o postgres -g postgres "$source_dir/$key.secret.txt" "$runtime_dir/$key"

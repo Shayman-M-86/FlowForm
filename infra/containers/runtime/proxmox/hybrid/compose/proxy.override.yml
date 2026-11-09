@@ -11,13 +11,6 @@ services:
   squid:
     ports: !override
       - "${PROXY_PRIVATE_IP:?set the proxy VM IPv4 address}:3128:3128/tcp"
-    volumes:
-      - type: bind
-        source: /etc/flowform/allowed-domains.txt
-        target: /etc/squid/allowed-domains.txt
-        read_only: true
-        bind:
-          create_host_path: false
   alloy:
     ports: !override
       - "${PROXY_PRIVATE_IP}:3500:3500/tcp"
@@ -41,5 +34,7 @@ services:
         max-file: "5"
 
 secrets:
+  # Materialised by bootstrap-proxy.sh from Secrets Manager tunnel-secrets,
+  # alongside the Grafana token in the same tmpfs secret directory.
   tunnel_token:
-    file: /etc/flowform/tunnel/token
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/CLOUDFLARE_TUNNEL_TOKEN.secret.txt

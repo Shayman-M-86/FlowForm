@@ -146,6 +146,21 @@ class SecurityStack(Stack):
             keys=["grafana_cloud_token"],
         ).secret
 
+        # The hybrid proxy's cloudflared connector authenticates with one
+        # remotely managed Cloudflare Tunnel token. AWS ingress does not use
+        # it. Like the Grafana token, the generated value is a placeholder and
+        # the real token is seeded out of band.
+        self.tunnel_secret = AppMultiSecret(
+            self,
+            "TunnelSecrets",
+            namespace=scope_name,
+            removal_policy=scope_config.removal_policy,
+            secret_name_suffix="tunnel-secrets",
+            description="Cloudflare Tunnel token for the hybrid proxy connector",
+            encryption_key=self.kms_key,
+            keys=["cloudflare_tunnel_token"],
+        ).secret
+
         # Non-secret config, readable without Secrets Manager decrypt perms.
         ssm.StringParameter(
             self,
