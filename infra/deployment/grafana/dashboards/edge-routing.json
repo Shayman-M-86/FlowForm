@@ -1,0 +1,784 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1beta1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "flowform-edge-routing",
+    "annotations": {
+      "grafana.app/folder": "flowform"
+    }
+  },
+  "spec": {
+    "title": "FlowForm \u2013 API edge routing",
+    "description": "Where staging API requests entered Cloudflare, where they came from, and how they got back through the tunnel. Source: infra/deployment/grafana/build_edge_routing.py",
+    "tags": [
+      "flowform",
+      "cloudflare",
+      "staging"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "refresh": "",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "templating": {
+      "list": []
+    },
+    "panels": [
+      {
+        "type": "row",
+        "title": "Where requests entered Cloudflare",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "panels": [],
+        "id": 1
+      },
+      {
+        "type": "piechart",
+        "title": "Edge data centre",
+        "description": "Share of API requests by the Cloudflare data centre that received them. MEL/SYD/ADL are local; SIN, NRT or HKG mean the visitor's ISP routed them offshore (seen for Telstra over IPv4).",
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 1
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"edge_processing\" && name = \"cloudflare_request\" } | count_over_time() by (span.cloudflare.colo)",
+            "metricsQueryType": "instant",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "pieType": "donut",
+          "displayLabels": [
+            "name",
+            "percent"
+          ],
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": [
+              "value",
+              "percent"
+            ]
+          },
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        },
+        "transformations": [
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^\\{[^\"]*\"([^\"]*)\"\\}$",
+              "renamePattern": "$1"
+            }
+          }
+        ],
+        "id": 2
+      },
+      {
+        "type": "stat",
+        "title": "Offshore edge requests",
+        "description": "API requests received by a Cloudflare data centre outside Australia in the selected range. 0 is healthy; compare with the edge data centre chart for the share.",
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 6,
+          "y": 1
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"edge_processing\" && name = \"cloudflare_request\" && span.cloudflare.colo !~ \"MEL|SYD|ADL|PER|BNE|CBR|HBA|DRW\" } | count_over_time()",
+            "metricsQueryType": "instant",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "noValue": "0",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "textMode": "value",
+          "colorMode": "value",
+          "graphMode": "none"
+        },
+        "transformations": [],
+        "id": 3
+      },
+      {
+        "type": "timeseries",
+        "title": "Requests by edge data centre",
+        "description": "Request rate per Cloudflare data centre over time.",
+        "gridPos": {
+          "h": 8,
+          "w": 14,
+          "x": 10,
+          "y": 1
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"edge_processing\" && name = \"cloudflare_request\" } | rate() by (span.cloudflare.colo)",
+            "metricsQueryType": "range",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 70,
+              "stacking": {
+                "mode": "normal"
+              },
+              "lineWidth": 0
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "transformations": [
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^\\{[^\"]*\"([^\"]*)\"\\}$",
+              "renamePattern": "$1"
+            }
+          }
+        ],
+        "id": 4
+      },
+      {
+        "type": "row",
+        "title": "Where requests came from",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "panels": [],
+        "id": 5
+      },
+      {
+        "type": "piechart",
+        "title": "Client IP version",
+        "description": "Client IP version of API requests (from CF-Connecting-IP; the address itself is not recorded). Over IPv6, Telstra hands traffic to Cloudflare in Melbourne; over IPv4 it currently goes via Singapore/Asia. Recorded from backend release f02bec80+ onward.",
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 10
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"backend\" && span.cloudflare.colo != nil } | count_over_time() by (span.flowform.client.ip_version)",
+            "metricsQueryType": "instant",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "IPv6"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "green"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "IPv4"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "pieType": "donut",
+          "displayLabels": [
+            "name",
+            "percent"
+          ],
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": [
+              "value",
+              "percent"
+            ]
+          },
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        },
+        "transformations": [
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^\\{[^\"]*\"([^\"]*)\"\\}$",
+              "renamePattern": "IPv$1"
+            }
+          }
+        ],
+        "id": 6
+      },
+      {
+        "type": "bargauge",
+        "title": "Client region \u2192 edge (IP version)",
+        "description": "Backend requests by client region (Cloudflare geolocation), IP version and receiving edge, e.g. 'AU-VIC 4 SIN'. Recorded from backend release f02bec80+ onward; empty before.",
+        "gridPos": {
+          "h": 8,
+          "w": 18,
+          "x": 6,
+          "y": 10
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"backend\" && span.cloudflare.colo != nil } | count_over_time() by (span.geo.region.iso_code, span.flowform.client.ip_version, span.cloudflare.colo)",
+            "metricsQueryType": "instant",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "displayMode": "basic",
+          "orientation": "horizontal",
+          "showUnfilled": true,
+          "valueMode": "text",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        },
+        "transformations": [
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^\\{[^\"]*\"([^\"]*)\"[^\"]*\"([^\"]*)\"[^\"]*\"([^\"]*)\"\\}$",
+              "renamePattern": "$3 \u00b7 IPv$2 \u2192 $1"
+            }
+          }
+        ],
+        "id": 7
+      },
+      {
+        "type": "row",
+        "title": "How they got back: edge \u2192 tunnel \u2192 origin",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "panels": [],
+        "id": 8
+      },
+      {
+        "type": "bargauge",
+        "title": "Edge \u2192 origin round trip (p50)",
+        "description": "Median time from the receiving edge to the Proxmox origin and back, through the Cloudflare network and tunnel. Caddy is origin-only time; the difference is network transit. Offshore edges cross back to the Australian tunnel connectors.",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 19
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"origin_fetch\" && name = \"dynamic\" } | quantile_over_time(duration, .5) by (span.cloudflare.colo)",
+            "metricsQueryType": "instant",
+            "limit": 20
+          },
+          {
+            "refId": "B",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"caddy\" } | quantile_over_time(duration, .5)",
+            "metricsQueryType": "instant",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "min": 0,
+            "decimals": 3,
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 0.05
+                },
+                {
+                  "color": "red",
+                  "value": 0.2
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "displayMode": "gradient",
+          "orientation": "horizontal",
+          "valueMode": "color",
+          "showUnfilled": true,
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        },
+        "transformations": [
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^\\{p=([0-9.]+), [^\"]*\"([^\"]*)\"\\}$",
+              "renamePattern": "$2"
+            }
+          },
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^0\\.5$",
+              "renamePattern": "Caddy + backend (origin only)"
+            }
+          }
+        ],
+        "id": 9
+      },
+      {
+        "type": "table",
+        "title": "Tunnel connectors",
+        "description": "Cloudflare data centres the cloudflared connector registered with (latest first). Requests reach the origin through one of these, so an offshore edge must cross back to them.",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 19
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "grafanacloud-logs"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "loki",
+              "uid": "grafanacloud-logs"
+            },
+            "queryType": "range",
+            "editorMode": "code",
+            "expr": "{container=\"flowform-proxy-cloudflared-1\"} |= \"Registered tunnel connection\" | regexp \"connIndex=(?P<conn>[0-9]+) .*location=(?P<location>[a-z0-9]+) protocol=(?P<protocol>[a-z0-9]+)\" | line_format \"{{.location}}\""
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "displayName": "Time",
+              "desc": true
+            }
+          ]
+        },
+        "transformations": [
+          {
+            "id": "extractFields",
+            "options": {
+              "source": "labels"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "includeByName": {
+                "Time": true,
+                "conn": true,
+                "location": true,
+                "protocol": true
+              },
+              "indexByName": {
+                "Time": 0,
+                "location": 1,
+                "conn": 2,
+                "protocol": 3
+              },
+              "renameByName": {
+                "conn": "connection",
+                "location": "location"
+              }
+            }
+          }
+        ],
+        "id": 10
+      },
+      {
+        "type": "row",
+        "title": "Browser view (Studio)",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 27
+        },
+        "panels": [],
+        "id": 11
+      },
+      {
+        "type": "timeseries",
+        "title": "Browser API call duration by HTTP version",
+        "description": "Studio API calls as measured in the browser, p50 and p90, split by negotiated HTTP version (3 = QUIC, 2 = TCP). TCP calls are the ones likely to land offshore.",
+        "gridPos": {
+          "h": 8,
+          "w": 16,
+          "x": 0,
+          "y": 28
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"flowform-studio-browser\" && name =~ \"HTTP .*\" } | quantile_over_time(duration, .5, .9) by (span.network.protocol.version)",
+            "metricsQueryType": "range",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "transformations": [
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^\\{p=0\\.([0-9]), [^\"]*\"([^\"]*)\"\\}$",
+              "renamePattern": "HTTP/$2 p$10"
+            }
+          },
+          {
+            "id": "renameByRegex",
+            "options": {
+              "regex": "^0\\.([0-9])$",
+              "renamePattern": "unrecorded version p$10"
+            }
+          }
+        ],
+        "id": 12
+      },
+      {
+        "type": "stat",
+        "title": "Preflight / queue (avg)",
+        "description": "Average browser time between the connection being ready and the request being sent: the CORS preflight round trip plus queueing. Should fall towards 0 now preflights are cached for 2 h.",
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 16,
+          "y": 28
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"flowform-studio-browser\" && span.flowform.timing.preflight_or_queue_ms >= 0 } | avg_over_time(span.flowform.timing.preflight_or_queue_ms)",
+            "metricsQueryType": "instant",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "decimals": 1,
+            "noValue": "\u2013",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 20
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "textMode": "value",
+          "colorMode": "value",
+          "graphMode": "none"
+        },
+        "transformations": [],
+        "id": 13
+      },
+      {
+        "type": "stat",
+        "title": "New connection setup (avg)",
+        "description": "Average DNS + TCP/TLS (or QUIC) setup for calls that opened a new connection. Offshore (IPv4/TCP) connections cost several round trips here.",
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 20,
+          "y": 28
+        },
+        "datasource": {
+          "type": "tempo",
+          "uid": "grafanacloud-traces"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "tempo",
+              "uid": "grafanacloud-traces"
+            },
+            "queryType": "traceql",
+            "query": "{ resource.service.name = \"flowform-studio-browser\" && span.flowform.timing.connect_ms > 0 } | avg_over_time(span.flowform.timing.connect_ms)",
+            "metricsQueryType": "instant",
+            "limit": 20
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "decimals": 1,
+            "noValue": "\u2013",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 20
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ]
+          },
+          "textMode": "value",
+          "colorMode": "value",
+          "graphMode": "none"
+        },
+        "transformations": [],
+        "id": 14
+      }
+    ]
+  }
+}
