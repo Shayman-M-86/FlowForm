@@ -1,3 +1,8 @@
+/* This stylesheet ships as its own CSS chunk and can load before the app's
+   Tailwind entry. Declare the full layer order first so Tailwind's base reset
+   can never outrank the utilities layer, whatever the chunk order. */
+@layer theme, base, components, utilities;
+
 @reference "tailwindcss";
 @reference "@flowform/styles/tokens.css";
 @reference "@flowform/styles/components.css";
