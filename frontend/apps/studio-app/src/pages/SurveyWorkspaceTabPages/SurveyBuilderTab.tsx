@@ -4,7 +4,7 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { NodePage, type SurveyNode } from '@flowform/builder'
 import { Button, Modal, Spinner, Toast } from '@flowform/ui'
 import { useGenerateAiImport } from '@/api/hooks/nodes'
-import { useCreatePublicLink } from '@/api/hooks/links'
+import { useCreatePublicLink, usePublicLinks } from '@/api/hooks/links'
 import { useUpdateSurvey } from '@/api/hooks/surveys'
 import { PublishSuccessModal } from '@/components/PublishSuccessModal'
 import { StudioAiImportModal } from '@/components/StudioAiImportModal'
@@ -14,6 +14,7 @@ import {
   SurveyBuilderPublishedNoDraftPanel,
   SurveyBuilderVersionToolbar,
 } from '@/components/SurveyBuilderTabChrome'
+import { defaultLinkName } from '@/lib/surveyNames'
 import { useSurveyBuilderController } from './useSurveyBuilderController'
 
 export function SurveyBuilderTab() {
@@ -30,6 +31,11 @@ export function SurveyBuilderTab() {
   const [debugOpen, setDebugOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
+  // Existing links are only needed to number the general link's default name.
+  const { data: existingLinks = [] } = usePublicLinks(
+    publishOpen ? builder.projectId : null,
+    builder.surveyId > 0 ? builder.surveyId : null,
+  )
 
   function handleAiImport(imported: SurveyNode[]) {
     builder.setNodes(imported)
@@ -45,7 +51,7 @@ export function SurveyBuilderTab() {
       await updateSurvey.mutateAsync({ title: null, visibility: 'link_only', public_slug: null })
     }
     const result = await createLink.mutateAsync({
-      name: 'General link',
+      name: defaultLinkName('general_link', existingLinks),
       link_type: 'general',
       assignment_source: 'manual',
       assigned_participant_id: null,

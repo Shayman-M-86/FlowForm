@@ -6,14 +6,7 @@ import { Button, Input, LargeInput } from '@flowform/ui'
 import { useRenderDebug } from '@/debug/useRenderDebug'
 import { SurveyAccessModeSelector } from '@/components/SurveyAccess'
 import { SURVEY_ACCESS_MODE_IDS } from '@/lib/surveyAccessDesign'
-
-function toUrlSafeName(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+import { nextDefaultSurveyName, toUrlSafeName } from '@/lib/surveyNames'
 
 const createSurveySchema = z.object({
   title: z.string().min(1, 'Name is required').max(100),
@@ -30,9 +23,11 @@ export type CreateSurveyFields = z.infer<typeof createSurveySchema>
 
 interface CreateSurveyFormProps {
   onSubmit: (data: CreateSurveyFields) => void
+  /** Surveys already in the project, used to pick an unused default name. */
+  existingSurveys?: Array<{ title: string; public_slug?: string | null }>
 }
 
-export function CreateSurveyForm({ onSubmit }: CreateSurveyFormProps) {
+export function CreateSurveyForm({ onSubmit, existingSurveys = [] }: CreateSurveyFormProps) {
   useRenderDebug('CreateSurveyForm', { onSubmit })
   const [slugEdited, setSlugEdited] = useState(false)
   const {
@@ -45,7 +40,7 @@ export function CreateSurveyForm({ onSubmit }: CreateSurveyFormProps) {
   } = useForm<CreateSurveyFields>({
     resolver: zodResolver(createSurveySchema),
     mode: 'onTouched',
-    defaultValues: { accessMode: 'link_only' },
+    defaultValues: { title: nextDefaultSurveyName(existingSurveys), accessMode: 'link_only' },
   })
 
   const title = watch('title')

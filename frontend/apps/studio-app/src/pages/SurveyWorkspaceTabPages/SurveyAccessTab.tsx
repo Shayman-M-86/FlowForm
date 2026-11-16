@@ -26,6 +26,7 @@ import {
   QrCode,
 } from 'lucide-react'
 import { SurveyLinkShare } from '@/components/SurveyLinkShare'
+import { defaultLinkName } from '@/lib/surveyNames'
 import { useProject } from '@/api/hooks/projects'
 import { useProjectMembers } from '@/api/hooks/members'
 import { useProjectRoles } from '@/api/hooks/roles'
@@ -103,8 +104,8 @@ function isCreatableLinkType(entry: SurveyAccessEntry): entry is CreatableLinkTy
   return (CREATABLE_LINK_TYPES as readonly SurveyAccessEntry[]).includes(entry)
 }
 
-function createDefaultLinkForm(type: CreatableLinkType): CreateLinkFormState {
-  return { type, name: '', assignedParticipantId: null, expiresAt: '' }
+function createDefaultLinkForm(type: CreatableLinkType, existingLinks: SurveyAccessLinkOut[]): CreateLinkFormState {
+  return { type, name: defaultLinkName(type, existingLinks), assignedParticipantId: null, expiresAt: '' }
 }
 
 function AccessLinkTypeSelector({
@@ -693,7 +694,7 @@ function LinksSection({
   const [createLinkOpen, setCreateLinkOpen] = useState(false)
   const [createdTokenUrl, setCreatedTokenUrl] = useState<string | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
-  const [form, setForm] = useState<CreateLinkFormState>(() => createDefaultLinkForm(firstCreateLinkType))
+  const [form, setForm] = useState<CreateLinkFormState>(() => createDefaultLinkForm(firstCreateLinkType, []))
 
   // ── Participant picker state ──────────────────────────────────────────────
   const [participantSearch, setParticipantSearch] = useState('')
@@ -712,7 +713,7 @@ function LinksSection({
     const type = allowedCreateLinkTypes[0]
     if (!type) return
     setLinkError(null)
-    setForm(createDefaultLinkForm(type))
+    setForm(createDefaultLinkForm(type, links))
     setParticipantSearch('')
     setShowNewParticipant(false)
     setNewParticipantEmail('')
@@ -873,6 +874,8 @@ function LinksSection({
               setForm((current) => ({
                 ...current,
                 type: nextType,
+                // Follow the type while the name is still its untouched default.
+                name: current.name === defaultLinkName(current.type, links) ? defaultLinkName(nextType, links) : current.name,
                 assignedParticipantId: nextType === 'general_link' ? null : current.assignedParticipantId,
               }))
             }}

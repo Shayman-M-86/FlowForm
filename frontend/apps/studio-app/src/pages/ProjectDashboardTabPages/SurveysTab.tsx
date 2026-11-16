@@ -121,7 +121,7 @@ export function SurveysTab({ projectSlug }: SurveysTabProps) {
       )}
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="New survey">
-        <CreateSurveyForm onSubmit={(data) => void handleCreateSurvey(data)} />
+        <CreateSurveyForm existingSurveys={surveyList} onSubmit={(data) => void handleCreateSurvey(data)} />
       </Modal>
     </section>
   )
