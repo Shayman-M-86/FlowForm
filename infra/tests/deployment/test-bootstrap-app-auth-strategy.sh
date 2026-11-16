@@ -174,6 +174,9 @@ run_materialise_case aws iam iam
 [[ "$(cat "${TEST_DIR}/materialise-aws/fetches")" == "app-secrets" ]]
 [[ -f "${TEST_DIR}/materialise-aws/secrets/FLOWFORM_APP_SECRET_KEY.secret.txt" ]]
 [[ -f "${TEST_DIR}/materialise-aws/secrets/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt" ]]
+# openai_api_key is optional: absent from the fixture, so the file exists but is empty.
+[[ -f "${TEST_DIR}/materialise-aws/secrets/FLOWFORM_OPENAI_API_KEY.secret.txt" ]]
+[[ ! -s "${TEST_DIR}/materialise-aws/secrets/FLOWFORM_OPENAI_API_KEY.secret.txt" ]]
 [[ ! -e "${TEST_DIR}/materialise-aws/secrets/DATABASE_CORE_APP_PASSWORD.secret.txt" ]]
 [[ ! -e "${TEST_DIR}/materialise-aws/secrets/DATABASE_RESPONSE_APP_PASSWORD.secret.txt" ]]
 

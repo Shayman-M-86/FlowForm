@@ -41,7 +41,7 @@ UniFi never sees it.
 | Proxy and app | Site infrastructure | DNS to the designated internal resolver, with DHCP only if used. |
 | Proxy VM | `time.cloudflare.com` (162.159.200.1, 162.159.200.123) | UDP `123`. Chrony on the proxy syncs here and serves time only to the app. |
 | App VLAN address | Proxy VM | UDP `123` for time from the proxy's chrony. The proxy's guest firewall admits only the app. |
-| Proxy VM | Approved external HTTPS endpoints | TCP 443 for AWS, Grafana Cloud and registry access. Include the approved domains served by Squid below. |
+| Proxy VM | Approved external HTTPS endpoints | TCP 443 for AWS, Grafana Cloud and registry access, plus every domain in the Squid allow-list below (FQDN match). Keep this policy in sync with that list. |
 | Proxy VM | Cloudflare Tunnel endpoints | TCP/UDP 7844 for HTTP/2 or QUIC. [Cloudflare firewall requirements](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/tunnel-with-firewall/) |
 
 Keep the database bridge limited to the two guests. The app VM's firewall must
@@ -63,6 +63,12 @@ private bridge. It does not require guest IP forwarding.
 
 Squid uses the same allow-list as AWS, built into its image from
 [`allowed-domains.txt`](../../containers/images/squid/allowed-domains.txt).
+
+> **Two places to update.** Squid filters the app's requests, but the UniFi
+> gateway then filters the proxy VM's own WAN egress. Whenever a domain is added
+> to `allowed-domains.txt`, also add it to the UniFi Ingress-zone policy that
+> allows the proxy VM out on TCP 443, using an FQDN destination rather than IP
+> addresses. Otherwise Squid admits the request and UniFi drops it.
 Each line is one exact DNS name. The list covers these service families for the
 approved region, account and tenant:
 
@@ -75,6 +81,7 @@ approved region, account and tenant:
   HTTPS hostname for the region, typically
   `prod-<region>-starport-layer-bucket.s3.<region>.amazonaws.com`.
   [AWS ECR layer storage](https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html)
+- `api.openai.com` for the backend's AI survey import.
 
 The app uses Squid for host AWS CLI requests, backend HTTPS requests and Docker
 ECR pulls, including their S3 layer redirects. Proxy-host AWS, ECR,

@@ -23,7 +23,12 @@ each value the same way it would from a single-value secret.
   and response databases). There's no `auth0_client_secret` — the
   user-facing Auth0 application (`FLOWFORM_AUTH0_CLIENT_ID`) is a
   public/PKCE client with no client secret; only the Management API client
-  is confidential.
+  is confidential. It may also hold an optional `openai_api_key` for AI
+  survey import. That key is seeded only (it is deliberately not in CDK's
+  key list: changing that list changes the generated-secret template, which
+  regenerates the whole secret). Bootstrap writes it to
+  `FLOWFORM_OPENAI_API_KEY` and leaves the file empty when the key is absent,
+  which keeps AI import disabled.
 - `db-secrets` — `db_core_app_password` / `db_response_app_password`,
   Postgres app-user passwords
 
@@ -31,7 +36,12 @@ CDK creates each secret with **generated placeholder values** for every
 key. The real values are set out-of-band (AWS Console, CLI
 `put-secret-value`, or a rotation Lambda later) — secret values never
 appear in code, in a synthesized CloudFormation template, or in git. See
-`infra/deployment/aws/scripts/seed-secrets.sh` for the seeding workflow.
+`infra/deployment/aws/scripts/seed-secrets.sh` for the seeding workflow. It
+compares every key with the current AWS value before writing: values left
+blank in `.env.<env>` can reuse what AWS already holds, adding a key asks for
+confirmation, replacing a different existing value requires typing the key
+name, and keys it does not manage are preserved. Each write is read back and
+verified. Without `--send` it only prints the plan (key names, never values).
 
 ## Route53 + SES (imported, not created)
 
@@ -94,7 +104,7 @@ generated, never uploaded:
 
 | Value | Source | Why |
 |---|---|---|
-| `app_secret_key`, `auth0_mgmt_secret` | `flowform/nonprod/app-secrets` (Secrets Manager) | must persist / external value |
+| `app_secret_key`, `auth0_mgmt_secret`, optional `openai_api_key` | `flowform/nonprod/app-secrets` (Secrets Manager) | must persist / external value |
 | 4 local-Postgres passwords | `scripts/secrets/generate-secrets.sh` → gitignored `infra/env/dev/secrets/` | dev-only throwaways; must survive reboots alongside the Postgres volume they initialised |
 
 `scripts/secrets/fetch-dev-secrets.sh` assembles both into one place:

@@ -7,7 +7,8 @@ set -euo pipefail
 #   1. Shared/persistent values -> AWS Secrets Manager (fetched via your
 #      `aws login` session). Only what genuinely must persist or cannot
 #      be generated lives there:
-#        flowform/nonprod/app-secrets: app_secret_key, auth0_mgmt_secret
+#        flowform/nonprod/app-secrets: app_secret_key, auth0_mgmt_secret,
+#          and optional openai_api_key (AI import is disabled without it)
 #      (dev and staging share the "nonprod" security scope — one KMS key
 #      and one secret set for both; see infra/deployment/aws/cdk security_stack.py)
 #   2. Machine-local throwaways -> generated on this machine
@@ -124,16 +125,11 @@ print(value, end="")
 write_key "${APP_JSON}" app_secret_key    FLOWFORM_APP_SECRET_KEY
 write_key "${APP_JSON}" auth0_mgmt_secret FLOWFORM_AUTH0_MGMT_SECRET
 
-# Optional local-only OpenAI key. The runtime directory is recreated on every
-# start, so copy it from the persistent, gitignored dev secrets directory.
-OPENAI_KEY_SOURCE="${DOCKER_DIR}/secrets/FLOWFORM_OPENAI_API_KEY.${ENV_NAME}.secret.txt"
-if [[ -f "${OPENAI_KEY_SOURCE}" ]]; then
-  [[ -s "${OPENAI_KEY_SOURCE}" ]] || {
-    echo "error: ${OPENAI_KEY_SOURCE} is empty" >&2
-    exit 1
-  }
-  install -m 600 "${OPENAI_KEY_SOURCE}" "${OUT_DIR}/FLOWFORM_OPENAI_API_KEY"
-fi
+# Optional: an empty file leaves AI import disabled (the backend returns 503).
+python3 -c '
+import json, sys
+print(json.loads(sys.argv[1]).get("openai_api_key") or "", end="")
+' "${APP_JSON}" > "${OUT_DIR}/FLOWFORM_OPENAI_API_KEY"
 
 # Keep suffixed sources for docker-compose.ec2.local.yml, which still uses
 # Compose's per-file secret declarations. docker-compose.dev.yml consumes the
