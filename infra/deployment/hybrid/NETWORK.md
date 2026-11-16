@@ -3,11 +3,12 @@
 This is a manual operator guide for the Cloud Gateway Fiber, UniFi switch and
 two-port Proxmox server. Confirm VLANs, subnets, physical interface names and
 console recovery before changing the management connection. The addresses below
-are proposed values.
+are proposed values. The live gateway configuration is recorded in
+[`unifi-policy.md`](unifi-policy.md).
 
 | Zone | VLAN / bridge | Guests and addresses |
 | --- | --- | --- |
-| Trusted administration | VLAN 10 / `vmbr0` | Proxmox `10.10.10.10/24`, gateway `10.10.10.1` |
+| Trusted administration | VLAN 10 / `vmbr0` | Proxmox on `10.10.20.0/24`, gateway `10.10.20.1` |
 | Ingress | VLAN 30 / `vmbr1` | Proxy `10.30.0.10/24`, gateway `10.30.0.1` |
 | Application | VLAN 40 / `vmbr1` | App `10.40.0.10/24`, gateway `10.40.0.1` |
 | Database | Internal-only `vmbr2` | App `172.20.50.10/24`, PostgreSQL `172.20.50.20/24` |
@@ -68,7 +69,8 @@ Squid uses the same allow-list as AWS, built into its image from
 > gateway then filters the proxy VM's own WAN egress. Whenever a domain is added
 > to `allowed-domains.txt`, also add it to the UniFi Ingress-zone policy that
 > allows the proxy VM out on TCP 443, using an FQDN destination rather than IP
-> addresses. Otherwise Squid admits the request and UniFi drops it.
+> addresses. Otherwise Squid admits the request and UniFi drops it. Record the
+> change in [`unifi-policy.md`](unifi-policy.md).
 Each line is one exact DNS name. The list covers these service families for the
 approved region, account and tenant:
 

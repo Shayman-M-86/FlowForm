@@ -9,7 +9,8 @@ below allow one installation per cluster.
 
 ## Prerequisites
 
-- Apply the [network guide](NETWORK.md) as a separate operator change. Reserve
+- Apply the [network guide](NETWORK.md) as a separate operator change, and keep
+  the [UniFi policy register](unifi-policy.md) in step with the gateway. Reserve
   template ID `9100` and guest IDs `310` (proxy), `320` (app) and `330` (DB).
 - Prepare the maintained Amazon Linux 2023 Proxmox source template and a
   temporary, restricted build network. Reuse the [machine-image tooling](../../machine-images/tooling/README.md)
