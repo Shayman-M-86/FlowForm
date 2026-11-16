@@ -43,9 +43,11 @@ services:
       NO_PROXY: "localhost,127.0.0.1,alloy,169.254.169.254,.rds.amazonaws.com"
       FLOWFORM_APP_SECRET_KEY_FILE: /run/secrets/FLOWFORM_APP_SECRET_KEY
       FLOWFORM_AUTH0_MGMT_SECRET_FILE: /run/secrets/FLOWFORM_AUTH0_MGMT_SECRET
+      FLOWFORM_OPENAI_API_KEY_FILE: /run/secrets/FLOWFORM_OPENAI_API_KEY
     secrets:
       - FLOWFORM_APP_SECRET_KEY
       - FLOWFORM_AUTH0_MGMT_SECRET
+      - FLOWFORM_OPENAI_API_KEY
     read_only: true
     tmpfs:
       - /tmp
@@ -114,3 +116,6 @@ secrets:
     file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_APP_SECRET_KEY.secret.txt
   FLOWFORM_AUTH0_MGMT_SECRET:
     file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt
+  # Optional (AI import); bootstrap writes it empty when openai_api_key is unset.
+  FLOWFORM_OPENAI_API_KEY:
+    file: ${FLOWFORM_SECRET_DIR:-/run/flowform/secrets}/FLOWFORM_OPENAI_API_KEY.secret.txt

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Badge, Button, Card, DropdownMenu } from '@flowform/ui'
 import { Archive, ChevronDown, Copy, Eye, Rocket, RotateCcw, Sparkles } from 'lucide-react'
 
@@ -52,7 +52,7 @@ function VersionSelector({
         >
           <StatusBadge status={version.status} />
           <span className="w-6 pl-1 text-start font-semibold text-foreground">v{version.version_number}</span>
-          <span className="mr-auto flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="mr-auto hidden items-center gap-1 text-xs text-muted-foreground min-[740px]:flex">
             {formatVersionDate(version.created_at)}
           </span>
         </Button>
@@ -76,7 +76,7 @@ function VersionSelector({
         {selectedVersion && <StatusBadge status={selectedVersion.status} />}
         <span className="w-6 pl-1 text-start font-semibold">{label}</span>
         {selectedVersion && (
-          <span className="hidden text-xs text-muted-foreground sm:inline">
+          <span className="hidden text-xs text-muted-foreground min-[740px]:inline">
             {formatVersionDate(selectedVersion.created_at)}
           </span>
         )}
@@ -141,20 +141,28 @@ export function SurveyBuilderVersionToolbar({
   const moreRef = useRef<HTMLButtonElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
 
+  useEffect(() => {
+    const closeOnWideScreen = () => {
+      if (window.matchMedia('(min-width: 1280px)').matches) setMoreOpen(false)
+    }
+    window.addEventListener('resize', closeOnWideScreen)
+    return () => window.removeEventListener('resize', closeOnWideScreen)
+  }, [])
+
   const moreActions = [
-    ...(canEdit && selectedVersion?.status === 'draft' ? [{
-      key: 'ai-import',
+    ...(canEdit ? [{
+      key: 'new-draft',
       closeOnSelect: true,
       content: (
-        <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2">
-          <Sparkles size={14} strokeWidth={2} aria-hidden="true" />
-          AI import
+        <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2" disabled={isCreating}>
+          {isCreating ? 'Creating...' : 'New draft'}
         </Button>
       ),
-      onSelect: onAiImport,
+      onSelect: onCreateDraft,
     }] : []),
-    {
+    ...(selectedVersion ? [{
       key: 'duplicate',
+      closeOnSelect: true,
       content: (
         <Button type="button" variant="ghost" size="sm" className="w-full justify-start gap-2" disabled={isCopying}>
           <Copy size={14} strokeWidth={2} aria-hidden="true" />
@@ -162,7 +170,7 @@ export function SurveyBuilderVersionToolbar({
         </Button>
       ),
       onSelect: onCopyToDraft,
-    },
+    }] : []),
     ...(canArchive && selectedVersion?.status === 'published' ? [{
       key: 'archive',
       content: (
@@ -176,16 +184,11 @@ export function SurveyBuilderVersionToolbar({
   ]
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-6 py-3 md:px-16">
-      <div className="flex items-center gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-border bg-card px-6 py-3 md:px-16 xl:grid-cols-[auto_minmax(0,1fr)_auto_auto]">
+      <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2">
         <VersionSelector versions={versions} selectedVersion={selectedVersion} onSelectVersion={onSelectVersion} />
-        {canEdit && (
-          <Button variant="secondary" size="sm" icon="plus" disabled={isCreating} onClick={onCreateDraft}>
-            {isCreating ? 'Creating...' : 'New draft'}
-          </Button>
-        )}
-        {selectedVersion && (
-          <>
+        {moreActions.length > 0 && (
+          <div className="xl:hidden">
             <Button
               ref={moreRef}
               type="button"
@@ -207,7 +210,28 @@ export function SurveyBuilderVersionToolbar({
               width="11rem"
               sections={[{ actions: moreActions }]}
             />
-          </>
+          </div>
+        )}
+        {canEdit && (
+          <div className="hidden xl:flex">
+            <Button variant="secondary" size="sm" icon="plus" disabled={isCreating} onClick={onCreateDraft}>
+              {isCreating ? 'Creating...' : 'New draft'}
+            </Button>
+          </div>
+        )}
+        {selectedVersion && (
+          <div className="hidden items-center gap-2 xl:flex">
+            <Button type="button" variant="secondary" size="sm" disabled={isCopying} onClick={onCopyToDraft}>
+              <Copy size={14} strokeWidth={2} aria-hidden="true" />
+              {isCopying ? 'Copying...' : 'Duplicate'}
+            </Button>
+            {canArchive && selectedVersion.status === 'published' && (
+              <Button type="button" variant="secondary" size="sm" disabled={isArchiving} onClick={onArchive}>
+                <Archive size={14} strokeWidth={2} aria-hidden="true" />
+                {isArchiving ? 'Archiving...' : 'Archive version'}
+              </Button>
+            )}
+          </div>
         )}
         {selectedVersion?.status === 'published' && (
           <span className="hidden text-xs italic text-muted-foreground sm:inline">
@@ -216,25 +240,40 @@ export function SurveyBuilderVersionToolbar({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        {selectedVersion?.status === 'draft' && canEdit && (
-          <Button variant="secondary" size="sm" disabled={!isDirty || isSaving} onClick={onSave}>
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
-        )}
-        {selectedVersion?.status === 'draft' && (
+      <div className="col-start-1 row-start-2 justify-self-start xl:col-start-2 xl:row-start-1">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={!canEdit || selectedVersion?.status !== 'draft'}
+          onClick={onAiImport}
+        >
+          <Sparkles size={14} strokeWidth={2} aria-hidden="true" />
+          AI import
+        </Button>
+      </div>
+
+      {selectedVersion?.status === 'draft' && (
+        <div className={`col-start-2 flex items-center justify-self-end gap-2 xl:col-start-3 xl:row-start-1 ${canPublish ? 'row-start-2' : 'row-start-1'}`}>
+          {canEdit && (
+            <Button variant="secondary" size="sm" disabled={!isDirty || isSaving} onClick={onSave}>
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={onPreview}>
             <Eye size={14} strokeWidth={2} aria-hidden="true" />
             Preview
           </Button>
-        )}
-        {selectedVersion?.status === 'draft' && canPublish && (
+        </div>
+      )}
+      {selectedVersion?.status === 'draft' && canPublish && (
+        <div className="col-start-2 row-start-1 justify-self-end xl:col-start-4">
           <Button variant="primary" size="sm" disabled={isPublishing || isSaving} onClick={onPublish}>
             <Rocket size={14} strokeWidth={2} aria-hidden="true" />
             {isPublishing ? 'Publishing...' : 'Publish'}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

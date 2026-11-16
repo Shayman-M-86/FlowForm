@@ -8,6 +8,7 @@ and validate decrypted raw values into canonical answer models when possible.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any, cast, get_args
 from uuid import UUID
 
@@ -24,12 +25,30 @@ logger = logging.getLogger(__name__)
 
 _QUESTION_FAMILIES: frozenset[str] = frozenset(get_args(QuestionFamily))
 
-QuestionMetaMap = dict[UUID, tuple[str | None, AnswerFamily | None]]
+@dataclass(frozen=True, slots=True)
+class QuestionMeta:
+    """Version-bound question details used to present a response."""
+
+    key: str | None
+    family: AnswerFamily | None
+    content: dict[str, Any] | None
+    sort_key: int | None
+
+
+QuestionMetaMap = dict[UUID, QuestionMeta]
 
 
 def build_question_meta_map(question_nodes: list[SurveyQuestion]) -> QuestionMetaMap:
-    """Map each question node id to its question key and answer family."""
-    return {q.id: (q.question_key, answer_family_from_schema(q.question_schema)) for q in question_nodes}
+    """Map each question node id to details from its response's survey version."""
+    return {
+        q.id: QuestionMeta(
+            key=q.question_key,
+            family=answer_family_from_schema(q.question_schema),
+            content=q.question_schema if isinstance(q.question_schema, dict) else None,
+            sort_key=q.sort_key,
+        )
+        for q in question_nodes
+    }
 
 
 def answer_family_from_schema(question_schema: object) -> AnswerFamily | None:

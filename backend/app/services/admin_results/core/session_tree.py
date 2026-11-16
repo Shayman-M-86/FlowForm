@@ -139,7 +139,9 @@ def build_answer_slot_result(
     """Build one answer-slot result, resolving its decrypted value when present."""
     has_encrypted_answer = bytes(locator) in found
     decrypted_payload = decrypted_by_locator.get(bytes(locator))
-    question_key, answer_family = question_meta_map.get(slot.question_node_id, (slot.question_key, None))
+    question_meta = question_meta_map.get(slot.question_node_id)
+    question_key = question_meta.key if question_meta is not None else slot.question_key
+    answer_family = question_meta.family if question_meta is not None else None
 
     answer_state: SubmissionAnswerState | None = None
     answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
@@ -160,4 +162,6 @@ def build_answer_slot_result(
         decrypted=decrypted_payload is not None,
         answer_state=answer_state,
         answer_value=answer_value,
+        question_content=question_meta.content if question_meta is not None else None,
+        question_sort_key=question_meta.sort_key if question_meta is not None else None,
     )

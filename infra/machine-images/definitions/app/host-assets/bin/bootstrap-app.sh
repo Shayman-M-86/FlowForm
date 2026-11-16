@@ -332,6 +332,7 @@ validate_database_auth_strategy() {
 # secret file name  <-  (secret id suffix, json key)
 #   FLOWFORM_APP_SECRET_KEY        <- app-secrets / app_secret_key
 #   FLOWFORM_AUTH0_MGMT_SECRET     <- app-secrets / auth0_mgmt_secret
+#   FLOWFORM_OPENAI_API_KEY        <- app-secrets / openai_api_key (optional)
 #   DATABASE_CORE_APP_PASSWORD     <- db-secrets  / db_core_app_password
 #   DATABASE_RESPONSE_APP_PASSWORD <- db-secrets  / db_response_app_password
 fetch_secret_string() { # $1 = secret id suffix (e.g. app-secrets)
@@ -365,6 +366,13 @@ write_secret_key() { # $1 = json blob  $2 = json key  $3 = out file
   printf '%s' "$1" | extract_key "$2" > "$3"
 }
 
+# Optional keys write an empty file when absent: Compose requires every declared
+# secret file to exist, and the backend treats an empty value as "not configured".
+write_optional_secret_key() { # $1 = json blob  $2 = json key  $3 = out file
+  printf '%s' "$1" | jq -j --arg k "$2" '.[$k] // ""' > "$3" \
+    || die "secret JSON could not be parsed while reading optional key: $2"
+}
+
 materialise_secrets() {
   if [[ "${DRY_RUN}" == "1" ]]; then
     if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
@@ -374,6 +382,7 @@ materialise_secrets() {
       log "DRY_RUN: would mount tmpfs at ${SECRET_DIR} (0700), write 2 common secret files (0600), and remove stale DB password files"
       log "    FLOWFORM_APP_SECRET_KEY, FLOWFORM_AUTH0_MGMT_SECRET"
     fi
+    log "DRY_RUN: would write optional FLOWFORM_OPENAI_API_KEY (empty when app-secrets has no openai_api_key)"
     return
   fi
 
@@ -395,6 +404,7 @@ materialise_secrets() {
   umask 177
   write_secret_key "${app_json}" app_secret_key "${SECRET_DIR}/FLOWFORM_APP_SECRET_KEY.secret.txt"
   write_secret_key "${app_json}" auth0_mgmt_secret "${SECRET_DIR}/FLOWFORM_AUTH0_MGMT_SECRET.secret.txt"
+  write_optional_secret_key "${app_json}" openai_api_key "${SECRET_DIR}/FLOWFORM_OPENAI_API_KEY.secret.txt"
   if [[ "${DATABASE_AUTH_STRATEGY}" == "password" ]]; then
     write_secret_key "${db_json}" db_core_app_password \
       "${SECRET_DIR}/DATABASE_CORE_APP_PASSWORD.secret.txt"

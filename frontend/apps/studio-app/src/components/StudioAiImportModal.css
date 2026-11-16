@@ -1,0 +1,126 @@
+/* Generating state for the Studio AI import modal. Colours derive from design
+   tokens; the violet stop is mixed from primary and destructive. */
+
+@property --ai-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.ai-gen {
+  --ai-spectrum:
+    var(--primary-saturated),
+    color-mix(in oklch, var(--primary-saturated) 55%, var(--destructive)),
+    var(--warning),
+    var(--success),
+    var(--accent),
+    var(--primary-saturated);
+}
+
+@keyframes ai-spin { to { --ai-angle: 360deg; } }
+@keyframes ai-pan { to { background-position: 200% 50%; } }
+@keyframes ai-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+@keyframes ai-pulse { 50% { transform: scale(1.18); opacity: 0.75; } }
+@keyframes ai-fade-in { from { opacity: 0; transform: translateY(3px); } }
+
+/* The prompt box's border and glow cycle through the spectrum while generating. */
+@keyframes ai-glow {
+  0%, 100% { --ai-glow: var(--primary-saturated); }
+  20% { --ai-glow: color-mix(in oklch, var(--primary-saturated) 55%, var(--destructive)); }
+  40% { --ai-glow: var(--warning); }
+  60% { --ai-glow: var(--success); }
+  80% { --ai-glow: var(--accent); }
+}
+
+@property --ai-glow {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+.ai-gen-shell {
+  border-color: var(--ai-glow);
+  box-shadow:
+    0 0 0 1px var(--ai-glow),
+    0 0 20px color-mix(in oklch, var(--ai-glow) 45%, transparent);
+  animation: ai-glow 4s linear infinite;
+}
+
+/* Spinning spectrum ring with a pulsing icon at its centre. */
+.ai-gen-orb {
+  position: relative;
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+  isolation: isolate;
+}
+
+.ai-gen-orb::before,
+.ai-gen-orb::after {
+  content: '';
+  position: absolute;
+  border-radius: inherit;
+}
+
+.ai-gen-orb::before {
+  inset: 0;
+  z-index: -2;
+  background: conic-gradient(from var(--ai-angle), var(--ai-spectrum));
+  box-shadow: 0 0 22px color-mix(in oklch, var(--primary-saturated) 45%, transparent);
+  animation: ai-spin 2.4s linear infinite;
+}
+
+.ai-gen-orb::after {
+  inset: 4px;
+  z-index: -1;
+  background: var(--card);
+}
+
+.ai-gen-orb__icon {
+  color: var(--primary-saturated);
+  animation: ai-pulse 1.6s ease-in-out infinite;
+}
+
+.ai-gen-title {
+  background: linear-gradient(90deg, var(--ai-spectrum));
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: ai-pan 4s linear infinite;
+}
+
+.ai-gen-status {
+  animation: ai-fade-in 300ms ease-out both;
+}
+
+/* Placeholder rows that shimmer where the generated questions will appear. */
+.ai-gen-line {
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    color-mix(in oklch, var(--primary-saturated) 35%, var(--muted)) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-shimmer 1.6s ease-in-out infinite;
+}
+
+.ai-gen-line:nth-child(2) { animation-delay: 120ms; }
+.ai-gen-line:nth-child(3) { animation-delay: 240ms; }
+.ai-gen-line:nth-child(4) { animation-delay: 360ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-gen *,
+  .ai-gen *::before,
+  .ai-gen *::after {
+    animation: none;
+  }
+
+  .ai-gen-shell { --ai-glow: var(--primary-saturated); }
+}

@@ -5,10 +5,34 @@ import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
 export type NodeOut = components['schemas']['NodeResponses']
+export type AiImportPreview = components['schemas']['AIImportResponse']
 
 export const nodeKeys = {
   list: (projectId: number, surveyId: number, versionNumber: number) =>
     ['nodes', 'project', projectId, 'survey', surveyId, 'version', versionNumber] as const,
+}
+
+export function useGenerateAiImport(
+  projectId: number | null,
+  surveyId: number | null,
+  versionNumber: number | null,
+) {
+  return useMutation({
+    mutationFn: async (prompt: string): Promise<AiImportPreview> => {
+      if (projectId == null || surveyId == null || versionNumber == null) {
+        throw new Error('Select an editable survey draft first.')
+      }
+      const { data, error } = await apiClient.POST(
+        '/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/ai-import',
+        {
+          params: { path: { project_id: projectId, survey_id: surveyId, version_number: versionNumber } },
+          body: { prompt },
+        },
+      )
+      if (error) throw new Error(error.message || 'Could not generate a survey draft.')
+      return data
+    },
+  })
 }
 
 export function useSurveyNodes(

@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.config import OpenAISettings
 from app.db.error_handling import commit_with_err_handle
 from app.domain import version_rules
 from app.domain.errors import (
@@ -14,6 +15,7 @@ from app.schema.api.requests.content import (
     CreateScoringRuleRequest,
     UpdateScoringRuleRequest,
 )
+from app.schema.api.requests.content.ai_import import AIImportResponse
 from app.schema.api.requests.content.node import (
     CreateQuestionNodeRequest,
     CreateRuleNodeRequest,
@@ -22,9 +24,11 @@ from app.schema.api.requests.content.node import (
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
+from app.services.openai import OpenAIService
 from app.services.surveys import SurveyService
 
 _survey_service = SurveyService()
+_openai_service = OpenAIService()
 
 
 class ContentService:
@@ -32,6 +36,21 @@ class ContentService:
 
     def _get_version(self, db: Session, project_id: int, survey_id: int, version_number: int) -> SurveyVersion:
         return _survey_service._get_version(db, project_id, survey_id, version_number)
+
+    def generate_ai_import(
+        self,
+        db: Session,
+        project_id: int,
+        survey_id: int,
+        version_number: int,
+        prompt: str,
+        settings: OpenAISettings,
+        actor: User,
+    ) -> AIImportResponse:
+        """Generate a preview only for an editable survey version."""
+        version = self._get_version(db, project_id, survey_id, version_number)
+        version_rules.ensure_is_editable(version=version)
+        return _openai_service.generate(prompt, settings, user_key=str(actor.id))
 
     # ── Nodes (questions + rules) ──────────────────────────────────────────────
 

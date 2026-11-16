@@ -5,15 +5,40 @@ from flask import g, request
 from app.api.utils.serialization import serialize
 from app.api.utils.validation import parse
 from app.api.v1.studio.projects import content_svc, studio_projects_bp
+from app.core.config import current_settings
 from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.content import CreateNodeRequest, UpdateNodeRequest
+from app.schema.api.requests.content.ai_import import AIImportRequest, AIImportResponse
 from app.schema.api.responses.content import NodeResponses
 from app.services.access.access_service import require_survey_permission
 
 _BASE = "/<bint:project_id>/surveys/<bint:survey_id>/versions/<bint:version_number>/nodes"
+
+
+@openapi_route(
+    summary="Generate survey builder node preview with AI",
+    request_model=AIImportRequest,
+    response_model=AIImportResponse,
+    tags=["Survey Builder"],
+)
+@studio_projects_bp.route(f"{_BASE}/ai-import", methods=["POST"])
+@auth.require_auth()
+@require_survey_permission(PERMISSIONS.survey.edit)
+def generate_ai_import(project_id: int, survey_id: int, version_number: int):
+    payload = parse(AIImportRequest, request)
+    preview = content_svc.generate_ai_import(
+        db=get_core_db(),
+        project_id=project_id,
+        survey_id=survey_id,
+        version_number=version_number,
+        prompt=payload.prompt,
+        settings=current_settings().flowform.openai,
+        actor=g.actor,
+    )
+    return serialize(AIImportResponse, preview), 200
 
 
 @openapi_route(summary="List survey builder nodes", response_model=list[NodeResponses], tags=["Survey Builder"])

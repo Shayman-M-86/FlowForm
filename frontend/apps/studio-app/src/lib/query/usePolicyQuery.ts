@@ -12,6 +12,8 @@ type PolicyQueryOptions<TData, TKey extends QueryKey> = {
   policy: QueryPolicy
   enabled?: boolean
   select?: (data: TData) => TData
+  // Data-aware poll interval; overrides policy.pollMs when provided.
+  refetchInterval?: (data: TData | undefined) => number | false
 }
 
 // Derive the refetch flags that TanStack Query exposes on a per-query basis.
@@ -82,9 +84,11 @@ export function usePolicyQuery<TData, TKey extends QueryKey>(
     refetchOnMount: !coolingDown,
     refetchOnWindowFocus: resolveRefetchFlag(policy.refetchOnWindowFocus, coolingDown),
     refetchOnReconnect: resolveRefetchFlag(policy.refetchOnReconnect, coolingDown),
-    refetchInterval: policy.pollMs != null
-      ? (query) => (!coolingDown && query.state.data !== undefined ? policy.pollMs! : false)
-      : false,
+    refetchInterval: options.refetchInterval != null
+      ? (query) => (coolingDown ? false : options.refetchInterval!(query.state.data))
+      : policy.pollMs != null
+        ? (query) => (!coolingDown && query.state.data !== undefined ? policy.pollMs! : false)
+        : false,
     meta: {
       storage: policy.storage,
     },

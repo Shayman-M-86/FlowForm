@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useParams } from '@tanstack/react-router'
+import { useParams, useSearch } from '@tanstack/react-router'
+import { RefreshCw } from 'lucide-react'
 import { Badge, Button, Card, DropdownMenu, Modal, Spinner, Table, Toast, type TableColumn } from '@flowform/ui'
 import { useProject } from '@/api/hooks/projects'
 import { useSurvey } from '@/api/hooks/surveys'
@@ -49,41 +50,56 @@ function truncateUuid(uuid: string): string {
 }
 
 const PAGE_SIZE = 25
+/** Table border and row padding outside the column tracks. */
+const TABLE_CHROME_PX = 16
 
 export function SurveyResponsesTab() {
   useRenderDebug('SurveyResponsesTab')
   const { slug, surveySlug } = useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/responses' })
+  const { status: initialStatus } = useSearch({ from: '/_studio/projects/$slug/surveys/$surveySlug/responses' })
 
   const { data: project } = useProject(slug)
   const { data: survey } = useSurvey(slug, surveySlug)
   const projectId = project?.id ?? 0
   const surveyId = survey?.id ?? 0
 
-  const [statusFilter, setStatusFilter] = useState<ResponseStatus | null>(null)
+  const [statusFilter, setStatusFilter] = useState<ResponseStatus | null>(initialStatus ?? null)
   const [page, setPage] = useState(1)
   const [selectedSession, setSelectedSession] = useState<SessionTree | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SessionRow | null>(null)
   const [exportToast, setExportToast] = useState<string | null>(null)
+  const [liveEnabled, setLiveEnabled] = useState(false)
+  // Live mode belongs to the In Progress view; leaving it stops fast polling.
+  const isLive = liveEnabled && statusFilter === 'in_progress'
 
   const { data: subjectsPage, isLoading } = useSurveyResultSubjects(projectId, surveyId, {
     page,
     pageSize: PAGE_SIZE,
     includeDecryptedAnswerValues: true,
+    live: isLive,
   })
 
-  // Flatten subject → session trees into table rows, then apply the
-  // client-side status filter (the results API no longer filters by status).
-  const rows = useMemo<SessionRow[]>(() => {
-    const flattened = (subjectsPage?.items ?? []).flatMap((subjectTree) =>
+  // Flatten subject → session trees into table rows.
+  const allRows = useMemo<SessionRow[]>(() => (
+    (subjectsPage?.items ?? []).flatMap((subjectTree) =>
       subjectTree.sessions.map((sessionTree) => ({
         ...sessionTree,
         subjectCode: subjectTree.subject.subject_code,
       })),
     )
-    return statusFilter
-      ? flattened.filter((row) => row.session.status === statusFilter)
-      : flattened
-  }, [subjectsPage, statusFilter])
+  ), [subjectsPage])
+
+  // Client-side status filter (the results API no longer filters by status).
+  const rows = useMemo<SessionRow[]>(() => (
+    statusFilter ? allRows.filter((row) => row.session.status === statusFilter) : allRows
+  ), [allRows, statusFilter])
+
+  // Show the freshest copy of the open session so the modal updates while
+  // polling, even if it leaves the current filter (e.g. it just completed).
+  const openSession = useMemo<SessionTree | null>(() => {
+    if (!selectedSession) return null
+    return allRows.find((row) => row.session.session_id === selectedSession.session.session_id) ?? selectedSession
+  }, [allRows, selectedSession])
 
   const total = subjectsPage?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -123,27 +139,34 @@ export function SurveyResponsesTab() {
   const exportTriggerRef = useRef<HTMLButtonElement>(null)
 
   // ── Table columns ──────────────────────────────────────────────────────────
-  const columns = useMemo<TableColumn<SessionRow>[]>(() => [
+  const allColumns = useMemo<TableColumn<SessionRow>[]>(() => [
     {
       key: 'subject',
       header: 'Subject',
-      minWidth: 120,
+      minWidth: 80,
+      cellClassName: 'min-w-0 pr-2',
       cell: (row) => (
-        <span className="font-mono text-xs text-foreground">{row.subjectCode}</span>
+        <span className="block truncate font-mono text-xs text-foreground" title={row.subjectCode}>
+          {row.subjectCode}
+        </span>
       ),
     },
     {
       key: 'session',
       header: 'Session',
-      minWidth: 120,
+      minWidth: 70,
+      cellClassName: 'min-w-0 pr-2',
       cell: (row) => (
-        <span className="font-mono text-xs text-muted-foreground">{truncateUuid(row.session.session_id)}</span>
+        <span className="block truncate font-mono text-xs text-muted-foreground" title={row.session.session_id}>
+          {truncateUuid(row.session.session_id)}
+        </span>
       ),
     },
     {
       key: 'status',
       header: 'Status',
-      minWidth: 110,
+      minWidth: 84,
+      cellClassName: 'pl-0',
       cell: (row) => (
         <Badge variant={STATUS_BADGE_VARIANT[row.session.status]} size="xs">
           {STATUS_LABEL[row.session.status]}
@@ -153,17 +176,19 @@ export function SurveyResponsesTab() {
     {
       key: 'started',
       header: 'Started',
-      minWidth: 140,
+      minWidth: 90,
+      cellClassName: 'min-w-0 pr-0',
       cell: (row) => (
-        <span className="text-xs text-muted-foreground">{formatDate(row.session.started_at)}</span>
+        <span className="block truncate text-xs text-muted-foreground">{formatDate(row.session.started_at)}</span>
       ),
     },
     {
       key: 'lastActivity',
       header: 'Last Activity',
-      minWidth: 140,
+      minWidth: 90,
+      cellClassName: 'min-w-0 pr-0',
       cell: (row) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="block truncate text-xs text-muted-foreground">
           {row.session.completed_at ? formatDate(row.session.completed_at) : formatDate(row.session.last_activity_at)}
         </span>
       ),
@@ -171,9 +196,9 @@ export function SurveyResponsesTab() {
     {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
-      minWidth: 80,
-      maxWidth: 80,
-      headerClassName: 'flex justify-center text-right pr-2',
+      minWidth: 70,
+      maxWidth: 90,
+      headerClassName: 'flex justify-center text-right pr-1',
       cellClassName: 'flex justify-center gap-1 px-0',
       cell: (row) => (
         <Button
@@ -190,8 +215,30 @@ export function SurveyResponsesTab() {
     },
   ], [])
 
+  // ── Responsive columns ─────────────────────────────────────────────────────
+  // Measure the section (sized by the page, not the table) and drop the Last
+  // Activity column once the full set of columns no longer fits.
+  const fullTableWidth = useMemo(
+    () => allColumns.reduce((sum, c) => sum + c.minWidth, 0) + TABLE_CHROME_PX,
+    [allColumns],
+  )
+  const [showLastActivity, setShowLastActivity] = useState(true)
+  const observerRef = useRef<ResizeObserver | null>(null)
+  const sectionRef = useCallback((node: HTMLElement | null) => {
+    observerRef.current?.disconnect()
+    observerRef.current = null
+    if (!node) return
+    observerRef.current = new ResizeObserver(([entry]) => setShowLastActivity(entry.contentRect.width >= fullTableWidth))
+    observerRef.current.observe(node)
+  }, [fullTableWidth])
+
+  const columns = useMemo<TableColumn<SessionRow>[]>(
+    () => allColumns.map((c) => (c.key === 'lastActivity' ? { ...c, visible: showLastActivity } : c)),
+    [allColumns, showLastActivity],
+  )
+
   return (
-    <section className="grid gap-4">
+    <section ref={sectionRef} className="grid min-w-0 gap-4">
       {exportToast && (
         <Toast variant="success" onClose={() => setExportToast(null)}>
           {exportToast}
@@ -230,17 +277,43 @@ export function SurveyResponsesTab() {
       </div>
 
       {/* ── Status filter tabs ──────────────────────────────────────────────── */}
-      <div className="flex gap-1">
-        {STATUS_FILTERS.map((f) => (
-          <Button
-            key={f.label}
-            variant={statusFilter === f.value ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => handleStatusFilter(f.value)}
-          >
-            {f.label}
-          </Button>
-        ))}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex gap-1">
+          {STATUS_FILTERS.map((f) => (
+            <Button
+              key={f.label}
+              variant={statusFilter === f.value ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => handleStatusFilter(f.value)}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        {statusFilter === 'in_progress' && (
+          <div className="flex items-center gap-2">
+            {isLive && (
+              <span className="relative flex size-2.5" role="status" aria-label="Live updates on">
+                <span className="absolute inline-flex size-full rounded-full bg-success opacity-75 motion-safe:animate-ping" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-success" />
+              </span>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              aria-pressed={isLive}
+              aria-label={isLive ? 'Stop live updates' : 'Start live updates'}
+              title={isLive ? 'Stop live updates' : 'Live updates'}
+              onClick={() => setLiveEnabled((on) => !on)}
+            >
+              <RefreshCw
+                size={14}
+                aria-hidden="true"
+                className={isLive ? 'motion-safe:animate-spin motion-safe:[animation-duration:2s]' : undefined}
+              />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────────────── */}
@@ -293,7 +366,7 @@ export function SurveyResponsesTab() {
 
       {/* ── Detail modal ────────────────────────────────────────────────────── */}
       <ResponseDetailModal
-        sessionTree={selectedSession}
+        sessionTree={openSession}
         onClose={() => setSelectedSession(null)}
       />
 
