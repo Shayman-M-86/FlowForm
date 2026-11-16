@@ -836,6 +836,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/ai-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate survey builder node preview with AI
+         * @description Generate survey builder node preview with AI
+         */
+        post: operations["generateAiImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
         parameters: {
             query?: never;
@@ -2442,18 +2462,12 @@ export interface components {
             message_id: string | null;
         };
         /**
-         * ChoiceConditionIn
-         * @description Represents a condition block targeting a choice question.
+         * AIImportRequest
+         * @description A short instruction for a survey draft.
          */
-        ChoiceConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "choice";
-            requirements: components["schemas"]["ChoiceRequirementsIn"];
+        AIImportRequest: {
+            /** Prompt */
+            prompt: string;
         };
         /**
          * ChoiceDefinitionIn
@@ -2495,6 +2509,226 @@ export interface components {
              */
             title: string | null;
             definition: components["schemas"]["ChoiceDefinitionIn"];
+        };
+        /**
+         * CreateQuestionNodeRequest
+         * @description Validates requests that create a new question node.
+         */
+        CreateQuestionNodeRequest: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Node Key */
+            node_key: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            node_type: "question";
+            /** Sort Key */
+            sort_key: number;
+            /** Content */
+            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
+        };
+        /**
+         * FieldDefinitionIn
+         * @description definition block for a field question.
+         */
+        FieldDefinitionIn: {
+            /**
+             * Field Type
+             * @enum {string}
+             */
+            field_type: "short_text" | "long_text" | "email" | "number" | "date" | "phone";
+            ui?: components["schemas"]["FieldUIIn"];
+        };
+        /**
+         * FieldQuestionSchemaIn
+         * @description Incoming field-question content schema.
+         */
+        FieldQuestionSchemaIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            family: "field";
+            /** Label */
+            label: string;
+            /**
+             * Title
+             * @default null
+             */
+            title: string | null;
+            definition: components["schemas"]["FieldDefinitionIn"];
+        };
+        /**
+         * FieldUIIn
+         * @description UI block for a field question.
+         */
+        FieldUIIn: {
+            /**
+             * Placeholder
+             * @default
+             */
+            placeholder: string;
+        };
+        /**
+         * MatchingDefinitionIn
+         * @description definition block for a matching question.
+         */
+        MatchingDefinitionIn: {
+            /** Prompts */
+            prompts: components["schemas"]["MatchingItemIn"][];
+            /** Matches */
+            matches: components["schemas"]["MatchingItemIn"][];
+        };
+        /**
+         * MatchingItemIn
+         * @description One item on either side of a matching question.
+         */
+        MatchingItemIn: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * MatchingQuestionSchemaIn
+         * @description Incoming matching-question content schema.
+         */
+        MatchingQuestionSchemaIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            family: "matching";
+            /** Label */
+            label: string;
+            /**
+             * Title
+             * @default null
+             */
+            title: string | null;
+            definition: components["schemas"]["MatchingDefinitionIn"];
+        };
+        /**
+         * RatingEmojiDefinitionIn
+         * @description definition block for an emoji-style rating question.
+         */
+        RatingEmojiDefinitionIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "emoji";
+            /**
+             * Emoji List
+             * @enum {string}
+             */
+            emoji_list: "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
+            /**
+             * Words
+             * @default false
+             */
+            words: boolean;
+            ui: components["schemas"]["RatingUIIn"];
+        };
+        /**
+         * RatingQuestionSchemaIn
+         * @description Incoming rating-question content schema.
+         */
+        RatingQuestionSchemaIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            family: "rating";
+            /** Label */
+            label: string;
+            /**
+             * Title
+             * @default null
+             */
+            title: string | null;
+            /** Definition */
+            definition: components["schemas"]["RatingSliderDefinitionIn"] | components["schemas"]["RatingStarDefinitionIn"] | components["schemas"]["RatingEmojiDefinitionIn"];
+        };
+        /**
+         * RatingRangeIn
+         * @description Range block for a slider rating — min, max, and step in one object.
+         */
+        RatingRangeIn: {
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Step */
+            step: number;
+        };
+        /**
+         * RatingSliderDefinitionIn
+         * @description definition block for a slider-style rating question.
+         */
+        RatingSliderDefinitionIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "slider";
+            range: components["schemas"]["RatingRangeIn"];
+            ui: components["schemas"]["RatingUIIn"];
+        };
+        /**
+         * RatingStarDefinitionIn
+         * @description definition block for a star-style rating question.
+         */
+        RatingStarDefinitionIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            variant: "stars";
+            /** Stars */
+            stars: number;
+            ui: components["schemas"]["RatingUIIn"];
+        };
+        /**
+         * RatingUIIn
+         * @description Left/right labels for all rating variants.
+         */
+        RatingUIIn: {
+            /** Left Label */
+            left_label: string;
+            /** Right Label */
+            right_label: string;
+        };
+        /**
+         * AIImportResponse
+         * @description Validated preview; callers can create nodes after reviewing it.
+         */
+        AIImportResponse: {
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Nodes */
+            nodes: components["schemas"]["CreateQuestionNodeRequest"][];
+        };
+        /**
+         * ChoiceConditionIn
+         * @description Represents a condition block targeting a choice question.
+         */
+        ChoiceConditionIn: {
+            /** Target Id */
+            target_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            family: "choice";
+            requirements: components["schemas"]["ChoiceRequirementsIn"];
         };
         /**
          * ChoiceRequirementsIn
@@ -2564,48 +2798,6 @@ export interface components {
             requirements: components["schemas"]["NumberFieldRequirementsIn"] | components["schemas"]["DateFieldRequirementsIn"];
         };
         /**
-         * FieldDefinitionIn
-         * @description definition block for a field question.
-         */
-        FieldDefinitionIn: {
-            /**
-             * Field Type
-             * @enum {string}
-             */
-            field_type: "short_text" | "long_text" | "email" | "number" | "date" | "phone";
-            ui?: components["schemas"]["FieldUIIn"];
-        };
-        /**
-         * FieldQuestionSchemaIn
-         * @description Incoming field-question content schema.
-         */
-        FieldQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "field";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["FieldDefinitionIn"];
-        };
-        /**
-         * FieldUIIn
-         * @description UI block for a field question.
-         */
-        FieldUIIn: {
-            /**
-             * Placeholder
-             * @default
-             */
-            placeholder: string;
-        };
-        /**
          * MatchingConditionIn
          * @description Represents a condition block targeting a matching question.
          */
@@ -2620,26 +2812,6 @@ export interface components {
             requirements: components["schemas"]["MatchingRequirementsIn"];
         };
         /**
-         * MatchingDefinitionIn
-         * @description definition block for a matching question.
-         */
-        MatchingDefinitionIn: {
-            /** Prompts */
-            prompts: components["schemas"]["MatchingItemIn"][];
-            /** Matches */
-            matches: components["schemas"]["MatchingItemIn"][];
-        };
-        /**
-         * MatchingItemIn
-         * @description One item on either side of a matching question.
-         */
-        MatchingItemIn: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-        };
-        /**
          * MatchingPairIn
          * @description A single prompt-to-match pairing in a matching condition.
          */
@@ -2648,25 +2820,6 @@ export interface components {
             prompt_id: string;
             /** Match Id */
             match_id: string;
-        };
-        /**
-         * MatchingQuestionSchemaIn
-         * @description Incoming matching-question content schema.
-         */
-        MatchingQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "matching";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["MatchingDefinitionIn"];
         };
         /**
          * MatchingRequirementsIn
@@ -2731,60 +2884,6 @@ export interface components {
             requirements: components["schemas"]["RatingRequirementsIn"];
         };
         /**
-         * RatingEmojiDefinitionIn
-         * @description definition block for an emoji-style rating question.
-         */
-        RatingEmojiDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "emoji";
-            /**
-             * Emoji List
-             * @enum {string}
-             */
-            emoji_list: "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
-            /**
-             * Words
-             * @default false
-             */
-            words: boolean;
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingQuestionSchemaIn
-         * @description Incoming rating-question content schema.
-         */
-        RatingQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "rating";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            /** Definition */
-            definition: components["schemas"]["RatingSliderDefinitionIn"] | components["schemas"]["RatingStarDefinitionIn"] | components["schemas"]["RatingEmojiDefinitionIn"];
-        };
-        /**
-         * RatingRangeIn
-         * @description Range block for a slider rating — min, max, and step in one object.
-         */
-        RatingRangeIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-            /** Step */
-            step: number;
-        };
-        /**
          * RatingRequirementsIn
          * @description Validation requirements for a rating-question condition.
          */
@@ -2799,43 +2898,6 @@ export interface components {
              * @default null
              */
             max: number | null;
-        };
-        /**
-         * RatingSliderDefinitionIn
-         * @description definition block for a slider-style rating question.
-         */
-        RatingSliderDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "slider";
-            range: components["schemas"]["RatingRangeIn"];
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingStarDefinitionIn
-         * @description definition block for a star-style rating question.
-         */
-        RatingStarDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "stars";
-            /** Stars */
-            stars: number;
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingUIIn
-         * @description Left/right labels for all rating variants.
-         */
-        RatingUIIn: {
-            /** Left Label */
-            left_label: string;
-            /** Right Label */
-            right_label: string;
         };
         /**
          * RuleBranchIn
@@ -2925,28 +2987,6 @@ export interface components {
         };
         /** NodeResponses */
         NodeResponses: components["schemas"]["QuestionNodeResponse"] | components["schemas"]["RuleNodeResponse"];
-        /**
-         * CreateQuestionNodeRequest
-         * @description Validates requests that create a new question node.
-         */
-        CreateQuestionNodeRequest: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "question";
-            /** Sort Key */
-            sort_key: number;
-            /** Content */
-            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
-        };
         /**
          * CreateRuleNodeRequest
          * @description Validates requests that create a new rule node.
@@ -3717,34 +3757,37 @@ export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyA
 export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
 export type UpdateSurveyAccessLinkRequest = components['schemas']['UpdateSurveyAccessLinkRequest'];
 export type SendSurveyLinkEmailResponse = components['schemas']['SendSurveyLinkEmailResponse'];
-export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
+export type AiImportRequest = components['schemas']['AIImportRequest'];
 export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
 export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
 export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
+export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
+export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
+export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
+export type FieldUiIn = components['schemas']['FieldUIIn'];
+export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
+export type MatchingItemIn = components['schemas']['MatchingItemIn'];
+export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
+export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
+export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
+export type RatingRangeIn = components['schemas']['RatingRangeIn'];
+export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
+export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
+export type RatingUiIn = components['schemas']['RatingUIIn'];
+export type AiImportResponse = components['schemas']['AIImportResponse'];
+export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
 export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
 export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
 export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
 export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
 export type FieldConditionIn = components['schemas']['FieldConditionIn'];
-export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
-export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
-export type FieldUiIn = components['schemas']['FieldUIIn'];
 export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
-export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
-export type MatchingItemIn = components['schemas']['MatchingItemIn'];
 export type MatchingPairIn = components['schemas']['MatchingPairIn'];
-export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
 export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
 export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
 export type QuestionNodeResponse = components['schemas']['QuestionNodeResponse'];
 export type RatingConditionIn = components['schemas']['RatingConditionIn'];
-export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
-export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
-export type RatingRangeIn = components['schemas']['RatingRangeIn'];
 export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn'];
-export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
-export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
-export type RatingUiIn = components['schemas']['RatingUIIn'];
 export type RuleBranchIn = components['schemas']['RuleBranchIn'];
 export type RuleIfIn = components['schemas']['RuleIfIn'];
 export type RuleNodeResponse = components['schemas']['RuleNodeResponse'];
@@ -3752,7 +3795,6 @@ export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
 export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
 export type SkipToActionIn = components['schemas']['SkipToActionIn'];
 export type NodeResponses = components['schemas']['NodeResponses'];
-export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
 export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
 export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
 export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
@@ -5392,6 +5434,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendSurveyLinkEmailResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    generateAiImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIImportResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];

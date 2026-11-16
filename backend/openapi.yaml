@@ -2180,6 +2180,66 @@ paths:
           $ref: '#/components/responses/RateLimitError'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/ai-import:
+    post:
+      operationId: generateAiImport
+      summary: Generate survey builder node preview with AI
+      description: Generate survey builder node preview with AI
+      tags:
+      - Survey Builder
+      x-flowform-rbac:
+        permission: survey:edit
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: version_number
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIImportRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIImportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes:
     get:
       operationId: listNodes
@@ -5861,27 +5921,18 @@ components:
           title: Message Id
       title: SendSurveyLinkEmailResponse
       type: object
-    ChoiceConditionIn:
+    AIImportRequest:
       additionalProperties: false
-      description: Represents a condition block targeting a choice question.
+      description: A short instruction for a survey draft.
       properties:
-        target_id:
-          maxLength: 128
+        prompt:
+          maxLength: 4000
           minLength: 1
-          title: Target Id
+          title: Prompt
           type: string
-        family:
-          const: choice
-          title: Family
-          type: string
-          maxLength: 6
-        requirements:
-          $ref: '#/components/schemas/ChoiceRequirementsIn'
       required:
-      - target_id
-      - family
-      - requirements
-      title: ChoiceConditionIn
+      - prompt
+      title: AIImportRequest
       type: object
     ChoiceDefinitionIn:
       additionalProperties: false
@@ -5957,6 +6008,387 @@ components:
       title: ChoiceQuestionSchemaIn
       type: object
       x-flowform-export: builder
+    CreateQuestionNodeRequest:
+      additionalProperties: false
+      description: Validates requests that create a new question node.
+      properties:
+        id:
+          format: uuid
+          title: Id
+          type: string
+          maxLength: 36
+        node_key:
+          maxLength: 128
+          minLength: 1
+          title: Node Key
+          type: string
+        node_type:
+          const: question
+          title: Node Type
+          type: string
+          maxLength: 8
+        sort_key:
+          exclusiveMinimum: 0
+          title: Sort Key
+          type: integer
+        content:
+          discriminator:
+            mapping:
+              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
+              field: '#/components/schemas/FieldQuestionSchemaIn'
+              matching: '#/components/schemas/MatchingQuestionSchemaIn'
+              rating: '#/components/schemas/RatingQuestionSchemaIn'
+            propertyName: family
+          oneOf:
+          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
+          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
+          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
+          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
+          title: Content
+      required:
+      - id
+      - node_key
+      - node_type
+      - sort_key
+      - content
+      title: CreateQuestionNodeRequest
+      type: object
+      x-flowform-export: builder
+    FieldDefinitionIn:
+      additionalProperties: false
+      description: definition block for a field question.
+      properties:
+        field_type:
+          enum:
+          - short_text
+          - long_text
+          - email
+          - number
+          - date
+          - phone
+          title: Field Type
+          type: string
+          maxLength: 10
+        ui:
+          $ref: '#/components/schemas/FieldUIIn'
+      required:
+      - field_type
+      title: FieldDefinitionIn
+      type: object
+    FieldQuestionSchemaIn:
+      additionalProperties: false
+      description: Incoming field-question content schema.
+      properties:
+        family:
+          const: field
+          title: Family
+          type: string
+          maxLength: 5
+        label:
+          maxLength: 1000
+          minLength: 1
+          title: Label
+          type: string
+        title:
+          anyOf:
+          - maxLength: 500
+            minLength: 0
+            type: string
+          - type: 'null'
+          default: null
+          title: Title
+        definition:
+          $ref: '#/components/schemas/FieldDefinitionIn'
+      required:
+      - family
+      - label
+      - definition
+      title: FieldQuestionSchemaIn
+      type: object
+      x-flowform-export: builder
+    FieldUIIn:
+      additionalProperties: false
+      description: UI block for a field question.
+      properties:
+        placeholder:
+          default: ''
+          maxLength: 50
+          title: Placeholder
+          type: string
+      title: FieldUIIn
+      type: object
+    MatchingDefinitionIn:
+      additionalProperties: false
+      description: definition block for a matching question.
+      properties:
+        prompts:
+          items:
+            $ref: '#/components/schemas/MatchingItemIn'
+          maxItems: 10
+          title: Prompts
+          type: array
+        matches:
+          items:
+            $ref: '#/components/schemas/MatchingItemIn'
+          maxItems: 10
+          title: Matches
+          type: array
+      required:
+      - prompts
+      - matches
+      title: MatchingDefinitionIn
+      type: object
+    MatchingItemIn:
+      additionalProperties: false
+      description: One item on either side of a matching question.
+      properties:
+        id:
+          maxLength: 128
+          minLength: 1
+          title: Id
+          type: string
+        label:
+          maxLength: 250
+          minLength: 1
+          title: Label
+          type: string
+      required:
+      - id
+      - label
+      title: MatchingItemIn
+      type: object
+    MatchingQuestionSchemaIn:
+      additionalProperties: false
+      description: Incoming matching-question content schema.
+      properties:
+        family:
+          const: matching
+          title: Family
+          type: string
+          maxLength: 8
+        label:
+          maxLength: 1000
+          minLength: 1
+          title: Label
+          type: string
+        title:
+          anyOf:
+          - maxLength: 500
+            minLength: 0
+            type: string
+          - type: 'null'
+          default: null
+          title: Title
+        definition:
+          $ref: '#/components/schemas/MatchingDefinitionIn'
+      required:
+      - family
+      - label
+      - definition
+      title: MatchingQuestionSchemaIn
+      type: object
+      x-flowform-export: builder
+    RatingEmojiDefinitionIn:
+      additionalProperties: false
+      description: definition block for an emoji-style rating question.
+      properties:
+        variant:
+          const: emoji
+          title: Variant
+          type: string
+          maxLength: 5
+        emoji_list:
+          enum:
+          - sad_to_happy
+          - angry_to_happy
+          - disgust_to_happy
+          title: Emoji List
+          type: string
+          maxLength: 16
+        words:
+          default: false
+          title: Words
+          type: boolean
+        ui:
+          $ref: '#/components/schemas/RatingUIIn'
+      required:
+      - variant
+      - emoji_list
+      - ui
+      title: RatingEmojiDefinitionIn
+      type: object
+    RatingQuestionSchemaIn:
+      additionalProperties: false
+      description: Incoming rating-question content schema.
+      properties:
+        family:
+          const: rating
+          title: Family
+          type: string
+          maxLength: 6
+        label:
+          maxLength: 1000
+          minLength: 1
+          title: Label
+          type: string
+        title:
+          anyOf:
+          - maxLength: 500
+            minLength: 0
+            type: string
+          - type: 'null'
+          default: null
+          title: Title
+        definition:
+          discriminator:
+            mapping:
+              emoji: '#/components/schemas/RatingEmojiDefinitionIn'
+              slider: '#/components/schemas/RatingSliderDefinitionIn'
+              stars: '#/components/schemas/RatingStarDefinitionIn'
+            propertyName: variant
+          oneOf:
+          - $ref: '#/components/schemas/RatingSliderDefinitionIn'
+          - $ref: '#/components/schemas/RatingStarDefinitionIn'
+          - $ref: '#/components/schemas/RatingEmojiDefinitionIn'
+          title: Definition
+      required:
+      - family
+      - label
+      - definition
+      title: RatingQuestionSchemaIn
+      type: object
+      x-flowform-export: builder
+    RatingRangeIn:
+      additionalProperties: false
+      description: Range block for a slider rating — min, max, and step in one object.
+      properties:
+        min:
+          maximum: 1000
+          minimum: -1000
+          title: Min
+          type: number
+        max:
+          maximum: 1000
+          minimum: -1000
+          title: Max
+          type: number
+        step:
+          exclusiveMinimum: 0
+          title: Step
+          type: number
+      required:
+      - min
+      - max
+      - step
+      title: RatingRangeIn
+      type: object
+    RatingSliderDefinitionIn:
+      additionalProperties: false
+      description: definition block for a slider-style rating question.
+      properties:
+        variant:
+          const: slider
+          title: Variant
+          type: string
+          maxLength: 6
+        range:
+          $ref: '#/components/schemas/RatingRangeIn'
+        ui:
+          $ref: '#/components/schemas/RatingUIIn'
+      required:
+      - variant
+      - range
+      - ui
+      title: RatingSliderDefinitionIn
+      type: object
+    RatingStarDefinitionIn:
+      additionalProperties: false
+      description: definition block for a star-style rating question.
+      properties:
+        variant:
+          const: stars
+          title: Variant
+          type: string
+          maxLength: 5
+        stars:
+          maximum: 12
+          minimum: 1
+          title: Stars
+          type: integer
+        ui:
+          $ref: '#/components/schemas/RatingUIIn'
+      required:
+      - variant
+      - stars
+      - ui
+      title: RatingStarDefinitionIn
+      type: object
+    RatingUIIn:
+      additionalProperties: false
+      description: Left/right labels for all rating variants.
+      properties:
+        left_label:
+          maxLength: 50
+          minLength: 1
+          title: Left Label
+          type: string
+        right_label:
+          maxLength: 50
+          minLength: 1
+          title: Right Label
+          type: string
+      required:
+      - left_label
+      - right_label
+      title: RatingUIIn
+      type: object
+    AIImportResponse:
+      description: Validated preview; callers can create nodes after reviewing it.
+      properties:
+        title:
+          maxLength: 200
+          minLength: 1
+          title: Title
+          type: string
+        description:
+          maxLength: 2000
+          title: Description
+          type: string
+        nodes:
+          items:
+            $ref: '#/components/schemas/CreateQuestionNodeRequest'
+          maxItems: 20
+          minItems: 1
+          title: Nodes
+          type: array
+      required:
+      - title
+      - description
+      - nodes
+      title: AIImportResponse
+      type: object
+    ChoiceConditionIn:
+      additionalProperties: false
+      description: Represents a condition block targeting a choice question.
+      properties:
+        target_id:
+          maxLength: 128
+          minLength: 1
+          title: Target Id
+          type: string
+        family:
+          const: choice
+          title: Family
+          type: string
+          maxLength: 6
+        requirements:
+          $ref: '#/components/schemas/ChoiceRequirementsIn'
+      required:
+      - target_id
+      - family
+      - requirements
+      title: ChoiceConditionIn
+      type: object
     ChoiceRequirementsIn:
       additionalProperties: false
       description: Validation requirements for a choice-question condition.
@@ -6063,69 +6495,6 @@ components:
       - requirements
       title: FieldConditionIn
       type: object
-    FieldDefinitionIn:
-      additionalProperties: false
-      description: definition block for a field question.
-      properties:
-        field_type:
-          enum:
-          - short_text
-          - long_text
-          - email
-          - number
-          - date
-          - phone
-          title: Field Type
-          type: string
-          maxLength: 10
-        ui:
-          $ref: '#/components/schemas/FieldUIIn'
-      required:
-      - field_type
-      title: FieldDefinitionIn
-      type: object
-    FieldQuestionSchemaIn:
-      additionalProperties: false
-      description: Incoming field-question content schema.
-      properties:
-        family:
-          const: field
-          title: Family
-          type: string
-          maxLength: 5
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-        title:
-          anyOf:
-          - maxLength: 500
-            minLength: 0
-            type: string
-          - type: 'null'
-          default: null
-          title: Title
-        definition:
-          $ref: '#/components/schemas/FieldDefinitionIn'
-      required:
-      - family
-      - label
-      - definition
-      title: FieldQuestionSchemaIn
-      type: object
-      x-flowform-export: builder
-    FieldUIIn:
-      additionalProperties: false
-      description: UI block for a field question.
-      properties:
-        placeholder:
-          default: ''
-          maxLength: 50
-          title: Placeholder
-          type: string
-      title: FieldUIIn
-      type: object
     MatchingConditionIn:
       additionalProperties: false
       description: Represents a condition block targeting a matching question.
@@ -6148,46 +6517,6 @@ components:
       - requirements
       title: MatchingConditionIn
       type: object
-    MatchingDefinitionIn:
-      additionalProperties: false
-      description: definition block for a matching question.
-      properties:
-        prompts:
-          items:
-            $ref: '#/components/schemas/MatchingItemIn'
-          maxItems: 10
-          title: Prompts
-          type: array
-        matches:
-          items:
-            $ref: '#/components/schemas/MatchingItemIn'
-          maxItems: 10
-          title: Matches
-          type: array
-      required:
-      - prompts
-      - matches
-      title: MatchingDefinitionIn
-      type: object
-    MatchingItemIn:
-      additionalProperties: false
-      description: One item on either side of a matching question.
-      properties:
-        id:
-          maxLength: 128
-          minLength: 1
-          title: Id
-          type: string
-        label:
-          maxLength: 250
-          minLength: 1
-          title: Label
-          type: string
-      required:
-      - id
-      - label
-      title: MatchingItemIn
-      type: object
     MatchingPairIn:
       additionalProperties: false
       description: A single prompt-to-match pairing in a matching condition.
@@ -6207,37 +6536,6 @@ components:
       - match_id
       title: MatchingPairIn
       type: object
-    MatchingQuestionSchemaIn:
-      additionalProperties: false
-      description: Incoming matching-question content schema.
-      properties:
-        family:
-          const: matching
-          title: Family
-          type: string
-          maxLength: 8
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-        title:
-          anyOf:
-          - maxLength: 500
-            minLength: 0
-            type: string
-          - type: 'null'
-          default: null
-          title: Title
-        definition:
-          $ref: '#/components/schemas/MatchingDefinitionIn'
-      required:
-      - family
-      - label
-      - definition
-      title: MatchingQuestionSchemaIn
-      type: object
-      x-flowform-export: builder
     MatchingRequirementsIn:
       additionalProperties: false
       description: Validation requirements for a matching-question condition.
@@ -6348,100 +6646,6 @@ components:
       - requirements
       title: RatingConditionIn
       type: object
-    RatingEmojiDefinitionIn:
-      additionalProperties: false
-      description: definition block for an emoji-style rating question.
-      properties:
-        variant:
-          const: emoji
-          title: Variant
-          type: string
-          maxLength: 5
-        emoji_list:
-          enum:
-          - sad_to_happy
-          - angry_to_happy
-          - disgust_to_happy
-          title: Emoji List
-          type: string
-          maxLength: 16
-        words:
-          default: false
-          title: Words
-          type: boolean
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - variant
-      - emoji_list
-      - ui
-      title: RatingEmojiDefinitionIn
-      type: object
-    RatingQuestionSchemaIn:
-      additionalProperties: false
-      description: Incoming rating-question content schema.
-      properties:
-        family:
-          const: rating
-          title: Family
-          type: string
-          maxLength: 6
-        label:
-          maxLength: 1000
-          minLength: 1
-          title: Label
-          type: string
-        title:
-          anyOf:
-          - maxLength: 500
-            minLength: 0
-            type: string
-          - type: 'null'
-          default: null
-          title: Title
-        definition:
-          discriminator:
-            mapping:
-              emoji: '#/components/schemas/RatingEmojiDefinitionIn'
-              slider: '#/components/schemas/RatingSliderDefinitionIn'
-              stars: '#/components/schemas/RatingStarDefinitionIn'
-            propertyName: variant
-          oneOf:
-          - $ref: '#/components/schemas/RatingSliderDefinitionIn'
-          - $ref: '#/components/schemas/RatingStarDefinitionIn'
-          - $ref: '#/components/schemas/RatingEmojiDefinitionIn'
-          title: Definition
-      required:
-      - family
-      - label
-      - definition
-      title: RatingQuestionSchemaIn
-      type: object
-      x-flowform-export: builder
-    RatingRangeIn:
-      additionalProperties: false
-      description: Range block for a slider rating — min, max, and step in one object.
-      properties:
-        min:
-          maximum: 1000
-          minimum: -1000
-          title: Min
-          type: number
-        max:
-          maximum: 1000
-          minimum: -1000
-          title: Max
-          type: number
-        step:
-          exclusiveMinimum: 0
-          title: Step
-          type: number
-      required:
-      - min
-      - max
-      - step
-      title: RatingRangeIn
-      type: object
     RatingRequirementsIn:
       additionalProperties: false
       description: Validation requirements for a rating-question condition.
@@ -6461,66 +6665,6 @@ components:
           default: null
           title: Max
       title: RatingRequirementsIn
-      type: object
-    RatingSliderDefinitionIn:
-      additionalProperties: false
-      description: definition block for a slider-style rating question.
-      properties:
-        variant:
-          const: slider
-          title: Variant
-          type: string
-          maxLength: 6
-        range:
-          $ref: '#/components/schemas/RatingRangeIn'
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - variant
-      - range
-      - ui
-      title: RatingSliderDefinitionIn
-      type: object
-    RatingStarDefinitionIn:
-      additionalProperties: false
-      description: definition block for a star-style rating question.
-      properties:
-        variant:
-          const: stars
-          title: Variant
-          type: string
-          maxLength: 5
-        stars:
-          maximum: 12
-          minimum: 1
-          title: Stars
-          type: integer
-        ui:
-          $ref: '#/components/schemas/RatingUIIn'
-      required:
-      - variant
-      - stars
-      - ui
-      title: RatingStarDefinitionIn
-      type: object
-    RatingUIIn:
-      additionalProperties: false
-      description: Left/right labels for all rating variants.
-      properties:
-        left_label:
-          maxLength: 50
-          minLength: 1
-          title: Left Label
-          type: string
-        right_label:
-          maxLength: 50
-          minLength: 1
-          title: Right Label
-          type: string
-      required:
-      - left_label
-      - right_label
-      title: RatingUIIn
       type: object
     RuleBranchIn:
       additionalProperties: false
@@ -6677,52 +6821,6 @@ components:
       - $ref: '#/components/schemas/QuestionNodeResponse'
       - $ref: '#/components/schemas/RuleNodeResponse'
       title: NodeResponses
-    CreateQuestionNodeRequest:
-      additionalProperties: false
-      description: Validates requests that create a new question node.
-      properties:
-        id:
-          format: uuid
-          title: Id
-          type: string
-          maxLength: 36
-        node_key:
-          maxLength: 128
-          minLength: 1
-          title: Node Key
-          type: string
-        node_type:
-          const: question
-          title: Node Type
-          type: string
-          maxLength: 8
-        sort_key:
-          exclusiveMinimum: 0
-          title: Sort Key
-          type: integer
-        content:
-          discriminator:
-            mapping:
-              choice: '#/components/schemas/ChoiceQuestionSchemaIn'
-              field: '#/components/schemas/FieldQuestionSchemaIn'
-              matching: '#/components/schemas/MatchingQuestionSchemaIn'
-              rating: '#/components/schemas/RatingQuestionSchemaIn'
-            propertyName: family
-          oneOf:
-          - $ref: '#/components/schemas/ChoiceQuestionSchemaIn'
-          - $ref: '#/components/schemas/FieldQuestionSchemaIn'
-          - $ref: '#/components/schemas/MatchingQuestionSchemaIn'
-          - $ref: '#/components/schemas/RatingQuestionSchemaIn'
-          title: Content
-      required:
-      - id
-      - node_key
-      - node_type
-      - sort_key
-      - content
-      title: CreateQuestionNodeRequest
-      type: object
-      x-flowform-export: builder
     CreateRuleNodeRequest:
       additionalProperties: false
       description: Validates requests that create a new rule node.

@@ -124,6 +124,17 @@ print(value, end="")
 write_key "${APP_JSON}" app_secret_key    FLOWFORM_APP_SECRET_KEY
 write_key "${APP_JSON}" auth0_mgmt_secret FLOWFORM_AUTH0_MGMT_SECRET
 
+# Optional local-only OpenAI key. The runtime directory is recreated on every
+# start, so copy it from the persistent, gitignored dev secrets directory.
+OPENAI_KEY_SOURCE="${DOCKER_DIR}/secrets/FLOWFORM_OPENAI_API_KEY.${ENV_NAME}.secret.txt"
+if [[ -f "${OPENAI_KEY_SOURCE}" ]]; then
+  [[ -s "${OPENAI_KEY_SOURCE}" ]] || {
+    echo "error: ${OPENAI_KEY_SOURCE} is empty" >&2
+    exit 1
+  }
+  install -m 600 "${OPENAI_KEY_SOURCE}" "${OUT_DIR}/FLOWFORM_OPENAI_API_KEY"
+fi
+
 # Keep suffixed sources for docker-compose.ec2.local.yml, which still uses
 # Compose's per-file secret declarations. docker-compose.dev.yml consumes the
 # extensionless files directly through its /run/secrets directory mount.

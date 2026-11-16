@@ -168,6 +168,20 @@ class AwsSettings(BaseModel):
     secret_access_key: SecretStr | None = None
 
 
+class OpenAISettings(BaseModel):
+    """Optional server-side survey generation settings."""
+
+    api_key_file: str | None = None
+    model: str = "gpt-4.1-mini"
+
+    @property
+    def api_key(self) -> SecretStr | None:
+        """Read the mounted key only when generation is requested."""
+        if self.api_key_file is None:
+            return None
+        return _load_secret_from_file(self.api_key_file, label="OpenAI API key")
+
+
 class EmailSettings(BaseModel):
     """Email delivery settings for AWS SES."""
 
@@ -385,6 +399,7 @@ class FlowForm(BaseModel):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     tracing: TracingSettings = Field(default_factory=TracingSettings)
     aws: AwsSettings
+    openai: OpenAISettings = Field(default_factory=OpenAISettings)
     encryption: EncryptionSettings
     email: EmailSettings
 
