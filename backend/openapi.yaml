@@ -7143,6 +7143,19 @@ components:
           - type: 'null'
           default: null
           title: Answer Value
+        question_content:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Question Content
+        question_sort_key:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Question Sort Key
       required:
       - question_node_id
       - has_encrypted_answer

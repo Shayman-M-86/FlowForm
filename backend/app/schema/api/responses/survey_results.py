@@ -46,6 +46,8 @@ class SurveyAnswerSlotResponses(BaseModel):
     decrypted: bool
     state: SubmissionAnswerState | None = Field(default=None, validation_alias="answer_state")
     answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
+    question_content: dict[str, Any] | None = None
+    question_sort_key: int | None = None
 
 
 class SurveySessionEventResponses(BaseModel):

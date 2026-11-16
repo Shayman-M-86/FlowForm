@@ -1,5 +1,6 @@
 import { Badge, Card, Modal } from '@flowform/ui'
 import type { AnswerSlot, SessionTree } from '@/api/hooks/results'
+import { orderAnswers, presentAnswer } from '@/lib/responsePresentation'
 
 type Props = {
   sessionTree: SessionTree | null
@@ -28,16 +29,15 @@ function formatTimestamp(iso: string): string {
   })
 }
 
-function AnswerCard({ answer }: { answer: AnswerSlot }) {
+function AnswerCard({ answer, index }: { answer: AnswerSlot; index: number }) {
+  const presented = presentAnswer(answer)
   return (
     <Card size="sm" tone="muted">
       <div className="flex items-start justify-between gap-2">
-        <p className="font-mono text-xs text-muted-foreground">
-          {answer.question_key ?? answer.question_node_id.slice(0, 8)}
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Question {index + 1}</p>
         <div className="flex items-center gap-1.5">
-          {answer.answer_family && (
-            <Badge variant="muted" size="xs">{answer.answer_family}</Badge>
+          {presented.family && (
+            <Badge variant="muted" size="xs">{presented.family}</Badge>
           )}
           {answer.state ? (
             <Badge variant={answer.state === 'answered' ? 'success' : 'warning'} size="xs">
@@ -50,18 +50,26 @@ function AnswerCard({ answer }: { answer: AnswerSlot }) {
           )}
         </div>
       </div>
-      {answer.decrypted && answer.answer_value != null && (
-        <pre className="mt-2 overflow-x-auto rounded bg-background p-2 text-xs text-foreground">
-          {JSON.stringify(answer.answer_value, null, 2)}
-        </pre>
-      )}
+      {presented.section && <p className="mt-2 text-xs text-muted-foreground">{presented.section}</p>}
+      <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{presented.question}</p>
+      <div className="mt-3 rounded-md border border-border bg-background p-3">
+        <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">Answer</p>
+        {presented.lines.length === 1 ? (
+          <p className="whitespace-pre-wrap break-words text-sm text-foreground">{presented.lines[0]}</p>
+        ) : (
+          <ul className="list-disc space-y-1 pl-5 text-sm text-foreground">
+            {presented.lines.map((line, lineIndex) => <li key={`${lineIndex}-${line}`}>{line}</li>)}
+          </ul>
+        )}
+        {presented.hint && <p className="mt-2 text-xs text-muted-foreground">{presented.hint}</p>}
+      </div>
     </Card>
   )
 }
 
 export function ResponseDetailModal({ sessionTree, onClose }: Props) {
   const session = sessionTree?.session
-  const answers = sessionTree?.answers ?? []
+  const answers = orderAnswers(sessionTree?.answers ?? [])
 
   return (
     <Modal
@@ -99,8 +107,8 @@ export function ResponseDetailModal({ sessionTree, onClose }: Props) {
               <span className="text-foreground">{formatTimestamp(session.last_activity_at)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Version</span>
-              <span className="text-foreground">v{session.survey_version_id}</span>
+              <span className="text-muted-foreground">Version record</span>
+              <span className="text-foreground">#{session.survey_version_id}</span>
             </div>
           </div>
 
@@ -113,8 +121,8 @@ export function ResponseDetailModal({ sessionTree, onClose }: Props) {
               <p className="text-xs text-muted-foreground">No answers recorded for this session.</p>
             ) : (
               <div className="grid gap-2">
-                {answers.map((answer) => (
-                  <AnswerCard key={answer.question_node_id} answer={answer} />
+                {answers.map((answer, index) => (
+                  <AnswerCard key={answer.question_node_id} answer={answer} index={index} />
                 ))}
               </div>
             )}

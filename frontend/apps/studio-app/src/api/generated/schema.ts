@@ -3155,6 +3155,18 @@ export interface components {
             answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Question Content
+             * @default null
+             */
+            question_content: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Question Sort Key
+             * @default null
+             */
+            question_sort_key: number | null;
         };
         /**
          * SurveySessionEventResponses

@@ -174,6 +174,8 @@ class AnswerSlotResult:
     decrypted: bool
     answer_state: SubmissionAnswerState | None
     answer_value: SubmissionAnswerValue | dict[str, Any] | None
+    question_content: dict[str, Any] | None = None
+    question_sort_key: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
