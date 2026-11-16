@@ -92,7 +92,13 @@ export function useCopyVersionToDraft(projectId: number, surveyId: number) {
       if (error) throw error
       return data
     },
-    onSuccess: () => {
+    onSuccess: (newVersion) => {
+      queryClient.setQueryData<SurveyVersionOut[]>(
+        versionKeys.list(projectId, surveyId),
+        (previous) => previous?.some((version) => version.id === newVersion.id)
+          ? previous
+          : [...(previous ?? []), newVersion],
+      )
       void queryClient.invalidateQueries({ queryKey: versionKeys.list(projectId, surveyId) })
     },
   })

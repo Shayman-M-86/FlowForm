@@ -1,4 +1,4 @@
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, type ReactNode, type Ref } from "react";
 import { createPortal } from "react-dom";
 import { isBrowser } from "../../lib/utils";
 import { Button } from "./Button";
@@ -11,13 +11,15 @@ interface ModalProps {
   footer?: ReactNode;
   className?: string;
   bodyClassName?: string;
+  /** Ref to the scrollable body element, for callers that manage scroll position. */
+  bodyRef?: Ref<HTMLDivElement>;
   width?: number;
   height?: number;
   /** Blocks all passive dismissal — no backdrop click, no Escape, no X button. */
   required?: boolean;
 }
 
-export function Modal({ open, onClose, title, children, footer, className, bodyClassName, width = 480, height, required = false }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, className, bodyClassName, bodyRef, width = 480, height, required = false }: ModalProps) {
   const titleId = useId();
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export function Modal({ open, onClose, title, children, footer, className, bodyC
             />
           )}
         </div>
-        <div className={`ui-modal-body${bodyClassName ? ` ${bodyClassName}` : ""}`}>{children}</div>
+        <div ref={bodyRef} className={`ui-modal-body${bodyClassName ? ` ${bodyClassName}` : ""}`}>{children}</div>
         {footer ? <div className="ui-modal-footer">{footer}</div> : null}
       </div>
     </div>,

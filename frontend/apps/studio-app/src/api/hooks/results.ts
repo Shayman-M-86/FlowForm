@@ -24,6 +24,22 @@ type SubjectsOpts = {
   pageSize?: number
   includeDecryptedAnswerValues?: boolean
   includeEvents?: boolean
+  /** Poll quickly while a viewer is watching responses arrive. */
+  live?: boolean
+}
+
+/** Live poll interval while at least one session on the page is in progress. */
+export const LIVE_POLL_ACTIVE_MS = 1_000
+/** Live poll interval while nothing on the page is in progress. */
+export const LIVE_POLL_IDLE_MS = 3_000
+
+type SubjectsPage = { items: SubjectTree[] }
+
+export function liveResultsPollInterval(data: SubjectsPage | undefined): number {
+  const hasInProgress = data?.items.some((subject) =>
+    subject.sessions.some((tree) => tree.session.status === 'in_progress'),
+  ) ?? false
+  return hasInProgress ? LIVE_POLL_ACTIVE_MS : LIVE_POLL_IDLE_MS
 }
 
 export function useSurveyResultSubjects(
@@ -36,8 +52,10 @@ export function useSurveyResultSubjects(
     pageSize = 25,
     includeDecryptedAnswerValues = false,
     includeEvents = false,
+    live = false,
   } = opts
   return usePolicyQuery({
+    refetchInterval: live ? liveResultsPollInterval : undefined,
     queryKey: [
       ...resultKeys.subjects(projectId, surveyId),
       { page, pageSize, includeDecryptedAnswerValues, includeEvents },

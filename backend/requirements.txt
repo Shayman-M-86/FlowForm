@@ -7,7 +7,9 @@ alembic==1.18.4
 annotated-types==0.7.0
     # via pydantic
 anyio==4.14.2
-    # via httpx
+    # via
+    #   httpx
+    #   openai
 apispec==6.10.0
     # via backend
 auth0-api-python==1.0.0b7
@@ -51,6 +53,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
     # via
     #   click
     #   pytest
+    #   tqdm
 coverage==7.13.5
     # via
     #   backend
@@ -60,6 +63,8 @@ cryptography==50.0.2
     #   authlib
     #   backend
     #   joserfc
+distro==1.9.0
+    # via openai
 dnspython==2.9.2
     # via email-validator
 email-validator==2.3.0
@@ -89,7 +94,9 @@ h11==0.16.0
 httpcore==1.0.9
     # via httpx
 httpx==0.28.1
-    # via auth0-api-python
+    # via
+    #   auth0-api-python
+    #   openai
 idna==3.16
     # via
     #   anyio
@@ -103,6 +110,8 @@ itsdangerous==2.2.0
     # via flask
 jinja2==3.1.6
     # via flask
+jiter==0.19.0
+    # via openai
 jmespath==1.1.0
     # via
     #   boto3
@@ -131,7 +140,9 @@ mypy-boto3-sesv2==1.43.18
     # via backend
 nodeenv==1.10.0
     # via pyright
-opentelemetry-api==1.45.1
+openai==2.54.0
+    # via backend
+opentelemetry-api==1.45.2
     # via
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-instrumentation
@@ -144,13 +155,13 @@ opentelemetry-api==1.45.1
     #   opentelemetry-propagator-aws-xray
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-opentelemetry-exporter-otlp-common==0.66b1
+opentelemetry-exporter-otlp-common==0.66b2
     # via opentelemetry-exporter-otlp-proto-grpc
-opentelemetry-exporter-otlp-proto-common==1.45.1
+opentelemetry-exporter-otlp-proto-common==1.45.2
     # via opentelemetry-exporter-otlp-proto-grpc
-opentelemetry-exporter-otlp-proto-grpc==1.45.1
+opentelemetry-exporter-otlp-proto-grpc==1.45.2
     # via backend
-opentelemetry-instrumentation==0.66b1
+opentelemetry-instrumentation==0.66b2
     # via
     #   opentelemetry-instrumentation-botocore
     #   opentelemetry-instrumentation-flask
@@ -158,30 +169,30 @@ opentelemetry-instrumentation==0.66b1
     #   opentelemetry-instrumentation-requests
     #   opentelemetry-instrumentation-sqlalchemy
     #   opentelemetry-instrumentation-wsgi
-opentelemetry-instrumentation-botocore==0.66b1
+opentelemetry-instrumentation-botocore==0.66b2
     # via backend
-opentelemetry-instrumentation-flask==0.66b1
+opentelemetry-instrumentation-flask==0.66b2
     # via backend
-opentelemetry-instrumentation-logging==0.66b1
+opentelemetry-instrumentation-logging==0.66b2
     # via backend
-opentelemetry-instrumentation-requests==0.66b1
+opentelemetry-instrumentation-requests==0.66b2
     # via backend
-opentelemetry-instrumentation-sqlalchemy==0.66b1
+opentelemetry-instrumentation-sqlalchemy==0.66b2
     # via backend
-opentelemetry-instrumentation-wsgi==0.66b1
+opentelemetry-instrumentation-wsgi==0.66b2
     # via opentelemetry-instrumentation-flask
 opentelemetry-propagator-aws-xray==1.0.2
     # via opentelemetry-instrumentation-botocore
-opentelemetry-proto==1.45.1
+opentelemetry-proto==1.45.2
     # via
     #   opentelemetry-exporter-otlp-proto-common
     #   opentelemetry-exporter-otlp-proto-grpc
-opentelemetry-sdk==1.45.1
+opentelemetry-sdk==1.45.2
     # via
     #   backend
     #   opentelemetry-exporter-otlp-common
     #   opentelemetry-exporter-otlp-proto-grpc
-opentelemetry-semantic-conventions==0.66b1
+opentelemetry-semantic-conventions==0.66b2
     # via
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-botocore
@@ -191,7 +202,7 @@ opentelemetry-semantic-conventions==0.66b1
     #   opentelemetry-instrumentation-sqlalchemy
     #   opentelemetry-instrumentation-wsgi
     #   opentelemetry-sdk
-opentelemetry-util-http==0.66b1
+opentelemetry-util-http==0.66b2
     # via
     #   opentelemetry-instrumentation-flask
     #   opentelemetry-instrumentation-requests
@@ -221,6 +232,7 @@ pycparser==3.0 ; implementation_name != 'PyPy'
 pydantic==2.12.5
     # via
     #   backend
+    #   openai
     #   pydantic-settings
 pydantic-core==2.41.5
     # via pydantic
@@ -256,6 +268,8 @@ s3transfer==0.19.0
     # via boto3
 six==1.17.0
     # via python-dateutil
+sniffio==1.3.1
+    # via openai
 sqlalchemy==2.0.48
     # via
     #   alembic
@@ -263,6 +277,8 @@ sqlalchemy==2.0.48
     #   sqlalchemy-utils
 sqlalchemy-utils==0.42.1
     # via backend
+tqdm==4.70.1
+    # via openai
 types-awscrt==0.34.1
     # via botocore-stubs
 types-s3transfer==0.16.0
@@ -271,6 +287,7 @@ typing-extensions==4.15.0
     # via
     #   alembic
     #   grpcio
+    #   openai
     #   opentelemetry-api
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-sdk

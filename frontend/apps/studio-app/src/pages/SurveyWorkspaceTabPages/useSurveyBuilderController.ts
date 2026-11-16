@@ -178,9 +178,11 @@ export function useSurveyBuilderController() {
   const [nodes, setNodesState] = useState<SurveyNode[]>([])
   const [invalidNodeIds, setInvalidNodeIds] = useState<Set<NodeId>>(() => new Set())
   const [isSaving, setIsSaving] = useState(false)
+  const [isPreparingDraft, setIsPreparingDraft] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
   const [pendingSwitch, setPendingSwitch] = useState<PendingSwitch | null>(null)
   const loadedVersionIdRef = useRef<number | null>(null)
+  const autoDraftAttemptedRef = useRef(new Set<string>())
 
   const backendSurveyNodes = useMemo(() => toSurveyNodes(backendNodes), [backendNodes])
   const isDraft = selectedVersion?.status === 'draft'
@@ -350,31 +352,65 @@ export function useSurveyBuilderController() {
     }
   }, [createVersion, projectId, queryClient, showToast, surveyId])
 
-  const copyToDraft = useCallback(async () => {
-    if (!selectedVersion || projectId == null || surveyId <= 0) return
+  const copyToDraft = useCallback(async (sourceVersionNumber?: number) => {
+    const versionNumber = sourceVersionNumber ?? selectedVersion?.version_number
+    if (versionNumber == null || projectId == null || surveyId <= 0) return
     try {
-      const version = await copyVersion.mutateAsync(selectedVersion.version_number)
+      const version = await copyVersion.mutateAsync(versionNumber)
       setSelectedVersionId(version.id)
       loadedVersionIdRef.current = null
-      showToast('success', `v${selectedVersion.version_number} duplicated to a new draft.`)
+      showToast('success', `v${versionNumber} duplicated to a new draft.`)
     } catch (error) {
       logBuilderFailure('Failed to duplicate version.', error, {
         projectId,
         surveyId,
-        versionId: selectedVersion.id,
-        versionNumber: selectedVersion.version_number,
+        versionNumber,
       })
       showToast('error', 'Failed to duplicate version.')
     }
   }, [copyVersion, projectId, selectedVersion, showToast, surveyId])
 
+  const autoDraftKey = `${projectId ?? 0}:${surveyId}`
+  const shouldAutoPrepareDraft =
+    projectId != null &&
+    surveyId > 0 &&
+    canEdit &&
+    !isProjectLoading &&
+    !isSurveyLoading &&
+    !isProjectError &&
+    !isSurveyError &&
+    versionsQuery.isSuccess &&
+    !versionsQuery.isFetching &&
+    versions.length === 0
+
+  useEffect(() => {
+    if (versionsQuery.isSuccess && !versionsQuery.isFetching && versions.length > 0) {
+      autoDraftAttemptedRef.current.add(autoDraftKey)
+      return
+    }
+    if (!shouldAutoPrepareDraft || autoDraftAttemptedRef.current.has(autoDraftKey)) return
+    autoDraftAttemptedRef.current.add(autoDraftKey)
+    setIsPreparingDraft(true)
+    void (async () => {
+      try {
+        await createDraft()
+      } catch (error) {
+        logBuilderFailure('Failed to prepare draft automatically.', error, { projectId, surveyId })
+        showToast('error', 'Could not create a draft automatically. Try the button below.')
+      } finally {
+        setIsPreparingDraft(false)
+      }
+    })()
+  }, [autoDraftKey, createDraft, projectId, shouldAutoPrepareDraft, showToast, surveyId, versions,
+    versionsQuery.isFetching, versionsQuery.isSuccess])
+
   const publishDraft = useCallback(async () => {
-    if (!selectedVersion || selectedVersion.status !== 'draft' || projectId == null || surveyId <= 0) return
+    if (!selectedVersion || selectedVersion.status !== 'draft' || projectId == null || surveyId <= 0) return false
     try {
       if (isDirty) await saveDraft()
       await publishVersion.mutateAsync(selectedVersion.version_number)
       clearCurrentDraft()
-      showToast('success', `v${selectedVersion.version_number} published.`)
+      return true
     } catch (error) {
       logBuilderFailure('Failed to publish draft.', error, {
         projectId,
@@ -383,6 +419,7 @@ export function useSurveyBuilderController() {
         versionNumber: selectedVersion.version_number,
       })
       showToast('error', 'Failed to publish draft.')
+      return false
     }
   }, [clearCurrentDraft, isDirty, projectId, publishVersion, saveDraft, selectedVersion, showToast, surveyId])
 
@@ -406,13 +443,16 @@ export function useSurveyBuilderController() {
   const dismissToast = useCallback(() => setToast(null), [])
 
   return {
+    projectId,
+    surveyId,
+    surveyVisibility: survey?.visibility ?? null,
     versions,
     selectedVersion,
     selectVersion,
     nodes,
     setNodes,
     invalidNodeIds,
-    isLoading: isProjectLoading || isSurveyLoading || versionsQuery.isLoading || nodesQuery.isLoading,
+    isLoading: isProjectLoading || isSurveyLoading || versionsQuery.isLoading || nodesQuery.isLoading || isPreparingDraft,
     isError: isProjectError || isSurveyError || versionsQuery.isError || nodesQuery.isError,
     isSaving,
     isCreating: createVersion.isPending,

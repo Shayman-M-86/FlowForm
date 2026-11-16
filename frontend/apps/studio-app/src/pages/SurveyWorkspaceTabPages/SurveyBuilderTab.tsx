@@ -1,27 +1,72 @@
-import { lazy, Suspense, useState } from 'react'
+import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { NodePage, type SurveyNode } from '@flowform/builder'
 import { Button, Modal, Spinner, Toast } from '@flowform/ui'
+import { useGenerateAiImport } from '@/api/hooks/nodes'
+import { useCreatePublicLink, usePublicLinks } from '@/api/hooks/links'
+import { useUpdateSurvey } from '@/api/hooks/surveys'
+import { PublishSuccessModal } from '@/components/PublishSuccessModal'
+import { StudioAiImportModal } from '@/components/StudioAiImportModal'
 import {
   SurveyBuilderArchivedPanel,
   SurveyBuilderNoVersionsPanel,
   SurveyBuilderPublishedNoDraftPanel,
   SurveyBuilderVersionToolbar,
 } from '@/components/SurveyBuilderTabChrome'
+import { defaultLinkName } from '@/lib/surveyNames'
 import { useSurveyBuilderController } from './useSurveyBuilderController'
-
-// The AI-import feature drags in the Zod validator, so it stays behind a lazy
-// boundary and only loads when the user opens it from the toolbar menu.
-const AiImportModal = lazy(() => import('@flowform/builder/ai-import'))
 
 export function SurveyBuilderTab() {
   const builder = useSurveyBuilderController()
+  const navigate = useNavigate()
+  const { slug, surveySlug } = useParams({ from: '/_studio/projects/$slug/surveys/$surveySlug/builder' })
+  const generateAiImport = useGenerateAiImport(
+    builder.projectId,
+    builder.surveyId > 0 ? builder.surveyId : null,
+    builder.selectedVersion?.status === 'draft' ? builder.selectedVersion.version_number : null,
+  )
+  const createLink = useCreatePublicLink(builder.projectId, builder.surveyId > 0 ? builder.surveyId : null)
+  const updateSurvey = useUpdateSurvey(builder.projectId, builder.surveyId > 0 ? String(builder.surveyId) : null)
   const [debugOpen, setDebugOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
+  // Existing links are only needed to number the general link's default name.
+  const { data: existingLinks = [] } = usePublicLinks(
+    publishOpen ? builder.projectId : null,
+    builder.surveyId > 0 ? builder.surveyId : null,
+  )
 
   function handleAiImport(imported: SurveyNode[]) {
     builder.setNodes(imported)
     setAiOpen(false)
+  }
+
+  async function handlePublish() {
+    if (await builder.publishDraft()) setPublishOpen(true)
+  }
+
+  async function createGeneralLink(): Promise<string> {
+    if (builder.surveyVisibility === 'private') {
+      await updateSurvey.mutateAsync({ title: null, visibility: 'link_only', public_slug: null })
+    }
+    const result = await createLink.mutateAsync({
+      name: defaultLinkName('general_link', existingLinks),
+      link_type: 'general',
+      assignment_source: 'manual',
+      assigned_participant_id: null,
+      expires_at: null,
+    })
+    return result.url
+  }
+
+  function viewLiveResponses() {
+    setPublishOpen(false)
+    void navigate({
+      to: '/projects/$slug/surveys/$surveySlug/responses',
+      params: { slug, surveySlug },
+      search: { status: 'in_progress' },
+    })
   }
 
   if (builder.isLoading) {
@@ -85,7 +130,7 @@ export function SurveyBuilderTab() {
         onCopyToDraft={() => void builder.copyToDraft()}
         onAiImport={() => setAiOpen(true)}
         onSave={() => void builder.saveDraft()}
-        onPublish={() => void builder.publishDraft()}
+        onPublish={() => void handlePublish()}
         onArchive={() => void builder.archiveVersion()}
       />
 
@@ -109,25 +154,45 @@ export function SurveyBuilderTab() {
           />
         </MemoryRouter>
       ) : builder.selectedVersion.status === 'published' ? (
-        <SurveyBuilderPublishedNoDraftPanel
-          publishedVersion={builder.selectedVersion}
-          canEdit={builder.canEdit}
-          isCopying={builder.isCopying}
-          onCopyToDraft={() => void builder.copyToDraft()}
-        />
+        <>
+          <SurveyBuilderPublishedNoDraftPanel
+            publishedVersion={builder.selectedVersion}
+            canEdit={builder.canEdit}
+            isCopying={builder.isCopying}
+            onCopyToDraft={() => void builder.copyToDraft()}
+          />
+          <MemoryRouter>
+            <NodePage
+              nodes={builder.nodes}
+              disabled
+              readOnly
+              onNodesChange={() => undefined}
+            />
+          </MemoryRouter>
+        </>
       ) : (
         <SurveyBuilderArchivedPanel version={builder.selectedVersion} />
       )}
 
       {aiOpen && (
-        <Suspense fallback={null}>
-          <AiImportModal
-            open={aiOpen}
-            hasExistingQuestions={builder.nodes.length > 0}
-            onClose={() => setAiOpen(false)}
-            onImport={handleAiImport}
-          />
-        </Suspense>
+        <StudioAiImportModal
+          open={aiOpen}
+          hasExistingNodes={builder.nodes.length > 0}
+          onClose={() => setAiOpen(false)}
+          onGenerate={(prompt) => generateAiImport.mutateAsync(prompt)}
+          onImport={handleAiImport}
+        />
+      )}
+
+      {publishOpen && (
+        <PublishSuccessModal
+          open={publishOpen}
+          canCreateLink={builder.canEdit}
+          requiresLinkOnly={builder.surveyVisibility === 'private'}
+          onClose={() => setPublishOpen(false)}
+          onCreateLink={createGeneralLink}
+          onViewResponses={viewLiveResponses}
+        />
       )}
 
       {import.meta.env.DEV && (

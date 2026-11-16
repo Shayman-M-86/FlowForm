@@ -325,7 +325,7 @@
           {
             "id": "renameByRegex",
             "options": {
-              "regex": "^\\{[^\"]*\"([^\"]*)\"\\}$",
+              "regex": "^(?:\\{[^\"]*\")?([46])(?:\"\\})?$",
               "renamePattern": "IPv$1"
             }
           }

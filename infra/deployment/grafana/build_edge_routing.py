@@ -185,7 +185,7 @@ panel(
         },
         "reduceOptions": {"calcs": ["lastNotNull"]},
     },
-    transforms=[rename('^\\{[^"]*"([^"]*)"\\}$', "IPv$1")],
+    transforms=[rename('^(?:\\{[^"]*")?([46])(?:"\\})?$', "IPv$1")],
     overrides=[
         {
             "matcher": {"id": "byName", "options": "IPv6"},
