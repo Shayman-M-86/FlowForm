@@ -1,7 +1,9 @@
-import { lazy, Suspense, useState } from 'react'
+import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { NodePage, type SurveyNode } from '@flowform/builder'
 import { Button, Modal, Spinner, Toast } from '@flowform/ui'
+import { useGenerateAiImport } from '@/api/hooks/nodes'
+import { StudioAiImportModal } from '@/components/StudioAiImportModal'
 import {
   SurveyBuilderArchivedPanel,
   SurveyBuilderNoVersionsPanel,
@@ -10,12 +12,13 @@ import {
 } from '@/components/SurveyBuilderTabChrome'
 import { useSurveyBuilderController } from './useSurveyBuilderController'
 
-// The AI-import feature drags in the Zod validator, so it stays behind a lazy
-// boundary and only loads when the user opens it from the toolbar menu.
-const AiImportModal = lazy(() => import('@flowform/builder/ai-import'))
-
 export function SurveyBuilderTab() {
   const builder = useSurveyBuilderController()
+  const generateAiImport = useGenerateAiImport(
+    builder.projectId,
+    builder.surveyId > 0 ? builder.surveyId : null,
+    builder.selectedVersion?.status === 'draft' ? builder.selectedVersion.version_number : null,
+  )
   const [debugOpen, setDebugOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
 
@@ -109,25 +112,34 @@ export function SurveyBuilderTab() {
           />
         </MemoryRouter>
       ) : builder.selectedVersion.status === 'published' ? (
-        <SurveyBuilderPublishedNoDraftPanel
-          publishedVersion={builder.selectedVersion}
-          canEdit={builder.canEdit}
-          isCopying={builder.isCopying}
-          onCopyToDraft={() => void builder.copyToDraft()}
-        />
+        <>
+          <SurveyBuilderPublishedNoDraftPanel
+            publishedVersion={builder.selectedVersion}
+            canEdit={builder.canEdit}
+            isCopying={builder.isCopying}
+            onCopyToDraft={() => void builder.copyToDraft()}
+          />
+          <MemoryRouter>
+            <NodePage
+              nodes={builder.nodes}
+              disabled
+              readOnly
+              onNodesChange={() => undefined}
+            />
+          </MemoryRouter>
+        </>
       ) : (
         <SurveyBuilderArchivedPanel version={builder.selectedVersion} />
       )}
 
       {aiOpen && (
-        <Suspense fallback={null}>
-          <AiImportModal
-            open={aiOpen}
-            hasExistingQuestions={builder.nodes.length > 0}
-            onClose={() => setAiOpen(false)}
-            onImport={handleAiImport}
-          />
-        </Suspense>
+        <StudioAiImportModal
+          open={aiOpen}
+          hasExistingNodes={builder.nodes.length > 0}
+          onClose={() => setAiOpen(false)}
+          onGenerate={(prompt) => generateAiImport.mutateAsync(prompt)}
+          onImport={handleAiImport}
+        />
       )}
 
       {import.meta.env.DEV && (

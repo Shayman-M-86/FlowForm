@@ -13,7 +13,7 @@ import type {
   CreateQuestionNodeRequest,
   CreateRuleNodeRequest,
 } from "@flowform/schema";
-import { NodePillMobileControlsProvider } from "../../components/node/NodePillShell";
+import { NodePillMobileControlsProvider, NodePillReadOnlyProvider } from "../../components/node/NodePillShell";
 import { PlusGridAnimation } from "../../components/node/PlusGridAnimation";
 import { NodeRenderer } from "./NodeRenderer";
 import { createDefaultNode, type NodeKind } from "./nodeFactories";
@@ -74,6 +74,7 @@ const SWAP_ANIMATION_MS = 280;
 interface NodePageProps {
   nodes: SurveyNode[];
   disabled?: boolean;
+  readOnly?: boolean;
   onNodesChange: (nodes: SurveyNode[]) => void;
   /**
    * Ids of nodes with an empty required field. When present, the matching pills
@@ -85,6 +86,7 @@ interface NodePageProps {
 export function NodePage({
   nodes,
   disabled = false,
+  readOnly = false,
   onNodesChange,
   invalidNodeIds,
 }: NodePageProps) {
@@ -194,10 +196,12 @@ export function NodePage({
   }, [nodes]);
 
   const updateNode = useCallback((next: SurveyNode) => {
+    if (readOnly) return;
     onNodesChange(nodes.map((node) => (node.id === next.id ? next : node)));
-  }, [nodes, onNodesChange]);
+  }, [nodes, onNodesChange, readOnly]);
 
   const removeNode = useCallback((id: NodeId) => {
+    if (readOnly) return;
     onNodesChange(nodes.filter((node) => node.id !== id));
     setEditingIds((current) => {
       if (!current.has(id)) return current;
@@ -212,9 +216,10 @@ export function NodePage({
       return next;
     });
     questionWrapperNodeMap.current.delete(id);
-  }, [nodes, onNodesChange]);
+  }, [nodes, onNodesChange, readOnly]);
 
   const addNode = useCallback((kind: NodeKind) => {
+    if (readOnly) return;
     const node = createDefaultNode(kind, getNextSortKey(nodes), computeNextNodeKey(nodes, kind));
     newlyAddedNodeId.current = node.id;
     onNodesChange([...nodes, node]);
@@ -223,9 +228,10 @@ export function NodePage({
       next.add(node.id);
       return next;
     });
-  }, [nodes, onNodesChange]);
+  }, [nodes, onNodesChange, readOnly]);
 
   const handleMove = useCallback((id: NodeId, direction: "up" | "down") => {
+    if (readOnly) return;
     pendingMoveAnimation.current = {
       positions: new Map(
         nodes.map((node) => [
@@ -236,9 +242,10 @@ export function NodePage({
       movedId: id,
     };
     onNodesChange(moveNode(nodes, id, direction));
-  }, [nodes, onNodesChange]);
+  }, [nodes, onNodesChange, readOnly]);
 
   function setEditMode(id: NodeId, isEditMode: boolean) {
+    if (readOnly) return;
     setEditingIds((current) => {
       const next = new Set(current);
       if (isEditMode) {
@@ -261,7 +268,7 @@ export function NodePage({
 
   function expandInEditMode(id: NodeId) {
     expand(id);
-    setEditMode(id, true);
+    if (!readOnly) setEditMode(id, true);
   }
 
   function toggleCollapsed(id: NodeId) {
@@ -313,74 +320,76 @@ export function NodePage({
   ), [addNode, disabled]);
 
   return (
-    <section className="node-page relative isolate flex min-h-full flex-col mt-0.5 overflow-x-clip">
-      <style dangerouslySetInnerHTML={{ __html: NODE_PAGE_STYLES }} />
-      <PlusGridAnimation />
-      <div className="node-page__content relative z-10 box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-(--node-page-toolbar-gap) max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-gap)+10px)]">
-        <div className="node-page__questions-stack flex w-full flex-col gap-5">
-          {nodes.map((node, index) => {
-            const nextNode = nodes[index + 1];
-            const shouldShowDivider =
-              index < nodes.length - 1 &&
-              (isExpanded(node) || (nextNode ? isExpanded(nextNode) : false));
-            const siblings = siblingsMap.get(node.id);
+    <NodePillReadOnlyProvider value={readOnly}>
+      <section className="node-page relative isolate flex min-h-full flex-col mt-0.5 overflow-x-clip">
+        <style dangerouslySetInnerHTML={{ __html: NODE_PAGE_STYLES }} />
+        <PlusGridAnimation />
+        <div className="node-page__content relative z-10 box-border flex w-full max-w-[calc(980px+(var(--node-page-controls-gutter)*2))] shrink-0 flex-col items-center self-center px-[var(--node-page-controls-gutter)] pb-10 pt-(--node-page-toolbar-gap) max-[640px]:gap-[14px] max-[640px]:px-5 max-[640px]:pt-[calc(var(--node-page-toolbar-gap)+10px)]">
+          <div className="node-page__questions-stack flex w-full flex-col gap-5">
+            {nodes.map((node, index) => {
+              const nextNode = nodes[index + 1];
+              const shouldShowDivider =
+                index < nodes.length - 1 &&
+                (isExpanded(node) || (nextNode ? isExpanded(nextNode) : false));
+              const siblings = siblingsMap.get(node.id);
 
-            return (
-              <Fragment key={node.id}>
-                <QuestionRow
-                  index={index}
-                  isLast={index === nodes.length - 1}
-                  isEditing={editingIds.has(node.id)}
-                  isExpanded={isExpanded(node)}
-                  disabled={disabled}
-                  onToggleCollapse={() => toggleCollapsed(node.id)}
-                  onMoveUp={() => handleMove(node.id, "up")}
-                  onMoveDown={() => handleMove(node.id, "down")}
-                  onSetWrapperNode={(wrapper) => {
-                    if (wrapper) {
-                      questionWrapperNodeMap.current.set(node.id, wrapper);
-                    } else {
-                      questionWrapperNodeMap.current.delete(node.id);
-                    }
-                  }}
-                >
-                  <NodeRenderer
-                    node={node}
-                    onChange={updateNode}
-                    onDelete={() => removeNode(node.id)}
-                    idError={duplicateIds.has(node.id) ? "ID must be unique." : undefined}
-                    validationError={
-                      invalidNodeIds?.has(node.id)
-                        ? "Fill in all required fields before saving."
-                        : undefined
-                    }
-                    isCollapsed={collapsedIds.has(node.id)}
-                    isEditMode={editingIds.has(node.id)}
-                    onExpand={() => expand(node.id)}
-                    onExpandInEditMode={() => expandInEditMode(node.id)}
-                    onEditModeChange={(isEditMode) => setEditMode(node.id, isEditMode)}
-                    previousSiblings={siblings?.previous ?? []}
-                    followingSiblings={siblings?.following ?? []}
-                  />
-                </QuestionRow>
+              return (
+                <Fragment key={node.id}>
+                  <QuestionRow
+                    index={index}
+                    isLast={index === nodes.length - 1}
+                    isEditing={editingIds.has(node.id) && !readOnly}
+                    isExpanded={isExpanded(node)}
+                    disabled={disabled}
+                    onToggleCollapse={() => toggleCollapsed(node.id)}
+                    onMoveUp={() => handleMove(node.id, "up")}
+                    onMoveDown={() => handleMove(node.id, "down")}
+                    onSetWrapperNode={(wrapper) => {
+                      if (wrapper) {
+                        questionWrapperNodeMap.current.set(node.id, wrapper);
+                      } else {
+                        questionWrapperNodeMap.current.delete(node.id);
+                      }
+                    }}
+                  >
+                    <NodeRenderer
+                      node={node}
+                      onChange={updateNode}
+                      onDelete={() => removeNode(node.id)}
+                      idError={duplicateIds.has(node.id) ? "ID must be unique." : undefined}
+                      validationError={
+                        invalidNodeIds?.has(node.id)
+                          ? "Fill in all required fields before saving."
+                          : undefined
+                      }
+                      isCollapsed={collapsedIds.has(node.id)}
+                      isEditMode={editingIds.has(node.id) && !readOnly}
+                      onExpand={() => expand(node.id)}
+                      onExpandInEditMode={() => expandInEditMode(node.id)}
+                      onEditModeChange={(isEditMode) => setEditMode(node.id, isEditMode)}
+                      previousSiblings={siblings?.previous ?? []}
+                      followingSiblings={siblings?.following ?? []}
+                    />
+                  </QuestionRow>
 
-                {shouldShowDivider && (
-                  <div className="my-2 h-px bg-border" />
-                )}
+                  {shouldShowDivider && (
+                    <div className="my-2 h-px bg-border" />
+                  )}
 
-                {index === nodes.length - 1 && (
-                  <>
-                    <div className="node-page__section-divider my-2 h-px bg-border" />
-                    {addQuestionCard}
-                  </>
-                )}
-              </Fragment>
-            );
-          })}
-          {nodes.length === 0 && addQuestionCard}
+                  {!readOnly && index === nodes.length - 1 && (
+                    <>
+                      <div className="node-page__section-divider my-2 h-px bg-border" />
+                      {addQuestionCard}
+                    </>
+                  )}
+                </Fragment>
+              );
+            })}
+            {!readOnly && nodes.length === 0 && addQuestionCard}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </NodePillReadOnlyProvider>
   );
 }
 

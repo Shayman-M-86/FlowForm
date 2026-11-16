@@ -16,6 +16,8 @@ import {
 type MobileControls = { leading?: ReactNode; trailing?: ReactNode };
 const MobileControlsContext = createContext<MobileControls>({});
 export const NodePillMobileControlsProvider = MobileControlsContext.Provider;
+const ReadOnlyContext = createContext(false);
+export const NodePillReadOnlyProvider = ReadOnlyContext.Provider;
 
 type TopbarProps = {
   family: string;
@@ -46,6 +48,7 @@ export function NodePillTopbar({
   idField,
   settings,
 }: TopbarProps) {
+  const readOnly = useContext(ReadOnlyContext);
   const { leading, trailing } = useContext(MobileControlsContext);
   const mobileActionsTriggerRef = useRef<HTMLSpanElement>(null);
   const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
@@ -138,6 +141,7 @@ export function NodePillTopbar({
           type="button"
           variant={isEditMode ? "primary" : "secondary"}
           size="xs"
+          disabled={readOnly}
           onClick={onToggleEditMode}
         >
           {isEditMode ? "Editing" : "Edit"}
@@ -509,6 +513,7 @@ type CollapsedProps = {
 export function NodePillCollapsed({ family, tagValue, title, onExpand, onExpandInEditMode }: CollapsedProps) {
   void title;
   const { leading } = useContext(MobileControlsContext);
+  const readOnly = useContext(ReadOnlyContext);
   return (
     <div className={nodePillCollapsedShellClass}>
       <div className="flex items-center gap-3 px-3.5 py-3.5">
@@ -528,6 +533,7 @@ export function NodePillCollapsed({ family, tagValue, title, onExpand, onExpandI
           type="button"
           variant="secondary"
           size="xs"
+          disabled={readOnly}
           onClick={onExpandInEditMode}
         >
           Edit
