@@ -405,12 +405,12 @@ export function useSurveyBuilderController() {
     versionsQuery.isFetching, versionsQuery.isSuccess])
 
   const publishDraft = useCallback(async () => {
-    if (!selectedVersion || selectedVersion.status !== 'draft' || projectId == null || surveyId <= 0) return
+    if (!selectedVersion || selectedVersion.status !== 'draft' || projectId == null || surveyId <= 0) return false
     try {
       if (isDirty) await saveDraft()
       await publishVersion.mutateAsync(selectedVersion.version_number)
       clearCurrentDraft()
-      showToast('success', `v${selectedVersion.version_number} published.`)
+      return true
     } catch (error) {
       logBuilderFailure('Failed to publish draft.', error, {
         projectId,
@@ -419,6 +419,7 @@ export function useSurveyBuilderController() {
         versionNumber: selectedVersion.version_number,
       })
       showToast('error', 'Failed to publish draft.')
+      return false
     }
   }, [clearCurrentDraft, isDirty, projectId, publishVersion, saveDraft, selectedVersion, showToast, surveyId])
 
@@ -444,6 +445,7 @@ export function useSurveyBuilderController() {
   return {
     projectId,
     surveyId,
+    surveyVisibility: survey?.visibility ?? null,
     versions,
     selectedVersion,
     selectVersion,

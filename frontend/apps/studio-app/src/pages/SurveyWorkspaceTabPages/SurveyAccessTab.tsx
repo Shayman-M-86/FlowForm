@@ -23,7 +23,9 @@ import {
   Link,
   LockKeyhole,
   MailCheck,
+  QrCode,
 } from 'lucide-react'
+import { SurveyLinkShare } from '@/components/SurveyLinkShare'
 import { useProject } from '@/api/hooks/projects'
 import { useProjectMembers } from '@/api/hooks/members'
 import { useProjectRoles } from '@/api/hooks/roles'
@@ -385,6 +387,7 @@ function LinkCard({
   const moreRef = useRef<HTMLSpanElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
   const [emailConfirmOpen, setEmailConfirmOpen] = useState(false)
   const sendEmail = useSendLinkEmail(projectId, surveyId)
   const [emailSent, setEmailSent] = useState(false)
@@ -437,7 +440,13 @@ function LinkCard({
                   )}
                 </div>
               )}
-              <p className="min-w-[min(100%,16rem)] max-w-full truncate font-mono text-xs text-muted-foreground ml-auto text-right">
+              {/* inline-size containment stops the long URL from propagating its
+                  width up the grid ancestors, so it truncates instead of
+                  holding the page open. */}
+              <p
+                className="min-w-0 flex-1 basis-[16rem] truncate text-right font-mono text-xs text-muted-foreground [contain:inline-size]"
+                title={url}
+              >
                 {url}
               </p>
             </div>
@@ -481,6 +490,22 @@ function LinkCard({
                     sections={[{
                       label: 'Link actions',
                       actions: [
+                        {
+                          key: 'qr',
+                          content: (
+                            <Button
+                              type="button"
+                              role="menuitem"
+                              variant="secondary"
+                              size="sm"
+                              className="w-full justify-start gap-2"
+                            >
+                              <QrCode size={14} strokeWidth={2} aria-hidden="true" />
+                              <span>Show QR code</span>
+                            </Button>
+                          ),
+                          onSelect: () => setQrOpen(true),
+                        },
                         {
                           key: 'toggle',
                           content: (
@@ -548,6 +573,35 @@ function LinkCard({
         </div>
       </div>
     </Card>
+
+    {qrOpen && (
+      <Modal
+        open
+        onClose={() => setQrOpen(false)}
+        title="Survey link QR code"
+        width={520}
+        footer={(
+          <div className="flex w-full justify-end">
+            <Button type="button" variant="secondary" size="sm" onClick={() => setQrOpen(false)}>
+              Done
+            </Button>
+          </div>
+        )}
+      >
+        <div className="grid justify-items-center gap-5 py-2 text-center">
+          <div className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
+            <QrCode size={30} strokeWidth={1.8} aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="break-words text-lg font-semibold text-foreground">{link.name}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {status === 'active' ? 'Scan to open the survey.' : 'This link is not currently accepting responses.'}
+            </p>
+          </div>
+          <SurveyLinkShare url={url} label="Survey link" />
+        </div>
+      </Modal>
+    )}
 
     {emailConfirmOpen && (
       <Modal
