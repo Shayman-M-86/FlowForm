@@ -36,6 +36,7 @@ def generate_ai_import(project_id: int, survey_id: int, version_number: int):
         version_number=version_number,
         prompt=payload.prompt,
         settings=current_settings().flowform.openai,
+        actor=g.actor,
     )
     return serialize(AIImportResponse, preview), 200
 

@@ -173,6 +173,9 @@ class OpenAISettings(BaseModel):
 
     api_key_file: str | None = None
     model: str = "gpt-4.1-mini"
+    # Per-user cap on generation requests (in-memory, per worker process).
+    rate_limit_max_requests: int = 10
+    rate_limit_window_seconds: int = 3600
 
     @property
     def api_key(self) -> SecretStr | None:

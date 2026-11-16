@@ -1,6 +1,7 @@
 """OpenAI-backed survey draft generation and conversion."""
 
 import logging
+import math
 from uuid import uuid4
 
 from openai import APIError, OpenAI
@@ -8,6 +9,7 @@ from pydantic import ValidationError
 
 from app.core.config import OpenAISettings
 from app.core.errors import AppError
+from app.middleware.rate_limit.service import RateLimitConfig, RateLimitService
 from app.schema.api.requests.content.ai_import import AIImportResponse, GeneratedQuestion, GeneratedSurvey
 from app.schema.api.requests.content.node import CreateQuestionNodeRequest
 
@@ -17,7 +19,10 @@ logger = logging.getLogger(__name__)
 class OpenAIService:
     """Generate a survey preview without changing stored survey content."""
 
-    def generate(self, prompt: str, settings: OpenAISettings) -> AIImportResponse:
+    def __init__(self) -> None:
+        self._limiter: RateLimitService | None = None
+
+    def generate(self, prompt: str, settings: OpenAISettings, user_key: str) -> AIImportResponse:
         """Call Structured Outputs and validate the resulting builder nodes."""
         try:
             api_key = settings.api_key
@@ -26,6 +31,7 @@ class OpenAIService:
             raise AppError(503, "ai_import_unavailable", "Survey generation is not configured") from exc
         if api_key is None or not api_key.get_secret_value():
             raise AppError(503, "ai_import_unavailable", "Survey generation is not configured")
+        self._check_rate_limit(user_key, settings)
 
         try:
             client = OpenAI(api_key=api_key.get_secret_value(), timeout=30.0, max_retries=1)
@@ -58,6 +64,24 @@ class OpenAIService:
         except (ValidationError, ValueError) as exc:
             logger.warning("OpenAI survey draft failed FlowForm validation: %s", type(exc).__name__)
             raise AppError(502, "ai_import_invalid", "Generated survey does not meet builder rules") from exc
+
+    def _check_rate_limit(self, user_key: str, settings: OpenAISettings) -> None:
+        """Count every request that reaches OpenAI, including failed generations."""
+        if self._limiter is None:
+            self._limiter = RateLimitService(
+                RateLimitConfig(
+                    max_requests=settings.rate_limit_max_requests,
+                    window_seconds=settings.rate_limit_window_seconds,
+                )
+            )
+        decision = self._limiter.check(user_key)
+        if not decision.allowed:
+            minutes = math.ceil((decision.retry_after_seconds or 60) / 60)
+            raise AppError(
+                429,
+                "ai_import_rate_limited",
+                f"AI import limit reached. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
+            )
 
     @staticmethod
     def _to_node(question: GeneratedQuestion, index: int) -> CreateQuestionNodeRequest:

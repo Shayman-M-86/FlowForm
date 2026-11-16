@@ -45,11 +45,12 @@ class ContentService:
         version_number: int,
         prompt: str,
         settings: OpenAISettings,
+        actor: User,
     ) -> AIImportResponse:
         """Generate a preview only for an editable survey version."""
         version = self._get_version(db, project_id, survey_id, version_number)
         version_rules.ensure_is_editable(version=version)
-        return _openai_service.generate(prompt, settings)
+        return _openai_service.generate(prompt, settings, user_key=str(actor.id))
 
     # ── Nodes (questions + rules) ──────────────────────────────────────────────
 
