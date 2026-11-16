@@ -1,8 +1,50 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SurveyNode } from '@flowform/builder'
 import { Button, LargeInput, Modal } from '@flowform/ui'
 import { Sparkles } from 'lucide-react'
 import type { AiImportPreview } from '@/api/hooks/nodes'
+import './StudioAiImportModal.css'
+
+const GENERATING_STEPS = [
+  'Reading your request',
+  'Sketching the question flow',
+  'Choosing question types',
+  'Writing answer options',
+  'Checking builder rules',
+]
+
+/** Animated stand-in shown while the backend generates a draft. */
+function AiGeneratingPanel() {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    const timer = window.setInterval(() => setElapsed((seconds) => seconds + 1), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const step = GENERATING_STEPS[Math.floor(elapsed / 2) % GENERATING_STEPS.length]
+
+  return (
+    <div className="grid gap-4 rounded-lg border border-border bg-card p-4" aria-busy="true">
+      <div className="flex items-center gap-4">
+        <div className="ai-gen-orb" aria-hidden="true">
+          <Sparkles size={20} className="ai-gen-orb__icon" />
+        </div>
+        <div className="min-w-0">
+          <p className="ai-gen-title text-sm font-semibold">Generating your survey</p>
+          <p className="text-xs text-muted-foreground" role="status" aria-live="polite">
+            <span key={step} className="ai-gen-status inline-block">{step}…</span>
+            <span className="ml-2 tabular-nums">{elapsed}s</span>
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-2.5" aria-hidden="true">
+        <div className="ai-gen-line w-11/12" />
+        <div className="ai-gen-line w-3/4" />
+        <div className="ai-gen-line w-5/6" />
+        <div className="ai-gen-line w-2/3" />
+      </div>
+    </div>
+  )
+}
 
 type StudioAiImportModalProps = {
   open: boolean
@@ -72,13 +114,14 @@ export function StudioAiImportModal({
         </div>
       )}
     >
-      <div className="grid gap-4">
+      <div className="ai-gen grid gap-4">
         <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
           <Sparkles size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
           <p>Describe the questions you need. Review the result before adding it to this draft.</p>
         </div>
         <LargeInput
           label="Survey request"
+          shellClassName={isGenerating ? 'ai-gen-shell' : undefined}
           rows={5}
           maxText={4000}
           showCount
@@ -92,6 +135,7 @@ export function StudioAiImportModal({
           placeholder="Create a short survey about students' sleep habits, including sleep duration, caffeine, and sleep quality."
           disabled={isGenerating}
         />
+        {isGenerating && <AiGeneratingPanel />}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {preview && (
           <div className="grid gap-3 rounded-lg border border-border bg-card p-4">
