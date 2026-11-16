@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Badge, Card, Modal } from '@flowform/ui'
 import type { AnswerSlot, SessionTree } from '@/api/hooks/results'
 import { orderAnswers, presentAnswer } from '@/lib/responsePresentation'
@@ -18,6 +19,20 @@ const STATUS_LABEL = {
   in_progress: 'In Progress',
   abandoned: 'Abandoned',
 } as const
+
+/** Manual scrolling within this window suppresses the auto-scroll to a new answer. */
+const USER_SCROLL_GRACE_MS = 1_000
+const BOTTOM_PADDING_PX = 24
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
+
+/** An answer slot that holds a recorded response (not just a placeholder). */
+function isRecorded(answer: AnswerSlot): boolean {
+  return answer.has_encrypted_answer || answer.state != null
+}
+
+function scrolledRecently(lastUserScrollAt: number): boolean {
+  return performance.now() - lastUserScrollAt < USER_SCROLL_GRACE_MS
+}
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -70,13 +85,59 @@ function AnswerCard({ answer, index }: { answer: AnswerSlot; index: number }) {
 export function ResponseDetailModal({ sessionTree, onClose }: Props) {
   const session = sessionTree?.session
   const answers = orderAnswers(sessionTree?.answers ?? [])
+  const open = sessionTree != null
+  const sessionId = session?.session_id ?? null
+  const answeredKey = answers.filter(isRecorded).map((answer) => answer.question_node_id).join('|')
+
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const lastUserScrollAt = useRef(Number.NEGATIVE_INFINITY)
+  const seenAnswers = useRef<{ sessionId: string | null; ids: Set<string> }>({ sessionId: null, ids: new Set() })
+
+  // Remember when the viewer last scrolled by hand, so live updates don't
+  // yank the view away from something they are reading.
+  useEffect(() => {
+    const body = bodyRef.current
+    if (!open || !body) return
+    const listeners = new AbortController()
+    const options = { passive: true, signal: listeners.signal }
+    let pointerDown = false // dragging the scrollbar
+    const markUserScroll = () => { lastUserScrollAt.current = performance.now() }
+    body.addEventListener('wheel', markUserScroll, options)
+    body.addEventListener('touchmove', markUserScroll, options)
+    body.addEventListener('keydown', (event) => { if (SCROLL_KEYS.has(event.key)) markUserScroll() }, options)
+    body.addEventListener('pointerdown', () => { pointerDown = true }, options)
+    body.addEventListener('scroll', () => { if (pointerDown) markUserScroll() }, options)
+    window.addEventListener('pointerup', () => { pointerDown = false }, options)
+    return () => listeners.abort()
+  }, [open])
+
+  // When a new answer arrives for the open session, bring it into view.
+  useEffect(() => {
+    const ids = new Set(answeredKey ? answeredKey.split('|') : [])
+    const previous = seenAnswers.current
+    seenAnswers.current = { sessionId, ids }
+    if (sessionId == null || previous.sessionId !== sessionId) return
+
+    const newIds = [...ids].filter((id) => !previous.ids.has(id))
+    if (newIds.length === 0) return
+    if (scrolledRecently(lastUserScrollAt.current)) return
+
+    const body = bodyRef.current
+    const target = body?.querySelector<HTMLElement>(`[data-answer-id="${CSS.escape(newIds[newIds.length - 1])}"]`)
+    if (!body || !target) return
+    const behavior: ScrollBehavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    const overshoot = target.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom
+    body.scrollTo({ top: body.scrollTop + overshoot + BOTTOM_PADDING_PX, behavior })
+  }, [sessionId, answeredKey])
 
   return (
     <Modal
-      open={sessionTree != null}
+      open={open}
       onClose={onClose}
       title="Response detail"
-      width={640}
+      width={1100}
+      className="max-h-[calc(100dvh-3rem)]"
+      bodyRef={bodyRef}
     >
       {session ? (
         <div className="grid gap-4">
@@ -122,7 +183,9 @@ export function ResponseDetailModal({ sessionTree, onClose }: Props) {
             ) : (
               <div className="grid gap-2">
                 {answers.map((answer, index) => (
-                  <AnswerCard key={answer.question_node_id} answer={answer} index={index} />
+                  <div key={answer.question_node_id} data-answer-id={answer.question_node_id}>
+                    <AnswerCard answer={answer} index={index} />
+                  </div>
                 ))}
               </div>
             )}
