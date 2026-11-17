@@ -42,6 +42,7 @@
             "${workspaceFolder:frontend}/**",
             "**/on_hold/**",
             "**/cdk.out/**",
+            
         ],
         "python.analysis.ignore": [
             "**/on_hold/**",
@@ -64,6 +65,9 @@
             "**/.ruff_cache": true,
             "**/.coverage": true,
             "**/cdk.out": true,
+            ".docsys": true,
+            ".cloudflare": true,
+            ".cache": true,
         },
         "files.watcherExclude": {
             "**/.git/objects/**": true,
