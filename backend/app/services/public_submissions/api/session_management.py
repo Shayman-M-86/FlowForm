@@ -17,6 +17,7 @@ from app.crypto._internal.client_extension import get_crypto_clients
 from app.domain.errors import SessionNotFoundError
 from app.repositories import public_link_repo as plr
 from app.repositories import surveys_repo as sr
+from app.repositories.core import submission_sessions as ssr
 from app.schema.api.requests.submission_sessions import (
     StartSubmissionSessionRequest,
 )
@@ -121,7 +122,11 @@ class SessionManagementService:
         if raw_resume_token is None:
             raise SessionNotFoundError()
 
-        session = load_current_session_record(db, raw_resume_token)
+        # Match the entry before validating status: a stale cookie from another
+        # survey/link must not prevent the browser from starting a new session.
+        session = ssr.get_by_token_hash(db, ssr.hash_browser_session_token(raw_resume_token))
+        if session is None:
+            raise SessionNotFoundError()
         access = payload.access
         if access.type == "link_token":
             link = plr.resolve_token(db, access.token)
@@ -139,6 +144,8 @@ class SessionManagementService:
                 or survey_for_slug.public_slug != access.public_slug
             ):
                 raise SessionNotFoundError()
+
+        session = load_current_session_record(db, raw_resume_token)
 
         survey = sr.get_survey(
             db,
