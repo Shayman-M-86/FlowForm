@@ -5,7 +5,7 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-07-27
+last_edited: 2026-11-17
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]
@@ -35,6 +35,12 @@ Workspace categories. Active follow-up belongs in
 understanding in Project Knowledge.
 
 ## Retained material
+
+The `old-docs/` directory holds imported legacy snapshots. Docsys excludes this
+subtree from discovery, structural and metadata validation, and staged edit-date
+checks. Preserve the files as historical material without updating their dates or
+front matter to satisfy current documentation rules. This archive index and the
+other authored archive pages remain managed documentation.
 
 - [[completed-index|Completed workspace material]] holds plans whose
   coordination role ended.

@@ -5,7 +5,7 @@ document_type: workflow
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-17
 tags: [meta]
 related_code:
   - "../../../../AGENTS.md"
@@ -75,7 +75,9 @@ refreshed through their generator rather than edited by hand.
 Automation checks structure, metadata, links, collection boundaries, and
 evidence drift. Human review still decides whether the prose is accurate,
 appropriately general, non-duplicative, and useful without following every
-link.
+link. Imported legacy snapshots under `docs/development-workspace/archive/old-docs/`
+are excluded from these checks and staged edit-date updates; preserve their
+historical metadata.
 
 Documentation impact is reviewed once after relevant implementation behaviour
 has settled. It is not a task-start requirement and is not repeated for

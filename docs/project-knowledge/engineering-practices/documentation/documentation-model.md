@@ -5,7 +5,7 @@ document_type: overview
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-17
 tags: [meta]
 related_code:
   - "../../../../tools/docs/docsys/model.py"
@@ -34,8 +34,9 @@ maintained model of responsibilities, boundaries, and durable behaviour.
   migrations, debt, and historical work. It may be incomplete and is never
   promoted as verified current behaviour.
 
-Historical material, including `old-docs/`, may explain intent but cannot
-establish present behaviour. When implementation contradicts Project Knowledge,
+Historical material may explain intent but cannot establish present behaviour.
+Imported snapshots under `docs/development-workspace/archive/old-docs/` are
+outside the managed Docsys collection; authored archive pages remain managed. When implementation contradicts Project Knowledge,
 correct the page, return it to `draft`, and clear its evidence digest.
 
 ## Shape of the tree

@@ -30,6 +30,7 @@ from .model import (
     ROOT,
     DocSet,
     Document,
+    is_ignored_document,
     load_document,
     load_document_text,
     pattern_matches,
@@ -341,7 +342,11 @@ def sync_last_edited_staged() -> int:
     staged_paths = sorted(
         line
         for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
-        if line.startswith("docs/") and line.endswith(".md")
+        if (
+            line.startswith("docs/")
+            and line.endswith(".md")
+            and not is_ignored_document(ROOT / line, ROOT / "docs")
+        )
     )
     updated: list[str] = []
     for rel in staged_paths:
@@ -363,7 +368,11 @@ def check_last_edited_staged() -> int:
     staged_paths = sorted(
         line
         for line in _git_text(["diff", "--cached", "--name-only"]).splitlines()
-        if line.startswith("docs/") and line.endswith(".md")
+        if (
+            line.startswith("docs/")
+            and line.endswith(".md")
+            and not is_ignored_document(ROOT / line, ROOT / "docs")
+        )
     )
     stale: list[str] = []
     for rel in staged_paths:

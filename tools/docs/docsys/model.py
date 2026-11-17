@@ -342,6 +342,17 @@ def resolve_docs_root(value: str | Path | None = None) -> Path:
     return (path if path.is_absolute() else ROOT / path).resolve()
 
 
+def is_ignored_document(path: Path, docs_dir: str | Path | None = None) -> bool:
+    """Legacy archive imports are inert snapshots, outside the managed docset.
+
+    The archive index and authored workspace history remain managed documents.
+    This boundary applies before parsing, including files without front matter.
+    """
+    docs_dir = resolve_docs_root(docs_dir)
+    relative = path.resolve().relative_to(docs_dir)
+    return relative.parts[:3] == ("development-workspace", "archive", "old-docs")
+
+
 def generated_dir_for(docs_dir: Path) -> Path:
     """Select the generated-output area for the legacy or collection model."""
     docs_dir = docs_dir.resolve()
@@ -439,6 +450,8 @@ class DocSet:
         docs = []
         unparsed_paths = []
         for path in sorted(docs_dir.rglob("*.md")):
+            if is_ignored_document(path, docs_dir):
+                continue
             doc = load_document(path, docs_dir)
             if doc is not None:
                 docs.append(doc)
