@@ -1,0 +1,82 @@
+{
+  "id": "health_screening",
+  "versionId": "version_001",
+  "revision": 1,
+  "title": "Health Screening",
+  "projectName": "Health Research",
+  "status": "draft",
+  "document": {
+    "sections": [
+      {
+        "id": "eligibility",
+        "title": "Eligibility",
+        "blocks": [
+          {
+            "id": "age_input",
+            "type": "input",
+            "field": {
+              "id": "age",
+              "uuid": "10000000-0000-4000-8000-000000000001",
+              "prompt": "How old are you?",
+              "interaction": {
+                "kind": "number",
+                "suffix": "years"
+              },
+              "answerSpec": {
+                "type": "integer",
+                "required": true,
+                "constraints": {
+                  "min": 0,
+                  "max": 120
+                }
+              }
+            }
+          },
+          {
+            "id": "smoking_input",
+            "type": "input",
+            "field": {
+              "id": "smoking_status",
+              "uuid": "10000000-0000-4000-8000-000000000002",
+              "prompt": "Do you smoke?",
+              "interaction": {
+                "kind": "single_choice",
+                "presentation": "radio",
+                "options": [
+                  {
+                    "id": "yes",
+                    "uuid": "20000000-0000-4000-8000-000000000001",
+                    "label": "Yes"
+                  },
+                  {
+                    "id": "no",
+                    "uuid": "20000000-0000-4000-8000-000000000002",
+                    "label": "No"
+                  }
+                ]
+              },
+              "answerSpec": {
+                "type": "choice",
+                "required": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "workflow": {
+    "rules": [
+      {
+        "id": "underage",
+        "enabled": true,
+        "when": {
+          "fieldUuid": "10000000-0000-4000-8000-000000000001",
+          "operator": "less_than",
+          "value": 18
+        },
+        "outcome": "ineligible_underage"
+      }
+    ]
+  }
+}

@@ -42,10 +42,18 @@ known start --> transition steps --> compatibility window --> target state
                                                         archive record
 ```
 
+## V2 data definitions
+
+- [[flowform-v2-survey-document-definition|FlowForm V2 survey document definition]]
+- [[flowform-v2-answer-data-definition|FlowForm V2 answer data definition]]
+
 ## Active migrations
 
 - [[staging-hybrid-cutover|Staging cutover to the Proxmox hybrid stack]]
 - [[survey-document-reconciliation-plan|Survey document reconciliation plan]]
+- [[survey-document-visual-guide|Survey document visual guide]]
+- [[survey-document-data-structure|Survey document data structure comparison]]
+- [[survey-document-model-reference|Survey document model reference]]
 
 ## Related documents
 
