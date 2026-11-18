@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from sqlalchemy.orm import Session
 
 from app.cache import get_app_cache
@@ -26,8 +27,8 @@ from app.schema.api.responses.submission_sessions import (
     StartSubmissionSessionResponse,
 )
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
+from app.schema.models.submission.types import ClientMutationId
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
@@ -197,7 +198,7 @@ class SessionManagementService:
         question_node_id: UUID,
         answer_state: SubmissionAnswerState,
         answer_value: SubmissionAnswerValue | dict[str, Any] | None,
-        client_mutation_id: UUID,
+        client_mutation_id: ClientMutationId,
     ) -> AnswerSaveResult:
         """Save a respondent answer. Returns the save result."""
         if raw_resume_token is None:

@@ -1,5 +1,3 @@
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -14,6 +12,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.models.common.types import Timestamp
+from app.schema.models.projects.types import ParticipantId, ProjectId, SubjectId, SubjectIdentityId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project
@@ -30,11 +30,15 @@ class ProjectParticipant(CoreBase):
 
     __tablename__ = "project_participants"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    project_subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    identity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    id: Mapped[ParticipantId] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    project_subject_id: Mapped[SubjectId] = mapped_column(UUID(as_uuid=True), nullable=False)
+    identity_id: Mapped[SubjectIdentityId] = mapped_column(UUID(as_uuid=True), nullable=False)
+    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (

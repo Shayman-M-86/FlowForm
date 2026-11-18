@@ -8,10 +8,10 @@ verified_evidence_digest: null
 last_edited: 2026-11-18
 tags: [backend, frontend]
 related_code:
-  - "../../../backend/app/schema/orm/core/survey_content.py"
+  - "../../../backend/app/schema/models/survey/document.py"
   - "../../../backend/app/services/surveys.py"
-  - "../../../backend/app/schema/api/requests/content/node.py"
-  - "../../../backend/app/schema/api/requests/submission_sessions/answers.py"
+  - "../../../backend/app/schema/models/survey/fields.py"
+  - "../../../backend/app/schema/api/requests/submission_sessions.py"
   - "../../../backend/app/schema/orm/core/submission_answer_slot.py"
   - "../../../backend/app/crypto/_internal/models.py"
 related_docs: ["FlowForm V2 survey document definition", "FlowForm V2 answer data definition", "Survey document reconciliation plan"]
@@ -29,7 +29,7 @@ This comparison does not add implementation requirements to them.
 
 ## Current and suggested representations
 
-| Area | Current reconsolidation | V2 data shape |
+| Area | Pre-migration reconsolidation | V2 data shape |
 | --- | --- | --- |
 | Content | Ordered question/rule rows; separate scoring; compiled snapshot. | Survey metadata, ordered sections and blocks, fields and workflow. |
 | Identity | Node UUID, readable node key, numeric sort key. | Readable id; field/option uuid; array order. |
@@ -38,8 +38,8 @@ This comparison does not add implementation requirements to them.
 | Answer | Question-node identity and family-shaped request. | field_uuid + mutation ID + state + answer_spec + answer_value. |
 | Completion | Separate session completion. | Separate action complete; no answer collection. |
 
-Current code already has JSONB, UUID identity, per-answer saving and a published
-snapshot. V2 reorganizes these existing concepts; it does not invent them.
+The pre-migration implementation already had JSONB, UUID identity, per-answer saving and a published
+snapshot. V2 reorganizes these concepts. Shared schemas are being migrated ahead of runtime callers.
 
 ## Naming at the boundary
 
@@ -68,14 +68,14 @@ bare object/array type does not define them completely.
 
 ## Scope and sources
 
-Current-system examples come from question content schemas, survey publication,
-answer request schemas and slot identity in reconsolidation. They remain existing
-behavior, distinct from V2 proposals:
+The comparison describes the pre-migration node model. Its node request and
+question-content schema files have been removed during consolidation. Current
+schema definitions and the publication implementation are available here:
 
-- [Node request](../../../backend/app/schema/api/requests/content/node.py)
-- [Question content](../../../backend/app/schema/api/requests/content/questions_schemas.py)
-- [Publication snapshot](../../../backend/app/services/surveys.py)
-- [Current answer request](../../../backend/app/schema/api/requests/submission_sessions/answers.py)
+- [Document schema](../../../backend/app/schema/models/survey/document.py)
+- [Field schema](../../../backend/app/schema/models/survey/fields.py)
+- [Publication implementation](../../../backend/app/services/surveys.py)
+- [Answer request](../../../backend/app/schema/api/requests/submission_sessions.py)
 
 The guide does not define HTTP routes, database columns or an execution engine.
 Feature implementation remains excluded from the migration. See the

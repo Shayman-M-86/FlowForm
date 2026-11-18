@@ -1,67 +1,54 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from app.domain.permissions import ProjectPermission
-from app.schema.api import limits
-from app.schema.api.common.fields import (
-    InviteMessage,
-    NormalisedEmail,
-    ProjectMemberStatus,
-    ProjectName,
-    ProjectRoleDescription,
-    ProjectRoleName,
-    Slug,
-)
-from app.schema.api.common.validators import int_id_field
+from app.schema.api.common.base import APIRequestModel
+from app.schema.api.common.types import ProjectPermissionSet
+from app.schema.enums import ProjectMemberStatus
+from app.schema.models.common.types import EmailAddress, Slug
+from app.schema.models.projects.types import InvitationMessage, ProjectName, ProjectRoleId, RoleDescription, RoleName
 
 
-class CreateProjectRoleRequest(BaseModel):
+class CreateProjectRoleRequest(APIRequestModel):
     """Request body for creating a new project role."""
 
-    name: ProjectRoleName
-    description: ProjectRoleDescription | None = None
-    permissions: set[ProjectPermission] = Field(
-        default_factory=set,
-        max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX,
-    )
+    name: RoleName
+    description: RoleDescription | None = None
+    permissions: ProjectPermissionSet = Field(default_factory=set)
 
 
-class UpdateProjectRoleRequest(BaseModel):
+class UpdateProjectRoleRequest(APIRequestModel):
     """Request body for updating a project role."""
 
-    name: ProjectRoleName | None = None
-    description: ProjectRoleDescription | None = None
-    permissions: set[ProjectPermission] | None = Field(
-        default=None,
-        max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX,
-    )
+    name: RoleName | None = None
+    description: RoleDescription | None = None
+    permissions: ProjectPermissionSet | None = None
 
 
-class CreateProjectRequest(BaseModel):
+class CreateProjectRequest(APIRequestModel):
     """Request body for creating a new project."""
 
     name: ProjectName
     slug: Slug
 
 
-class UpdateMemberRequest(BaseModel):
+class UpdateMemberRequest(APIRequestModel):
     """Request body for updating a project membership role and/or status.
 
     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
     """
 
-    role_id: int | None = int_id_field()
+    role_id: ProjectRoleId | None = None
     status: ProjectMemberStatus | None = None
 
 
-class SendInvitationRequest(BaseModel):
+class SendInvitationRequest(APIRequestModel):
     """Request body for inviting a user to a project by email."""
 
-    email: NormalisedEmail
-    role_id: int | None = int_id_field()
-    invite_message: InviteMessage | None = None
+    email: EmailAddress
+    role_id: ProjectRoleId | None = None
+    invite_message: InvitationMessage | None = None
 
 
-class UpdateProjectRequest(BaseModel):
+class UpdateProjectRequest(APIRequestModel):
     """Request body for partially updating a project."""
 
     name: ProjectName | None = None

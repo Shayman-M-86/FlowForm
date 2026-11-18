@@ -1,28 +1,20 @@
-from typing import Literal
-
-from pydantic import BaseModel, ConfigDict, Field
-
-from app.schema.api import limits
-from app.schema.api.common.fields import SubjectCode
+from app.schema import limits
+from app.schema.api.common.base import APIRequestModel
+from app.schema.api.common.types import CanonicalSubjectFilter, PageNumber, PageSize, SearchText
+from app.schema.models.projects.types import SubjectCode
 
 
-class ListSubjectsQuery(BaseModel):
+class ListProjectSubjectsRequest(APIRequestModel):
     """Query params for listing a project's subjects."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    canonical_status: Literal["canonical", "alias", "all"] = "canonical"
+    canonical_status: CanonicalSubjectFilter = "canonical"
     is_participant: bool | None = None
-    search: str | None = None
-    page: int = Field(default=limits.LIST_PAGE_DEFAULT, ge=limits.LIST_PAGE_MIN)
-    page_size: int = Field(
-        default=limits.LIST_PAGE_SIZE_DEFAULT,
-        ge=limits.LIST_PAGE_SIZE_MIN,
-        le=limits.LIST_PAGE_SIZE_MAX,
-    )
+    search: SearchText | None = None
+    page: PageNumber = limits.LIST_PAGE_DEFAULT
+    page_size: PageSize = limits.LIST_PAGE_SIZE_DEFAULT
 
 
-class UpdateSubjectRequest(BaseModel):
+class UpdateSubjectRequest(APIRequestModel):
     """Request body for updating a subject's code."""
 
     subject_code: SubjectCode

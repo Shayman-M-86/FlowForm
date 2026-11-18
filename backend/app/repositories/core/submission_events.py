@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SubmissionEventType
+from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.models.survey.types import SurveyVersionId
 from app.schema.orm.core.submission_session import SubmissionEvent
 
 logger = logging.getLogger(__name__)
@@ -32,8 +34,8 @@ def _normalise_event_metadata(
 def create_event(
     db: Session,
     *,
-    session_id: uuid.UUID,
-    survey_version_id: int,
+    session_id: SubmissionSessionId,
+    survey_version_id: SurveyVersionId,
     event_type: SubmissionEventType,
     question_node_id: uuid.UUID | None = None,
     event_metadata: dict[str, Any] | None = None,
@@ -58,8 +60,8 @@ def create_event(
 def record_event(
     db: Session,
     *,
-    session_id: uuid.UUID,
-    survey_version_id: int,
+    session_id: SubmissionSessionId,
+    survey_version_id: SurveyVersionId,
     event_type: SubmissionEventType,
     question_node_id: uuid.UUID | None = None,
     event_metadata: dict[str, Any] | None = None,
@@ -89,7 +91,7 @@ def record_event(
         logger.exception("%s.unexpected_event_failure", log_label)
 
 
-def list_by_session(db: Session, *, session_id: uuid.UUID) -> list[SubmissionEvent]:
+def list_by_session(db: Session, *, session_id: SubmissionSessionId) -> list[SubmissionEvent]:
     """Return all timeline events for one session, oldest first."""
     return list(
         db.scalars(

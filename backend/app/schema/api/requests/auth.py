@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+"""Authentication request contracts."""
 
-from app.schema.api.common.fields import IdToken
+from app.schema.api.common.base import APIRequestModel
+from app.schema.api.common.types import IdentityToken
 
 
-class BootstrapUserRequest(BaseModel):
+class BootstrapUserRequest(APIRequestModel):
     """Request body for post-auth user bootstrap."""
 
-    id_token: IdToken
+    id_token: IdentityToken

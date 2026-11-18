@@ -1,27 +1,39 @@
-from pydantic import BaseModel, Field, model_validator
+from typing import Annotated, Literal
 
-from app.schema.api import limits
-from app.schema.api.common.fields import Slug, SurveyTitle
+from pydantic import Field
+
+from app.schema import limits
+from app.schema.api.common.base import APIRequestModel
+from app.schema.api.common.types import PageNumber, PageSize
 from app.schema.enums import SurveyVisibility
+from app.schema.models.common.types import Slug
+from app.schema.models.survey.document import SurveyDefinition
+from app.schema.models.survey.types import SurveyTitle
 
 
-class CreateSurveyRequest(BaseModel):
-    """Request body for creating a new survey."""
+class PublicSurveyCreateRequest(APIRequestModel):
+    """Create a public survey with a required public slug."""
 
     title: SurveyTitle
-    visibility: SurveyVisibility = "private"
-    public_slug: Slug | None = None
-
-    @model_validator(mode="after")
-    def check_visibility_constraints(self) -> CreateSurveyRequest:
-        if self.visibility == "public" and not self.public_slug:
-            raise ValueError("public_slug is required when visibility is 'public'")
-        if self.public_slug and self.visibility != "public":
-            raise ValueError("public_slug requires visibility 'public'")
-        return self
+    visibility: Literal["public"]
+    public_slug: Slug
 
 
-class UpdateSurveyRequest(BaseModel):
+class NonPublicSurveyCreateRequest(APIRequestModel):
+    """Create a private or link-only survey without a public slug."""
+
+    title: SurveyTitle
+    visibility: Literal["private", "link_only"]
+    public_slug: None = None
+
+
+CreateSurveyRequest = Annotated[
+    PublicSurveyCreateRequest | NonPublicSurveyCreateRequest,
+    Field(discriminator="visibility", title="CreateSurveyRequest"),
+]
+
+
+class UpdateSurveyRequest(APIRequestModel):
     """Request body for partially updating a survey."""
 
     title: SurveyTitle | None = None
@@ -29,18 +41,20 @@ class UpdateSurveyRequest(BaseModel):
     public_slug: Slug | None = None
 
 
-class CreateVersionRequest(BaseModel):
+class CreateVersionRequest(APIRequestModel):
     """Request body for creating a new survey version."""
 
     pass
 
 
-class ListPublicSurveysRequest(BaseModel):
+class ListPublicSurveysRequest(APIRequestModel):
     """Query parameters for listing public surveys."""
 
-    page: int = Field(default=limits.LIST_PAGE_DEFAULT, ge=limits.LIST_PAGE_MIN)
-    page_size: int = Field(
-        default=limits.LIST_PAGE_SIZE_DEFAULT,
-        ge=limits.LIST_PAGE_SIZE_MIN,
-        le=limits.LIST_PAGE_SIZE_MAX,
-    )
+    page: PageNumber = limits.LIST_PAGE_DEFAULT
+    page_size: PageSize = limits.LIST_PAGE_SIZE_DEFAULT
+
+
+class SaveSurveyDocumentRequest(APIRequestModel):
+    """Replace the survey definition with a complete V2 document."""
+
+    definition: SurveyDefinition

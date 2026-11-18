@@ -26,6 +26,7 @@ from app.repositories.core import project_subjects
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.enums import ExportFormat
+from app.schema.models.submission.types import SubmissionSessionId
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.services.admin_results.core.export import format_export_file, to_export_rows
 from app.services.admin_results.core.session_tree import SessionTreeBuilder
@@ -175,7 +176,7 @@ class AdminResultsService:
         response_db: Session,
         *,
         survey_id: int,
-        session_id: UUID,
+        session_id: SubmissionSessionId,
     ) -> DeletionResult:
         """Delete response data first, then the core session."""
         session = _load_session(db, survey_id=survey_id, session_id=session_id)
@@ -208,7 +209,7 @@ class AdminResultsService:
         )
 
 
-def _load_session(db: Session, *, survey_id: int, session_id: UUID) -> SubmissionSession:
+def _load_session(db: Session, *, survey_id: int, session_id: SubmissionSessionId) -> SubmissionSession:
     session = ssr.get_by_id(db, session_id)
     if session is None or session.survey_id != survey_id:
         raise SessionNotFoundError()

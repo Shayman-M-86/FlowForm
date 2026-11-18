@@ -1,57 +1,59 @@
-from datetime import datetime
-from typing import Annotated, cast
+from typing import cast
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict
 
-from app.domain.permissions import ProjectPermission
-from app.schema.api import limits
+from app.schema.api.common.base import APIResponseModel
+from app.schema.api.common.types import ProjectPermission, ProjectPermissionSet
 from app.schema.enums import ProjectInvitationStatus, ProjectMemberStatus
+from app.schema.models.common.types import EmailAddress, Slug, Text, Timestamp
+from app.schema.models.identity.types import ProfileName, UserId
+from app.schema.models.projects.types import (
+    InvitationMessage,
+    ProjectId,
+    ProjectInvitationId,
+    ProjectMembershipId,
+    ProjectName,
+    ProjectRoleId,
+    RoleDescription,
+    RoleName,
+)
 from app.schema.orm.core.project import ProjectRole
 
-ProjectMemberStatusResponses = Annotated[
-    ProjectMemberStatus,
-    Field(max_length=limits.PROJECT_MEMBER_STATUS_MAX),
-]
-ProjectInvitationStatusResponses = Annotated[
-    ProjectInvitationStatus,
-    Field(max_length=limits.PROJECT_INVITATION_STATUS_MAX),
-]
 
-
-class MyProjectPermissionsResponses(BaseModel):
+class MyProjectPermissionsResponses(APIResponseModel):
     """API response shape for the current user's effective permissions in a project."""
 
-    permissions: list[ProjectPermission]
+    permissions: ProjectPermissionSet
 
 
-class ProjectResponses(BaseModel):
+class ProjectResponses(APIResponseModel):
     """API response shape for a project."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    name: str
-    slug: str
-    created_by_user_id: int | None
-    created_at: datetime
+    id: ProjectId
+    name: ProjectName
+    slug: Slug
+    created_by_user_id: UserId | None
+    created_at: Timestamp
 
 
-class ProjectRoleResponses(BaseModel):
+class ProjectRoleResponses(APIResponseModel):
     """API response shape for a project role."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    project_id: int
-    name: str
-    description: str | None
+    id: ProjectRoleId
+    project_id: ProjectId
+    name: RoleName
+    description: RoleDescription | None
     is_system_role: bool
-    permissions: list[ProjectPermission] = Field(max_length=limits.PROJECT_ROLE_PERMISSIONS_MAX)
-    created_at: datetime
+    permissions: ProjectPermissionSet
+    created_at: Timestamp
 
     @classmethod
     def from_orm_with_permissions(cls, role: ProjectRole) -> ProjectRoleResponses:
-        permissions = [cast(ProjectPermission, p.name) for p in getattr(role, "permissions", [])]
+        permissions = {cast(ProjectPermission, p.name) for p in getattr(role, "permissions", [])}
         return cls.model_construct(
             id=role.id,
             project_id=role.project_id,
@@ -63,47 +65,47 @@ class ProjectRoleResponses(BaseModel):
         )
 
 
-class MemberUserResponses(BaseModel):
+class MemberUserResponses(APIResponseModel):
     """Embedded user details on a project member response."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    email: str
-    display_name: str | None
+    id: UserId
+    email: EmailAddress
+    display_name: ProfileName | None
 
 
-class ProjectMemberResponses(BaseModel):
+class ProjectMemberResponses(APIResponseModel):
     """API response shape for a project membership."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    user_id: int
-    project_id: int
-    role_id: int | None
-    status: ProjectMemberStatusResponses
-    created_at: datetime
+    id: ProjectMembershipId
+    user_id: UserId
+    project_id: ProjectId
+    role_id: ProjectRoleId | None
+    status: ProjectMemberStatus
+    created_at: Timestamp
     user: MemberUserResponses
 
 
-class ProjectInvitationResponses(BaseModel):
+class ProjectInvitationResponses(APIResponseModel):
     """API response shape for a project invitation."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    project_id: int
-    project_name: str | None = None
-    invited_email: str = Field(max_length=limits.EMAIL_MAX)
-    invite_message: str | None = Field(default=None, max_length=limits.INVITE_MESSAGE_MAX)
-    invited_by_user_id: int | None
-    invited_by_display: str | None = None
-    role_id: int | None
-    status: ProjectInvitationStatusResponses
-    expires_at: datetime | None
-    accepted_at: datetime | None
-    created_at: datetime
+    id: ProjectInvitationId
+    project_id: ProjectId
+    project_name: ProjectName | None = None
+    invited_email: EmailAddress
+    invite_message: InvitationMessage | None = None
+    invited_by_user_id: UserId | None
+    invited_by_display: Text | None = None
+    role_id: ProjectRoleId | None
+    status: ProjectInvitationStatus
+    expires_at: Timestamp | None
+    accepted_at: Timestamp | None
+    created_at: Timestamp
 
     @classmethod
     def from_orm_with_project(cls, invitation: object) -> ProjectInvitationResponses:
@@ -118,11 +120,11 @@ class ProjectInvitationResponses(BaseModel):
         return data
 
 
-class PublicInvitationResolveResponse(BaseModel):
+class PublicInvitationResolveResponse(APIResponseModel):
     """Public-facing response when resolving an invitation token."""
 
-    invited_email: str
-    project_name: str
-    inviter_name: str | None = None
-    expires_at: datetime | None = None
+    invited_email: EmailAddress
+    project_name: ProjectName
+    inviter_name: Text | None = None
+    expires_at: Timestamp | None = None
     status: ProjectInvitationStatus

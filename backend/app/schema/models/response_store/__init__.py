@@ -1,0 +1,1 @@
+"""Response-store data types."""

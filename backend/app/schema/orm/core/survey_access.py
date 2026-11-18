@@ -1,5 +1,3 @@
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -20,6 +18,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
+from app.schema.models.common.types import Timestamp
+from app.schema.models.projects.types import ParticipantId, ProjectId, ProjectMembershipId, RoleDescription, RoleName
+from app.schema.models.survey.types import SurveyAccessLinkName, SurveyAccessToken, SurveyId, SurveyLinkId, SurveyRoleId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.permission import Permission
@@ -51,11 +52,13 @@ class SurveyRole(CoreBase):
 
     __tablename__ = "survey_roles"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    id: Mapped[SurveyRoleId] = mapped_column(BigInteger, primary_key=True)
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[RoleName] = mapped_column(Text, nullable=False)
+    description: Mapped[RoleDescription | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
@@ -76,11 +79,11 @@ class SurveyMembershipRole(CoreBase):
 
     __tablename__ = "survey_membership_roles"
 
-    project_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    survey_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    membership_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    role_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    project_id: Mapped[ProjectId] = mapped_column(BigInteger, nullable=False)
+    survey_id: Mapped[SurveyId] = mapped_column(BigInteger, primary_key=True)
+    membership_id: Mapped[ProjectMembershipId] = mapped_column(BigInteger, primary_key=True)
+    role_id: Mapped[SurveyRoleId] = mapped_column(BigInteger, nullable=False)
+    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
         ForeignKeyConstraint(
@@ -131,24 +134,26 @@ class SurveyLink(CoreBase):
 
     __tablename__ = "survey_links"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    id: Mapped[SurveyLinkId] = mapped_column(
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    survey_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-    token: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    survey_id: Mapped[SurveyId] = mapped_column(BigInteger, nullable=False)
+    name: Mapped[SurveyAccessLinkName] = mapped_column(Text, nullable=False)
+    token: Mapped[SurveyAccessToken] = mapped_column(Text, nullable=False, unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False)
     link_type: Mapped[SurveyLinkType] = mapped_column(Text, server_default=text("'general'"), nullable=False)
     # How the assignment was created ('manual' | 'automated'). Informational only.
     assignment_source: Mapped[SurveyLinkAssignmentSource] = mapped_column(Text, nullable=False)
     # The sole assignment. A participant resolves to a subject AND an identity,
     # so the link reaches both through this column alone.
-    assigned_participant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    assigned_participant_id: Mapped[ParticipantId | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    expires_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    used_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    emailed_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (

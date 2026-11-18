@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -14,6 +13,8 @@ from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.models.projects.types import ProjectId, SubjectId
+from app.schema.models.submission.types import SubmissionSessionId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project
@@ -31,11 +32,13 @@ class SubjectIpObservation(CoreBase):
     __tablename__ = "subject_ip_observations"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    project_subject_id: Mapped[uuid.UUID | None] = mapped_column(
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    project_subject_id: Mapped[SubjectId | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("project_subjects.id", ondelete="CASCADE"), nullable=True
     )
-    submission_session_id: Mapped[uuid.UUID | None] = mapped_column(
+    submission_session_id: Mapped[SubmissionSessionId | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("submission_sessions.id", ondelete="CASCADE"), nullable=True
     )
     ip_address: Mapped[str] = mapped_column(INET, nullable=False)

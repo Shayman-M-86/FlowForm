@@ -17,6 +17,7 @@ from app.schema.api.responses.survey_results import (
     PaginatedSurveySubjectTreesResponses,
     SurveySubjectTreeResponses,
 )
+from app.schema.models.submission.types import SubmissionSessionId
 from app.services.access.access_service import require_survey_permission
 from app.services.admin_results.service import AdminResultsService
 
@@ -131,7 +132,7 @@ def export_results(project_id: int, survey_id: int):
 )
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.submission.view)
-def delete_session(project_id: int, survey_id: int, session_id: UUID):
+def delete_session(project_id: int, survey_id: int, session_id: SubmissionSessionId):
     _ = project_id
     _build_service().delete_session(
         get_core_db(),

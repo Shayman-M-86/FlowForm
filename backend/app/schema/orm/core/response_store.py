@@ -6,6 +6,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import ResponseStoreType
+from app.schema.models.identity.types import UserId
+from app.schema.models.projects.types import ProjectId
+from app.schema.models.response_store.types import ResponseStoreId
 from app.schema.orm.base import TimestampMixin
 
 if TYPE_CHECKING:
@@ -18,15 +21,15 @@ class ResponseStore(TimestampMixin, CoreBase):
 
     __tablename__ = "response_stores"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    project_id: Mapped[int] = mapped_column(
+    id: Mapped[ResponseStoreId] = mapped_column(BigInteger, primary_key=True)
+    project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     store_type: Mapped[ResponseStoreType] = mapped_column(Text, nullable=False)
     connection_reference: Mapped[dict] = mapped_column(JSONB, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    created_by_user_id: Mapped[int | None] = mapped_column(
+    created_by_user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 

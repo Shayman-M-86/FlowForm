@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from app.schema.api.common.base import APIResponseModel
+from app.schema.models.common.types import Timestamp
 
 
-class CompleteSubmissionSessionResponse(BaseModel):
+class CompleteSubmissionSessionResponse(APIResponseModel):
     """Response body for an idempotent respondent session completion."""
 
-    status: Literal["completed"]
-    completed_at: datetime
+    status: Literal["completed"] = "completed"
+    # Preserve the recorded completion time, including on idempotent retries.
+    completed_at: Timestamp

@@ -1,62 +1,66 @@
-from datetime import datetime
+from pydantic import ConfigDict
 
-from pydantic import BaseModel, ConfigDict, Field
-
-from app.domain.permissions import ProjectPermission
-from app.schema.api import limits
+from app.schema.api.common.base import APIResponseModel
+from app.schema.api.common.types import PageItems, PageNumber, PageSize, ProjectPermissionSet
 from app.schema.enums import SurveyVersionStatus, SurveyVisibility
+from app.schema.models.common.types import Count, Slug, Timestamp
+from app.schema.models.identity.types import UserId
+from app.schema.models.projects.types import ProjectId
+from app.schema.models.response_store.types import ResponseStoreId
+from app.schema.models.survey.document import SurveyDefinition
+from app.schema.models.survey.types import SurveyId, SurveyTitle, SurveyVersionId, SurveyVersionNumber
 
 
-class MySurveyPermissionsResponses(BaseModel):
+class MySurveyPermissionsResponses(APIResponseModel):
     """API response shape for the current user's effective permissions on a survey."""
 
-    permissions: list[ProjectPermission]
+    permissions: ProjectPermissionSet
 
 
-class SurveyResponses(BaseModel):
+class SurveyResponses(APIResponseModel):
     """API response shape for a survey."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    project_id: int
-    title: str
+    id: SurveyId
+    project_id: ProjectId
+    title: SurveyTitle
     visibility: SurveyVisibility
-    public_slug: str | None
-    default_response_store_id: int | None
-    published_version_id: int | None
-    created_by_user_id: int | None
-    created_at: datetime
-    updated_at: datetime
+    public_slug: Slug | None
+    default_response_store_id: ResponseStoreId | None
+    published_version_id: SurveyVersionId | None
+    created_by_user_id: UserId | None
+    created_at: Timestamp
+    updated_at: Timestamp
 
 
-class SurveyVersionResponses(BaseModel):
+class SurveyVersionResponses(APIResponseModel):
     """API response shape for a survey version."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    survey_id: int
-    version_number: int
+    id: SurveyVersionId
+    survey_id: SurveyId
+    version_number: SurveyVersionNumber
     status: SurveyVersionStatus
-    compiled_schema: dict | None
-    published_at: datetime | None
-    created_by_user_id: int | None
-    created_at: datetime
-    updated_at: datetime
+    definition: SurveyDefinition
+    published_at: Timestamp | None
+    created_by_user_id: UserId | None
+    created_at: Timestamp
+    updated_at: Timestamp
 
 
-class PublicSurveyResponses(BaseModel):
+class PublicSurveyResponses(APIResponseModel):
     """API response shape for a publicly accessible survey with its published version."""
 
     survey: SurveyResponses
     published_version: SurveyVersionResponses | None = None
 
 
-class PaginatedPublicSurveysResponses(BaseModel):
+class PaginatedPublicSurveysResponses(APIResponseModel):
     """API response shape for a paginated list of public surveys."""
 
-    items: list[SurveyResponses] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
-    total: int
-    page: int
-    page_size: int
+    items: PageItems[SurveyResponses]
+    total: Count
+    page: PageNumber
+    page_size: PageSize

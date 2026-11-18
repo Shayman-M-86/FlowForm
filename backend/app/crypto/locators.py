@@ -23,6 +23,7 @@ from app.crypto._internal.locators import (
     derive_session_locator as _derive_session_locator,
 )
 from app.crypto.models import AnswerLocator, LinkageKey, NewSessionLocator, SessionLocator
+from app.schema.models.submission.types import SubmissionSessionId
 
 if TYPE_CHECKING:
     from app.cache import AppCache
@@ -41,7 +42,7 @@ def load_current_linkage_key(
 
 def resolve_new_session_locator(
     db: Session,
-    session_id: UUID,
+    session_id: SubmissionSessionId,
     *,
     cache: AppCache,
     clients: CryptoClients,
@@ -62,7 +63,7 @@ def resolve_new_session_locator(
     return new_locator
 
 
-def derive_session_locator(session_id: UUID, linkage_key: LinkageKey) -> NewSessionLocator:
+def derive_session_locator(session_id: SubmissionSessionId, linkage_key: LinkageKey) -> NewSessionLocator:
     """Derive a session locator with a caller-supplied linkage key."""
     locator = SessionLocator(_derive_session_locator(session_id, linkage_key.secret))
     return NewSessionLocator(
@@ -73,7 +74,7 @@ def derive_session_locator(session_id: UUID, linkage_key: LinkageKey) -> NewSess
 
 def resolve_existing_session_locator(
     db: Session,
-    session_id: UUID,
+    session_id: SubmissionSessionId,
     linkage_key_version: int,
     *,
     cache: AppCache,

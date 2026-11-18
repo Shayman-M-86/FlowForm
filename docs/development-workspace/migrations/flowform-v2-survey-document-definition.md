@@ -66,7 +66,7 @@ The root object contains metadata and the document itself.
 | Property | Type | Description |
 |---|---|---|
 | `id` | string | Survey identifier |
-| `versionId` | string | Survey version |
+| `versionId` | integer | Persisted survey version identity (`SurveyVersionId`) |
 | `revision` | integer | Document revision |
 | `title` | string | Survey title |
 | `description` | string? | Optional description |
@@ -102,6 +102,8 @@ Each block has an `id` and `type`. The type determines its content.
 | `divider` | Visual separator | No additional properties |
 | `input` | Answerable question | `field` |
 
+Notice `tone` is one of `info`, `success`, `warning`, or `error`. Heading `level` is an integer from 1 to 6. Section and notice titles are nonblank and at most 200 characters.
+
 Additional content types, such as images and videos, may be defined separately.
 
 An `input` block contains a `field` object. Other block types contain a `content` object where applicable.
@@ -128,12 +130,12 @@ The `interaction` object defines how a participant provides an answer.
 |---|---|
 | `short_text` | Text input |
 | `long_text` | Textarea |
-| `number` | Numeric input, stepper |
-| `single_choice` | Radio, dropdown, buttons, cards |
-| `multiple_choice` | Checkboxes, buttons, cards |
-| `rating` | Slider, stars, scale |
-| `boolean` | Yes/no, toggle |
-| `date` | Calendar, date input |
+| `number` | `input`, `stepper` |
+| `single_choice` | `radio`, `dropdown`, `buttons`, `cards` |
+| `multiple_choice` | `checkboxes`, `buttons`, `cards` |
+| `rating` | `slider`, `stars`, `scale` |
+| `boolean` | `yes_no`, `toggle` |
+| `date` | `calendar`, `input` |
 
 Additional interaction types, including ranking, matching, and matrices, can extend this model.
 
@@ -221,7 +223,7 @@ The detailed execution semantics of workflow outcomes are defined separately.
 ```json
 {
   "id": "health_screening",
-  "versionId": "version_001",
+  "versionId": 1,
   "revision": 1,
   "title": "Health Screening",
   "projectName": "Health Research",

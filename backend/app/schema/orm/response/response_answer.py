@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import ResponseBase
+from app.schema.models.submission.types import ClientMutationId
 
 if TYPE_CHECKING:
     from app.schema.orm.response.response_envelope import ResponseEnvelope
@@ -23,7 +24,7 @@ class ResponseAnswer(ResponseBase):
     )
     ciphertext: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     nonce: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
-    client_mutation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    client_mutation_id: Mapped[ClientMutationId | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (

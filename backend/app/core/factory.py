@@ -45,6 +45,7 @@ def create_app(
     try:
         resolved_settings: Settings = settings or get_settings()
         app = Flask(__name__)
+        app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
 
         if flask_config:
             app.config.update(flask_config)

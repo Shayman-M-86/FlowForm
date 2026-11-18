@@ -1,6 +1,5 @@
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -21,24 +20,28 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SubmissionEventType, SubmissionSessionStatus
+from app.schema.models.common.types import Timestamp
+from app.schema.models.projects.types import ProjectId, SubjectId
+from app.schema.models.response_store.types import ResponseStoreId
+from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.models.survey.types import SurveyFieldUuid, SurveyId, SurveyLinkId, SurveyVersionId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project_subject import ProjectSubject
     from app.schema.orm.core.response_store import ResponseStore
     from app.schema.orm.core.survey import Survey, SurveyVersion
     from app.schema.orm.core.survey_access import SurveyLink
-    from app.schema.orm.core.survey_content import SurveyQuestion
 
 
 @dataclass(frozen=True, slots=True)
 class SessionRef:
     """Scalar session fields needed by crypto/session locator services."""
 
-    id: uuid.UUID
-    project_id: int
-    survey_id: int
-    survey_version_id: int
-    expires_at: datetime
+    id: SubmissionSessionId
+    project_id: ProjectId
+    survey_id: SurveyId
+    survey_version_id: SurveyVersionId
+    expires_at: Timestamp
     browser_session_token_hash: bytes
 
 
@@ -47,19 +50,21 @@ class SubmissionSession(CoreBase):
 
     __tablename__ = "submission_sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[int] = mapped_column(
+    id: Mapped[SubmissionSessionId] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
-    survey_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    response_store_id: Mapped[int] = mapped_column(
+    survey_id: Mapped[SurveyId] = mapped_column(BigInteger, nullable=False)
+    survey_version_id: Mapped[SurveyVersionId] = mapped_column(BigInteger, nullable=False)
+    response_store_id: Mapped[ResponseStoreId] = mapped_column(
         BigInteger, ForeignKey("response_stores.id", ondelete="RESTRICT"), nullable=False
     )
-    link_id: Mapped[uuid.UUID | None] = mapped_column(
+    link_id: Mapped[SurveyLinkId | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("survey_links.id", ondelete="SET NULL"), nullable=True
     )
-    project_subject_id: Mapped[uuid.UUID | None] = mapped_column(
+    project_subject_id: Mapped[SubjectId | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("project_subjects.id", ondelete="SET NULL"), nullable=True
     )
     browser_session_token_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False, unique=True)
@@ -69,10 +74,10 @@ class SubmissionSession(CoreBase):
     session_status: Mapped[SubmissionSessionStatus] = mapped_column(
         Text, server_default=text("'in_progress'"), nullable=False
     )
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    last_activity_at: Mapped[datetime] = mapped_column(
+    started_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    completed_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_activity_at: Mapped[Timestamp] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
@@ -118,7 +123,6 @@ class SubmissionSession(CoreBase):
     survey: Mapped[Survey] = relationship("Survey", foreign_keys=[project_id, survey_id])
     survey_version: Mapped[SurveyVersion] = relationship("SurveyVersion", foreign_keys=[survey_version_id])
 
-
     def to_crypto_ref(self) -> SessionRef:
         """Return a scalar-only snapshot for crypto/session locator services."""
         return SessionRef(
@@ -137,12 +141,12 @@ class SubmissionEvent(CoreBase):
     __tablename__ = "submission_events"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    survey_version_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    session_id: Mapped[SubmissionSessionId] = mapped_column(UUID(as_uuid=True), nullable=False)
+    survey_version_id: Mapped[SurveyVersionId] = mapped_column(BigInteger, nullable=False)
     event_type: Mapped[SubmissionEventType] = mapped_column(Text, nullable=False)
-    question_node_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    field_uuid: Mapped[SurveyFieldUuid | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     event_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
-    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    received_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
@@ -155,18 +159,6 @@ class SubmissionEvent(CoreBase):
             ondelete="CASCADE",
             name="fk_submission_events_session_version",
         ),
-        ForeignKeyConstraint(
-            ["question_node_id"],
-            ["survey_questions.id"],
-            ondelete="SET NULL",
-            name="fk_submission_events_question_node",
-        ),
-        ForeignKeyConstraint(
-            ["survey_version_id", "question_node_id"],
-            ["survey_questions.survey_version_id", "survey_questions.id"],
-            name="fk_submission_events_question_node_same_version",
-        ),
     )
 
     session: Mapped[SubmissionSession] = relationship("SubmissionSession", foreign_keys=[session_id])
-    question: Mapped[SurveyQuestion | None] = relationship("SurveyQuestion", foreign_keys=[question_node_id])

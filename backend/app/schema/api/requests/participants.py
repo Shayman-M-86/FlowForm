@@ -1,32 +1,27 @@
-from pydantic import BaseModel, ConfigDict, Field
+from app.schema import limits
+from app.schema.api.common.base import APIRequestModel
+from app.schema.api.common.types import PageNumber, PageSize, SearchText
+from app.schema.models.common.types import EmailAddress
+from app.schema.models.projects.types import SubjectCode
 
-from app.schema.api import limits
-from app.schema.api.common.fields import NormalisedEmail, SubjectCode
 
-
-class ListParticipantsQuery(BaseModel):
+class ListProjectParticipantsRequest(APIRequestModel):
     """Query params for listing a project's participants."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    search: str | None = None
-    page: int = Field(default=limits.LIST_PAGE_DEFAULT, ge=limits.LIST_PAGE_MIN)
-    page_size: int = Field(
-        default=limits.LIST_PAGE_SIZE_DEFAULT,
-        ge=limits.LIST_PAGE_SIZE_MIN,
-        le=limits.LIST_PAGE_SIZE_MAX,
-    )
+    search: SearchText | None = None
+    page: PageNumber = limits.LIST_PAGE_DEFAULT
+    page_size: PageSize = limits.LIST_PAGE_SIZE_DEFAULT
 
 
-class CreateParticipantRequest(BaseModel):
+class CreateParticipantRequest(APIRequestModel):
     """Request body for creating a participant (subject + email identity + participant)."""
 
-    email: NormalisedEmail
+    email: EmailAddress
     subject_code: SubjectCode | None = None
 
 
-class UpdateParticipantRequest(BaseModel):
+class UpdateParticipantRequest(APIRequestModel):
     """Request body for updating a participant's assigned email and/or subject code."""
 
-    email: NormalisedEmail | None = None
+    email: EmailAddress | None = None
     subject_code: SubjectCode | None = None

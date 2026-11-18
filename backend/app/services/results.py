@@ -5,15 +5,17 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from pydantic import BaseModel
 
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import (
     AnswerFamily,
     SubmissionAnswerState,
     SubmissionEventType,
     SubmissionSessionStatus,
 )
+from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.models.survey.types import SurveyVersionId
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.submission_session import SubmissionSession
@@ -88,7 +90,7 @@ class SubmissionAccessGrant:
     access_method: SubmissionAccessMethod
     project_id: int
     survey_id: int
-    survey_version_id: int
+    survey_version_id: SurveyVersionId
     response_store_id: int
     requires_auth: bool
     is_single_use: bool
@@ -208,7 +210,7 @@ class SubjectTreeResult:
 class ExportRow:
     """One flat row in a survey-results export, one per answer slot (or per session if none)."""
 
-    session_id: UUID
+    session_id: SubmissionSessionId
     status: SubmissionSessionStatus
     started_at: datetime
     completed_at: datetime | None
@@ -251,6 +253,6 @@ class ExportFile:
 class DeletionResult:
     """Outcome of a response deletion attempt."""
 
-    session_id: UUID
+    session_id: SubmissionSessionId
     response_deleted: bool
     core_deleted: bool

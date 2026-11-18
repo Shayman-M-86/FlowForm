@@ -1,20 +1,23 @@
-from datetime import datetime
 from typing import Any
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import ConfigDict, model_validator
+
+from app.schema.api.common.base import APIResponseModel
+from app.schema.api.common.types import PageItems, PageNumber, PageSize
+from app.schema.models.common.types import Count, EmailAddress, Timestamp
+from app.schema.models.projects.types import ParticipantId, SubjectCode, SubjectId
 
 
-class ParticipantResponses(BaseModel):
+class ParticipantResponses(APIResponseModel):
     """API response shape for a project participant."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
-    subject_id: UUID
-    subject_code: str
-    email: str | None
-    created_at: datetime
+    id: ParticipantId
+    subject_id: SubjectId
+    subject_code: SubjectCode
+    email: EmailAddress | None
+    created_at: Timestamp
 
     @model_validator(mode="before")
     @classmethod
@@ -30,10 +33,10 @@ class ParticipantResponses(BaseModel):
         }
 
 
-class ListParticipantsResponses(BaseModel):
+class ListParticipantsResponses(APIResponseModel):
     """API response shape for listing a project's participants."""
 
-    participants: list[ParticipantResponses]
-    total: int
-    page: int
-    page_size: int
+    participants: PageItems[ParticipantResponses]
+    total: Count
+    page: PageNumber
+    page_size: PageSize

@@ -16,6 +16,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SurveyVersionStatus, SurveyVisibility
+from app.schema.models.common.types import Slug, Timestamp
+from app.schema.models.identity.types import UserId
+from app.schema.models.projects.types import ProjectId
+from app.schema.models.response_store.types import ResponseStoreId
+from app.schema.models.survey.types import SurveyId, SurveyTitle, SurveyVersionId, SurveyVersionNumber
 from app.schema.orm.base import TimestampMixin
 
 if TYPE_CHECKING:
@@ -27,14 +32,16 @@ class Survey(TimestampMixin, CoreBase):
 
     __tablename__ = "surveys"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    title: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[SurveyId] = mapped_column(BigInteger, Identity(), primary_key=True)
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[SurveyTitle] = mapped_column(Text, nullable=False)
     visibility: Mapped[SurveyVisibility] = mapped_column(Text, default="private", nullable=False)
-    public_slug: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
-    default_response_store_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    published_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    created_by_user_id: Mapped[int | None] = mapped_column(
+    public_slug: Mapped[Slug | None] = mapped_column(Text, unique=True, nullable=True)
+    default_response_store_id: Mapped[ResponseStoreId | None] = mapped_column(BigInteger, nullable=True)
+    published_version_id: Mapped[SurveyVersionId | None] = mapped_column(BigInteger, nullable=True)
+    created_by_user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 
@@ -85,25 +92,25 @@ class Survey(TimestampMixin, CoreBase):
 
 
 class SurveyVersion(TimestampMixin, CoreBase):
-    """A versioned snapshot of a survey's questions and rules."""
+    """A versioned survey document."""
 
     __tablename__ = "survey_versions"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    survey_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
-    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    id: Mapped[SurveyVersionId] = mapped_column(BigInteger, Identity(), primary_key=True)
+    survey_id: Mapped[SurveyId] = mapped_column(
+        BigInteger, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False
+    )
+    version_number: Mapped[SurveyVersionNumber] = mapped_column(Integer, nullable=False)
     status: Mapped[SurveyVersionStatus] = mapped_column(Text, default="draft", nullable=False)
-    compiled_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_by_user_id: Mapped[int | None] = mapped_column(
+    definition: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    published_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
-    __table_args__ = (
-        UniqueConstraint("survey_id", "id", name="uq_survey_versions_survey_id_id"),
-    )
+    __table_args__ = (UniqueConstraint("survey_id", "id", name="uq_survey_versions_survey_id_id"),)
 
     survey: Mapped[Survey] = relationship(
         "Survey",

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -17,6 +16,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import ProjectInvitationStatus
+from app.schema.models.common.types import EmailAddress, Timestamp
+from app.schema.models.identity.types import UserId
+from app.schema.models.projects.types import InvitationMessage, ProjectId, ProjectInvitationId, ProjectRoleId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project, ProjectRole
@@ -28,26 +30,26 @@ class ProjectInvitation(CoreBase):
 
     __tablename__ = "project_invitations"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    project_id: Mapped[int] = mapped_column(
+    id: Mapped[ProjectInvitationId] = mapped_column(BigInteger, Identity(), primary_key=True)
+    project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
-    invited_email: Mapped[str] = mapped_column(Text, nullable=False)
-    role_id: Mapped[int | None] = mapped_column(
+    invited_email: Mapped[EmailAddress] = mapped_column(Text, nullable=False)
+    role_id: Mapped[ProjectRoleId | None] = mapped_column(
         BigInteger, ForeignKey("project_roles.id", ondelete="SET NULL"), nullable=True
     )
-    invited_by_user_id: Mapped[int | None] = mapped_column(
+    invited_by_user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    invite_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    invite_message: Mapped[InvitationMessage | None] = mapped_column(Text, nullable=True)
     status: Mapped[ProjectInvitationStatus] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    accepted_by_user_id: Mapped[int | None] = mapped_column(
+    expires_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    accepted_by_user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    accepted_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
     token_hash: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[Timestamp] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 

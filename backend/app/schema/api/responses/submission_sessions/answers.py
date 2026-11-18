@@ -1,21 +1,36 @@
-from __future__ import annotations
+"""Saved answer representations using the shared V2 value definitions."""
 
-from datetime import datetime
-from uuid import UUID
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import Field
 
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
-from app.schema.enums import AnswerFamily, SubmissionAnswerState
+from app.schema.models.common.types import Timestamp
+from app.schema.models.submission.types import ClientMutationId
+from app.schema.models.survey.answers import AnsweredAnswer, ClearedAnswer
+from app.schema.models.survey.types import SurveyFieldUuid
 
 
-class SubmissionSessionAnswerResponse(BaseModel):
-    """Canonical latest answer state returned to a respondent."""
+class SavedAnsweredResponse(AnsweredAnswer):
+    """Acknowledged answered state."""
 
-    question_node_id: UUID
-    node_key: str
-    state: SubmissionAnswerState
-    answer_family: AnswerFamily | None = None
-    answer_value: SubmissionAnswerValue | None = None
-    client_mutation_id: UUID
-    saved_at: datetime
+    state: Literal["answered"] = "answered"
+
+    field_uuid: SurveyFieldUuid
+    client_mutation_id: ClientMutationId
+    saved_at: Timestamp
+
+
+class SavedClearedResponse(ClearedAnswer):
+    """Acknowledged cleared state."""
+
+    state: Literal["cleared"] = "cleared"
+
+    field_uuid: SurveyFieldUuid
+    client_mutation_id: ClientMutationId
+    saved_at: Timestamp
+
+
+SubmissionSessionAnswerResponse = Annotated[
+    SavedAnsweredResponse | SavedClearedResponse,
+    Field(discriminator="state", title="SubmissionSessionAnswerResponse"),
+]

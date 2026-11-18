@@ -1,7 +1,8 @@
-from datetime import datetime
 
 from sqlalchemy import DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app.schema.models.common.types import Timestamp
 
 
 class TimestampMixin:
@@ -11,12 +12,12 @@ class TimestampMixin:
     so it is not set via ``onupdate`` here.
     """
 
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[Timestamp] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[datetime] = mapped_column(
+    updated_at: Mapped[Timestamp] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),

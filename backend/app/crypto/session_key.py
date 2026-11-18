@@ -13,7 +13,6 @@ import logging
 import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -35,6 +34,7 @@ from app.crypto.models import (
 from app.crypto.survey_key import start_plaintext_survey_key_load
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.response import response_envelope_repo
+from app.schema.models.submission.types import SubmissionSessionId
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
 
@@ -163,7 +163,7 @@ def create_session_key(
     return new_key
 
 
-def clear_plaintext_session_key(session_id: UUID, *, cache: AppCache) -> None:
+def clear_plaintext_session_key(session_id: SubmissionSessionId, *, cache: AppCache) -> None:
     """Evict a cached plaintext session key for a session."""
     cache.crypto.session_deks.evict(session_id)
 

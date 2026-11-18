@@ -1,33 +1,35 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import ConfigDict, model_validator
 
+from app.schema.api.common.base import APIResponseModel
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
+from app.schema.models.common.types import EmailAddress, Text, Timestamp, Url
+from app.schema.models.projects.types import ParticipantId
+from app.schema.models.survey.types import SurveyAccessLinkName, SurveyAccessToken, SurveyId, SurveyLinkId
 
 
-class SurveyAccessLinkResponse(BaseModel):
+class SurveyAccessLinkResponse(APIResponseModel):
     """API response shape for a survey access link."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
-    survey_id: int
-    name: str
-    token: str
+    id: SurveyLinkId
+    survey_id: SurveyId
+    name: SurveyAccessLinkName
+    token: SurveyAccessToken
     is_active: bool
     link_type: SurveyLinkType
     assignment_source: SurveyLinkAssignmentSource
-    assigned_participant_id: UUID | None
-    assigned_participant_email: str | None = None
-    expires_at: datetime | None
-    used_at: datetime | None
-    emailed_at: datetime | None
-    created_at: datetime
+    assigned_participant_id: ParticipantId | None
+    assigned_participant_email: EmailAddress | None = None
+    expires_at: Timestamp | None
+    used_at: Timestamp | None
+    emailed_at: Timestamp | None
+    created_at: Timestamp
 
     @model_validator(mode="before")
     @classmethod
@@ -41,14 +43,14 @@ class SurveyAccessLinkResponse(BaseModel):
         return data
 
 
-class CreateSurveyAccessLinkResponse(BaseModel):
+class CreateSurveyAccessLinkResponse(APIResponseModel):
     """API response shape for creating a survey access link."""
 
     link: SurveyAccessLinkResponse
-    url: str
+    url: Url
 
 
-class ResolveSurveyAccessLinkResponse(BaseModel):
+class ResolveSurveyAccessLinkResponse(APIResponseModel):
     """API response shape for resolving a respondent survey access link token."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -57,14 +59,14 @@ class ResolveSurveyAccessLinkResponse(BaseModel):
     published_version: SurveyVersionResponses | None = None
 
 
-class ListSurveyAccessLinksResponse(BaseModel):
+class ListSurveyAccessLinksResponse(APIResponseModel):
     """API response shape for listing survey access links for a survey."""
 
     model_config = ConfigDict(from_attributes=True)
     links: list[SurveyAccessLinkResponse]
 
 
-class SendSurveyLinkEmailResponse(BaseModel):
+class SendSurveyLinkEmailResponse(APIResponseModel):
     """API response shape for sending a survey link email."""
 
-    message_id: str | None = None
+    message_id: Text | None = None

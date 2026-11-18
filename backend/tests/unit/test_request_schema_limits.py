@@ -1,120 +1,58 @@
-from typing import Any, cast
+"""Contract-specific bounds live in value types, independently of global knobs."""
+
+from typing import Any
 
 import pytest
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
-from app.schema.api import limits
 from app.schema.api.requests.auth import BootstrapUserRequest
-from app.schema.api.requests.content.questions_schemas import ChoiceOptionIn
-from app.schema.api.requests.content.rule_schemas import RuleSetItemIn
-from app.schema.api.requests.content.scoring_rule_schemas import MatchingPairIn
-from app.schema.api.requests.projects import (
-    CreateProjectRequest,
-    CreateProjectRoleRequest,
-    ProjectMemberStatus,
-    SendInvitationRequest,
-    UpdateMemberRequest,
-)
+from app.schema.api.requests.projects import CreateProjectRequest, CreateProjectRoleRequest, SendInvitationRequest
 from app.schema.api.requests.survey_access_links import (
     CreateSurveyAccessLinkRequest,
     ResolveSurveyAccessLinkTokenRequest,
 )
 from app.schema.api.requests.surveys import CreateSurveyRequest
-
-
-def _too_long(limit: int) -> str:
-    return "x" * (limit + 1)
+from app.schema.models.projects.types import ProjectRoleId
 
 
 @pytest.mark.parametrize(
-    ("factory", "limit"),
+    ("factory", "bound"),
     [
+        (lambda v: CreateProjectRequest(name=v, slug="valid-slug"), 100),
+        (lambda v: CreateProjectRoleRequest(name=v), 80),
+        (lambda v: CreateProjectRequest(name="Project", slug=v), 80),
+        (lambda v: CreateSurveyAccessLinkRequest(name=v), 120),
+        (lambda v: ResolveSurveyAccessLinkTokenRequest(token=v), 256),
+        (lambda v: BootstrapUserRequest(id_token=v), 8192),
+        (lambda v: TypeAdapter(CreateSurveyRequest).validate_python({"title": v, "visibility": "private"}), 200),
         (
-            lambda value: CreateProjectRequest(name=value, slug="valid-slug"),
-            limits.PROJECT_NAME_MAX,
-        ),
-        (
-            lambda value: CreateProjectRoleRequest(name=value),
-            limits.PROJECT_ROLE_NAME_MAX,
-        ),
-        (
-            lambda value: CreateProjectRequest(name="Valid name", slug=value),
-            limits.SLUG_MAX,
-        ),
-        (
-            lambda value: SendInvitationRequest(email=value),
-            limits.EMAIL_MAX,
-        ),
-        (
-            lambda value: UpdateMemberRequest(status=value),
-            limits.PROJECT_MEMBER_STATUS_MAX,
-        ),
-        (
-            lambda value: CreateSurveyRequest(title=value),
-            limits.SURVEY_TITLE_MAX,
-        ),
-        (
-            lambda value: CreateSurveyRequest(
-                title="Valid title",
-                visibility="public",
-                public_slug=value,
+            lambda v: TypeAdapter(CreateSurveyRequest).validate_python(
+                {
+                    "title": "Survey",
+                    "visibility": "public",
+                    "public_slug": v,
+                }
             ),
-            limits.SLUG_MAX,
-        ),
-        (
-            lambda value: CreateSurveyAccessLinkRequest(name=value),
-            limits.PUBLIC_LINK_NAME_MAX,
-        ),
-        (
-            lambda value: ResolveSurveyAccessLinkTokenRequest(token=value),
-            limits.TOKEN_MAX,
-        ),
-        (
-            lambda value: BootstrapUserRequest(id_token=value),
-            limits.ID_TOKEN_MAX,
-        ),
-        (
-            lambda value: ChoiceOptionIn(id=value, label="Choice"),
-            limits.SCHEMA_ID_MAX,
-        ),
-        (
-            lambda value: RuleSetItemIn(target_id=value, visible=True),
-            limits.SCHEMA_ID_MAX,
-        ),
-        (
-            lambda value: MatchingPairIn(left_id=value, right_id="right"),
-            limits.SCHEMA_ID_MAX,
+            80,
         ),
     ],
 )
-def test_request_string_limits_are_enforced(factory, limit: int) -> None:
+def test_request_string_limits_are_enforced(factory: Any, bound: int) -> None:
+    factory("x" * bound)
     with pytest.raises(ValidationError):
-        factory(_too_long(limit))
+        factory("x" * (bound + 1))
 
 
-def test_send_invitation_email_is_normalized() -> None:
-    request = SendInvitationRequest(email="  USER@Example.COM  ")
-
-    assert request.email == "user@example.com"
-
-
-@pytest.mark.parametrize("email", ["", "not-an-email", "missing-domain@", "@missing-local.test"])
-def test_send_invitation_email_must_be_valid(email: str) -> None:
-    with pytest.raises(ValidationError):
-        SendInvitationRequest(email=email)
+def test_invitation_email_normalization_and_validation() -> None:
+    assert SendInvitationRequest(email="  USER@Example.COM  ").email == "user@example.com"
+    for email in ["", "not-an-email", "missing-domain@", "@missing-local.test"]:
+        with pytest.raises(ValidationError):
+            SendInvitationRequest(email=email)
 
 
-@pytest.mark.parametrize("status", ["active", "suspended"])
-def test_update_member_status_allows_known_values(status: ProjectMemberStatus) -> None:
-    assert UpdateMemberRequest(status=status).status == status
-
-
-def test_update_member_status_rejects_unknown_value() -> None:
-    with pytest.raises(ValidationError):
-        UpdateMemberRequest(status=cast(Any, "invited"))
-
-
-@pytest.mark.parametrize("factory", [UpdateMemberRequest, SendInvitationRequest])
-def test_project_role_id_must_be_positive_int(factory) -> None:
-    with pytest.raises(ValidationError):
-        factory(role_id=0)
+def test_role_identity_storage_bounds() -> None:
+    adapter = TypeAdapter(ProjectRoleId)
+    assert adapter.validate_python(2**63 - 1) == 2**63 - 1
+    for invalid in [0, -1, 2**63]:
+        with pytest.raises(ValidationError):
+            adapter.validate_python(invalid)

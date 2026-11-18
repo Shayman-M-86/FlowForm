@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime
+from pydantic import ConfigDict
 
-from pydantic import BaseModel, ConfigDict
-
+from app.schema.api.common.base import APIResponseModel
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
 from app.schema.enums import SubmissionSessionStatus
+from app.schema.models.common.types import Timestamp
+from app.schema.models.projects.types import SubjectCode
+from app.schema.models.survey.types import SurveyVersionId
 
 
-class StartSubmissionSessionResponse(BaseModel):
+class StartSubmissionSessionResponse(APIResponseModel):
     """Session start acknowledgement.
 
     Survey schema delivery belongs to discovery and link-resolution flows,
@@ -18,13 +20,13 @@ class StartSubmissionSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     status: SubmissionSessionStatus
-    started_at: datetime
-    expires_at: datetime
-    survey_version_id: int
-    subject_code: str
+    started_at: Timestamp
+    expires_at: Timestamp
+    survey_version_id: SurveyVersionId
+    subject_code: SubjectCode
 
 
-class ResumeSubmissionSessionResponse(BaseModel):
+class ResumeSubmissionSessionResponse(APIResponseModel):
     """Published survey context for the matching in-progress browser session."""
 
     status: SubmissionSessionStatus

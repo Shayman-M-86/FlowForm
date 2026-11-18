@@ -7,10 +7,10 @@ Also provides the question-viewed event helper.
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Any, cast
 from uuid import UUID
 
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -28,8 +28,8 @@ from app.repositories.core import submission_answer_slots
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
+from app.schema.models.submission.types import ClientMutationId
 from app.services.results import AnswerSaveResult
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class AnswerSaveService:
         question_node_id: UUID,
         answer_state: SubmissionAnswerState,
         answer_value: AnswerValueInput,
-        client_mutation_id: uuid.UUID,
+        client_mutation_id: ClientMutationId,
     ) -> AnswerSaveResult:
         """Save the current answer for a session/question slot."""
         locked_session = ssr.lock_for_update(db, ctx.session_id)

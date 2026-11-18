@@ -2,10 +2,10 @@
 title: Surveys and versioning
 aliases: ["Surveys and versioning"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:5ffc2c087690e3874569b6c9ac61128056edc10ec5206dd79aef4af41be4f7e0
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-11-18
 tags: [backend]
 related_code:
   - "../../../backend/app/services/surveys.py"

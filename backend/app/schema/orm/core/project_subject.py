@@ -19,6 +19,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SubjectIdentityType, SubjectIdentityVerificationStatus
+from app.schema.models.common.types import EmailAddress, Timestamp
+from app.schema.models.identity.types import UserId
+from app.schema.models.projects.types import ProjectId, SubjectCode, SubjectId, SubjectIdentityId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project
@@ -34,15 +37,17 @@ class ProjectSubject(CoreBase):
 
     __tablename__ = "project_subjects"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    subject_code: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[SubjectId] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    subject_code: Mapped[SubjectCode] = mapped_column(Text, nullable=False)
 
     # Null = this is the canonical subject.
     # Set = this subject is an alias pointing to the canonical subject.
-    canonical_subject_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    canonical_subject_id: Mapped[SubjectId | None] = mapped_column(UUID(as_uuid=True))
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
@@ -90,18 +95,22 @@ class ProjectSubjectIdentity(CoreBase):
 
     __tablename__ = "project_subject_identities"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    project_subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    id: Mapped[SubjectIdentityId] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    project_subject_id: Mapped[SubjectId] = mapped_column(UUID(as_uuid=True), nullable=False)
     identity_type: Mapped[SubjectIdentityType] = mapped_column(Text, nullable=False)
-    user_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"))
-    normalized_email: Mapped[str | None] = mapped_column(Text)
+    user_id: Mapped[UserId | None] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"))
+    normalized_email: Mapped[EmailAddress | None] = mapped_column(Text)
     verification_status: Mapped[SubjectIdentityVerificationStatus] = mapped_column(
         Text, server_default=text("'unverified'"), nullable=False
     )
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    attached_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attached_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    revoked_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True))
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
@@ -147,8 +156,10 @@ class ProjectSubjectToken(CoreBase):
     __tablename__ = "project_subject_tokens"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    project_subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    project_id: Mapped[ProjectId] = mapped_column(
+        BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    project_subject_id: Mapped[SubjectId] = mapped_column(UUID(as_uuid=True), nullable=False)
     token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

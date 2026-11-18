@@ -1,1 +1,1 @@
-"""Shared API schema primitives."""
+"""Configuration shared by HTTP contracts."""

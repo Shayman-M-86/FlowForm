@@ -414,3 +414,27 @@ def test_servers_block_respects_single_url_override() -> None:
     document = build_spec(app)
 
     assert document["servers"] == [{"url": "https://api.flowform.example", "description": "Production"}]
+
+
+def test_exporter_does_not_guess_string_limits_from_field_names_or_formats() -> None:
+    from datetime import datetime
+    from uuid import UUID
+
+    class UnboundedResponse(BaseModel):
+        email: str
+        token: str
+        occurred_at: datetime
+        id: UUID
+
+    app = Flask(__name__)
+
+    @openapi_route(summary="Read unconstrained data", response_model=UnboundedResponse, tags=["Widgets"])
+    @app.route("/unconstrained")
+    def unconstrained():  # pragma: no cover
+        return {}
+
+    document = build_spec(app)
+    props = document["components"]["schemas"]["UnboundedResponse"]["properties"]
+    assert all("maxLength" not in prop for prop in props.values())
+    assert props["occurred_at"]["format"] == "date-time"
+    assert props["id"]["format"] == "uuid"

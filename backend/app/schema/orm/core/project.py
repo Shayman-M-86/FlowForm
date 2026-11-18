@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -21,6 +20,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import ProjectMemberStatus
+from app.schema.models.common.types import Slug, Timestamp
+from app.schema.models.identity.types import UserId
+from app.schema.models.projects.types import (
+    ProjectId,
+    ProjectMembershipId,
+    ProjectName,
+    ProjectRoleId,
+    RoleDescription,
+    RoleName,
+)
 
 if TYPE_CHECKING:
     from app.schema.orm.core import Permission, Project, ProjectMembership, ProjectRole, SurveyMembershipRole, User
@@ -50,13 +59,13 @@ class Project(CoreBase):
 
     __tablename__ = "projects"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-    slug: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
-    created_by_user_id: Mapped[int | None] = mapped_column(
+    id: Mapped[ProjectId] = mapped_column(BigInteger, Identity(), primary_key=True)
+    name: Mapped[ProjectName] = mapped_column(Text, nullable=False)
+    slug: Mapped[Slug] = mapped_column(Text, unique=True, nullable=False)
+    created_by_user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     created_by: Mapped[User | None] = relationship("User", foreign_keys=[created_by_user_id])
     
@@ -71,20 +80,20 @@ class ProjectRole(CoreBase):
 
     __tablename__ = "project_roles"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    project_id: Mapped[int] = mapped_column(
+    id: Mapped[ProjectRoleId] = mapped_column(BigInteger, Identity(), primary_key=True)
+    project_id: Mapped[ProjectId] = mapped_column(
         BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    name: Mapped[RoleName] = mapped_column(Text, nullable=False)
+    description: Mapped[RoleDescription | None] = mapped_column(Text, nullable=True)
     is_system_role: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         server_default=text("false"),
     )
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[Timestamp] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -106,22 +115,22 @@ class ProjectMembership(CoreBase):
 
     __tablename__ = "project_memberships"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    user_id: Mapped[int] = mapped_column(
+    id: Mapped[ProjectMembershipId] = mapped_column(BigInteger, Identity(), primary_key=True)
+    user_id: Mapped[UserId] = mapped_column(
         BigInteger,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    project_id: Mapped[int] = mapped_column(
+    project_id: Mapped[ProjectId] = mapped_column(
         BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
     )
-    role_id: Mapped[int | None] = mapped_column(
+    role_id: Mapped[ProjectRoleId | None] = mapped_column(
         BigInteger, ForeignKey("project_roles.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[ProjectMemberStatus] = mapped_column(Text, nullable=False, server_default=text("'active'"))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (

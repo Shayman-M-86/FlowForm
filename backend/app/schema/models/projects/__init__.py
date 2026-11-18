@@ -1,0 +1,1 @@
+"""Shared projects data definitions."""

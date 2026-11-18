@@ -1,22 +1,25 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
-from uuid import UUID
+from pydantic import ConfigDict, Field
 
-from pydantic import BaseModel, ConfigDict, Field
-
-from app.schema.api import limits
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
+from app.schema import limits
+from app.schema.api.common.base import APIResponseModel
+from app.schema.api.common.types import PageItems, PageNumber, PageSize
 from app.schema.enums import (
-    AnswerFamily,
     SubmissionAnswerState,
     SubmissionEventType,
     SubmissionSessionStatus,
 )
+from app.schema.models.common.types import Count, Timestamp
+from app.schema.models.projects.types import SubjectCode, SubjectId
+from app.schema.models.submission.types import AnswerList, SubmissionSessionId
+from app.schema.models.survey.answer_spec import AnswerSpec
+from app.schema.models.survey.answer_value import AnswerValue
+from app.schema.models.survey.fields import SurveyField
+from app.schema.models.survey.types import ReadableId, SurveyFieldUuid, SurveyId, SurveyVersionId
 
 
-class SurveySessionResponses(BaseModel):
+class SurveySessionResponses(APIResponseModel):
     """Admin-facing summary of one respondent submission session.
 
     Sourced from core session metadata only; carries no decrypted answer
@@ -25,61 +28,60 @@ class SurveySessionResponses(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    session_id: UUID = Field(validation_alias="id")
-    survey_id: int
-    survey_version_id: int
+    session_id: SubmissionSessionId = Field(validation_alias="id")
+    survey_id: SurveyId
+    survey_version_id: SurveyVersionId
     status: SubmissionSessionStatus = Field(validation_alias="session_status")
-    started_at: datetime
-    completed_at: datetime | None = None
-    last_activity_at: datetime
+    started_at: Timestamp
+    completed_at: Timestamp | None = None
+    last_activity_at: Timestamp
 
 
-class SurveyAnswerSlotResponses(BaseModel):
+class SurveyAnswerSlotResponses(APIResponseModel):
     """One answer slot in an admin survey-results view, optionally decrypted."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, str_max_length=limits.LONG_STRING_MAX)
 
-    question_node_id: UUID
-    question_key: str | None = None
-    answer_family: AnswerFamily | None = None
+    field_uuid: SurveyFieldUuid
+    field_id: ReadableId | None = None
+    answer_spec: AnswerSpec | None = None
     has_encrypted_answer: bool
     decrypted: bool
     state: SubmissionAnswerState | None = Field(default=None, validation_alias="answer_state")
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
-    question_content: dict[str, Any] | None = None
-    question_sort_key: int | None = None
+    answer_value: AnswerValue | None = None
+    field: SurveyField | None = None
 
 
-class SurveySessionEventResponses(BaseModel):
+class SurveySessionEventResponses(APIResponseModel):
     """One timeline event for a session. Never carries answer values."""
 
     model_config = ConfigDict(from_attributes=True)
 
     event_type: SubmissionEventType
-    question_node_id: UUID | None = None
-    received_at: datetime
+    field_uuid: SurveyFieldUuid | None = None
+    received_at: Timestamp
 
 
-class SurveySessionTreeResponses(BaseModel):
+class SurveySessionTreeResponses(APIResponseModel):
     """One session with its answer slots and optional event timeline."""
 
     model_config = ConfigDict(from_attributes=True)
 
     session: SurveySessionResponses
-    answers: list[SurveyAnswerSlotResponses] = Field(max_length=limits.ANSWER_LIST_ITEMS_MAX)
+    answers: AnswerList[SurveyAnswerSlotResponses]
     events: list[SurveySessionEventResponses] | None = None
 
 
-class SurveySubjectResponses(BaseModel):
+class SurveySubjectResponses(APIResponseModel):
     """Admin-facing summary of one project subject."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    subject_id: UUID = Field(validation_alias="id")
-    subject_code: str
+    subject_id: SubjectId = Field(validation_alias="id")
+    subject_code: SubjectCode
 
 
-class SurveySubjectTreeResponses(BaseModel):
+class SurveySubjectTreeResponses(APIResponseModel):
     """One subject with all of its sessions for a survey."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -88,11 +90,11 @@ class SurveySubjectTreeResponses(BaseModel):
     sessions: list[SurveySessionTreeResponses]
 
 
-class PaginatedSurveySubjectTreesResponses(BaseModel):
+class PaginatedSurveySubjectTreesResponses(APIResponseModel):
     """Paginated list of subject result trees."""
 
-    items: list[SurveySubjectTreeResponses] = Field(max_length=limits.LIST_PAGE_SIZE_MAX)
-    total: int
-    page: int
-    page_size: int
+    items: PageItems[SurveySubjectTreeResponses]
+    total: Count
+    page: PageNumber
+    page_size: PageSize
     include_decrypted_answer_values: bool

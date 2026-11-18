@@ -9,7 +9,7 @@ last_edited: 2026-11-18
 tags: [backend, frontend]
 related_code:
   - "../../../backend/app/schema/orm/core/survey.py"
-  - "../../../backend/app/schema/orm/core/survey_content.py"
+  - "../../../backend/app/schema/models/survey/document.py"
   - "../../../backend/app/schema/orm/core/submission_answer_slot.py"
   - "../../../backend/app/services/public_submissions/api/session_management.py"
   - "../../../backend/app/services/admin_results/core/session_tree.py"

@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.models.survey.types import SurveyVersionId
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 
 _SLOT_CONSTRAINT = "uq_submission_answer_slots_session_question"
@@ -15,8 +17,8 @@ _SLOT_CONSTRAINT = "uq_submission_answer_slots_session_question"
 def get_or_create(
     db: Session,
     *,
-    submission_session_id: uuid.UUID,
-    survey_version_id: int,
+    submission_session_id: SubmissionSessionId,
+    survey_version_id: SurveyVersionId,
     question_node_id: uuid.UUID,
     question_key: str | None,
 ) -> SubmissionAnswerSlot:
@@ -48,7 +50,7 @@ def get_or_create(
         raise
 
 
-def list_by_session(db: Session, *, submission_session_id: uuid.UUID) -> list[SubmissionAnswerSlot]:
+def list_by_session(db: Session, *, submission_session_id: SubmissionSessionId) -> list[SubmissionAnswerSlot]:
     """Return all answer slots for one session."""
     return list(
         db.scalars(

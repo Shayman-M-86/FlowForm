@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from app.schema.models.submission.types import ClientMutationId
 from app.schema.orm.response.response_answer import ResponseAnswer
 
 
@@ -16,7 +17,7 @@ def upsert_current(
     answer_locator: bytes,
     ciphertext: bytes,
     nonce: bytes,
-    client_mutation_id: uuid.UUID | None,
+    client_mutation_id: ClientMutationId | None,
 ) -> ResponseAnswer:
     """Create or overwrite the current encrypted answer for one locator."""
     stmt = (

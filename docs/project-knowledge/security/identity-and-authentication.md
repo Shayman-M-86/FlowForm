@@ -2,10 +2,10 @@
 title: Identity and authentication
 aliases: ["Identity and authentication"]
 document_type: domain
-status: verified
+status: draft
 authority: canonical
-verified_evidence_digest: sha256:a3ff9fb1864a768f38b49d0ca6b9c22d0c4448f1bebc864a49a263ee5ecddbdb
-last_edited: 2026-07-27
+verified_evidence_digest: null
+last_edited: 2026-11-18
 tags: [security]
 related_code:
   - "../../../backend/app/middleware/auth/auth0.py"

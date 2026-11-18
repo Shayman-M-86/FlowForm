@@ -28,6 +28,8 @@ from app.crypto._internal.models import (
     PositiveVersion,
     SecretValue,
 )
+from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.models.survey.types import SurveyVersionId
 
 # --- Key-material labels (NewType over bytes) ---
 
@@ -92,7 +94,7 @@ class SessionDEKContext:
     crypto layer derives the AAD internally so callers never handle it.
     """
 
-    session_id: UUID
+    session_id: SubmissionSessionId
     crypto_version: int
     project_id: int
     survey_id: int
@@ -108,10 +110,10 @@ class SubmissionSessionContext:
     boundaries.
     """
 
-    session_id: UUID
+    session_id: SubmissionSessionId
     project_id: int
     survey_id: int
-    survey_version_id: int
+    survey_version_id: SurveyVersionId
     envelope_id: UUID
     session_locator: SessionLocator
     linkage_key: LinkageKey

@@ -9,7 +9,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -20,6 +19,7 @@ from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import SessionInvalidError
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
+from app.schema.models.submission.types import SubmissionSessionId
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class CompletionResult:
     """Outcome returned to the caller on successful completion."""
 
-    session_id: UUID
+    session_id: SubmissionSessionId
     status: str
     completed_at: datetime
 

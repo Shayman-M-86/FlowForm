@@ -1,35 +1,39 @@
-from datetime import datetime
 from typing import Any
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import ConfigDict, model_validator
+
+from app.schema.api.common.base import APIResponseModel
+from app.schema.api.common.types import PageItems, PageNumber, PageSize
+from app.schema.enums import SubjectIdentityType, SubjectIdentityVerificationStatus
+from app.schema.models.common.types import Count, EmailAddress, Timestamp
+from app.schema.models.projects.types import ParticipantId, SubjectCode, SubjectId, SubjectIdentityId
 
 
-class SubjectIdentityResponse(BaseModel):
+class SubjectIdentityResponse(APIResponseModel):
     """Read-only identity attached to a subject."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
-    identity_type: str
-    normalized_email: str | None
-    verification_status: str
-    attached_at: datetime
-    revoked_at: datetime | None
+    id: SubjectIdentityId
+    identity_type: SubjectIdentityType
+    normalized_email: EmailAddress | None
+    verification_status: SubjectIdentityVerificationStatus
+    attached_at: Timestamp
+    revoked_at: Timestamp | None
 
 
-class SubjectResponse(BaseModel):
+class SubjectResponse(APIResponseModel):
     """List-item shape for a project subject."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
-    subject_code: str
-    canonical_subject_id: UUID | None
+    id: SubjectId
+    subject_code: SubjectCode
+    canonical_subject_id: SubjectId | None
     is_participant: bool
-    participant_id: UUID | None
-    active_identity_count: int
-    created_at: datetime
+    participant_id: ParticipantId | None
+    active_identity_count: Count
+    created_at: Timestamp
 
     @model_validator(mode="before")
     @classmethod
@@ -48,18 +52,18 @@ class SubjectResponse(BaseModel):
         }
 
 
-class SubjectDetailResponse(BaseModel):
+class SubjectDetailResponse(APIResponseModel):
     """Detail shape for a single project subject."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
-    subject_code: str
-    canonical_subject_id: UUID | None
+    id: SubjectId
+    subject_code: SubjectCode
+    canonical_subject_id: SubjectId | None
     is_participant: bool
-    participant_id: UUID | None
+    participant_id: ParticipantId | None
     identities: list[SubjectIdentityResponse]
-    created_at: datetime
+    created_at: Timestamp
 
     @model_validator(mode="before")
     @classmethod
@@ -79,10 +83,10 @@ class SubjectDetailResponse(BaseModel):
         }
 
 
-class ListSubjectsResponse(BaseModel):
+class ListSubjectsResponse(APIResponseModel):
     """Paginated project subject listing."""
 
-    subjects: list[SubjectResponse]
-    total: int
-    page: int
-    page_size: int
+    subjects: PageItems[SubjectResponse]
+    total: Count
+    page: PageNumber
+    page_size: PageSize

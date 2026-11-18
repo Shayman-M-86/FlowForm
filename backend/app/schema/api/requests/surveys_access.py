@@ -1,41 +1,41 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from app.domain.permissions import SurveyPermission
-from app.schema.api import limits
-from app.schema.api.common.fields import ProjectRoleDescription, ProjectRoleName
-from app.schema.api.common.validators import int_id_field, required_int_id_field
+from app.schema.api.common.base import APIRequestModel
+from app.schema.api.common.types import SurveyPermissionSet
+from app.schema.models.projects.types import ProjectMembershipId, RoleDescription, RoleName
+from app.schema.models.survey.types import SurveyRoleId
 
 
-class CreateSurveyRoleRequest(BaseModel):
+class CreateSurveyRoleRequest(APIRequestModel):
     """Request body for creating a survey role."""
 
-    name: ProjectRoleName
-    description: ProjectRoleDescription | None = None
-    permissions: set[SurveyPermission] = Field(default_factory=set, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX)
+    name: RoleName
+    description: RoleDescription | None = None
+    permissions: SurveyPermissionSet = Field(default_factory=set)
 
 
-class UpdateSurveyRoleRequest(BaseModel):
+class UpdateSurveyRoleRequest(APIRequestModel):
     """Request body for partially updating a survey role."""
 
-    name: ProjectRoleName | None = None
-    description: ProjectRoleDescription | None = None
-    permissions: set[SurveyPermission] | None = Field(default=None, max_length=limits.SURVEY_ROLE_PERMISSIONS_MAX)
+    name: RoleName | None = None
+    description: RoleDescription | None = None
+    permissions: SurveyPermissionSet | None = None
 
 
-class AssignSurveyMemberRoleRequest(BaseModel):
+class AssignSurveyMemberRoleRequest(APIRequestModel):
     """Request body for assigning a survey role to a project member for a survey."""
 
-    membership_id: int = required_int_id_field()
-    role_id: int = required_int_id_field()
+    membership_id: ProjectMembershipId
+    role_id: SurveyRoleId
 
 
-class UpdateSurveyMemberRoleRequest(BaseModel):
+class UpdateSurveyMemberRoleRequest(APIRequestModel):
     """Request body for updating a survey member role assignment."""
 
-    role_id: int = required_int_id_field()
+    role_id: SurveyRoleId
 
 
-class RemoveSurveyMemberRoleRequest(BaseModel):
+class RemoveSurveyMemberRoleRequest(APIRequestModel):
     """Request body for removing a survey role from a project member."""
 
-    membership_id: int = int_id_field()
+    membership_id: ProjectMembershipId

@@ -22,7 +22,7 @@ from __future__ import annotations
 from flask import Flask
 from werkzeug.routing import BaseConverter, ValidationError
 
-from app.schema.api import limits
+from app.schema import limits
 
 
 class _BoundedStringConverter(BaseConverter):
@@ -49,20 +49,20 @@ class BoundedIntegerConverter(BaseConverter):
     This converter:
 
     - Rejects negative / zero values (resource ids are 1-indexed serials).
-    - Rejects anything that doesn't fit in PostgreSQL ``INTEGER``.
+    - Rejects anything that doesn't fit in PostgreSQL ``BIGINT``.
     - Advertises ``MIN_VALUE`` / ``MAX_VALUE`` so the OpenAPI spec builder
       emits ``minimum`` / ``maximum`` on the path parameter automatically.
 
-    Pairs with :data:`limits.INT_ID_MIN` / :data:`limits.INT_ID_MAX`.
+    Shares its upper bound with the canonical database identity type.
     """
 
-    MIN_VALUE: int = limits.INT_ID_MIN
-    MAX_VALUE: int = limits.INT_ID_MAX
+    MIN_VALUE: int = 1
+    MAX_VALUE: int = limits.BIGINT_ID_MAX
 
     def __init__(self, url_map, *args, **kwargs) -> None:
         super().__init__(url_map, *args, **kwargs)
         # Cap the number of digits so we never even parse outlier values.
-        # 10 digits is enough for 2^31 - 1 (2,147,483,647).
+        # The digit guard follows the configured storage range.
         max_digits = len(str(self.MAX_VALUE))
         self.regex = rf"\d{{1,{max_digits}}}"
 

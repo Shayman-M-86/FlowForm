@@ -1,42 +1,30 @@
 from __future__ import annotations
 
-from uuid import UUID
-
-from pydantic import BaseModel, ConfigDict, Field
-
-from app.schema.api import limits
+from app.schema import limits
+from app.schema.api.common.base import APIRequestModel
+from app.schema.api.common.types import PageNumber, PageSize, SessionIdList
 from app.schema.enums import ExportFormat
 
 
-class ListSubjectsRequest(BaseModel):
+class ListSubjectsRequest(APIRequestModel):
     """Query params for listing a survey's subjects with their session trees."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    page: int = Field(default=limits.LIST_PAGE_DEFAULT, ge=limits.LIST_PAGE_MIN)
-    page_size: int = Field(
-        default=limits.LIST_PAGE_SIZE_DEFAULT,
-        ge=limits.LIST_PAGE_SIZE_MIN,
-        le=limits.LIST_PAGE_SIZE_MAX,
-    )
+    page: PageNumber = limits.LIST_PAGE_DEFAULT
+    page_size: PageSize = limits.LIST_PAGE_SIZE_DEFAULT
     include_decrypted_answer_values: bool = False
     include_events: bool = False
 
 
-class GetSubjectTreeRequest(BaseModel):
+class GetSubjectTreeRequest(APIRequestModel):
     """Query params for fetching one subject's full session tree."""
 
-    model_config = ConfigDict(extra="forbid")
-
     include_decrypted_answer_values: bool = False
     include_events: bool = False
 
 
-class ExportSurveyResultsRequest(BaseModel):
+class ExportSurveyResultsRequest(APIRequestModel):
     """Request body for exporting a survey's results."""
-
-    model_config = ConfigDict(extra="forbid")
 
     format: ExportFormat = "csv"
     include_decrypted_answer_values: bool = False
-    session_ids: list[UUID] | None = Field(default=None, max_length=limits.LIST_PAGE_SIZE_MAX)
+    session_ids: SessionIdList | None = None

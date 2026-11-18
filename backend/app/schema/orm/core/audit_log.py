@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.schema.models.identity.types import UserId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.user import User
@@ -17,7 +18,7 @@ class AuditLog(CoreBase):
     __tablename__ = "audit_logs"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    user_id: Mapped[int | None] = mapped_column(
+    user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     action: Mapped[str] = mapped_column(Text, nullable=False)

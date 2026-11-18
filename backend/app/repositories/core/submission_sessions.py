@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SubmissionSessionStatus
+from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.models.survey.types import SurveyVersionId
 from app.schema.orm.core.submission_session import SubmissionSession
 
 _BROWSER_SESSION_TOKEN_BYTES = 32
@@ -30,7 +32,7 @@ def create_session(
     *,
     project_id: int,
     survey_id: int,
-    survey_version_id: int,
+    survey_version_id: SurveyVersionId,
     response_store_id: int,
     link_id: UUID | None,
     project_subject_id: UUID | None,
@@ -58,7 +60,7 @@ def create_session(
     return session
 
 
-def get_by_id(db: Session, session_id: UUID) -> SubmissionSession | None:
+def get_by_id(db: Session, session_id: SubmissionSessionId) -> SubmissionSession | None:
     return db.scalar(select(SubmissionSession).where(SubmissionSession.id == session_id))
 
 
@@ -70,7 +72,7 @@ def get_by_token_hash(db: Session, token_hash: bytes) -> SubmissionSession | Non
     )
 
 
-def lock_for_update(db: Session, session_id: UUID) -> SubmissionSession | None:
+def lock_for_update(db: Session, session_id: SubmissionSessionId) -> SubmissionSession | None:
     return db.scalar(select(SubmissionSession).where(SubmissionSession.id == session_id).with_for_update())
 
 
@@ -86,7 +88,7 @@ def mark_completed(
     flush_with_err_handle(db, contexts=[submission_session])
 
 
-def touch_if_active(db: Session, session_id: UUID) -> UUID | None:
+def touch_if_active(db: Session, session_id: SubmissionSessionId) -> SubmissionSessionId | None:
     """Bump last_activity_at if the session is still in-progress and not expired.
 
     Returns the session_id on success, None if the session has been completed,
