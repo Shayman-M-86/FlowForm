@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, NotRequired, TypedDict
 
 from flask import Flask, jsonify
 from pydantic import ValidationError
@@ -10,8 +10,25 @@ from werkzeug.exceptions import HTTPException
 
 from app.api.utils.validation import normalize_pydantic_errors
 from app.core.errors import AppError, RequestValidationError, ResponseValidationError
+from app.schema.api.common.types import ErrorCode, ErrorDetails, ErrorMessage
 
 logger = logging.getLogger(__name__)
+
+
+class ErrorPayload(TypedDict):
+    """Wire envelope shared by runtime error handlers and OpenAPI."""
+
+    code: ErrorCode
+    message: ErrorMessage
+    details: NotRequired[ErrorDetails]
+
+
+def build_error_payload(*, code: ErrorCode, message: ErrorMessage, details: ErrorDetails | None = None) -> ErrorPayload:
+    """Build the envelope without running validation during error handling."""
+    payload: ErrorPayload = {"code": code, "message": message}
+    if details:
+        payload["details"] = details
+    return payload
 
 
 def _error_response(
@@ -29,10 +46,7 @@ def _error_response(
     Optional ``headers`` are attached to the response (used by 429 to carry
     ``Retry-After``, by 401 to carry ``WWW-Authenticate``, etc.).
     """
-    payload: dict[str, Any] = {"code": code, "message": message}
-    if details:
-        payload["details"] = details
-
+    payload = build_error_payload(code=code, message=message, details=details)
     response = jsonify(payload)
     response.status_code = status_code
     for name, value in (headers or {}).items():
@@ -63,8 +77,9 @@ def register_error_handlers(app: Flask) -> None:
       ``DbIntegrityError``, ``UnhandledDbIntegrityError``,
       ``RateLimitExceededError``) → uses ``exc.status_code``; honours any
       ``exc.headers`` if present.
-    - ``ValidationError`` (Pydantic) → ``422`` with code ``VALIDATION_ERROR``
-      and ``details.errors`` listing each field failure.
+    - ``RequestValidationError`` → ``422`` with normalized field errors.
+    - ``ResponseValidationError`` and unclassified ``ValidationError`` → ``500``;
+      internal validation failures must not be reported as client mistakes.
     - ``HTTPException`` (werkzeug) → uses ``exc.code``, response code is
       ``HTTP_<status>``.
     - ``IntegrityError`` that escaped ``commit_with_err_handle`` → ``500``
@@ -82,7 +97,6 @@ def register_error_handlers(app: Flask) -> None:
             headers=getattr(exc, "headers", None),
         )
 
-
     @app.errorhandler(RequestValidationError)
     def handle_request_validation_error(exc: RequestValidationError):
         return _error_response(
@@ -95,7 +109,6 @@ def register_error_handlers(app: Flask) -> None:
                 ),
             },
         )
-
 
     @app.errorhandler(ResponseValidationError)
     def handle_response_validation_error(exc: ResponseValidationError):
@@ -111,7 +124,6 @@ def register_error_handlers(app: Flask) -> None:
             status_code=500,
         )
 
-
     @app.errorhandler(ValidationError)
     def handle_unclassified_validation_error(exc: ValidationError):
         logger.exception(
@@ -125,7 +137,6 @@ def register_error_handlers(app: Flask) -> None:
             status_code=500,
         )
 
-
     @app.errorhandler(HTTPException)
     def handle_http_exception(exc: HTTPException):
         status = exc.code or 500
@@ -134,7 +145,6 @@ def register_error_handlers(app: Flask) -> None:
             message=exc.description or "",
             status_code=status,
         )
-
 
     @app.errorhandler(IntegrityError)
     def handle_integrity_error(exc: IntegrityError):
@@ -162,5 +172,3 @@ def register_error_handlers(app: Flask) -> None:
             message="An unexpected error occurred.",
             status_code=500,
         )
-
-

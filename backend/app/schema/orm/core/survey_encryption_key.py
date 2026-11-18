@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
 
@@ -21,18 +23,22 @@ from app.schema.models.projects.types import ProjectId
 from app.schema.models.survey.types import SurveyId
 
 
-class SurveyEncryptionKey(CoreBase):
+class SurveyEncryptionKey(CoreBase, kw_only=True):
     """KMS-wrapped survey branch key used to wrap session DEKs."""
 
     __tablename__ = "survey_encryption_keys"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid(), init=False
+    )
     project_id: Mapped[ProjectId] = mapped_column(BigInteger, nullable=False)
     survey_id: Mapped[SurveyId] = mapped_column(BigInteger, nullable=False)
     wrapped_survey_branch_key: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     kms_key_arn: Mapped[str] = mapped_column(Text, nullable=False)
     kms_context_version: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
+    )
 
     __table_args__ = (
         UniqueConstraint("survey_id", name="uq_survey_encryption_keys_survey"),

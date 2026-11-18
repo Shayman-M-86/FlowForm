@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -47,34 +49,32 @@ survey_role_permissions = Table(
 )
 
 
-class SurveyRole(CoreBase):
+class SurveyRole(CoreBase, kw_only=True):
     """A survey-level role override scoped to a project."""
 
     __tablename__ = "survey_roles"
 
-    id: Mapped[SurveyRoleId] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[SurveyRoleId] = mapped_column(BigInteger, primary_key=True, init=False)
     project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[RoleName] = mapped_column(Text, nullable=False)
-    description: Mapped[RoleDescription | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
-    __table_args__ = (
-        UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id_id"),
+    description: Mapped[RoleDescription | None] = mapped_column(Text, nullable=True, default=None)
+    created_at: Mapped[Timestamp] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
     )
 
-    permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions)
-    
+    # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
+    __table_args__ = (UniqueConstraint("project_id", "id", name="uq_survey_roles_project_id_id"),)
+
+    permissions: Mapped[list[Permission]] = relationship("Permission", secondary=survey_role_permissions, init=False)
+
     membership_roles: Mapped[list[SurveyMembershipRole]] = relationship(
-    "SurveyMembershipRole",
-    back_populates="role",
-    overlaps="survey,membership",
-)
+        "SurveyMembershipRole", back_populates="role", overlaps="survey,membership", init=False
+    )
 
 
-class SurveyMembershipRole(CoreBase):
+class SurveyMembershipRole(CoreBase, kw_only=True):
     """Assigns a survey-level role to a project membership for a specific survey."""
 
     __tablename__ = "survey_membership_roles"
@@ -83,7 +83,9 @@ class SurveyMembershipRole(CoreBase):
     survey_id: Mapped[SurveyId] = mapped_column(BigInteger, primary_key=True)
     membership_id: Mapped[ProjectMembershipId] = mapped_column(BigInteger, primary_key=True)
     role_id: Mapped[SurveyRoleId] = mapped_column(BigInteger, nullable=False)
-    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[Timestamp] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
+    )
 
     __table_args__ = (
         ForeignKeyConstraint(
@@ -106,24 +108,19 @@ class SurveyMembershipRole(CoreBase):
         ),
     )
     survey: Mapped[Survey] = relationship(
-    "Survey",
-    overlaps="membership,role,membership_roles,survey_roles",
+        "Survey", overlaps="membership,role,membership_roles,survey_roles", init=False
     )
 
     membership: Mapped[ProjectMembership] = relationship(
-    "ProjectMembership",
-    back_populates="survey_roles",
-    overlaps="survey,role,membership_roles",
+        "ProjectMembership", back_populates="survey_roles", overlaps="survey,role,membership_roles", init=False
     )
 
     role: Mapped[SurveyRole] = relationship(
-    "SurveyRole",
-    back_populates="membership_roles",
-    overlaps="survey,membership,survey_roles",
+        "SurveyRole", back_populates="membership_roles", overlaps="survey,membership,survey_roles", init=False
     )
 
 
-class SurveyLink(CoreBase):
+class SurveyLink(CoreBase, kw_only=True):
     """Bearer-token link granting survey access.
 
     project_id is stored directly so the database can prove the link, its survey,
@@ -135,7 +132,7 @@ class SurveyLink(CoreBase):
     __tablename__ = "survey_links"
 
     id: Mapped[SurveyLinkId] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), init=False
     )
     project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
@@ -143,17 +140,23 @@ class SurveyLink(CoreBase):
     survey_id: Mapped[SurveyId] = mapped_column(BigInteger, nullable=False)
     name: Mapped[SurveyAccessLinkName] = mapped_column(Text, nullable=False)
     token: Mapped[SurveyAccessToken] = mapped_column(Text, nullable=False, unique=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False)
-    link_type: Mapped[SurveyLinkType] = mapped_column(Text, server_default=text("'general'"), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"), nullable=False, default=True)
+    link_type: Mapped[SurveyLinkType] = mapped_column(
+        Text, server_default=text("'general'"), nullable=False, default="general"
+    )
     # How the assignment was created ('manual' | 'automated'). Informational only.
     assignment_source: Mapped[SurveyLinkAssignmentSource] = mapped_column(Text, nullable=False)
     # The sole assignment. A participant resolves to a subject AND an identity,
     # so the link reaches both through this column alone.
-    assigned_participant_id: Mapped[ParticipantId | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    expires_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    used_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    emailed_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    assigned_participant_id: Mapped[ParticipantId | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, default=None
+    )
+    expires_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    used_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    emailed_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    created_at: Mapped[Timestamp] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
+    )
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
@@ -179,13 +182,10 @@ class SurveyLink(CoreBase):
         """Single-use is derived from carrying a participant assignment."""
         return self.assigned_participant_id is not None
 
-    survey: Mapped[Survey] = relationship("Survey", foreign_keys=[project_id, survey_id], overlaps="project")
-    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id], overlaps="survey")
-    assigned_participant: Mapped[ProjectParticipant | None] = relationship(
-        "ProjectParticipant",
-        foreign_keys=[project_id, assigned_participant_id],
-        overlaps="project,survey",
+    survey: Mapped[Survey] = relationship(
+        "Survey", foreign_keys=[project_id, survey_id], overlaps="project", init=False
     )
-
-
-SurveyPublicLink = SurveyLink
+    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id], overlaps="survey", init=False)
+    assigned_participant: Mapped[ProjectParticipant | None] = relationship(
+        "ProjectParticipant", foreign_keys=[project_id, assigned_participant_id], overlaps="project,survey", init=False
+    )

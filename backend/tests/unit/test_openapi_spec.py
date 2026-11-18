@@ -438,3 +438,117 @@ def test_exporter_does_not_guess_string_limits_from_field_names_or_formats() -> 
     assert all("maxLength" not in prop for prop in props.values())
     assert props["occurred_at"]["format"] == "date-time"
     assert props["id"]["format"] == "uuid"
+
+
+def test_conflicting_component_names_are_rejected() -> None:
+    from apispec import APISpec
+    from pydantic import create_model
+
+    from app.openapi.spec import _register_model
+
+    spec = APISpec(title="Check", version="1", openapi_version="3.1.1")
+    first = create_model("Collision", value=(str, ...))
+    second = create_model("Collision", value=(int, ...))
+    _register_model(spec, first)
+    _register_model(spec, first)
+    with pytest.raises(ValueError, match="Conflicting"):
+        _register_model(spec, second)
+
+
+def test_query_model_registers_referenced_enum() -> None:
+    from enum import StrEnum
+
+    class Filter(StrEnum):
+        active = "active"
+        archived = "archived"
+
+    class Query(BaseModel):
+        state: Filter
+
+    app = Flask(__name__)
+
+    @openapi_route(summary="Filter widgets", query_model=Query)
+    @app.route("/filtered")
+    def filtered():  # pragma: no cover
+        return {}
+
+    doc = build_spec(app)
+    parameter = doc["paths"]["/filtered"]["get"]["parameters"][0]
+    ref = parameter["schema"]["$ref"].split("/")[-1]
+    assert doc["components"]["schemas"][ref]["enum"] == ["active", "archived"]
+
+
+def test_response_set_keeps_generated_uniqueness():
+    from apispec import APISpec
+
+    from app.openapi.spec import _schema_for_response_model
+
+    spec = APISpec(title="Check", version="1", openapi_version="3.1.1")
+    assert _schema_for_response_model(spec, set[str]) == {
+        "type": "array",
+        "uniqueItems": True,
+        "items": {"type": "string"},
+    }
+
+
+def test_no_content_cannot_declare_a_response_model():
+    class Response(BaseModel):
+        value: str
+
+    app = Flask(__name__)
+
+    @openapi_route(summary="Invalid no-content contract", response_model=Response, status_code=204)
+    @app.route("/invalid-no-content")
+    def invalid_no_content():  # pragma: no cover
+        return {}
+
+    with pytest.raises(ValueError, match="cannot declare a response body"):
+        build_spec(app)
+
+
+def test_input_output_alias_conflict_fails_explicitly():
+    from apispec import APISpec
+
+    from app.openapi.spec import _register_model
+
+    class DifferentAliases(BaseModel):
+        value: str = Field(validation_alias="incoming", serialization_alias="outgoing")
+
+    spec = APISpec(title="Check", version="1", openapi_version="3.1.1")
+    _register_model(spec, DifferentAliases)
+    with pytest.raises(ValueError, match="distinct input/output"):
+        _register_model(spec, DifferentAliases, mode="serialization")
+
+
+def test_error_schema_uses_the_runtime_payload_contract():
+    from pydantic import TypeAdapter
+
+    from app.api.utils.errors import ErrorPayload, build_error_payload
+    from app.openapi.errors import ErrorResponse
+
+    payload = build_error_payload(code="TEST", message="Message")
+    assert TypeAdapter(ErrorResponse).validate_python(payload) == {"code": "TEST", "message": "Message"}
+    schema = TypeAdapter(ErrorPayload).json_schema()
+    assert set(schema["required"]) == {"code", "message"}
+    assert schema["properties"]["details"]["type"] == "object"
+
+
+def test_error_formatter_preserves_existing_omission_and_serialization():
+    from datetime import UTC, datetime
+    from uuid import UUID
+
+    from app.api.utils.errors import _error_response
+
+    app = Flask(__name__)
+    with app.app_context():
+        empty = _error_response(code="TEST", message="x" * 3000, status_code=400, details={})
+        assert empty.get_json() == {"code": "TEST", "message": "x" * 3000}
+        populated = _error_response(
+            code="TEST",
+            message="Message",
+            status_code=429,
+            details={"id": UUID("10000000-0000-4000-8000-000000000001"), "time": datetime(2020, 1, 1, tzinfo=UTC)},
+            headers={"Retry-After": "5"},
+        )
+        assert populated.status_code == 429 and populated.headers["Retry-After"] == "5"
+        assert populated.get_json()["details"]["id"] == "10000000-0000-4000-8000-000000000001"

@@ -5,7 +5,7 @@ document_type: planning-index
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-11-18
+last_edited: 2026-11-19
 tags: [meta]
 related_code: []
 related_docs: ["Development workspace"]
@@ -48,6 +48,8 @@ known start --> transition steps --> compatibility window --> target state
 - [[flowform-v2-answer-data-definition|FlowForm V2 answer data definition]]
 
 ## Active migrations
+
+- [[declarative-data-and-typing|Declarative data and typing migration]]
 
 - [[staging-hybrid-cutover|Staging cutover to the Proxmox hybrid stack]]
 - [[survey-document-reconciliation-plan|Survey document reconciliation plan]]

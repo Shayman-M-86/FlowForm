@@ -1,5 +1,5 @@
 from sqlalchemy import MetaData
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
 
 NAMING_CONVENTION = {
     "pk": "pk_%(table_name)s",
@@ -15,13 +15,13 @@ NAMING_CONVENTION = {
 }
 
 
-class CoreBase(DeclarativeBase):
+class CoreBase(DeclarativeBase, MappedAsDataclass, kw_only=True, eq=False, repr=False):
     """Application declarative base class for SQLAlchemy ORM models."""
 
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
-class ResponseBase(DeclarativeBase):
+class ResponseBase(DeclarativeBase, MappedAsDataclass, kw_only=True, eq=False, repr=False):
     """Application declarative base class for SQLAlchemy ORM models."""
 
     metadata = MetaData(naming_convention=NAMING_CONVENTION)

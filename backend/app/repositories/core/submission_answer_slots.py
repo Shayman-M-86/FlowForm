@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import uuid
-
 from psycopg.errors import UniqueViolation
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import SurveyVersionId
-from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
-
-_SLOT_CONSTRAINT = "uq_submission_answer_slots_session_question"
+from app.schema.models.survey.types import ReadableId, SurveyFieldUuid, SurveyVersionId
+from app.schema.orm.core.submission_answer_slot import ANSWER_SLOT_IDENTITY_CONSTRAINT, SubmissionAnswerSlot
 
 
 def get_or_create(
@@ -19,15 +15,15 @@ def get_or_create(
     *,
     submission_session_id: SubmissionSessionId,
     survey_version_id: SurveyVersionId,
-    question_node_id: uuid.UUID,
-    question_key: str | None,
+    field_uuid: SurveyFieldUuid,
+    field_id: ReadableId | None,
 ) -> SubmissionAnswerSlot:
-    """Return the stable answer slot for a session/question, creating it once."""
+    """Return the stable answer slot for a session/field, creating it once."""
     slot = SubmissionAnswerSlot(
         submission_session_id=submission_session_id,
         survey_version_id=survey_version_id,
-        question_node_id=question_node_id,
-        question_key=question_key,
+        field_uuid=field_uuid,
+        field_id=field_id,
     )
     nested = db.begin_nested()
     db.add(slot)
@@ -38,11 +34,11 @@ def get_or_create(
         nested.rollback()
         db.expire_all()
         constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", "") or ""
-        if isinstance(exc.orig, UniqueViolation) and constraint == _SLOT_CONSTRAINT:
+        if isinstance(exc.orig, UniqueViolation) and constraint == ANSWER_SLOT_IDENTITY_CONSTRAINT:
             existing = db.scalar(
                 select(SubmissionAnswerSlot).where(
                     SubmissionAnswerSlot.submission_session_id == submission_session_id,
-                    SubmissionAnswerSlot.question_node_id == question_node_id,
+                    SubmissionAnswerSlot.field_uuid == field_uuid,
                 )
             )
             if existing is not None:

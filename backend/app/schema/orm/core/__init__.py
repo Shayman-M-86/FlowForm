@@ -17,7 +17,6 @@ from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import (
     SurveyLink,
     SurveyMembershipRole,
-    SurveyPublicLink,
     SurveyRole,
     survey_role_permissions,
 )
@@ -45,7 +44,6 @@ __all__ = [
     "SurveyEncryptionKey",
     "SurveyLink",
     "SurveyMembershipRole",
-    "SurveyPublicLink",
     "SurveyRole",
     "SurveyVersion",
     "User",

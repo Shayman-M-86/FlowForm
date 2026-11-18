@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -22,7 +24,7 @@ if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession
 
 
-class SubjectIpObservation(CoreBase):
+class SubjectIpObservation(CoreBase, kw_only=True):
     """Project-scoped IP observation tied to a subject and/or a session.
 
     IP addresses are identifying core metadata and must never cross into the
@@ -31,18 +33,20 @@ class SubjectIpObservation(CoreBase):
 
     __tablename__ = "subject_ip_observations"
 
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True, init=False)
     project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     project_subject_id: Mapped[SubjectId | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("project_subjects.id", ondelete="CASCADE"), nullable=True
+        UUID(as_uuid=True), ForeignKey("project_subjects.id", ondelete="CASCADE"), nullable=True, default=None
     )
     submission_session_id: Mapped[SubmissionSessionId | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("submission_sessions.id", ondelete="CASCADE"), nullable=True
+        UUID(as_uuid=True), ForeignKey("submission_sessions.id", ondelete="CASCADE"), nullable=True, default=None
     )
     ip_address: Mapped[str] = mapped_column(INET, nullable=False)
-    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
+    )
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
@@ -65,14 +69,12 @@ class SubjectIpObservation(CoreBase):
         ),
     )
 
-    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id], overlaps="subject,session")
+    project: Mapped[Project] = relationship(
+        "Project", foreign_keys=[project_id], overlaps="subject,session", init=False
+    )
     subject: Mapped[ProjectSubject | None] = relationship(
-        "ProjectSubject",
-        foreign_keys=[project_id, project_subject_id],
-        overlaps="project,session",
+        "ProjectSubject", foreign_keys=[project_id, project_subject_id], overlaps="project,session", init=False
     )
     session: Mapped[SubmissionSession | None] = relationship(
-        "SubmissionSession",
-        foreign_keys=[project_id, submission_session_id],
-        overlaps="project,subject",
+        "SubmissionSession", foreign_keys=[project_id, submission_session_id], overlaps="project,subject", init=False
     )

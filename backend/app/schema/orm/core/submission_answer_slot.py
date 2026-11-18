@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -13,23 +15,28 @@ if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession
 
 
-class SubmissionAnswerSlot(CoreBase):
+ANSWER_SLOT_IDENTITY_CONSTRAINT = "uq_submission_answer_slots_session_field"
+
+
+class SubmissionAnswerSlot(CoreBase, kw_only=True):
     """Stable core-side pointer for one submission session/field answer."""
 
     __tablename__ = "submission_answer_slots"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid(), init=False
+    )
     submission_session_id: Mapped[SubmissionSessionId] = mapped_column(UUID(as_uuid=True), nullable=False)
     survey_version_id: Mapped[SurveyVersionId] = mapped_column(BigInteger, nullable=False)
     # Field membership is checked against the version document, not a node table.
     field_uuid: Mapped[SurveyFieldUuid] = mapped_column(UUID(as_uuid=True), nullable=False)
-    field_id: Mapped[ReadableId | None] = mapped_column(Text, nullable=True)
+    field_id: Mapped[ReadableId | None] = mapped_column(Text, nullable=True, default=None)
 
     __table_args__ = (
         UniqueConstraint(
             "submission_session_id",
             "field_uuid",
-            name="uq_submission_answer_slots_session_field",
+            name=ANSWER_SLOT_IDENTITY_CONSTRAINT,
         ),
         ForeignKeyConstraint(
             ["submission_session_id", "survey_version_id"],
@@ -39,4 +46,6 @@ class SubmissionAnswerSlot(CoreBase):
         ),
     )
 
-    session: Mapped[SubmissionSession] = relationship("SubmissionSession", foreign_keys=[submission_session_id])
+    session: Mapped[SubmissionSession] = relationship(
+        "SubmissionSession", foreign_keys=[submission_session_id], init=False
+    )

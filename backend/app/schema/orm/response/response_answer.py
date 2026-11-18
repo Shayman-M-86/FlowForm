@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
     from app.schema.orm.response.response_envelope import ResponseEnvelope
 
 
-class ResponseAnswer(ResponseBase):
+class ResponseAnswer(ResponseBase, kw_only=True):
     """Current encrypted answer row for one core-side answer slot."""
 
     __tablename__ = "response_answers"
@@ -24,8 +26,10 @@ class ResponseAnswer(ResponseBase):
     )
     ciphertext: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     nonce: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
-    client_mutation_id: Mapped[ClientMutationId | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    client_mutation_id: Mapped[ClientMutationId | None] = mapped_column(UUID(as_uuid=True), nullable=True, default=None)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
+    )
 
     __table_args__ = (
         CheckConstraint("octet_length(answer_locator) = 32", name="answer_locator_len"),
@@ -35,7 +39,5 @@ class ResponseAnswer(ResponseBase):
     )
 
     envelope: Mapped[ResponseEnvelope] = relationship(
-        "ResponseEnvelope",
-        back_populates="answers",
-        foreign_keys=[envelope_id],
+        "ResponseEnvelope", back_populates="answers", foreign_keys=[envelope_id], init=False
     )

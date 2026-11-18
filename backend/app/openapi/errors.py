@@ -1,44 +1,18 @@
-"""Reusable error response components for the generated OpenAPI spec.
-
-Schema and response examples mirror the JSON returned by
-``register_error_handlers`` in ``app.api.utils.errors``. The schema is a
-single ``ErrorResponse`` shape; examples are **derived at spec-build time**
-from real ``AppError`` subclasses and the DB integrity rule registry so they
-stay in sync with the runtime as new errors are added.
-
-See ``app/openapi/error_examples.py`` for the derivation logic.
-"""
+"""OpenAPI error components derived from the runtime error payload contract."""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
+from pydantic import Field, TypeAdapter
+
+from app.api.utils.errors import ErrorPayload
 from app.openapi.error_examples import build_examples_by_status
 
+# Preserve the public component name while deriving its shape from the runtime contract.
+ErrorResponse = Annotated[ErrorPayload, Field(title="ErrorResponse")]
 ERROR_SCHEMA_NAME = "ErrorResponse"
-
-ERROR_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "required": ["code", "message"],
-    "properties": {
-        "code": {
-            "type": "string",
-            "description": "Machine-readable error code.",
-        },
-        "message": {
-            "type": "string",
-            "description": "Human-readable error message.",
-        },
-        "details": {
-            "type": "object",
-            "description": (
-                "Optional structured extras. Pydantic validation errors place "
-                "their per-field failures here as ``details.errors``."
-            ),
-            "additionalProperties": True,
-        },
-    },
-}
+ERROR_SCHEMA: dict[str, Any] = TypeAdapter(ErrorResponse).json_schema()
 
 
 _STATUS_DESCRIPTIONS: dict[int, str] = {
@@ -57,6 +31,9 @@ _STATUS_RESPONSE_COMPONENTS: dict[int, str] = {
     401: "UnauthorizedError",
     403: "ForbiddenError",
     404: "NotFoundError",
+    405: "MethodNotAllowedError",
+    413: "RequestEntityTooLargeError",
+    415: "UnsupportedMediaTypeError",
     409: "ConflictError",
     422: "ValidationError",
     429: "RateLimitError",
@@ -83,7 +60,7 @@ def _response_with_examples(
 
 
 def _default_error_statuses(*, include_auth: bool = True) -> list[int]:
-    statuses: list[int] = [400, 404, 409, 422, 429, 500]
+    statuses: list[int] = [400, 404, 405, 409, 413, 415, 422, 429, 500]
     if include_auth:
         statuses.extend([401, 403])
     return sorted(set(statuses))

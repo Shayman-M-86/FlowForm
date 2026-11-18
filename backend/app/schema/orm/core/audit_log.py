@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -12,23 +14,23 @@ if TYPE_CHECKING:
     from app.schema.orm.core.user import User
 
 
-class AuditLog(CoreBase):
+class AuditLog(CoreBase, kw_only=True):
     """Immutable record of a user action on a named entity."""
 
     __tablename__ = "audit_logs"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, init=False)
     user_id: Mapped[UserId | None] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, default=None
     )
     action: Mapped[str] = mapped_column(Text, nullable=False)
     entity_type: Mapped[str] = mapped_column(Text, nullable=False)
-    entity_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    log_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    entity_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, default=None)
+    log_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
     )
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
 
-    user: Mapped[User | None] = relationship("User", foreign_keys=[user_id])
+    user: Mapped[User | None] = relationship("User", foreign_keys=[user_id], init=False)

@@ -45,7 +45,7 @@ def test_orm_annotation_references_shared_type(model, field, value_type):
 
 
 def test_email_annotation_does_not_add_orm_validation():
-    row = ProjectInvitation(invited_email="not an email")
+    row = ProjectInvitation(project_id=1, invited_email="not an email", token_hash="test-hash")
     assert row.invited_email == "not an email"
     row.invited_email = "  UNNORMALIZED@example.com  "
     assert row.invited_email == "  UNNORMALIZED@example.com  "

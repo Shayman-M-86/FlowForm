@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -20,7 +22,7 @@ if TYPE_CHECKING:
     from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
 
 
-class ProjectParticipant(CoreBase):
+class ProjectParticipant(CoreBase, kw_only=True):
     """A subject enrolled in a project under a specific identity.
 
     A participant always carries both a subject and one of that subject's
@@ -31,14 +33,16 @@ class ProjectParticipant(CoreBase):
     __tablename__ = "project_participants"
 
     id: Mapped[ParticipantId] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid(), init=False
     )
     project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     project_subject_id: Mapped[SubjectId] = mapped_column(UUID(as_uuid=True), nullable=False)
     identity_id: Mapped[SubjectIdentityId] = mapped_column(UUID(as_uuid=True), nullable=False)
-    created_at: Mapped[Timestamp] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[Timestamp] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
+    )
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
     __table_args__ = (
@@ -65,14 +69,16 @@ class ProjectParticipant(CoreBase):
         ),
     )
 
-    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id])
+    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id], init=False)
     subject: Mapped[ProjectSubject] = relationship(
         "ProjectSubject",
         foreign_keys=[project_id, project_subject_id],
         overlaps="project",
+        init=False,
     )
     identity: Mapped[ProjectSubjectIdentity] = relationship(
         "ProjectSubjectIdentity",
         foreign_keys=[project_id, project_subject_id, identity_id],
         overlaps="project,subject",
+        init=False,
     )

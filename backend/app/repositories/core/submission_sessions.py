@@ -37,7 +37,7 @@ def create_session(
     link_id: UUID | None,
     project_subject_id: UUID | None,
     raw_browser_session_token: str,
-    linkage_key_version: int | None = None,
+    linkage_key_version: int,
     now: datetime | None = None,
     ttl: timedelta = DEFAULT_SESSION_TTL,
 ) -> SubmissionSession:

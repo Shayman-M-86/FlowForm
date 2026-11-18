@@ -241,7 +241,7 @@ def test_submission_session_unique_constraints() -> None:
 
 
 def test_submission_answer_slot_unique_constraints() -> None:
-    assert "uq_submission_answer_slots_session_question" in unique_constraint_names(SubmissionAnswerSlot)
+    assert "uq_submission_answer_slots_session_field" in unique_constraint_names(SubmissionAnswerSlot)
 
 
 def test_response_answer_unique_constraints() -> None:

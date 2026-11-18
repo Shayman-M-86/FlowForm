@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
-from typing import Any, Literal, get_args, get_origin
+from typing import Any, Literal, get_origin
 
 from apispec import APISpec
 from flask import Blueprint, Flask, jsonify
@@ -23,8 +23,7 @@ from werkzeug.routing import Rule
 
 from app.core.config import PROJECT_VERSION
 from app.openapi.errors import (
-    ERROR_SCHEMA,
-    ERROR_SCHEMA_NAME,
+    ErrorResponse,
     default_error_response_components,
     default_error_response_refs,
 )
@@ -200,29 +199,40 @@ def _register_model(
         name = schema.get("title", repr(model))
 
     existing = spec.to_dict().get("components", {}).get("schemas", {})
-    if name in existing:
-        return name
+    rewritten = _rewrite_refs(schema)
+    root_schema = {key: value for key, value in rewritten.items() if key != "$defs"}
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", name):
+        raise ValueError("OpenAPI schema aliases need an explicit, valid title")
+    if name in existing and existing[name] != root_schema:
+        raise ValueError(f"Conflicting OpenAPI schema {name!r}; use distinct input/output models or titles")
 
     defs = schema.pop("$defs", {})
 
     for def_name, def_schema in defs.items():
+        definition = _rewrite_refs(def_schema)
+        if def_name in existing and existing[def_name] != definition:
+            raise ValueError(f"Conflicting nested OpenAPI schema {def_name!r}")
         if def_name not in existing and def_name != name:
-            spec.components.schema(def_name, _rewrite_refs(def_schema))
+            spec.components.schema(def_name, definition)
 
-    spec.components.schema(name, _rewrite_refs(schema))
+    if name not in existing:
+        spec.components.schema(name, _rewrite_refs(schema))
     return name
 
 
 def _schema_for_response_model(spec: APISpec, model: Any) -> dict[str, Any]:
     origin = get_origin(model)
-    args = get_args(model)
 
-    if origin is list and len(args) == 1:
-        item_name = _register_model(spec, args[0], mode="serialization")
-        return {
-            "type": "array",
-            "items": {"$ref": f"#/components/schemas/{item_name}"},
-        }
+    if origin in (list, set, frozenset, tuple, dict):
+        schema = TypeAdapter(model).json_schema(ref_template="#/components/schemas/{model}", mode="serialization")
+        existing = spec.to_dict().get("components", {}).get("schemas", {})
+        for name, definition in schema.pop("$defs", {}).items():
+            definition = _rewrite_refs(definition)
+            if name in existing and existing[name] != definition:
+                raise ValueError(f"Conflicting nested OpenAPI schema {name!r}")
+            if name not in existing:
+                spec.components.schema(name, definition)
+        return _rewrite_refs(schema)
 
     if isinstance(model, type) and issubclass(model, BaseModel):
         response_name = _register_model(spec, model, mode="serialization")
@@ -233,8 +243,9 @@ def _schema_for_response_model(spec: APISpec, model: Any) -> dict[str, Any]:
     return {"$ref": f"#/components/schemas/{response_name}"}
 
 
-def _query_parameters_for_model(model: type[BaseModel]) -> list[dict[str, Any]]:
-    schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
+def _query_parameters_for_model(spec: APISpec, model: type[BaseModel]) -> list[dict[str, Any]]:
+    name = _register_model(spec, model)
+    schema = spec.to_dict()["components"]["schemas"][name]
     properties = schema.get("properties", {})
     required = set(schema.get("required", []))
     parameters: list[dict[str, Any]] = []
@@ -277,7 +288,7 @@ def _build_operation(
         operation["security"] = optional_security(security_scheme_name)
     parameters = list(path_parameters)
     if route.query_model is not None:
-        parameters.extend(_query_parameters_for_model(route.query_model))
+        parameters.extend(_query_parameters_for_model(spec, route.query_model))
     if parameters:
         operation["parameters"] = parameters
 
@@ -292,6 +303,8 @@ def _build_operation(
             },
         }
 
+    if route.status_code in (204, 304) and route.response_model is not None:
+        raise ValueError(f"HTTP {route.status_code} cannot declare a response body")
     responses: dict[str, Any] = {}
     if route.response_model is not None:
         responses[str(route.status_code)] = {
@@ -381,7 +394,7 @@ def build_spec(app: Flask) -> dict[str, Any]:
         },
     )
 
-    spec.components.schema(ERROR_SCHEMA_NAME, ERROR_SCHEMA)
+    _register_model(spec, ErrorResponse)
     for name, response in default_error_response_components().items():
         spec.components.response(name, response)
     security_scheme_name = _register_security_scheme(spec, app)
@@ -410,7 +423,10 @@ def build_spec(app: Flask) -> dict[str, Any]:
                 path_params,
                 security_scheme_name,
             )
-            grouped.setdefault(openapi_path, {})[method.lower()] = operation
+            operations = grouped.setdefault(openapi_path, {})
+            if method.lower() in operations:
+                raise ValueError(f"Duplicate OpenAPI operation {method} {openapi_path}")
+            operations[method.lower()] = operation
 
     document = spec.to_dict()
     document["servers"] = _servers_for(app)

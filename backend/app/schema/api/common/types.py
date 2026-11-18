@@ -1,6 +1,6 @@
 """Canonical HTTP value types; validation constraints are defined once here."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import AfterValidator, AwareDatetime, Field, StringConstraints
 
@@ -30,3 +30,9 @@ CanonicalSubjectFilter = Literal["canonical", "alias", "all"]
 
 
 type PageItems[T] = Annotated[list[T], Field(max_length=limits.LIST_PAGE_SIZE_MAX)]
+
+
+# Error handlers emit untruncated text and extensible JSON details.
+ErrorCode = Annotated[str, Field(description="Machine-readable error code")]
+ErrorMessage = Annotated[str, Field(description="Human-readable error message")]
+ErrorDetails = dict[str, Any]

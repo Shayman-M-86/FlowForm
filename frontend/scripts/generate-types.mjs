@@ -44,7 +44,7 @@ const SKIP = new Set(["ErrorResponse"]);
 /** Classify a schema name into request | response | subtype */
 function schemaCategory(name) {
   if (name.endsWith("Request") || name.endsWith("In")) return "request";
-  if (name.endsWith("Responses")) return "response";
+  if (name.endsWith("Response") || name.endsWith("Responses")) return "response";
   return "subtype";
 }
 

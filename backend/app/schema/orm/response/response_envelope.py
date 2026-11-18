@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -11,12 +13,14 @@ if TYPE_CHECKING:
     from app.schema.orm.response.response_answer import ResponseAnswer
 
 
-class ResponseEnvelope(ResponseBase):
+class ResponseEnvelope(ResponseBase, kw_only=True):
     """Anonymous encrypted response envelope for one survey session."""
 
     __tablename__ = "response_envelopes"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid(), init=False
+    )
     session_locator: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     linkage_key_version: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     wrapped_session_dek: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
@@ -35,4 +39,5 @@ class ResponseEnvelope(ResponseBase):
         back_populates="envelope",
         cascade="all, delete-orphan",
         foreign_keys="[ResponseAnswer.envelope_id]",
+        init=False,
     )

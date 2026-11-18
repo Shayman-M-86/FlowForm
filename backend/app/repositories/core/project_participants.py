@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from uuid import UUID
-
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.models.projects.types import ParticipantId, ProjectId, SubjectId, SubjectIdentityId
 from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
 
 
-def get_participant(db: Session, *, project_id: int, participant_id: UUID) -> ProjectParticipant | None:
+def get_participant(db: Session, *, project_id: ProjectId, participant_id: ParticipantId) -> ProjectParticipant | None:
     return db.scalar(
         select(ProjectParticipant).where(
             ProjectParticipant.project_id == project_id,
@@ -22,8 +21,8 @@ def get_participant(db: Session, *, project_id: int, participant_id: UUID) -> Pr
 def get_participant_by_subject(
     db: Session,
     *,
-    project_id: int,
-    project_subject_id: UUID,
+    project_id: ProjectId,
+    project_subject_id: SubjectId,
 ) -> ProjectParticipant | None:
     return db.scalar(
         select(ProjectParticipant).where(
@@ -36,7 +35,7 @@ def get_participant_by_subject(
 def list_participants(
     db: Session,
     *,
-    project_id: int,
+    project_id: ProjectId,
     search: str | None = None,
     offset: int = 0,
     limit: int = 20,
@@ -49,34 +48,30 @@ def list_participants(
 
     if search:
         pattern = f"%{search}%"
-        stmt = stmt.where(
-            or_(
-                ProjectSubject.subject_code.ilike(pattern),
-                ProjectSubjectIdentity.normalized_email.ilike(pattern),
+        stmt = (
+            stmt.where(
+                or_(
+                    ProjectSubject.subject_code.ilike(pattern),
+                    ProjectSubjectIdentity.normalized_email.ilike(pattern),
+                )
             )
-        ).join(
-            ProjectSubject,
-            (ProjectParticipant.project_id == ProjectSubject.project_id)
-            & (ProjectParticipant.project_subject_id == ProjectSubject.id),
-        ).join(
-            ProjectSubjectIdentity,
-            (ProjectParticipant.project_id == ProjectSubjectIdentity.project_id)
-            & (ProjectParticipant.project_subject_id == ProjectSubjectIdentity.project_subject_id)
-            & (ProjectParticipant.identity_id == ProjectSubjectIdentity.id),
+            .join(
+                ProjectSubject,
+                (ProjectParticipant.project_id == ProjectSubject.project_id)
+                & (ProjectParticipant.project_subject_id == ProjectSubject.id),
+            )
+            .join(
+                ProjectSubjectIdentity,
+                (ProjectParticipant.project_id == ProjectSubjectIdentity.project_id)
+                & (ProjectParticipant.project_subject_id == ProjectSubjectIdentity.project_subject_id)
+                & (ProjectParticipant.identity_id == ProjectSubjectIdentity.id),
+            )
         )
 
-    count_stmt = select(func.count()).select_from(
-        stmt.with_only_columns(ProjectParticipant.id).subquery()
-    )
+    count_stmt = select(func.count()).select_from(stmt.with_only_columns(ProjectParticipant.id).subquery())
     total = db.scalar(count_stmt) or 0
 
-    rows = list(
-        db.scalars(
-            stmt.order_by(ProjectParticipant.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        ).unique()
-    )
+    rows = list(db.scalars(stmt.order_by(ProjectParticipant.created_at.desc()).offset(offset).limit(limit)).unique())
 
     return rows, total
 
@@ -84,9 +79,9 @@ def list_participants(
 def create_participant(
     db: Session,
     *,
-    project_id: int,
-    project_subject_id: UUID,
-    identity_id: UUID,
+    project_id: ProjectId,
+    project_subject_id: SubjectId,
+    identity_id: SubjectIdentityId,
 ) -> ProjectParticipant:
     """Insert a participant for a subject under a specific identity.
 

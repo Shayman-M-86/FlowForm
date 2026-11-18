@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Boolean, ForeignKey, Text, UniqueConstraint
@@ -16,12 +18,12 @@ if TYPE_CHECKING:
     from app.schema.orm.core.user import User
 
 
-class ResponseStore(TimestampMixin, CoreBase):
+class ResponseStore(TimestampMixin, CoreBase, kw_only=True):
     """Defines a destination for survey response payloads."""
 
     __tablename__ = "response_stores"
 
-    id: Mapped[ResponseStoreId] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[ResponseStoreId] = mapped_column(BigInteger, primary_key=True, init=False)
     project_id: Mapped[ProjectId] = mapped_column(
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
@@ -30,15 +32,11 @@ class ResponseStore(TimestampMixin, CoreBase):
     connection_reference: Mapped[dict] = mapped_column(JSONB, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_by_user_id: Mapped[UserId | None] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, default=None
     )
 
     # Only necessary constraints live in SQLAlchemy; source of truth is the SQL schema file.
-    __table_args__ = (
-        UniqueConstraint("project_id", "id", name="uq_response_stores_project_id_id"),
-    )
+    __table_args__ = (UniqueConstraint("project_id", "id", name="uq_response_stores_project_id_id"),)
 
-    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id])
-    created_by: Mapped[User | None] = relationship(
-        "User", foreign_keys=[created_by_user_id]
-    )
+    project: Mapped[Project] = relationship("Project", foreign_keys=[project_id], init=False)
+    created_by: Mapped[User | None] = relationship("User", foreign_keys=[created_by_user_id], init=False)

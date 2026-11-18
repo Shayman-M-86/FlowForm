@@ -1,0 +1,7 @@
+{
+    "extends": "./backend/pyrightconfig.json",
+    "include": ["backend/app", "backend/tests", "backend/scripts"],
+    "venvPath": "./backend",
+    "venv": ".venv",
+    "executionEnvironments": [{"root": "backend"}]
+}

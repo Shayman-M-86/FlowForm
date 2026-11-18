@@ -104,6 +104,7 @@ from app.schema.orm.core import (
     SurveyVersion,
     User,
 )
+from app.schema.orm.core.submission_answer_slot import ANSWER_SLOT_IDENTITY_CONSTRAINT
 from app.schema.orm.response import ResponseAnswer, ResponseEnvelope
 
 type RuleContext = (
@@ -344,7 +345,7 @@ def _submission_answer_slot_ctx(slot: SubmissionAnswerSlot) -> dict[str, object]
         "answer_slot_id": slot.id,
         "session_id": slot.submission_session_id,
         "survey_version_id": slot.survey_version_id,
-        "question_node_id": slot.question_node_id,
+        "field_uuid": slot.field_uuid,
     }
 
 
@@ -1083,11 +1084,11 @@ RESPONSE_ENVELOPE_RULES: tuple[DbErrorRule, ...] = (
 
 SUBMISSION_ANSWER_SLOT_RULES: tuple[DbErrorRule, ...] = (
     unique_rule(
-        "uq_submission_answer_slots_session_question",
+        ANSWER_SLOT_IDENTITY_CONSTRAINT,
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             409,
             "ANSWER_SLOT_EXISTS",
-            "An answer slot already exists for this session and question.",
+            "An answer slot already exists for this session and field.",
         ),
         extractor=_submission_answer_slot_ctx,
     ),

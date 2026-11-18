@@ -101,7 +101,13 @@ def _build_minimal_spec_app() -> Flask:
 )
 def openapi_export_command(output: Path, check: bool) -> None:
     """Write the OpenAPI spec to disk as YAML."""
-    spec = build_spec(_build_minimal_spec_app())
+    try:
+        spec = build_spec(_build_minimal_spec_app())
+    except ImportError as exc:
+        raise click.ClickException(
+            f"Cannot register the application's route contracts: {exc}. "
+            "Migrate obsolete route/service imports before exporting; no spec was written."
+        ) from exc
     rendered = _dump_yaml(spec)
 
     if check:

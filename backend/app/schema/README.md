@@ -73,6 +73,20 @@ literals do not require artificial wrapper types.
 - JSONB containing a serialized document remains stored JSON, not an instance
   of a Pydantic model unless an explicit conversion layer exists.
 
+## Typed ORM construction
+
+All mapped classes use SQLAlchemy's native dataclass constructor generation.
+Every model declares `kw_only=True` explicitly for consistent runtime and Pyright
+behavior. Database-generated IDs/timestamps and relationships use `init=False`;
+nullable fields use `default=None`; scalar defaults reflect their existing domain
+and SQL defaults. Operation timestamps that callers supply remain constructor
+inputs, with an aware UTC creation default where appropriate.
+
+Do not add handwritten forwarding constructors or an unset sentinel. Neither
+annotations nor dataclass construction add Pydantic validation to ORM assignments.
+Tests must check every mapped class, actual creation sites, generated defaults,
+relationship foreign keys, and unchanged PostgreSQL DDL.
+
 ## Requests, responses, and defaults
 
 - Top-level request models and top-level union variants end in `Request`.
@@ -107,8 +121,8 @@ literals do not require artificial wrapper types.
   do not claim schema generation alone proves equivalent enforcement.
 - Include negative cases and round-trip checks when changing contracts. Verify ORM
   metadata is unchanged for annotation-only work.
-- Naming affects frontend generation: its current classifier recognizes `Request`/`In`
-  and `Responses`; singular `Response` needs explicit consideration during generator work.
+- Naming affects frontend generation: the classifier recognizes `Request`/`In`
+  and both `Response` and `Responses`; nested models are subtypes.
 - Isolated schema checks do not establish application integration. The ongoing V2
   migration still has legacy runtime callers; full OpenAPI export and application
   checks must be completed when those consumers are migrated.
