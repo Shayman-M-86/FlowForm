@@ -38,9 +38,9 @@ class ArchiveImportTests(unittest.TestCase):
             self.assertEqual(len(docset.docs), 3)
             self.assertEqual(docset.unparsed_paths, [])
             self.assertEqual(all_findings(docset, "commit"), [])
-            self.assertEqual(
-                docset.by_title("archive").path, archive / "archive-index.md"
-            )
+            archive_doc = docset.by_title("archive")
+            assert archive_doc is not None
+            self.assertEqual(archive_doc.path, archive / "archive-index.md")
 
     def test_exclusion_is_limited_to_legacy_imports(self) -> None:
         for relative in (
