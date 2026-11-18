@@ -1,8 +1,7 @@
 from app.schema.api.common.base import APIRequestModel
 from app.schema.api.common.types import FutureExpiry
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
-from app.schema.models.projects.types import ParticipantId
-from app.schema.models.survey.types import SurveyAccessLinkName, SurveyAccessToken
+from app.schema.types import ParticipantId, SurveyAccessLinkName, SurveyAccessToken
 
 
 class CreateSurveyAccessLinkRequest(APIRequestModel):

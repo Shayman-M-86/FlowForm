@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import uuid
 
+from pydantic import TypeAdapter
+
 from app.cache import LockedTTLCache
 from app.crypto._internal.aad import build_session_dek_wrap_aad
 from app.crypto._internal.locators import derive_session_locator
@@ -22,6 +24,7 @@ from app.crypto.models import (
     SessionDEKContext,
     SessionLocator,
 )
+from app.schema.types import ProjectId, SubmissionSessionId, SurveyId
 
 
 class TestLocalCryptoRoundTrip:
@@ -32,10 +35,10 @@ class TestLocalCryptoRoundTrip:
         session_key = PlaintextSessionKey(os.urandom(32))
 
         context = SessionDEKContext(
-            session_id=uuid.uuid4(),
+            session_id=TypeAdapter(SubmissionSessionId).validate_python(uuid.uuid4()),
             crypto_version=1,
-            project_id=1,
-            survey_id=1,
+            project_id=TypeAdapter(ProjectId).validate_python(1),
+            survey_id=TypeAdapter(SurveyId).validate_python(1),
             session_locator=SessionLocator(os.urandom(32)),
         )
         aad = build_session_dek_wrap_aad(context)
@@ -69,8 +72,8 @@ class TestLocalCryptoRoundTrip:
         session_id = uuid.uuid4()
         secret = b"\xaa" * 32
 
-        loc1 = derive_session_locator(session_id, secret)
-        loc2 = derive_session_locator(session_id, secret)
+        loc1 = derive_session_locator(TypeAdapter(SubmissionSessionId).validate_python(session_id), secret)
+        loc2 = derive_session_locator(TypeAdapter(SubmissionSessionId).validate_python(session_id), secret)
 
         assert loc1 == loc2
         assert len(loc1) == 32

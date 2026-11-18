@@ -7,9 +7,17 @@ from pydantic import ConfigDict, model_validator
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
-from app.schema.models.common.types import EmailAddress, Text, Timestamp, Url
-from app.schema.models.projects.types import ParticipantId
-from app.schema.models.survey.types import SurveyAccessLinkName, SurveyAccessToken, SurveyId, SurveyLinkId
+from app.schema.types import (
+    EmailAddress,
+    ParticipantId,
+    SurveyAccessLinkName,
+    SurveyAccessToken,
+    SurveyId,
+    SurveyLinkId,
+    Text,
+    Timestamp,
+    Url,
+)
 
 
 class SurveyAccessLinkResponse(APIResponseModel):

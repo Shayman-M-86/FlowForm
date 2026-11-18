@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
-from app.schema.models.identity.types import UserId
+from app.schema.types import UserId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.user import User

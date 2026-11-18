@@ -6,8 +6,8 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from app.schema.models.submission.types import ClientMutationId
 from app.schema.orm.response.response_answer import ResponseAnswer
+from app.schema.types import ClientMutationId
 
 
 def upsert_current(

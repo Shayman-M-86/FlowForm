@@ -2,8 +2,7 @@ from pydantic import Field
 
 from app.schema.api.common.base import APIRequestModel
 from app.schema.api.common.types import SurveyPermissionSet
-from app.schema.models.projects.types import ProjectMembershipId, RoleDescription, RoleName
-from app.schema.models.survey.types import SurveyRoleId
+from app.schema.types import ProjectMembershipId, RoleDescription, RoleName, SurveyRoleId
 
 
 class CreateSurveyRoleRequest(APIRequestModel):

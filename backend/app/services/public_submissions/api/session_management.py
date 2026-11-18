@@ -28,9 +28,9 @@ from app.schema.api.responses.submission_sessions import (
 )
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
 from app.schema.enums import SubmissionAnswerState
-from app.schema.models.submission.types import ClientMutationId
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.user import User
+from app.schema.types import ClientMutationId
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from app.services.public_submissions.core.actions.completion import (
     CompletionResult,

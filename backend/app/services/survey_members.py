@@ -16,43 +16,42 @@ from app.repositories import surveys_repo as sr
 from app.schema.api.requests.surveys_access import AssignSurveyMemberRoleRequest, UpdateSurveyMemberRoleRequest
 from app.schema.orm.core.survey_access import SurveyMembershipRole
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, ProjectMembershipId, SurveyId, SurveyRoleId
 
 
 class SurveyMembersService:
     """Service for survey membership role assignment management."""
 
-    def _require_survey(self, db: Session, *, project_id: int, survey_id: int) -> None:
+    def _require_survey(self, db: Session, *, project_id: ProjectId, survey_id: SurveyId) -> None:
         ensure_present(
             sr.get_survey(db, project_id=project_id, survey_id=survey_id),
             error=SurveyNotFoundError(survey_id, project_id),
         )
 
-    def _require_membership(self, db: Session, *, project_id: int, membership_id: int):  # type: ignore[return]
+    def _require_membership(self, db: Session, *, project_id: ProjectId, membership_id: ProjectMembershipId):  # type: ignore[return]
         return ensure_present(
             mr.get_by_id(db, membership_id=membership_id, project_id=project_id),
             error=MemberNotFoundError(),
         )
 
-    def _require_survey_role(self, db: Session, *, project_id: int, role_id: int):  # type: ignore[return]
+    def _require_survey_role(self, db: Session, *, project_id: ProjectId, role_id: SurveyRoleId):  # type: ignore[return]
         return ensure_present(
             srr.get_by_id(db, role_id=role_id, project_id=project_id),
             error=SurveyRoleNotFoundError(),
         )
 
     def _require_assignment(
-        self, db: Session, *, project_id: int, survey_id: int, membership_id: int
+        self, db: Session, *, project_id: ProjectId, survey_id: SurveyId, membership_id: ProjectMembershipId
     ) -> SurveyMembershipRole:
-        assignment = smr.get_by_membership(
-            db, project_id=project_id, survey_id=survey_id, membership_id=membership_id
-        )
+        assignment = smr.get_by_membership(db, project_id=project_id, survey_id=survey_id, membership_id=membership_id)
         return ensure_present(assignment, error=SurveyMemberRoleNotFoundError())
 
     def list_survey_members(
         self,
         db: Session,
         *,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         actor: User,  # noqa: ARG002
     ) -> list[SurveyMembershipRole]:
         self._require_survey(db, project_id=project_id, survey_id=survey_id)
@@ -62,8 +61,8 @@ class SurveyMembersService:
         self,
         db: Session,
         *,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         data: AssignSurveyMemberRoleRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyMembershipRole:
@@ -91,9 +90,9 @@ class SurveyMembersService:
         self,
         db: Session,
         *,
-        project_id: int,
-        survey_id: int,
-        membership_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
+        membership_id: ProjectMembershipId,
         data: UpdateSurveyMemberRoleRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyMembershipRole:
@@ -110,9 +109,9 @@ class SurveyMembersService:
         self,
         db: Session,
         *,
-        project_id: int,
-        survey_id: int,
-        membership_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
+        membership_id: ProjectMembershipId,
         actor: User,  # noqa: ARG002
     ) -> None:
         self._require_survey(db, project_id=project_id, survey_id=survey_id)

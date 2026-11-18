@@ -11,6 +11,7 @@ import io
 import json
 
 from app.schema.enums import ExportFormat
+from app.schema.types import SurveyId
 from app.services.results import ExportFile, ExportRow, SessionTreeResult
 
 _EXPORT_FIELDNAMES = [
@@ -56,7 +57,7 @@ def to_export_rows(result: SessionTreeResult) -> list[ExportRow]:
     ]
 
 
-def format_export_file(rows: list[ExportRow], *, export_format: ExportFormat, survey_id: int) -> ExportFile:
+def format_export_file(rows: list[ExportRow], *, export_format: ExportFormat, survey_id: SurveyId) -> ExportFile:
     """Serialize export rows into a CSV or JSON file body."""
     if export_format == "json":
         body = json.dumps([row.to_json_dict() for row in rows], ensure_ascii=False)

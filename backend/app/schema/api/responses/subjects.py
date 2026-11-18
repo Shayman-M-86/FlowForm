@@ -5,8 +5,7 @@ from pydantic import ConfigDict, model_validator
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.common.types import PageItems, PageNumber, PageSize
 from app.schema.enums import SubjectIdentityType, SubjectIdentityVerificationStatus
-from app.schema.models.common.types import Count, EmailAddress, Timestamp
-from app.schema.models.projects.types import ParticipantId, SubjectCode, SubjectId, SubjectIdentityId
+from app.schema.types import Count, EmailAddress, ParticipantId, SubjectCode, SubjectId, SubjectIdentityId, Timestamp
 
 
 class SubjectIdentityResponse(APIResponseModel):

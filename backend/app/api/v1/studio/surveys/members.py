@@ -8,6 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.surveys_access import AssignSurveyMemberRoleRequest, UpdateSurveyMemberRoleRequest
 from app.schema.api.responses.surveys_access import SurveyMemberRoleResponses
+from app.schema.types import ProjectId, ProjectMembershipId, SurveyId
 from app.services.access.access_service import require_project_permission
 from app.services.survey_members import survey_members_service
 
@@ -20,7 +21,7 @@ from app.services.survey_members import survey_members_service
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def list_survey_members(project_id: int, survey_id: int):
+def list_survey_members(project_id: ProjectId, survey_id: SurveyId):
     assignments = survey_members_service.list_survey_members(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, actor=g.actor
     )
@@ -37,7 +38,7 @@ def list_survey_members(project_id: int, survey_id: int):
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/members", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def assign_survey_member_role(project_id: int, survey_id: int):
+def assign_survey_member_role(project_id: ProjectId, survey_id: SurveyId):
     payload = parse(AssignSurveyMemberRoleRequest, request)
     assignment = survey_members_service.assign_member_role(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, data=payload, actor=g.actor
@@ -57,7 +58,7 @@ def assign_survey_member_role(project_id: int, survey_id: int):
 )
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def update_survey_member_role(project_id: int, survey_id: int, membership_id: int):
+def update_survey_member_role(project_id: ProjectId, survey_id: SurveyId, membership_id: ProjectMembershipId):
     payload = parse(UpdateSurveyMemberRoleRequest, request)
     assignment = survey_members_service.update_member_role(
         db=get_core_db(),
@@ -77,7 +78,7 @@ def update_survey_member_role(project_id: int, survey_id: int, membership_id: in
 )
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def remove_survey_member_role(project_id: int, survey_id: int, membership_id: int):
+def remove_survey_member_role(project_id: ProjectId, survey_id: SurveyId, membership_id: ProjectMembershipId):
     survey_members_service.remove_member_role(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, membership_id=membership_id, actor=g.actor
     )

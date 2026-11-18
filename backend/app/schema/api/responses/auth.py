@@ -2,8 +2,7 @@ from pydantic import ConfigDict
 
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.responses.projects import ProjectResponses
-from app.schema.models.common.types import EmailAddress
-from app.schema.models.identity.types import Auth0UserId, ProfileName, UserId
+from app.schema.types import Auth0UserId, EmailAddress, ProfileName, UserId
 
 
 class CurrentUserResponses(APIResponseModel):

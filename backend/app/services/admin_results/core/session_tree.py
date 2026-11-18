@@ -13,6 +13,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from sqlalchemy.orm import Session
 
 from app.cache import get_app_cache
@@ -21,10 +22,10 @@ from app.crypto.models import AnswerLocator
 from app.repositories import content_repo as cr
 from app.repositories.core import submission_answer_slots, submission_events
 from app.repositories.core import submission_sessions as ssr
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from app.schema.enums import SubmissionAnswerState
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.types import SurveyId
 from app.services.admin_results.core.decryption import resolve_and_decrypt_answers
 from app.services.admin_results.core.question_meta import (
     QuestionMetaMap,
@@ -60,7 +61,7 @@ class SessionTreeBuilder:
         self,
         db: Session,
         *,
-        survey_id: int,
+        survey_id: SurveyId,
         subject_ids: list[UUID],
     ) -> dict[UUID, list[SubmissionSession]]:
         """Group this survey's sessions for the given subjects by subject id."""

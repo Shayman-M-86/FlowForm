@@ -22,12 +22,18 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SubmissionEventType, SubmissionSessionStatus
-from app.schema.models.common.types import Timestamp
-from app.schema.models.projects.types import ProjectId, SubjectId
-from app.schema.models.response_store.types import ResponseStoreId
-from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import SurveyFieldUuid, SurveyId, SurveyLinkId, SurveyVersionId
 from app.schema.orm.base import utc_now
+from app.schema.types import (
+    ProjectId,
+    ResponseStoreId,
+    SubjectId,
+    SubmissionSessionId,
+    SurveyFieldUuid,
+    SurveyId,
+    SurveyLinkId,
+    SurveyVersionId,
+    Timestamp,
+)
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project_subject import ProjectSubject

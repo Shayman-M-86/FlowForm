@@ -6,15 +6,18 @@ Verifies that:
 
 Docs: 01-service-boundary.md — survey schema delivery belongs to discovery flows.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
+from app.schema.types import ParticipantId
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from tests.integration.core.factories import make_participant_chain, make_token
 
@@ -57,9 +60,7 @@ def _make_general_link(db: Session, *, survey: Survey) -> tuple[SurveyLink, str]
     return link, raw_token
 
 
-def _make_private_link(
-    db: Session, *, survey: Survey, assigned_participant_id: object
-) -> tuple[SurveyLink, str]:
+def _make_private_link(db: Session, *, survey: Survey, assigned_participant_id: object) -> tuple[SurveyLink, str]:
     raw_token = make_token()
     link = SurveyLink(
         project_id=survey.project_id,
@@ -68,7 +69,7 @@ def _make_private_link(
         token=raw_token,
         link_type="private",
         assignment_source="manual",
-        assigned_participant_id=assigned_participant_id,
+        assigned_participant_id=TypeAdapter(ParticipantId).validate_python(assigned_participant_id),
     )
     db.add(link)
     db.flush()
@@ -101,9 +102,7 @@ def test_general_link_session_start_omits_survey_schema(
     """Session start must not include survey_schema — schema belongs to discovery flows."""
     _publish_survey(db_session, survey=survey, survey_version=survey_version)
     _link, raw_token = _make_general_link(db_session, survey=survey)
-    payload = StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "link_token", "token": raw_token}}
-    )
+    payload = StartSubmissionSessionRequest.model_validate({"access": {"type": "link_token", "token": raw_token}})
 
     response, _browser_token, _recognition_token = SessionStarter().start(
         db_session, db_session, payload=payload, actor=None
@@ -119,15 +118,9 @@ def test_private_link_session_start_omits_survey_schema(
 ) -> None:
     """Session start must not include survey_schema — schema belongs to discovery flows."""
     _publish_survey(db_session, survey=survey, survey_version=survey_version)
-    participant = make_participant_chain(
-        db_session, project_id=survey.project_id, subject_code="schema-test-assigned"
-    )
-    _link, raw_token = _make_private_link(
-        db_session, survey=survey, assigned_participant_id=participant.id
-    )
-    payload = StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "link_token", "token": raw_token}}
-    )
+    participant = make_participant_chain(db_session, project_id=survey.project_id, subject_code="schema-test-assigned")
+    _link, raw_token = _make_private_link(db_session, survey=survey, assigned_participant_id=participant.id)
+    payload = StartSubmissionSessionRequest.model_validate({"access": {"type": "link_token", "token": raw_token}})
 
     response, _browser_token, _recognition_token = SessionStarter().start(
         db_session, db_session, payload=payload, actor=None

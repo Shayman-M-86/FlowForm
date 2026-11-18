@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.response_store import ResponseStore
+from app.schema.types import ProjectId, UserId
 
 DEFAULT_PLATFORM_RESPONSE_STORE_NAME = "Platform Primary"
 DEFAULT_PLATFORM_RESPONSE_STORE_TYPE = "platform_postgres"
@@ -13,7 +14,7 @@ DEFAULT_PLATFORM_RESPONSE_STORE_CONNECTION_REFERENCE = {
 }
 
 
-def get_platform_primary_store(db: Session, project_id: int) -> ResponseStore | None:
+def get_platform_primary_store(db: Session, project_id: ProjectId) -> ResponseStore | None:
     return db.scalar(
         select(ResponseStore).where(
             ResponseStore.project_id == project_id,
@@ -24,9 +25,9 @@ def get_platform_primary_store(db: Session, project_id: int) -> ResponseStore | 
 
 def get_or_create_platform_primary_store(
     db: Session,
-    project_id: int,
+    project_id: ProjectId,
     *,
-    created_by_user_id: int | None = None,
+    created_by_user_id: UserId | None = None,
 ) -> ResponseStore:
     store = get_platform_primary_store(db, project_id)
     if store is not None:

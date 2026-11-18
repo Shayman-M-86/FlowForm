@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId
 
 _PUBLIC_ID_CONSTRAINT = "uq_users_public_id"
 _MAX_PUBLIC_ID_RETRIES = 5
@@ -14,7 +15,7 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.scalar(select(User).where(User.email == email))
 
 
-def get_user_by_auth0_user_id(db: Session, auth0_user_id: str) -> User | None:
+def get_user_by_auth0_user_id(db: Session, auth0_user_id: Auth0UserId) -> User | None:
     """Return the user row for an Auth0 subject, if it exists."""
     return db.scalar(select(User).where(User.auth0_user_id == auth0_user_id))
 
@@ -22,7 +23,7 @@ def get_user_by_auth0_user_id(db: Session, auth0_user_id: str) -> User | None:
 def create_user(
     db: Session,
     *,
-    auth0_user_id: str,
+    auth0_user_id: Auth0UserId,
     email: str,
     display_name: str | None,
     email_verified: bool = False,

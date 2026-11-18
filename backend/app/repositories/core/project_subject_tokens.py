@@ -3,13 +3,13 @@ from __future__ import annotations
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.project_subject import ProjectSubjectToken
+from app.schema.types import ProjectId, SubjectId
 
 
 def hash_recognition_token(raw_token: str) -> str:
@@ -19,7 +19,7 @@ def hash_recognition_token(raw_token: str) -> str:
 def get_active_token(
     db: Session,
     *,
-    project_id: int,
+    project_id: ProjectId,
     raw_token: str,
     now: datetime | None = None,
 ) -> ProjectSubjectToken | None:
@@ -47,8 +47,8 @@ _TOKEN_LIFETIME_DAYS = 365
 def create_token(
     db: Session,
     *,
-    project_id: int,
-    project_subject_id: UUID,
+    project_id: ProjectId,
+    project_subject_id: SubjectId,
     now: datetime | None = None,
 ) -> tuple[ProjectSubjectToken, str]:
     """Create a new recognition token. Returns (ORM row, raw token). Raw token is never stored."""
@@ -65,9 +65,7 @@ def create_token(
     return token, raw_token
 
 
-def revoke_token(
-    db: Session, *, token: ProjectSubjectToken, now: datetime | None = None
-) -> ProjectSubjectToken:
+def revoke_token(db: Session, *, token: ProjectSubjectToken, now: datetime | None = None) -> ProjectSubjectToken:
     """Revoke a token so it is no longer valid for recognition."""
     token.revoked_at = now or datetime.now(UTC)
     flush_with_err_handle(db, contexts=[token])
@@ -77,8 +75,8 @@ def revoke_token(
 def get_active_token_for_subject(
     db: Session,
     *,
-    project_id: int,
-    project_subject_id: UUID,
+    project_id: ProjectId,
+    project_subject_id: SubjectId,
     now: datetime | None = None,
 ) -> ProjectSubjectToken | None:
     """Find a valid (not expired, not revoked) token for a given subject."""

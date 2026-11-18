@@ -5,7 +5,7 @@ from typing import Annotated, Literal, Self
 from pydantic import Field, StrictBool, model_validator
 
 from app.schema.models.common.base import DataModel
-from app.schema.models.survey.types import AnswerInteger, AnswerLength, AnswerNumber, CalendarDate
+from app.schema.types import AnswerInteger, AnswerLength, AnswerNumber, CalendarDate
 
 
 class NumericAnswerBounds(DataModel):

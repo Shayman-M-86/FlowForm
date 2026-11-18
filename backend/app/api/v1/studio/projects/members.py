@@ -8,6 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.projects import UpdateMemberRequest
 from app.schema.api.responses.projects import ProjectMemberResponses
+from app.schema.types import ProjectId, ProjectMembershipId
 from app.services.access.access_service import require_project_permission
 
 
@@ -15,7 +16,7 @@ from app.services.access.access_service import require_project_permission
 @studio_projects_bp.route("/<bint:project_id>/members", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def list_members(project_id: int):
+def list_members(project_id: ProjectId):
     members = members_service.list_project_members(db=get_core_db(), project_id=project_id, actor=g.actor)
     return [ProjectMemberResponses.model_validate(m).model_dump(mode="json") for m in members], 200
 
@@ -29,7 +30,7 @@ def list_members(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/members/<bint:membership_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def update_member(project_id: int, membership_id: int):
+def update_member(project_id: ProjectId, membership_id: ProjectMembershipId):
     payload = parse(UpdateMemberRequest, request)
     membership = members_service.update_member(
         db=get_core_db(), project_id=project_id, membership_id=membership_id, data=payload, actor=g.actor
@@ -41,6 +42,6 @@ def update_member(project_id: int, membership_id: int):
 @studio_projects_bp.route("/<bint:project_id>/members/<bint:membership_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def remove_member(project_id: int, membership_id: int):
+def remove_member(project_id: ProjectId, membership_id: ProjectMembershipId):
     members_service.remove_member(db=get_core_db(), project_id=project_id, membership_id=membership_id, actor=g.actor)
     return {}, 204

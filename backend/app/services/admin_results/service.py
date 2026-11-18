@@ -12,7 +12,6 @@ See docs/project-knowledge/data/responses-and-encryption.md.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -26,8 +25,8 @@ from app.repositories.core import project_subjects
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.enums import ExportFormat
-from app.schema.models.submission.types import SubmissionSessionId
 from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.types import ProjectId, SubjectId, SubmissionSessionId, SurveyId
 from app.services.admin_results.core.export import format_export_file, to_export_rows
 from app.services.admin_results.core.session_tree import SessionTreeBuilder
 from app.services.results import (
@@ -59,8 +58,8 @@ class AdminResultsService:
         db: Session,
         response_db: Session,
         *,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         page: int = 1,
         page_size: int = 20,
         include_decrypted_answer_values: bool = False,
@@ -103,9 +102,9 @@ class AdminResultsService:
         db: Session,
         response_db: Session,
         *,
-        project_id: int,
-        survey_id: int,
-        subject_id: UUID,
+        project_id: ProjectId,
+        survey_id: SurveyId,
+        subject_id: SubjectId,
         include_decrypted_answer_values: bool = False,
         include_events: bool = False,
     ) -> SubjectTreeResult:
@@ -136,10 +135,10 @@ class AdminResultsService:
         db: Session,
         response_db: Session,
         *,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         export_format: ExportFormat,
-        session_ids: list[UUID] | None = None,
+        session_ids: list[SubmissionSessionId] | None = None,
         include_decrypted_answer_values: bool = False,
     ) -> ExportFile:
         """Build a fully-formatted CSV or JSON export file for this survey's results."""
@@ -175,7 +174,7 @@ class AdminResultsService:
         db: Session,
         response_db: Session,
         *,
-        survey_id: int,
+        survey_id: SurveyId,
         session_id: SubmissionSessionId,
     ) -> DeletionResult:
         """Delete response data first, then the core session."""
@@ -209,7 +208,7 @@ class AdminResultsService:
         )
 
 
-def _load_session(db: Session, *, survey_id: int, session_id: SubmissionSessionId) -> SubmissionSession:
+def _load_session(db: Session, *, survey_id: SurveyId, session_id: SubmissionSessionId) -> SubmissionSession:
     session = ssr.get_by_id(db, session_id)
     if session is None or session.survey_id != survey_id:
         raise SessionNotFoundError()

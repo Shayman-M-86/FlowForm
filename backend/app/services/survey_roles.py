@@ -8,24 +8,34 @@ from app.repositories import survey_roles_repo as srr
 from app.schema.api.requests.surveys_access import CreateSurveyRoleRequest, UpdateSurveyRoleRequest
 from app.schema.orm.core.survey_access import SurveyRole
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, SurveyRoleId
 
 
 class SurveyRolesService:
     """Service for survey role management."""
 
-    def _get_role(self, db: Session, *, role_id: int, project_id: int) -> SurveyRole:
+    def _get_role(self, db: Session, *, role_id: SurveyRoleId, project_id: ProjectId) -> SurveyRole:
         return ensure_present(
             srr.get_by_id(db, role_id=role_id, project_id=project_id),
             error=SurveyRoleNotFoundError(),
         )
 
     def list_survey_roles(
-        self, db: Session, *, project_id: int, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        actor: User,  # noqa: ARG002
     ) -> list[SurveyRole]:
         return srr.list_by_project(db, project_id)
 
     def create_role(
-        self, db: Session, *, project_id: int, data: CreateSurveyRoleRequest, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        data: CreateSurveyRoleRequest,
+        actor: User,  # noqa: ARG002
     ) -> SurveyRole:
         permission_rows = per.get_permissions_by_names(db, data.permissions)
         role = srr.create_role(
@@ -42,8 +52,8 @@ class SurveyRolesService:
         self,
         db: Session,
         *,
-        project_id: int,
-        role_id: int,
+        project_id: ProjectId,
+        role_id: SurveyRoleId,
         data: UpdateSurveyRoleRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyRole:
@@ -65,7 +75,12 @@ class SurveyRolesService:
         return role
 
     def delete_role(
-        self, db: Session, *, project_id: int, role_id: int, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        role_id: SurveyRoleId,
+        actor: User,  # noqa: ARG002
     ) -> None:
         role = self._get_role(db, role_id=role_id, project_id=project_id)
         srr.delete_role(db, role)

@@ -3,29 +3,34 @@ from __future__ import annotations
 from unittest.mock import Mock, patch
 
 import pytest  # type: ignore[import]
+from pydantic import TypeAdapter
 
 from app.core.errors import AuthError
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId, ProjectId, UserId
 from app.services.auth import AuthService
 
 
 def _make_user(sub: str = "auth0|u1", email: str = "u1@example.com", public_id: str = "abcd1234") -> User:
-    user = User(auth0_user_id=sub, email=email, display_name="Test User")
-    user.id = 7
+    user = User(auth0_user_id=TypeAdapter(Auth0UserId).validate_python(sub), email=email, display_name="Test User")
+    user.id = TypeAdapter(UserId).validate_python(7)
     user.public_id = public_id
     return user
 
 
 def _make_project(user_id: int, public_id: str) -> Project:
-    project = Project(name="My Project", slug=public_id, created_by_user_id=user_id)
-    project.id = 1
+    project = Project(
+        name="My Project", slug=public_id, created_by_user_id=TypeAdapter(UserId).validate_python(user_id)
+    )
+    project.id = TypeAdapter(ProjectId).validate_python(1)
     return project
 
 
 def _patch_verify(monkeypatch: pytest.MonkeyPatch, sub: str, email: str, name: str) -> None:
     from app.services import auth as m
+
     monkeypatch.setattr(m.auth, "verify_id_token", lambda _: {"sub": sub, "email": email, "name": name})
 
 
@@ -42,12 +47,14 @@ def test_bootstrap_new_user_creates_default_project(monkeypatch: pytest.MonkeyPa
     db = Mock()
     db.scalar.return_value = None
 
-    with patch("app.services.auth.pr.create_project", return_value=project) as mock_create, \
-         patch("app.services.auth.commit_or_rollback"):
+    with (
+        patch("app.services.auth.pr.create_project", return_value=project) as mock_create,
+        patch("app.services.auth.commit_or_rollback"),
+    ):
         service = AuthService(user_service=user_service)
         result = service.bootstrap_current_user(
             db,
-            access_token_sub="auth0|u1",
+            access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|u1"),
             payload=BootstrapUserRequest(id_token="raw-token"),
         )
 
@@ -73,7 +80,7 @@ def test_bootstrap_existing_user_skips_default_project(monkeypatch: pytest.Monke
         service = AuthService(user_service=user_service)
         result = service.bootstrap_current_user(
             db,
-            access_token_sub="auth0|u1",
+            access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|u1"),
             payload=BootstrapUserRequest(id_token="raw-token"),
         )
 
@@ -96,7 +103,7 @@ def test_bootstrap_current_user_rejects_subject_mismatch(monkeypatch: pytest.Mon
     with pytest.raises(AuthError) as exc_info:
         service.bootstrap_current_user(
             db,
-            access_token_sub="auth0|access-token",
+            access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|access-token"),
             payload=BootstrapUserRequest(id_token="raw-token"),
         )
 
@@ -121,12 +128,14 @@ def test_bootstrap_new_user_default_project_slug_is_slug_safe(
     def create_project_side_effect(_db: object, request: object, *, created_by_user_id: int) -> Project:
         return _make_project(created_by_user_id, request.slug)  # type: ignore[attr-defined]
 
-    with patch("app.services.auth.pr.create_project", side_effect=create_project_side_effect), \
-         patch("app.services.auth.commit_or_rollback"):
+    with (
+        patch("app.services.auth.pr.create_project", side_effect=create_project_side_effect),
+        patch("app.services.auth.commit_or_rollback"),
+    ):
         service = AuthService(user_service=user_service)
         result = service.bootstrap_current_user(
             db,
-            access_token_sub="auth0|u1",
+            access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|u1"),
             payload=BootstrapUserRequest(id_token="raw-token"),
         )
 

@@ -1,6 +1,6 @@
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.responses.auth import CurrentUserResponses
-from app.schema.models.common.types import Url
+from app.schema.types import Url
 
 
 class CurrentUserProfileResponses(CurrentUserResponses):

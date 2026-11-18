@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.survey_access import SurveyRole
+from app.schema.types import ProjectId, SurveyRoleId
 
 
-def list_by_project(db: Session, project_id: int) -> list[SurveyRole]:
+def list_by_project(db: Session, project_id: ProjectId) -> list[SurveyRole]:
     return list(
         db.scalars(
             select(SurveyRole)
@@ -16,7 +17,7 @@ def list_by_project(db: Session, project_id: int) -> list[SurveyRole]:
     )
 
 
-def get_by_id(db: Session, *, role_id: int, project_id: int) -> SurveyRole | None:
+def get_by_id(db: Session, *, role_id: SurveyRoleId, project_id: ProjectId) -> SurveyRole | None:
     return db.scalar(
         select(SurveyRole)
         .options(selectinload(SurveyRole.permissions))
@@ -27,7 +28,7 @@ def get_by_id(db: Session, *, role_id: int, project_id: int) -> SurveyRole | Non
 def create_role(
     db: Session,
     *,
-    project_id: int,
+    project_id: ProjectId,
     name: str,
     description: str | None,
     permissions: list,

@@ -7,13 +7,15 @@ survey cannot be unwrapped under another.
 
 from __future__ import annotations
 
+from app.schema.types import ProjectId, SurveyId
+
 SURVEY_KMS_CONTEXT_VERSION = 1
 
 
 def build_survey_kms_context(
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     kms_context_version: int = SURVEY_KMS_CONTEXT_VERSION,
 ) -> dict[str, str]:
     """Build the KMS encryption context binding a survey key to its survey."""

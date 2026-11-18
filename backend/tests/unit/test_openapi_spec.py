@@ -530,7 +530,8 @@ def test_error_schema_uses_the_runtime_payload_contract():
     assert TypeAdapter(ErrorResponse).validate_python(payload) == {"code": "TEST", "message": "Message"}
     schema = TypeAdapter(ErrorPayload).json_schema()
     assert set(schema["required"]) == {"code", "message"}
-    assert schema["properties"]["details"]["type"] == "object"
+    reference = schema["properties"]["details"]["$ref"].split("/")[-1]
+    assert schema["$defs"][reference]["type"] == "object"
 
 
 def test_error_formatter_preserves_existing_omission_and_serialization():

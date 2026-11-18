@@ -14,6 +14,9 @@ from typing import Any, TypeVar, cast
 
 import requests
 from authlib.deprecate import AuthlibDeprecationWarning
+from pydantic import TypeAdapter, ValidationError
+
+from app.schema.types import Auth0UserId
 
 warnings.filterwarnings(
     "ignore",
@@ -237,7 +240,7 @@ class ManagementApiClient:
 
     def update_user(
         self,
-        auth0_user_id: str,
+        auth0_user_id: Auth0UserId,
         *,
         display_name: str | None = None,
         nickname: str | None = None,
@@ -265,7 +268,7 @@ class ManagementApiClient:
             return
         self._request("PATCH", f"/users/{auth0_user_id}", json=payload)
 
-    def create_password_change_ticket(self, auth0_user_id: str) -> str:
+    def create_password_change_ticket(self, auth0_user_id: Auth0UserId) -> str:
         """Create a hosted Auth0 password-change ticket for the given user."""
         self._require_token_scopes({"create:user_tickets"})
         response = self._request(
@@ -291,15 +294,15 @@ class ManagementApiClient:
 
         return data["ticket"]
 
-    def delete_user(self, auth0_user_id: str) -> None:
+    def delete_user(self, auth0_user_id: Auth0UserId) -> None:
         """Permanently delete a user from Auth0."""
         self._request("DELETE", f"/users/{auth0_user_id}")
 
-    def send_verification_email(self, auth0_user_id: str) -> None:
+    def send_verification_email(self, auth0_user_id: Auth0UserId) -> None:
         """Trigger an email-verification job for the given user."""
         self._request("POST", "/jobs/verification-email", json={"user_id": auth0_user_id})
 
-    def get_user_email_verified(self, auth0_user_id: str) -> bool:
+    def get_user_email_verified(self, auth0_user_id: Auth0UserId) -> bool:
         """Return the live email_verified flag for a user from Auth0.
 
         Used as a lazy fallback check: a user may have completed Auth0's own
@@ -326,7 +329,7 @@ class ManagementApiClient:
 
         return bool(data.get("email_verified", False))
 
-    def mark_email_verified(self, auth0_user_id: str) -> None:
+    def mark_email_verified(self, auth0_user_id: Auth0UserId) -> None:
         """Mark a user's email as verified on Auth0.
 
         Deliberately a separate, single-purpose method rather than folded
@@ -337,7 +340,7 @@ class ManagementApiClient:
         """
         self._request("PATCH", f"/users/{auth0_user_id}", json={"email_verified": True})
 
-    def clear_mfa_devices(self, auth0_user_id: str) -> None:
+    def clear_mfa_devices(self, auth0_user_id: Auth0UserId) -> None:
         """Remove all enrolled MFA authenticators for the given user."""
         self._request("DELETE", f"/users/{auth0_user_id}/authenticators")
 
@@ -598,7 +601,7 @@ class AuthExtension:
         claims = getattr(g, "user_claims", None)
         return claims if isinstance(claims, dict) else None
 
-    def get_optional_current_user_sub(self) -> str | None:
+    def get_optional_current_user_sub(self) -> Auth0UserId | None:
         """Return the current Auth0 subject claim, or None when anonymous."""
         claims = self.get_optional_current_claims()
 
@@ -606,7 +609,12 @@ class AuthExtension:
             return None
 
         sub = claims.get("sub")
-        return sub if isinstance(sub, str) and sub else None
+        if not isinstance(sub, str) or not sub:
+            return None
+        try:
+            return _AUTH0_USER_ID.validate_python(sub)
+        except ValidationError:
+            return None
 
     def get_current_claims(self) -> dict[str, Any]:
         """Return the verified claims stored on flask.g for this request."""
@@ -617,7 +625,7 @@ class AuthExtension:
 
         return claims
 
-    def get_current_user_sub(self) -> str:
+    def get_current_user_sub(self) -> Auth0UserId:
         """Return the Auth0 subject claim for the current request."""
         sub = self.get_optional_current_user_sub()
 
@@ -625,3 +633,6 @@ class AuthExtension:
             raise auth_errors.missing_sub_claim()
 
         return sub
+
+
+_AUTH0_USER_ID = TypeAdapter(Auth0UserId)

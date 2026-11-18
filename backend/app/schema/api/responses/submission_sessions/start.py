@@ -5,9 +5,7 @@ from pydantic import ConfigDict
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
 from app.schema.enums import SubmissionSessionStatus
-from app.schema.models.common.types import Timestamp
-from app.schema.models.projects.types import SubjectCode
-from app.schema.models.survey.types import SurveyVersionId
+from app.schema.types import SubjectCode, SurveyVersionId, Timestamp
 
 
 class StartSubmissionSessionResponse(APIResponseModel):

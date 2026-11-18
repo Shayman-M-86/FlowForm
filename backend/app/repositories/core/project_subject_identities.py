@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,14 +8,15 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.project_subject import ProjectSubjectIdentity
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, SubjectId, SubjectIdentityId, UserId
 
 
 def get_identity(
     db: Session,
     *,
-    project_id: int,
-    project_subject_id: UUID,
-    identity_id: UUID,
+    project_id: ProjectId,
+    project_subject_id: SubjectId,
+    identity_id: SubjectIdentityId,
 ) -> ProjectSubjectIdentity | None:
     return db.scalar(
         select(ProjectSubjectIdentity).where(
@@ -30,8 +30,8 @@ def get_identity(
 def get_active_user_identity(
     db: Session,
     *,
-    project_id: int,
-    user_id: int,
+    project_id: ProjectId,
+    user_id: UserId,
 ) -> ProjectSubjectIdentity | None:
     return db.scalar(
         select(ProjectSubjectIdentity).where(
@@ -46,8 +46,8 @@ def get_active_user_identity(
 def create_user_identity(
     db: Session,
     *,
-    project_id: int,
-    project_subject_id: UUID,
+    project_id: ProjectId,
+    project_subject_id: SubjectId,
     user: User,
     now: datetime | None = None,
 ) -> ProjectSubjectIdentity:
@@ -70,8 +70,8 @@ def create_user_identity(
 def create_email_identity(
     db: Session,
     *,
-    project_id: int,
-    project_subject_id: UUID,
+    project_id: ProjectId,
+    project_subject_id: SubjectId,
     normalized_email: str,
 ) -> ProjectSubjectIdentity:
     identity = ProjectSubjectIdentity(

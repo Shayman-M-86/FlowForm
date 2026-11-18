@@ -5,10 +5,11 @@ from pydantic import ConfigDict
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.common.types import ProjectPermission, ProjectPermissionSet
 from app.schema.enums import ProjectInvitationStatus, ProjectMemberStatus
-from app.schema.models.common.types import EmailAddress, Slug, Text, Timestamp
-from app.schema.models.identity.types import ProfileName, UserId
-from app.schema.models.projects.types import (
+from app.schema.orm.core.project import ProjectRole
+from app.schema.types import (
+    EmailAddress,
     InvitationMessage,
+    ProfileName,
     ProjectId,
     ProjectInvitationId,
     ProjectMembershipId,
@@ -16,8 +17,11 @@ from app.schema.models.projects.types import (
     ProjectRoleId,
     RoleDescription,
     RoleName,
+    Slug,
+    Text,
+    Timestamp,
+    UserId,
 )
-from app.schema.orm.core.project import ProjectRole
 
 
 class MyProjectPermissionsResponses(APIResponseModel):

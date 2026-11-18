@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.audit_log import AuditLog
+from app.schema.types import UserId
 
 
 class AuditLogService:
@@ -11,7 +12,7 @@ class AuditLogService:
         self,
         db: Session,
         *,
-        user_id: int | None,
+        user_id: UserId | None,
         action: str,
         entity_type: str,
         entity_id: int | None = None,

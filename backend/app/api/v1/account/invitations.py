@@ -8,6 +8,7 @@ from app.schema.api.responses.projects import (
     PublicInvitationResolveResponse,
 )
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectInvitationId
 
 
 @openapi_route(
@@ -32,11 +33,13 @@ def get_my_invitations():
 )
 @account_bp.route("/invitations/<bint:invitation_id>/accept", methods=["POST"])
 @auth.require_auth()
-def accept_invitation(invitation_id: int):
+def accept_invitation(invitation_id: ProjectInvitationId):
     db = get_core_db()
     actor: User = _users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     membership = members_service.accept_invitation(
-        db=db, invitation_id=invitation_id, actor=actor,
+        db=db,
+        invitation_id=invitation_id,
+        actor=actor,
     )
     return ProjectMemberResponses.model_validate(membership).model_dump(mode="json"), 200
 
@@ -47,7 +50,7 @@ def accept_invitation(invitation_id: int):
 )
 @account_bp.route("/invitations/<bint:invitation_id>/decline", methods=["POST"])
 @auth.require_auth()
-def decline_invitation(invitation_id: int):
+def decline_invitation(invitation_id: ProjectInvitationId):
     db = get_core_db()
     actor: User = _users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     members_service.decline_invitation(db=db, invitation_id=invitation_id, actor=actor)
@@ -85,6 +88,8 @@ def accept_invitation_by_token(token: str):
     db = get_core_db()
     actor: User = _users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     membership = members_service.accept_invitation_by_token(
-        db=db, token=token, actor=actor,
+        db=db,
+        token=token,
+        actor=actor,
     )
     return ProjectMemberResponses.model_validate(membership).model_dump(mode="json"), 200

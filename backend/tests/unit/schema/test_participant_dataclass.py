@@ -5,6 +5,7 @@ from typing import Any, cast
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import TypeAdapter
 from sqlalchemy import BigInteger, Integer, MetaData, create_engine, event
 from sqlalchemy.orm import Session
 
@@ -12,13 +13,18 @@ from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, SubjectId, SubjectIdentityId
 
 
 def test_participant_constructor_requires_only_its_three_identity_inputs():
     signature = inspect.signature(ProjectParticipant)
     assert set(signature.parameters) == {"project_id", "project_subject_id", "identity_id"}
     assert all(p.kind is inspect.Parameter.KEYWORD_ONLY for p in signature.parameters.values())
-    participant = ProjectParticipant(project_id=1, project_subject_id=uuid4(), identity_id=uuid4())
+    participant = ProjectParticipant(
+        project_id=TypeAdapter(ProjectId).validate_python(1),
+        project_subject_id=TypeAdapter(SubjectId).validate_python(uuid4()),
+        identity_id=TypeAdapter(SubjectIdentityId).validate_python(uuid4()),
+    )
     assert participant.id is None and participant.created_at is None
     assert not {"project", "subject", "identity"} & participant.__dict__.keys()
     with pytest.raises(TypeError, match="unexpected keyword"):
@@ -61,7 +67,11 @@ def test_participant_persists_generated_values_and_retains_identity_foreign_keys
                     normalized_email="a@example.com",
                 )
             )
-            participant = ProjectParticipant(project_id=1, project_subject_id=subject_id, identity_id=identity_id)
+            participant = ProjectParticipant(
+                project_id=TypeAdapter(ProjectId).validate_python(1),
+                project_subject_id=TypeAdapter(SubjectId).validate_python(subject_id),
+                identity_id=TypeAdapter(SubjectIdentityId).validate_python(identity_id),
+            )
             db.add(participant)
             db.flush()
             assert isinstance(participant.id, UUID) and participant.created_at is not None

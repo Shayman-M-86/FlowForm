@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from flask import request
 
 from app.api.utils.validation import parse, parse_query
@@ -14,6 +12,7 @@ from app.schema.api.requests.participants import (
     UpdateParticipantRequest,
 )
 from app.schema.api.responses.participants import ListParticipantsResponses, ParticipantResponses
+from app.schema.types import ParticipantId, ProjectId
 from app.services.access.access_service import require_project_permission
 
 _BASE = "/<bint:project_id>/participants"
@@ -28,7 +27,7 @@ _BASE = "/<bint:project_id>/participants"
 @studio_projects_bp.route(_BASE, methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def list_participants(project_id: int):
+def list_participants(project_id: ProjectId):
     params = parse_query(ListParticipantsQuery, request)
     offset = (params.page - 1) * params.page_size
     participants, total = participant_service.list_participants(
@@ -56,7 +55,7 @@ def list_participants(project_id: int):
 @studio_projects_bp.route(_BASE, methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def create_participant(project_id: int):
+def create_participant(project_id: ProjectId):
     payload = parse(CreateParticipantRequest, request)
     participant = participant_service.create_participant(db=get_core_db(), project_id=project_id, data=payload)
     return ParticipantResponses.model_validate(participant).model_dump(mode="json"), 201
@@ -71,7 +70,7 @@ def create_participant(project_id: int):
 @studio_projects_bp.route(f"{_BASE}/<uuid:participant_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def update_participant(project_id: int, participant_id: UUID):
+def update_participant(project_id: ProjectId, participant_id: ParticipantId):
     payload = parse(UpdateParticipantRequest, request)
     participant = participant_service.update_participant(
         db=get_core_db(), project_id=project_id, participant_id=participant_id, data=payload
@@ -83,6 +82,6 @@ def update_participant(project_id: int, participant_id: UUID):
 @studio_projects_bp.route(f"{_BASE}/<uuid:participant_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def delete_participant(project_id: int, participant_id: UUID):
+def delete_participant(project_id: ProjectId, participant_id: ParticipantId):
     participant_service.delete_participant(db=get_core_db(), project_id=project_id, participant_id=participant_id)
     return {}, 204

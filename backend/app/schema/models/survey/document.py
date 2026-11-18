@@ -4,18 +4,18 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from app.schema.enums import SurveyVersionStatus
+from app.schema.enums import NoticeTone, SurveyVersionStatus
 from app.schema.models.common.base import DataModel
-from app.schema.models.common.types import LimitedList, LongString
-from app.schema.models.projects.types import ProjectName
 from app.schema.models.survey.conditions import SurveyWorkflow
 from app.schema.models.survey.fields import SurveyField
-from app.schema.models.survey.types import (
+from app.schema.types import (
     ContentText,
     DocumentRevision,
     HeadingLevel,
+    LimitedList,
+    LongString,
     NoticeTitle,
-    NoticeTone,
+    ProjectName,
     ReadableId,
     SectionTitle,
     SurveyBlocks,

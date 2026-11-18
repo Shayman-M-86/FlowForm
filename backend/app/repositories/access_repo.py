@@ -2,14 +2,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.schema.orm.core import ProjectMembership, ProjectRole, SurveyMembershipRole, SurveyRole
+from app.schema.types import ProjectId, ProjectMembershipId, SurveyId, UserId
 
 
 def get_survey_membership_role(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
-    membership_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
+    membership_id: ProjectMembershipId,
 ) -> SurveyMembershipRole | None:
     return db.scalar(
         select(SurveyMembershipRole)
@@ -25,8 +26,8 @@ def get_survey_membership_role(
 def get_project_membership(
     db: Session,
     *,
-    project_id: int,
-    user_id: int,
+    project_id: ProjectId,
+    user_id: UserId,
 ) -> ProjectMembership | None:
     return db.scalar(
         select(ProjectMembership)

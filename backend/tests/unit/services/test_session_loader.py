@@ -1,4 +1,5 @@
 """Unit tests for session loader state rejection logic."""
+
 from __future__ import annotations
 
 import uuid
@@ -6,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import TypeAdapter
 
 from app.cache import create_app_cache
 from app.crypto.models import LinkageKey, PlaintextSessionKey, SessionLocator, SubmissionSessionContext
@@ -16,6 +18,7 @@ from app.domain.errors import (
     SessionNotFoundError,
 )
 from app.schema.orm.core.submission_session import SessionRef
+from app.schema.types import ProjectId, SubmissionSessionId, SurveyId, SurveyVersionId
 from app.services.public_submissions.core.session_loader import load_current_session
 
 
@@ -64,10 +67,10 @@ def _cached_context(
 ) -> SubmissionSessionContext:
     expires_at = datetime.now(UTC) - timedelta(hours=1) if expired else datetime.now(UTC) + timedelta(hours=1)
     return SubmissionSessionContext(
-        session_id=uuid.uuid4(),
-        project_id=10,
-        survey_id=20,
-        survey_version_id=1,
+        session_id=TypeAdapter(SubmissionSessionId).validate_python(uuid.uuid4()),
+        project_id=TypeAdapter(ProjectId).validate_python(10),
+        survey_id=TypeAdapter(SurveyId).validate_python(20),
+        survey_version_id=TypeAdapter(SurveyVersionId).validate_python(1),
         envelope_id=uuid.uuid4(),
         session_locator=SessionLocator(b"\x02" * 32),
         linkage_key=_linkage_key(),
@@ -100,12 +103,15 @@ class TestSessionLoaderRejection:
 
         cache.sessions.write_context.put(token_hash, cached)
         try:
-            with patch(
-                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-                return_value=token_hash,
-            ), patch(
-                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            ) as get_by_token_hash:
+            with (
+                patch(
+                    "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                    return_value=token_hash,
+                ),
+                patch(
+                    "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                ) as get_by_token_hash,
+            ):
                 ctx = _load(db, response_db, "some-token", cache=cache)
 
             assert ctx.session_id == cached.session_id
@@ -123,12 +129,16 @@ class TestSessionLoaderRejection:
 
         cache.sessions.write_context.put(token_hash, cached)
         try:
-            with patch(
-                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-                return_value=token_hash,
-            ), patch(
-                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            ) as get_by_token_hash, pytest.raises(SessionExpiredError):
+            with (
+                patch(
+                    "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                    return_value=token_hash,
+                ),
+                patch(
+                    "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                ) as get_by_token_hash,
+                pytest.raises(SessionExpiredError),
+            ):
                 _load(db, response_db, "some-token", cache=cache)
 
             get_by_token_hash.assert_not_called()
@@ -138,52 +148,68 @@ class TestSessionLoaderRejection:
     def test_missing_session_raises(self) -> None:
         db = MagicMock()
         response_db = MagicMock()
-        with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-            return_value=b"\x00" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            return_value=None,
-        ), pytest.raises(SessionNotFoundError):
+        with (
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                return_value=b"\x00" * 32,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                return_value=None,
+            ),
+            pytest.raises(SessionNotFoundError),
+        ):
             _load(db, response_db, "some-token")
 
     def test_expired_session_raises(self) -> None:
         db = MagicMock()
         response_db = MagicMock()
         session = _fake_session(expired=True)
-        with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-            return_value=b"\x00" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            return_value=session,
-        ), pytest.raises(SessionExpiredError):
+        with (
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                return_value=b"\x00" * 32,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                return_value=session,
+            ),
+            pytest.raises(SessionExpiredError),
+        ):
             _load(db, response_db, "some-token")
 
     def test_abandoned_session_raises(self) -> None:
         db = MagicMock()
         response_db = MagicMock()
         session = _fake_session(status="abandoned")
-        with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-            return_value=b"\x00" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            return_value=session,
-        ), pytest.raises(SessionInvalidError, match="abandoned"):
+        with (
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                return_value=b"\x00" * 32,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                return_value=session,
+            ),
+            pytest.raises(SessionInvalidError, match="abandoned"),
+        ):
             _load(db, response_db, "some-token")
 
     def test_completed_session_raises_when_editing(self) -> None:
         db = MagicMock()
         response_db = MagicMock()
         session = _fake_session(status="completed")
-        with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-            return_value=b"\x00" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            return_value=session,
-        ), pytest.raises(SessionInvalidError, match="completed"):
+        with (
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                return_value=b"\x00" * 32,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                return_value=session,
+            ),
+            pytest.raises(SessionInvalidError, match="completed"),
+        ):
             _load(db, response_db, "some-token")
 
     def test_completed_session_allowed_when_flagged(self) -> None:
@@ -192,16 +218,20 @@ class TestSessionLoaderRejection:
         session = _fake_session(status="completed")
         expected = _cached_context(token_hash=b"\x00" * 32)
 
-        with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-            return_value=b"\x00" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            return_value=session,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.build_session_context",
-            return_value=expected,
-        ) as build_context:
+        with (
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                return_value=b"\x00" * 32,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                return_value=session,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.build_session_context",
+                return_value=expected,
+            ) as build_context,
+        ):
             ctx = _load(db, response_db, "some-token", allow_completed=True)
             assert ctx is expected
             build_context.assert_called_once()
@@ -211,14 +241,19 @@ class TestSessionLoaderRejection:
         response_db = MagicMock()
         session = _fake_session()
 
-        with patch(
-            "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
-            return_value=b"\x00" * 32,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
-            return_value=session,
-        ), patch(
-            "app.services.public_submissions.core.session_loader.build_session_context",
-            side_effect=EnvelopeNotFoundError(),
-        ), pytest.raises(EnvelopeNotFoundError):
+        with (
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.hash_browser_session_token",
+                return_value=b"\x00" * 32,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.ssr.get_by_token_hash",
+                return_value=session,
+            ),
+            patch(
+                "app.services.public_submissions.core.session_loader.build_session_context",
+                side_effect=EnvelopeNotFoundError(),
+            ),
+            pytest.raises(EnvelopeNotFoundError),
+        ):
             _load(db, response_db, "some-token")

@@ -1,6 +1,7 @@
 from typing import Any
 
 from app.core.errors import AppError, AuthError
+from app.schema.types import ProjectId, SurveyId
 
 
 class ForbiddenError(AppError):
@@ -179,7 +180,7 @@ class PrivateSurveyAssignedEmailRequiredError(AppError):
 class SurveyNotFoundError(AppError):
     """Error raised when a survey cannot be found for a given survey_id and project_id."""
 
-    def __init__(self, survey_id: int, project_id: int) -> None:
+    def __init__(self, survey_id: SurveyId, project_id: ProjectId) -> None:
         super().__init__(
             status_code=404,
             code="SURVEY_NOT_FOUND",
@@ -190,7 +191,7 @@ class SurveyNotFoundError(AppError):
 class SurveyDeletePublishedError(AppError):
     """Error raised when attempting to delete a survey that has a published version."""
 
-    def __init__(self, survey_id: int) -> None:
+    def __init__(self, survey_id: SurveyId) -> None:
         super().__init__(
             status_code=409,
             code="SURVEY_HAS_PUBLISHED_VERSION",
@@ -201,7 +202,7 @@ class SurveyDeletePublishedError(AppError):
 class SurveyNotPublishedError(AppError):
     """Error raised when attempting to access a survey that has not been published."""
 
-    def __init__(self, survey_id: int, project_id: int) -> None:
+    def __init__(self, survey_id: SurveyId, project_id: ProjectId) -> None:
         super().__init__(
             status_code=404,
             code="SURVEY_NOT_PUBLISHED",
@@ -273,7 +274,7 @@ class SurveyNoResponseStoreError(AppError):
 class ProjectNotFoundError(AppError):
     """Error raised when a project cannot be found."""
 
-    def __init__(self, *, project_id: int | None = None, project_slug: str | None = None) -> None:
+    def __init__(self, *, project_id: ProjectId | None = None, project_slug: str | None = None) -> None:
         ref = f"slug={project_slug!r}" if project_slug is not None else f"id={project_id}"
         super().__init__(
             status_code=404,
@@ -307,7 +308,7 @@ class SurveySlugConflictError(AppError):
 class VersionNotFoundError(AppError):
     """Error raised when a survey version cannot be found."""
 
-    def __init__(self, survey_id: int, version_number: int) -> None:
+    def __init__(self, survey_id: SurveyId, version_number: int) -> None:
         super().__init__(
             status_code=404,
             code="NOT_FOUND",

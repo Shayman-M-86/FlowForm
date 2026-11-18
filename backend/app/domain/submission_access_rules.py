@@ -9,10 +9,11 @@ from app.repositories.core import project_participants as ppr
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId
 
 
 def ensure_link_token_access(
-    db: Session, *, project_id: int, link: SurveyLink, survey: Survey, actor: User | None
+    db: Session, *, project_id: ProjectId, link: SurveyLink, survey: Survey, actor: User | None
 ) -> None:
     """Check that a link token can be used to access its survey right now.
 

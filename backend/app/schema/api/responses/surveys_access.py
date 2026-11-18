@@ -8,11 +8,18 @@ from app.domain.permissions import PERMISSIONS
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.common.types import SurveyPermission, SurveyPermissionSet
 from app.schema.enums import ProjectMemberStatus
-from app.schema.models.common.types import Timestamp
-from app.schema.models.identity.types import UserId
-from app.schema.models.projects.types import ProjectId, ProjectMembershipId, ProjectRoleId, RoleDescription, RoleName
-from app.schema.models.survey.types import SurveyId, SurveyRoleId
 from app.schema.orm.core.survey_access import SurveyMembershipRole, SurveyRole
+from app.schema.types import (
+    ProjectId,
+    ProjectMembershipId,
+    ProjectRoleId,
+    RoleDescription,
+    RoleName,
+    SurveyId,
+    SurveyRoleId,
+    Timestamp,
+    UserId,
+)
 
 
 class SurveyRoleResponses(APIResponseModel):

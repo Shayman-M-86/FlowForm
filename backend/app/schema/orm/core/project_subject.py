@@ -19,10 +19,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SubjectIdentityType, SubjectIdentityVerificationStatus
-from app.schema.models.common.types import EmailAddress, Timestamp
-from app.schema.models.identity.types import UserId
-from app.schema.models.projects.types import ProjectId, SubjectCode, SubjectId, SubjectIdentityId
 from app.schema.orm.base import utc_now
+from app.schema.types import EmailAddress, ProjectId, SubjectCode, SubjectId, SubjectIdentityId, Timestamp, UserId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project

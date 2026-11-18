@@ -4,13 +4,13 @@ These conventions apply when defining or changing value types across FlowForm.
 
 ## Ownership
 
-- `models/` owns reusable data models and value types shared across application layers.
-- `models/common/types.py` owns generic values and constraints: text, timestamps,
-  counts, collection bounds, email addresses, and the underlying database identity range.
-- Domain packages such as `models/projects/`, `models/survey/`,
-  `models/identity/`, and `models/submission/` own semantic value types.
+- `types.py` owns shared value definitions, grouped by domain: identities, text,
+  timestamps, counts, email addresses, and collection bounds.
+- `models/` owns complete reusable Pydantic data structures, organized by domain.
+- `validators.py` owns shared scalar normalization and parsing helpers. Validators
+  for complete structures remain beside their domain models.
 - `api/common/types.py` owns HTTP-specific values such as pagination, search,
-  and request-only constraints. Promote a type into `models/` when other layers need it.
+  and request-only constraints. Promote a type into `types.py` when other layers need it.
 - `api/requests/` and `api/responses/` own operation contracts.
 - `orm/` owns SQLAlchemy mappings. Shared models must not depend on API or ORM packages.
 - `enums.py` owns enumerations shared across domains or persistence boundaries.
@@ -32,7 +32,14 @@ literals do not require artificial wrapper types.
 
 ## Value types and constraints
 
-- Put validation and normalization in named `Annotated` value types.
+- Put validation and normalization in named `Annotated` value types using explicit
+  `type Name = ...` aliases. Scalar declarations have one public home in `types.py`.
+- Use `StringConstraints` for string length, pattern, whitespace, and case rules.
+  Use `Field` for numeric and collection bounds and descriptive metadata; do not
+  alternate between the two for string constraints.
+- Reuse shared metadata such as `DATABASE_ID_CONSTRAINTS` and
+  `COLLECTION_CONSTRAINTS`. Treat these objects as constants; never mutate them.
+  Keep property defaults and aliases out of shared constraint objects.
 - Models declare those types, requiredness, defaults, and field aliases.
 - Use `Field()` on model properties for defaults, factories, aliases, or descriptions;
   define value bounds in the owning type instead of repeating them on properties.
@@ -50,8 +57,15 @@ literals do not require artificial wrapper types.
 
 - Keep semantic names: `SurveyVersionId`, `SurveyFieldUuid`, `ClientMutationId`,
   `UserId`, and `Auth0UserId` communicate distinct identities.
-- Shared numeric identities reuse the underlying database range rather than
-  redefining it. A semantic alias alone does not provide nominal type separation.
+- Define each meaningful identity as a private `NewType` over its actual Python
+  representation, then expose a public annotated alias. The private variable name
+  must match the `NewType` name, for example `_ProjectId = NewType("_ProjectId", int)`.
+  Public `ProjectId` uses that nominal identity and `DATABASE_ID_CONSTRAINTS`.
+- Different identities remain distinct to Pyright even when their runtime values
+  are integers or UUIDs. Constrained values such as titles do not need nominal wrappers.
+- Parse external primitives with `TypeAdapter(Type).validate_python(...)` or
+  `Model.model_validate(...)`; direct Pydantic constructors expect already typed
+  identities to satisfy static checking. Never use casts to hide a boundary mismatch.
 - Keep descriptive reference fields such as `survey_version_id`; use `id` for
   the identity of the object itself.
 - Do not confuse a version identity, sequential version number, and document revision.
@@ -68,6 +82,8 @@ literals do not require artificial wrapper types.
   relationships, and indexes unchanged during annotation-only consolidation.
 - Do not add ORM validators, conversion hooks, or SQL constraints merely to reuse a type.
   Pydantic metadata does not automatically validate ORM assignments.
+- `app/db/type_mapping.py` explicitly maps public identity aliases to SQL storage
+  for both declarative bases. Keep SQL policy separate from Pydantic constraints.
 - Storage-only hashes, encryption material, internal IDs, and configuration data
   need not acquire API-oriented types.
 - JSONB containing a serialized document remains stored JSON, not an instance

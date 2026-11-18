@@ -9,10 +9,12 @@ from types import SimpleNamespace
 
 from cachetools import TTLCache
 from flask import Flask
+from pydantic import TypeAdapter
 
 from app.cache import LockedTTLCache, create_app_cache
 from app.cache._registry import EXTENSION_KEY
 from app.crypto.models import LinkageKey, PlaintextSessionKey, SessionLocator, SubmissionSessionContext
+from app.schema.types import ProjectId, SubmissionSessionId, SurveyId, SurveyVersionId
 
 
 def _make_cache(ttl_seconds: int = 3600) -> LockedTTLCache[bytes]:
@@ -202,10 +204,10 @@ def _make_linkage_key() -> LinkageKey:
 
 def _make_session_context() -> SubmissionSessionContext:
     return SubmissionSessionContext(
-        session_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
-        project_id=1,
-        survey_id=2,
-        survey_version_id=3,
+        session_id=TypeAdapter(SubmissionSessionId).validate_python(uuid.UUID("00000000-0000-0000-0000-000000000001")),
+        project_id=TypeAdapter(ProjectId).validate_python(1),
+        survey_id=TypeAdapter(SurveyId).validate_python(2),
+        survey_version_id=TypeAdapter(SurveyVersionId).validate_python(3),
         envelope_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
         session_locator=SessionLocator(b"\x01" * 32),
         linkage_key=_make_linkage_key(),

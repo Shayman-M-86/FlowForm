@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
+from app.schema.types import ProjectId, SurveyId
+
 if TYPE_CHECKING:
     from mypy_boto3_kms import KMSClient
 
@@ -42,8 +44,8 @@ _PREFETCH_POOL = ThreadPoolExecutor(max_workers=2)
 def create_wrapped_survey_key(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     cache: AppCache,
     clients: CryptoClients,
 ) -> SurveyEncryptionKey:
@@ -58,7 +60,10 @@ def create_wrapped_survey_key(
 
     try:
         wrapped_survey_key = wrap_survey_key(
-            plaintext_survey_key, kms_key_arn, context, client=clients.kms,
+            plaintext_survey_key,
+            kms_key_arn,
+            context,
+            client=clients.kms,
         )
     except KmsError as exc:
         logger.error("survey_key wrap_failed survey_id=%s", survey_id)
@@ -79,8 +84,8 @@ def create_wrapped_survey_key(
 def wrapped_survey_key_exists(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     cache: AppCache,
 ) -> bool:
     """Return whether a survey key exists for the given survey.
@@ -103,8 +108,8 @@ def wrapped_survey_key_exists(
 def load_plaintext_survey_key(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     cache: AppCache,
     clients: CryptoClients,
 ) -> PlaintextSurveyKey:
@@ -121,15 +126,17 @@ def load_plaintext_survey_key(
 
     record = _get_wrapped_record(db, project_id=project_id, survey_id=survey_id)
     return _unwrap_and_cache(
-        record, clients.kms, cache.crypto.survey_keys,
+        record,
+        clients.kms,
+        cache.crypto.survey_keys,
     )
 
 
 def start_plaintext_survey_key_load(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     cache: AppCache,
     clients: CryptoClients,
 ) -> SurveyKeyResolver:
@@ -149,15 +156,18 @@ def start_plaintext_survey_key_load(
     kms_client = clients.kms
     survey_key_cache = cache.crypto.survey_keys
     future = _PREFETCH_POOL.submit(
-        _unwrap_and_cache, record, kms_client, survey_key_cache,
+        _unwrap_and_cache,
+        record,
+        kms_client,
+        survey_key_cache,
     )
     return future.result
 
 
 def clear_plaintext_survey_key(
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     cache: AppCache,
 ) -> None:
     """Evict a plaintext survey key from the cache."""
@@ -167,8 +177,8 @@ def clear_plaintext_survey_key(
 def _get_wrapped_record(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
 ) -> SurveyEncryptionKey:
     """Fetch the wrapped survey key row, raising if it does not exist."""
     record = survey_key_repo.get_by_project_survey(

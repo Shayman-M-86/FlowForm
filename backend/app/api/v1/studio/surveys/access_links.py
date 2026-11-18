@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from flask import g, request
 
 from app.api.utils.validation import parse
@@ -19,6 +17,7 @@ from app.schema.api.responses.survey_access_links import (
     SendSurveyLinkEmailResponse,
     SurveyAccessLinkResponse,
 )
+from app.schema.types import ProjectId, SurveyId, SurveyLinkId
 from app.services.access.access_service import require_survey_permission
 
 _LBASE = "/<bint:project_id>/surveys/<bint:survey_id>/links"
@@ -30,7 +29,7 @@ _LBASE = "/<bint:project_id>/surveys/<bint:survey_id>/links"
 @studio_projects_bp.route(_LBASE, methods=["GET"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.view)
-def list_survey_access_links(project_id: int, survey_id: int):
+def list_survey_access_links(project_id: ProjectId, survey_id: SurveyId):
     links = survey_link_service.list_links(db=get_core_db(), project_id=project_id, survey_id=survey_id, actor=g.actor)
     return ListSurveyAccessLinksResponse(
         links=[SurveyAccessLinkResponse.model_validate(link) for link in links]
@@ -47,7 +46,7 @@ def list_survey_access_links(project_id: int, survey_id: int):
 @studio_projects_bp.route(_LBASE, methods=["POST"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def create_survey_access_link(project_id: int, survey_id: int):
+def create_survey_access_link(project_id: ProjectId, survey_id: SurveyId):
     payload = parse(CreateSurveyAccessLinkRequest, request)
     link = survey_link_service.create_link(
         db=get_core_db(),
@@ -74,7 +73,7 @@ def create_survey_access_link(project_id: int, survey_id: int):
 @studio_projects_bp.route(f"{_LBASE}/<uuid:link_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def update_survey_access_link(project_id: int, survey_id: int, link_id: UUID):
+def update_survey_access_link(project_id: ProjectId, survey_id: SurveyId, link_id: SurveyLinkId):
     payload = parse(UpdateSurveyAccessLinkRequest, request)
     updated_link = survey_link_service.update_link(
         db=get_core_db(),
@@ -91,7 +90,7 @@ def update_survey_access_link(project_id: int, survey_id: int, link_id: UUID):
 @studio_projects_bp.route(f"{_LBASE}/<uuid:link_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def delete_survey_access_link(project_id: int, survey_id: int, link_id: UUID):
+def delete_survey_access_link(project_id: ProjectId, survey_id: SurveyId, link_id: SurveyLinkId):
     survey_link_service.delete_link(
         db=get_core_db(), survey_id=survey_id, project_id=project_id, link_id=link_id, actor=g.actor
     )
@@ -106,7 +105,7 @@ def delete_survey_access_link(project_id: int, survey_id: int, link_id: UUID):
 @studio_projects_bp.route(f"{_LBASE}/<uuid:link_id>/send-email", methods=["POST"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def send_survey_link_email(project_id: int, survey_id: int, link_id: UUID):
+def send_survey_link_email(project_id: ProjectId, survey_id: SurveyId, link_id: SurveyLinkId):
     message_id = survey_link_service.send_link_email(
         db=get_core_db(), survey_id=survey_id, project_id=project_id, link_id=link_id, actor=g.actor
     )

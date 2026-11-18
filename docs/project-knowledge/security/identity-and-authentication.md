@@ -5,7 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-11-18
+last_edited: 2026-11-19
 tags: [security]
 related_code:
   - "../../../backend/app/middleware/auth/auth0.py"
@@ -52,6 +52,13 @@ create or resolve the local user, whose Auth0 subject is the stable login
 identity. Core user data carries the fields needed for local account behaviour
 and links to application access records; it is not intended to store Auth0
 passwords, bearer tokens, ID tokens, MFA secrets, or Management API tokens.
+
+Shared `Auth0UserId` is an opaque, nonempty subject of at most 255 characters;
+it is distinct from the numeric internal `UserId`. Current-request subject
+accessors and ID-token bootstrap validation establish that type without
+normalizing the subject. Invalid subjects retain the existing missing/invalid
+subject error paths. Services, repositories, and ORM mappings reuse the shared
+identity declarations from `schema/types.py`.
 
 Account services coordinate local profile and account changes with Auth0. The
 Studio client has code for presenting password-management capability, including

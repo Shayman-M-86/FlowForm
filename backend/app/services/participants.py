@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import RuleContext, commit_with_err_handle
@@ -17,6 +15,7 @@ from app.schema.api.requests.participants import CreateParticipantRequest, Updat
 from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import ProjectSubjectIdentity
 from app.schema.orm.core.user import User
+from app.schema.types import ParticipantId, ProjectId
 
 
 class ParticipantService:
@@ -33,21 +32,19 @@ class ParticipantService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         search: str | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> tuple[list[ProjectParticipant], int]:
-        return ppr.list_participants(
-            db, project_id=project_id, search=search, offset=offset, limit=limit
-        )
+        return ppr.list_participants(db, project_id=project_id, search=search, offset=offset, limit=limit)
 
     def get_participant(
         self,
         db: Session,
         *,
-        project_id: int,
-        participant_id: UUID,
+        project_id: ProjectId,
+        participant_id: ParticipantId,
     ) -> ProjectParticipant:
         return ensure_present(
             ppr.get_participant(db, project_id=project_id, participant_id=participant_id),
@@ -58,7 +55,7 @@ class ParticipantService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         data: CreateParticipantRequest,
     ) -> ProjectParticipant:
         """Create a subject, an email identity for it, and the participant row."""
@@ -82,8 +79,8 @@ class ParticipantService:
         self,
         db: Session,
         *,
-        project_id: int,
-        participant_id: UUID,
+        project_id: ProjectId,
+        participant_id: ParticipantId,
         data: UpdateParticipantRequest,
     ) -> ProjectParticipant:
         """Update the participant's email identity and/or subject code."""
@@ -110,8 +107,8 @@ class ParticipantService:
         self,
         db: Session,
         *,
-        project_id: int,
-        participant_id: UUID,
+        project_id: ProjectId,
+        participant_id: ParticipantId,
     ) -> None:
         """Delete the participant, its email identity, and its subject.
 
@@ -163,7 +160,7 @@ class ParticipantService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         participant: ProjectParticipant,
     ) -> ProjectSubjectIdentity:
         return ensure_present(

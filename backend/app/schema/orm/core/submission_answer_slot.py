@@ -8,8 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
-from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import ReadableId, SurveyFieldUuid, SurveyVersionId
+from app.schema.types import ReadableId, SubmissionSessionId, SurveyFieldUuid, SurveyVersionId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.submission_session import SubmissionSession

@@ -1,7 +1,7 @@
 from app.schema import limits
 from app.schema.api.common.base import APIRequestModel
 from app.schema.api.common.types import CanonicalSubjectFilter, PageNumber, PageSize, SearchText
-from app.schema.models.projects.types import SubjectCode
+from app.schema.types import SubjectCode
 
 
 class ListProjectSubjectsRequest(APIRequestModel):

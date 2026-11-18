@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import uuid
 
+from pydantic import TypeAdapter
+
 from app.cache import AppCache, create_app_cache
 from app.crypto.models import (
     PlaintextSurveyKey,
@@ -12,16 +14,17 @@ from app.crypto.models import (
     SessionLocator,
 )
 from app.crypto.session_key import create_session_key
+from app.schema.types import ProjectId, SubmissionSessionId, SurveyId
 
 _SURVEY_KEY = PlaintextSurveyKey(os.urandom(32))
 
 
 def _dek_context() -> SessionDEKContext:
     return SessionDEKContext(
-        session_id=uuid.uuid4(),
+        session_id=TypeAdapter(SubmissionSessionId).validate_python(uuid.uuid4()),
         crypto_version=1,
-        project_id=1,
-        survey_id=1,
+        project_id=TypeAdapter(ProjectId).validate_python(1),
+        survey_id=TypeAdapter(SurveyId).validate_python(1),
         session_locator=SessionLocator(os.urandom(32)),
     )
 

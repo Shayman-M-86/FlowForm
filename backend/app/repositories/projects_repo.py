@@ -7,12 +7,13 @@ from app.repositories.permissions_repo import get_permissions_by_names
 from app.repositories.response_stores_repo import get_or_create_platform_primary_store
 from app.schema.api.requests.projects import CreateProjectRequest, UpdateProjectRequest
 from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole
+from app.schema.types import ProjectId, UserId
 
 # The hardcoded name for the system owner role created on every new project.
 OWNER_ROLE_NAME = "Owner"
 
 
-def list_projects(db: Session, user_id: int) -> list[Project]:
+def list_projects(db: Session, user_id: UserId) -> list[Project]:
     return list(
         db.scalars(
             select(Project)
@@ -22,7 +23,7 @@ def list_projects(db: Session, user_id: int) -> list[Project]:
     )
 
 
-def get_project(db: Session, project_id: int, user_id: int) -> Project | None:
+def get_project(db: Session, project_id: ProjectId, user_id: UserId) -> Project | None:
     """Fetch a project only if the given user is a member."""
     return db.scalar(
         select(Project)
@@ -31,7 +32,7 @@ def get_project(db: Session, project_id: int, user_id: int) -> Project | None:
     )
 
 
-def get_project_by_slug(db: Session, slug: str, user_id: int) -> Project | None:
+def get_project_by_slug(db: Session, slug: str, user_id: UserId) -> Project | None:
     """Fetch a project by slug only if the given user is a member."""
     return db.scalar(
         select(Project)
@@ -40,7 +41,7 @@ def get_project_by_slug(db: Session, slug: str, user_id: int) -> Project | None:
     )
 
 
-def get_project_by_id(db: Session, project_id: int) -> Project | None:
+def get_project_by_id(db: Session, project_id: ProjectId) -> Project | None:
     """Fetch a project by ID with no membership filter.
 
     Use only in contexts where membership has already been verified
@@ -52,7 +53,7 @@ def get_project_by_id(db: Session, project_id: int) -> Project | None:
 def create_project(
     db: Session,
     data: CreateProjectRequest,
-    created_by_user_id: int,
+    created_by_user_id: UserId,
 ) -> Project:
     project = Project(
         name=data.name,

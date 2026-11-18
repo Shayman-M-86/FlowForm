@@ -3,11 +3,13 @@
 Verifies that session creation, single-use link consumption, subject-resolution
 effects, and recognition-token actions all commit atomically.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
 
 import pytest
+from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,7 @@ from app.schema.api.requests.submission_sessions import StartSubmissionSessionRe
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
+from app.schema.types import ParticipantId
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from tests.integration.core.factories import make_participant_chain, make_token
 
@@ -50,7 +53,7 @@ def _make_private_link(
         token=raw_token,
         link_type="private",
         assignment_source="manual",
-        assigned_participant_id=assigned_participant_id,
+        assigned_participant_id=TypeAdapter(ParticipantId).validate_python(assigned_participant_id),
     )
     db_session.add(link)
     db_session.flush()
@@ -69,20 +72,14 @@ def test_single_use_link_consumed_atomically_with_session(
         project_id=survey.project_id,
         subject_code="tx-subject",
     )
-    link, raw_token = _make_private_link(
-        db_session, survey=survey, assigned_participant_id=participant.id
-    )
-    payload = StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "link_token", "token": raw_token}}
-    )
+    link, raw_token = _make_private_link(db_session, survey=survey, assigned_participant_id=participant.id)
+    payload = StartSubmissionSessionRequest.model_validate({"access": {"type": "link_token", "token": raw_token}})
 
     _response, _browser_token, _recognition_token = SessionStarter().start(
         db_session, db_session, payload=payload, actor=None
     )
 
-    session = db_session.scalar(
-        select(SubmissionSession).where(SubmissionSession.link_id == link.id)
-    )
+    session = db_session.scalar(select(SubmissionSession).where(SubmissionSession.link_id == link.id))
     assert session is not None, "session row must be committed"
     assert link.used_at is not None, "link must be marked used in the same commit"
 
@@ -104,12 +101,8 @@ def test_second_start_on_consumed_link_raises_already_used(
         project_id=survey.project_id,
         subject_code="tx-subject-2",
     )
-    link, raw_token = _make_private_link(
-        db_session, survey=survey, assigned_participant_id=participant.id
-    )
-    payload = StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "link_token", "token": raw_token}}
-    )
+    link, raw_token = _make_private_link(db_session, survey=survey, assigned_participant_id=participant.id)
+    payload = StartSubmissionSessionRequest.model_validate({"access": {"type": "link_token", "token": raw_token}})
     starter = SessionStarter()
 
     starter.start(db_session, db_session, payload=payload, actor=None)

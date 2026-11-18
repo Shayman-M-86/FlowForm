@@ -18,12 +18,18 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SurveyVersionStatus, SurveyVisibility
-from app.schema.models.common.types import Slug, Timestamp
-from app.schema.models.identity.types import UserId
-from app.schema.models.projects.types import ProjectId
-from app.schema.models.response_store.types import ResponseStoreId
-from app.schema.models.survey.types import SurveyId, SurveyTitle, SurveyVersionId, SurveyVersionNumber
 from app.schema.orm.base import TimestampMixin
+from app.schema.types import (
+    ProjectId,
+    ResponseStoreId,
+    Slug,
+    SurveyId,
+    SurveyTitle,
+    SurveyVersionId,
+    SurveyVersionNumber,
+    Timestamp,
+    UserId,
+)
 
 if TYPE_CHECKING:
     from app.schema.orm.core.user import User

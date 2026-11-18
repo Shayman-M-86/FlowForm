@@ -14,8 +14,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
-from app.schema.models.common.types import Timestamp
-from app.schema.models.projects.types import ParticipantId, ProjectId, SubjectId, SubjectIdentityId
+from app.schema.types import ParticipantId, ProjectId, SubjectId, SubjectIdentityId, Timestamp
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project

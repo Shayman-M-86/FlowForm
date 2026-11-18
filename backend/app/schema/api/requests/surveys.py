@@ -6,9 +6,8 @@ from app.schema import limits
 from app.schema.api.common.base import APIRequestModel
 from app.schema.api.common.types import PageNumber, PageSize
 from app.schema.enums import SurveyVisibility
-from app.schema.models.common.types import Slug
 from app.schema.models.survey.document import SurveyDefinition
-from app.schema.models.survey.types import SurveyTitle
+from app.schema.types import Slug, SurveyTitle
 
 
 class PublicSurveyCreateRequest(APIRequestModel):

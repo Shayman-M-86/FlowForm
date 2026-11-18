@@ -4,10 +4,12 @@ Covers the doc-driven decision tables from:
   shared/subject-resolution.md — open-access and assigned-access tables
   shared/logged-in-reconciliation.md — conflict rule
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.repositories.core import project_subject_identities as sub_id
@@ -16,6 +18,7 @@ from app.repositories.core import project_subjects as sub_repo
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectToken
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 
 # ---------------------------------------------------------------------------
@@ -23,17 +26,15 @@ from app.services.public_submissions.core.resolution.subject_resolver import Sub
 # ---------------------------------------------------------------------------
 
 
-def _make_subject(
-    db: Session, *, project_id: int, subject_code: str = "sub-test"
-) -> ProjectSubject:
-    return sub_repo.create_subject(db, project_id=project_id, subject_code=subject_code)
+def _make_subject(db: Session, *, project_id: int, subject_code: str = "sub-test") -> ProjectSubject:
+    return sub_repo.create_subject(
+        db, project_id=TypeAdapter(ProjectId).validate_python(project_id), subject_code=subject_code
+    )
 
 
-def _make_token(
-    db: Session, *, project_id: int, subject: ProjectSubject, raw: str = "tok-abc"
-) -> ProjectSubjectToken:
+def _make_token(db: Session, *, project_id: int, subject: ProjectSubject, raw: str = "tok-abc") -> ProjectSubjectToken:
     token = ProjectSubjectToken(
-        project_id=project_id,
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
         project_subject_id=subject.id,
         token_hash=sub_tok.hash_recognition_token(raw),
         expires_at=datetime.now(UTC) + timedelta(days=30),
@@ -52,9 +53,7 @@ def _resolver() -> SubjectResolver:
 # ---------------------------------------------------------------------------
 
 
-def test_open_access_no_token_no_actor_creates_subject_issues_token(
-    db_session: Session, project: Project
-) -> None:
+def test_open_access_no_token_no_actor_creates_subject_issues_token(db_session: Session, project: Project) -> None:
     result = _resolver().resolve(
         db_session,
         project_id=project.id,
@@ -75,9 +74,7 @@ def test_open_access_no_token_no_actor_creates_subject_issues_token(
 # ---------------------------------------------------------------------------
 
 
-def test_open_access_valid_token_no_actor_mark_used(
-    db_session: Session, project: Project
-) -> None:
+def test_open_access_valid_token_no_actor_mark_used(db_session: Session, project: Project) -> None:
     subject = _make_subject(db_session, project_id=project.id, subject_code="sub-tok")
 
     result = _resolver().resolve(
@@ -179,9 +176,7 @@ def test_open_access_logged_in_identity_exists_no_token_issues(
     db_session: Session, project: Project, user: User
 ) -> None:
     subject = _make_subject(db_session, project_id=project.id, subject_code="identity-subject")
-    sub_id.create_user_identity(
-        db_session, project_id=project.id, project_subject_id=subject.id, user=user
-    )
+    sub_id.create_user_identity(db_session, project_id=project.id, project_subject_id=subject.id, user=user)
 
     result = _resolver().resolve(
         db_session,
@@ -208,9 +203,7 @@ def test_open_access_logged_in_identity_token_same_canonical_mark_used(
     db_session: Session, project: Project, user: User
 ) -> None:
     subject = _make_subject(db_session, project_id=project.id, subject_code="shared-canonical")
-    sub_id.create_user_identity(
-        db_session, project_id=project.id, project_subject_id=subject.id, user=user
-    )
+    sub_id.create_user_identity(db_session, project_id=project.id, project_subject_id=subject.id, user=user)
 
     result = _resolver().resolve(
         db_session,
@@ -239,9 +232,7 @@ def test_open_access_logged_in_identity_token_different_canonical_merges(
 ) -> None:
     identity_subject = _make_subject(db_session, project_id=project.id, subject_code="identity")
     token_subject = _make_subject(db_session, project_id=project.id, subject_code="token")
-    sub_id.create_user_identity(
-        db_session, project_id=project.id, project_subject_id=identity_subject.id, user=user
-    )
+    sub_id.create_user_identity(db_session, project_id=project.id, project_subject_id=identity_subject.id, user=user)
 
     result = _resolver().resolve(
         db_session,
@@ -266,9 +257,7 @@ def test_open_access_logged_in_identity_token_different_canonical_merges(
 # ---------------------------------------------------------------------------
 
 
-def test_assigned_no_token_issues_recognition_token(
-    db_session: Session, project: Project
-) -> None:
+def test_assigned_no_token_issues_recognition_token(db_session: Session, project: Project) -> None:
     assigned = _make_subject(db_session, project_id=project.id, subject_code="assigned")
 
     result = _resolver().resolve(
@@ -292,9 +281,7 @@ def test_assigned_no_token_issues_recognition_token(
 # ---------------------------------------------------------------------------
 
 
-def test_assigned_token_same_canonical_keep(
-    db_session: Session, project: Project
-) -> None:
+def test_assigned_token_same_canonical_keep(db_session: Session, project: Project) -> None:
     assigned = _make_subject(db_session, project_id=project.id, subject_code="assigned-same")
 
     result = _resolver().resolve(
@@ -318,9 +305,7 @@ def test_assigned_token_same_canonical_keep(
 # ---------------------------------------------------------------------------
 
 
-def test_assigned_token_different_canonical_merges_and_rotates(
-    db_session: Session, project: Project
-) -> None:
+def test_assigned_token_different_canonical_merges_and_rotates(db_session: Session, project: Project) -> None:
     assigned = _make_subject(db_session, project_id=project.id, subject_code="assigned-strong")
     stray = _make_subject(db_session, project_id=project.id, subject_code="stray-token")
 
@@ -346,9 +331,7 @@ def test_assigned_token_different_canonical_merges_and_rotates(
 # ---------------------------------------------------------------------------
 
 
-def test_assigned_subject_non_canonical_resolves_to_canonical(
-    db_session: Session, project: Project
-) -> None:
+def test_assigned_subject_non_canonical_resolves_to_canonical(db_session: Session, project: Project) -> None:
     canonical = _make_subject(db_session, project_id=project.id, subject_code="real-canonical")
     alias = _make_subject(db_session, project_id=project.id, subject_code="alias")
     sub_repo.set_canonical_subject(db_session, subject=alias, canonical=canonical)

@@ -8,6 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.projects import CreateProjectRoleRequest, UpdateProjectRoleRequest
 from app.schema.api.responses.projects import ProjectRoleResponses
+from app.schema.types import ProjectId, ProjectRoleId
 from app.services.access.access_service import require_project_permission
 
 
@@ -15,7 +16,7 @@ from app.services.access.access_service import require_project_permission
 @studio_projects_bp.route("/<bint:project_id>/roles", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def list_roles(project_id: int):
+def list_roles(project_id: ProjectId):
     roles = roles_service.list_project_roles(db=get_core_db(), project_id=project_id, actor=g.actor)
     return [ProjectRoleResponses.from_orm_with_permissions(r).model_dump(mode="json") for r in roles], 200
 
@@ -30,7 +31,7 @@ def list_roles(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/roles", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def create_role(project_id: int):
+def create_role(project_id: ProjectId):
     payload = parse(CreateProjectRoleRequest, request)
     role = roles_service.create_role(db=get_core_db(), project_id=project_id, data=payload, actor=g.actor)
     return ProjectRoleResponses.from_orm_with_permissions(role).model_dump(mode="json"), 201
@@ -45,7 +46,7 @@ def create_role(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/roles/<bint:role_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def update_role(project_id: int, role_id: int):
+def update_role(project_id: ProjectId, role_id: ProjectRoleId):
     payload = parse(UpdateProjectRoleRequest, request)
     role = roles_service.update_role(
         db=get_core_db(), project_id=project_id, role_id=role_id, data=payload, actor=g.actor
@@ -57,6 +58,6 @@ def update_role(project_id: int, role_id: int):
 @studio_projects_bp.route("/<bint:project_id>/roles/<bint:role_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def delete_role(project_id: int, role_id: int):
+def delete_role(project_id: ProjectId, role_id: ProjectRoleId):
     roles_service.delete_role(db=get_core_db(), project_id=project_id, role_id=role_id, actor=g.actor)
     return {}, 204

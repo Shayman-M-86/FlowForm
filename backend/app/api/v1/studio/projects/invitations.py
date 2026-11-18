@@ -8,6 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.projects import SendInvitationRequest
 from app.schema.api.responses.projects import ProjectInvitationResponses
+from app.schema.types import ProjectId, ProjectInvitationId
 from app.services.access.access_service import require_project_permission
 
 
@@ -19,7 +20,7 @@ from app.services.access.access_service import require_project_permission
 @studio_projects_bp.route("/<bint:project_id>/invitations", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def list_invitations(project_id: int):
+def list_invitations(project_id: ProjectId):
     invitations = members_service.list_project_invitations(db=get_core_db(), project_id=project_id, actor=g.actor)
     return [ProjectInvitationResponses.model_validate(i).model_dump(mode="json") for i in invitations], 200
 
@@ -34,7 +35,7 @@ def list_invitations(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/invitations", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def send_invitation(project_id: int):
+def send_invitation(project_id: ProjectId):
     payload = parse(SendInvitationRequest, request)
     invitation = members_service.send_invitation(db=get_core_db(), project_id=project_id, data=payload, actor=g.actor)
     return ProjectInvitationResponses.model_validate(invitation).model_dump(mode="json"), 201
@@ -47,7 +48,7 @@ def send_invitation(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/invitations/<bint:invitation_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def revoke_invitation(project_id: int, invitation_id: int):
+def revoke_invitation(project_id: ProjectId, invitation_id: ProjectInvitationId):
     members_service.revoke_invitation(
         db=get_core_db(), project_id=project_id, invitation_id=invitation_id, actor=g.actor
     )

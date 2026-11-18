@@ -3,11 +3,13 @@ from typing import Any, cast
 from uuid import UUID
 
 import pytest  # type: ignore[import]
+from pydantic import TypeAdapter
 
 from app.domain.errors import (
     LinkAuthAssignmentRequiredError,
     PrivateSurveyAssignedEmailRequiredError,
 )
+from app.schema.types import ParticipantId
 from app.services.survey_links import SurveyLinkService
 
 
@@ -30,7 +32,9 @@ def test_service_allows_private_participant_link_without_auth() -> None:
     SurveyLinkService()._ensure_link_allowed_by_visibility(
         survey=cast(Any, survey),
         link_type="private",
-        assigned_participant_id=UUID("00000000-0000-0000-0000-000000000001"),
+        assigned_participant_id=TypeAdapter(ParticipantId).validate_python(
+            UUID("00000000-0000-0000-0000-000000000001")
+        ),
     )
 
 

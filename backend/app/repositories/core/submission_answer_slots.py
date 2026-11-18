@@ -5,9 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import ReadableId, SurveyFieldUuid, SurveyVersionId
 from app.schema.orm.core.submission_answer_slot import ANSWER_SLOT_IDENTITY_CONSTRAINT, SubmissionAnswerSlot
+from app.schema.types import ReadableId, SubmissionSessionId, SurveyFieldUuid, SurveyVersionId
 
 
 def get_or_create(

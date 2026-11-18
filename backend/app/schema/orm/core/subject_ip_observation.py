@@ -15,8 +15,7 @@ from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
-from app.schema.models.projects.types import ProjectId, SubjectId
-from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.types import ProjectId, SubjectId, SubmissionSessionId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project

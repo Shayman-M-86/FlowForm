@@ -28,8 +28,7 @@ from app.crypto._internal.models import (
     PositiveVersion,
     SecretValue,
 )
-from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import SurveyVersionId
+from app.schema.types import ProjectId, SubmissionSessionId, SurveyId, SurveyVersionId
 
 # --- Key-material labels (NewType over bytes) ---
 
@@ -96,8 +95,8 @@ class SessionDEKContext:
 
     session_id: SubmissionSessionId
     crypto_version: int
-    project_id: int
-    survey_id: int
+    project_id: ProjectId
+    survey_id: SurveyId
     session_locator: SessionLocator
 
 
@@ -111,8 +110,8 @@ class SubmissionSessionContext:
     """
 
     session_id: SubmissionSessionId
-    project_id: int
-    survey_id: int
+    project_id: ProjectId
+    survey_id: SurveyId
     survey_version_id: SurveyVersionId
     envelope_id: UUID
     session_locator: SessionLocator

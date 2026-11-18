@@ -15,6 +15,7 @@ from app.schema.orm.core.project_subject import (
     ProjectSubjectIdentity,
 )
 from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.types import ProjectId, SubjectId, SurveyId
 
 _SUBJECT_CODE_BYTES = 18
 
@@ -27,7 +28,7 @@ def generate_subject_code() -> str:
     return f"sub_{secrets.token_urlsafe(_SUBJECT_CODE_BYTES)}"
 
 
-def get_subject(db: Session, *, project_id: int, subject_id: UUID) -> ProjectSubject | None:
+def get_subject(db: Session, *, project_id: ProjectId, subject_id: SubjectId) -> ProjectSubject | None:
     return db.scalar(
         select(ProjectSubject).where(
             ProjectSubject.project_id == project_id,
@@ -36,7 +37,7 @@ def get_subject(db: Session, *, project_id: int, subject_id: UUID) -> ProjectSub
     )
 
 
-def create_subject(db: Session, *, project_id: int, subject_code: str | None = None) -> ProjectSubject:
+def create_subject(db: Session, *, project_id: ProjectId, subject_code: str | None = None) -> ProjectSubject:
     subject = ProjectSubject(
         project_id=project_id,
         subject_code=subject_code or generate_subject_code(),
@@ -66,7 +67,7 @@ def delete_subject(db: Session, *, subject: ProjectSubject) -> None:
 
 def _list_subjects_base(
     *,
-    project_id: int,
+    project_id: ProjectId,
     canonical_status: CanonicalStatus = "canonical",
     is_participant: bool | None = None,
     search: str | None = None,
@@ -146,7 +147,7 @@ def _list_subjects_base(
 def list_subjects(
     db: Session,
     *,
-    project_id: int,
+    project_id: ProjectId,
     canonical_status: CanonicalStatus = "canonical",
     is_participant: bool | None = None,
     search: str | None = None,
@@ -172,7 +173,7 @@ def list_subjects(
 
 
 def get_subject_with_participant(
-    db: Session, *, project_id: int, subject_id: UUID
+    db: Session, *, project_id: ProjectId, subject_id: SubjectId
 ) -> tuple[ProjectSubject, UUID | None] | None:
     """Fetch a subject with its participant_id (if enrolled).
 
@@ -211,8 +212,8 @@ def get_subject_with_participant(
 def list_subjects_by_survey(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     offset: int = 0,
     limit: int = 50,
 ) -> tuple[Sequence[ProjectSubject], int]:
@@ -238,9 +239,9 @@ def list_subjects_by_survey(
 def get_subject_in_survey(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
-    subject_id: UUID,
+    project_id: ProjectId,
+    survey_id: SurveyId,
+    subject_id: SubjectId,
 ) -> ProjectSubject | None:
     """Fetch a subject only if it has at least one session in this survey."""
     has_session = (

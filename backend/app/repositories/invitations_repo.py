@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session, selectinload
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import ProjectInvitationStatus
 from app.schema.orm.core.invitation import ProjectInvitation
+from app.schema.types import ProjectId, ProjectInvitationId, ProjectRoleId, UserId
 
 
-def list_pending_by_project(db: Session, project_id: int) -> list[ProjectInvitation]:
+def list_pending_by_project(db: Session, project_id: ProjectId) -> list[ProjectInvitation]:
     return list(
         db.scalars(
             select(ProjectInvitation)
@@ -23,10 +24,8 @@ def list_pending_by_project(db: Session, project_id: int) -> list[ProjectInvitat
     )
 
 
-def get_by_id(db: Session, invitation_id: int) -> ProjectInvitation | None:
-    return db.scalar(
-        select(ProjectInvitation).where(ProjectInvitation.id == invitation_id)
-    )
+def get_by_id(db: Session, invitation_id: ProjectInvitationId) -> ProjectInvitation | None:
+    return db.scalar(select(ProjectInvitation).where(ProjectInvitation.id == invitation_id))
 
 
 def get_pending_by_email(db: Session, *, email: str) -> list[ProjectInvitation]:
@@ -53,10 +52,10 @@ def _hash_token(token: str) -> str:
 def create_invitation(
     db: Session,
     *,
-    project_id: int,
+    project_id: ProjectId,
     invited_email: str,
-    role_id: int | None,
-    invited_by_user_id: int | None,
+    role_id: ProjectRoleId | None,
+    invited_by_user_id: UserId | None,
     invite_message: str | None = None,
 ) -> tuple[ProjectInvitation, str]:
     """Create an invitation and return ``(invitation, raw_token)``.
@@ -81,9 +80,7 @@ def create_invitation(
 def get_by_token(db: Session, token: str) -> ProjectInvitation | None:
     """Look up an invitation by its raw token."""
     hashed = _hash_token(token)
-    return db.execute(
-        select(ProjectInvitation).where(ProjectInvitation.token_hash == hashed)
-    ).scalar_one_or_none()
+    return db.execute(select(ProjectInvitation).where(ProjectInvitation.token_hash == hashed)).scalar_one_or_none()
 
 
 def update_status(
@@ -91,7 +88,7 @@ def update_status(
     invitation: ProjectInvitation,
     *,
     status: ProjectInvitationStatus,
-    accepted_by_user_id: int | None = None,
+    accepted_by_user_id: UserId | None = None,
     accepted_at: datetime | None = None,
 ) -> ProjectInvitation:
     invitation.status = status

@@ -33,7 +33,9 @@ def test_document_version_is_the_shared_numeric_identity():
     for bad in ["version_001", 0, -1, 2**63]:
         with pytest.raises(ValidationError):
             SurveyDefinition.model_validate(definition() | {"versionId": bad})
-    schema = SurveyDefinition.model_json_schema()["properties"]["versionId"]
+    document = SurveyDefinition.model_json_schema()
+    reference = document["properties"]["versionId"]["$ref"].split("/")[-1]
+    schema = document["$defs"][reference]
     assert schema["type"] == "integer" and schema["minimum"] == 1
 
 

@@ -8,6 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.api.responses.surveys import MySurveyPermissionsResponses, SurveyResponses
+from app.schema.types import ProjectId, SurveyId
 from app.services.access.access_service import access_service, require_project_permission, require_survey_permission
 
 
@@ -15,7 +16,7 @@ from app.services.access.access_service import access_service, require_project_p
 @studio_projects_bp.route("/<bint:project_id>/surveys", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.survey.view)
-def list_surveys(project_id: int):
+def list_surveys(project_id: ProjectId):
     surveys = survey_service.list_surveys(get_core_db(), project_id=project_id, actor=g.actor)
     return [SurveyResponses.model_validate(s).model_dump(mode="json") for s in surveys], 200
 
@@ -30,7 +31,7 @@ def list_surveys(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/surveys", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.survey.create)
-def create_survey(project_id: int):
+def create_survey(project_id: ProjectId):
     payload = parse(CreateSurveyRequest, request)
     survey = survey_service.create_survey(db=get_core_db(), project_id=project_id, data=payload, actor=g.actor)
     return SurveyResponses.model_validate(survey).model_dump(mode="json"), 201
@@ -40,7 +41,7 @@ def create_survey(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["GET"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.view)
-def get_survey(project_id: int, survey_id: int):
+def get_survey(project_id: ProjectId, survey_id: SurveyId):
     survey = survey_service.get_survey(db=get_core_db(), project_id=project_id, survey_id=survey_id, actor=g.actor)
     return SurveyResponses.model_validate(survey).model_dump(mode="json"), 200
 
@@ -54,7 +55,7 @@ def get_survey(project_id: int, survey_id: int):
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.edit)
-def update_survey(project_id: int, survey_id: int):
+def update_survey(project_id: ProjectId, survey_id: SurveyId):
     payload = parse(UpdateSurveyRequest, request)
     survey = survey_service.update_survey(
         db=get_core_db(), project_id=project_id, survey_id=survey_id, data=payload, actor=g.actor
@@ -66,7 +67,7 @@ def update_survey(project_id: int, survey_id: int):
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.survey.delete)
-def delete_survey(project_id: int, survey_id: int):
+def delete_survey(project_id: ProjectId, survey_id: SurveyId):
     survey_service.delete_survey(db=get_core_db(), project_id=project_id, survey_id=survey_id, actor=g.actor)
     return "", 204
 
@@ -74,7 +75,7 @@ def delete_survey(project_id: int, survey_id: int):
 @openapi_route(summary="Get my survey permissions", response_model=MySurveyPermissionsResponses, tags=["Surveys"])
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/my-permissions", methods=["GET"])
 @auth.require_auth()
-def get_my_survey_permissions(project_id: int, survey_id: int):
+def get_my_survey_permissions(project_id: ProjectId, survey_id: SurveyId):
     db = get_core_db()
     actor = users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     g.actor = actor

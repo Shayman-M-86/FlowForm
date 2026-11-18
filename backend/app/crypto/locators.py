@@ -23,7 +23,7 @@ from app.crypto._internal.locators import (
     derive_session_locator as _derive_session_locator,
 )
 from app.crypto.models import AnswerLocator, LinkageKey, NewSessionLocator, SessionLocator
-from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.types import SubmissionSessionId
 
 if TYPE_CHECKING:
     from app.cache import AppCache

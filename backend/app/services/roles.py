@@ -8,24 +8,34 @@ from app.repositories import roles_repo as rr
 from app.schema.api.requests.projects import CreateProjectRoleRequest, UpdateProjectRoleRequest
 from app.schema.orm.core.project import ProjectRole
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, ProjectRoleId
 
 
 class RolesService:
     """Service for project role management."""
 
-    def _get_role(self, db: Session, *, role_id: int, project_id: int) -> ProjectRole:
+    def _get_role(self, db: Session, *, role_id: ProjectRoleId, project_id: ProjectId) -> ProjectRole:
         return ensure_present(
             rr.get_by_id(db, role_id=role_id, project_id=project_id),
             error=ProjectRoleNotFoundError(),
         )
 
     def list_project_roles(
-        self, db: Session, *, project_id: int, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        actor: User,  # noqa: ARG002
     ) -> list[ProjectRole]:
         return rr.list_by_project(db, project_id)
 
     def create_role(
-        self, db: Session, *, project_id: int, data: CreateProjectRoleRequest, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        data: CreateProjectRoleRequest,
+        actor: User,  # noqa: ARG002
     ) -> ProjectRole:
         permission_rows = per.get_permissions_by_names(db, data.permissions)
         role = rr.create_role(
@@ -39,7 +49,13 @@ class RolesService:
         return role
 
     def update_role(
-        self, db: Session, *, project_id: int, role_id: int, data: UpdateProjectRoleRequest, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        role_id: ProjectRoleId,
+        data: UpdateProjectRoleRequest,
+        actor: User,  # noqa: ARG002
     ) -> ProjectRole:
         role = self._get_role(db, role_id=role_id, project_id=project_id)
         if role.is_system_role:
@@ -61,7 +77,12 @@ class RolesService:
         return role
 
     def delete_role(
-        self, db: Session, *, project_id: int, role_id: int, actor: User  # noqa: ARG002
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        role_id: ProjectRoleId,
+        actor: User,  # noqa: ARG002
     ) -> None:
         role = self._get_role(db, role_id=role_id, project_id=project_id)
         if role.is_system_role:

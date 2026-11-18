@@ -5,11 +5,13 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from pydantic import TypeAdapter
 
 from app.domain.errors import ManagementApiCallError, PasswordChangeUnsupportedError
 from app.middleware.auth.auth0 import ManagementApiError
 from app.schema.api.requests.me import UpdateProfileRequest
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId, UserId
 from app.services import account as account_module
 from app.services.account import UserAccountService
 
@@ -53,8 +55,8 @@ class CachedEmailVerified:
 
 def test_account_management_errors_return_generic_message(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User()
-    user.id = 1
-    user.auth0_user_id = "auth0|user-123"
+    user.id = TypeAdapter(UserId).validate_python(1)
+    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python("auth0|user-123")
     user.email = "user@example.com"
     user.display_name = "Old Name"
     update_user = Mock()
@@ -75,8 +77,8 @@ def test_account_management_errors_return_generic_message(monkeypatch: pytest.Mo
 
 def test_change_password_returns_hosted_ticket_url(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User()
-    user.id = 1
-    user.auth0_user_id = "auth0|user-123"
+    user.id = TypeAdapter(UserId).validate_python(1)
+    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python("auth0|user-123")
     mgmt = PasswordTicketManagementApiClient()
     monkeypatch.setattr(account_module, "_mgmt", lambda: mgmt)
 
@@ -90,8 +92,8 @@ def test_change_password_returns_hosted_ticket_url(monkeypatch: pytest.MonkeyPat
 
 def test_change_password_reports_unsupported_connection(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User()
-    user.id = 1
-    user.auth0_user_id = "google-oauth2|user-123"
+    user.id = TypeAdapter(UserId).validate_python(1)
+    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python("google-oauth2|user-123")
     monkeypatch.setattr(account_module, "_mgmt", lambda: UnsupportedPasswordTicketManagementApiClient())
 
     with pytest.raises(PasswordChangeUnsupportedError) as exc_info:
@@ -107,8 +109,8 @@ def test_change_password_reports_unsupported_connection(monkeypatch: pytest.Monk
 
 def test_check_email_verified_caches_unverified_result(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User()
-    user.id = 1
-    user.auth0_user_id = "auth0|user-123"
+    user.id = TypeAdapter(UserId).validate_python(1)
+    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python("auth0|user-123")
     user.email_verified = False
     mgmt = Mock()
     mgmt.get_user_email_verified = Mock(return_value=False)
@@ -138,8 +140,8 @@ def test_check_email_verified_caches_unverified_result(monkeypatch: pytest.Monke
 
 def test_check_email_verified_persists_cached_verified_result(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User()
-    user.id = 1
-    user.auth0_user_id = "auth0|user-123"
+    user.id = TypeAdapter(UserId).validate_python(1)
+    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python("auth0|user-123")
     user.email_verified = False
     mgmt = Mock()
     mgmt.get_user_email_verified = Mock(return_value=True)

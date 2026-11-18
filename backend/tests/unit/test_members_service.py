@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import Mock
 
 import pytest
+from pydantic import TypeAdapter
 
 from app.core.extensions import auth
 from app.domain.errors import EmailNotVerifiedError, InvitationNotFoundError, MemberOwnerProtectedError
@@ -11,24 +12,25 @@ from app.schema.api.requests.projects import SendInvitationRequest, UpdateMember
 from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.project import ProjectMembership, ProjectRole
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId, ProjectId, ProjectInvitationId, ProjectMembershipId, ProjectRoleId, UserId
 from app.services import members as members_module
 from app.services.members import MembersService
 
 
 def _actor() -> User:
     user = User()
-    user.id = 1
+    user.id = TypeAdapter(UserId).validate_python(1)
     user.email = "actor@example.com"
     user.platform_admin = True
     user.email_verified = True
-    user.auth0_user_id = "auth0|actor"
+    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python("auth0|actor")
     return user
 
 
 def _role(*, role_id: int, project_id: int = 10, is_system_role: bool) -> ProjectRole:
     role = ProjectRole()
-    role.id = role_id
-    role.project_id = project_id
+    role.id = TypeAdapter(ProjectRoleId).validate_python(role_id)
+    role.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     role.name = "Owner" if is_system_role else "Editor"
     role.is_system_role = is_system_role
     return role
@@ -36,9 +38,9 @@ def _role(*, role_id: int, project_id: int = 10, is_system_role: bool) -> Projec
 
 def _membership(*, role: ProjectRole, user_id: int = 2, project_id: int = 10) -> ProjectMembership:
     membership = ProjectMembership()
-    membership.id = 20
-    membership.user_id = user_id
-    membership.project_id = project_id
+    membership.id = TypeAdapter(ProjectMembershipId).validate_python(20)
+    membership.user_id = TypeAdapter(UserId).validate_python(user_id)
+    membership.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     membership.role_id = role.id
     membership.role = role
     return membership
@@ -46,11 +48,11 @@ def _membership(*, role: ProjectRole, user_id: int = 2, project_id: int = 10) ->
 
 def _invitation(*, role_id: int, project_id: int = 10) -> ProjectInvitation:
     invitation = ProjectInvitation()
-    invitation.id = 30
-    invitation.project_id = project_id
+    invitation.id = TypeAdapter(ProjectInvitationId).validate_python(30)
+    invitation.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     invitation.invited_email = "invitee@example.com"
     invitation.status = "pending"
-    invitation.role_id = role_id
+    invitation.role_id = TypeAdapter(ProjectRoleId).validate_python(role_id)
     invitation.token_hash = "fakehash"
     return invitation
 
@@ -67,7 +69,7 @@ def test_send_invitation_rejects_system_role(monkeypatch: pytest.MonkeyPatch) ->
     with pytest.raises(MemberOwnerProtectedError):
         service.send_invitation(
             Mock(),
-            project_id=10,
+            project_id=TypeAdapter(ProjectId).validate_python(10),
             data=SendInvitationRequest(email="invitee@example.com", role_id=owner_role.id),
             actor=_actor(),
         )
@@ -86,9 +88,9 @@ def test_update_member_rejects_changing_owner_to_another_role(monkeypatch: pytes
     with pytest.raises(MemberOwnerProtectedError):
         service.update_member(
             Mock(),
-            project_id=10,
+            project_id=TypeAdapter(ProjectId).validate_python(10),
             membership_id=owner_membership.id,
-            data=UpdateMemberRequest(role_id=2),
+            data=UpdateMemberRequest(role_id=TypeAdapter(ProjectRoleId).validate_python(2)),
             actor=_actor(),
         )
 
@@ -108,7 +110,7 @@ def test_update_member_rejects_assigning_system_role(monkeypatch: pytest.MonkeyP
     with pytest.raises(MemberOwnerProtectedError):
         service.update_member(
             Mock(),
-            project_id=10,
+            project_id=TypeAdapter(ProjectId).validate_python(10),
             membership_id=current_membership.id,
             data=UpdateMemberRequest(role_id=owner_role.id),
             actor=_actor(),
@@ -123,7 +125,7 @@ def test_accept_invitation_rejects_system_role(monkeypatch: pytest.MonkeyPatch) 
     owner_role = _role(role_id=1, is_system_role=True)
     create_membership = Mock()
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = invitation.invited_email
 
     monkeypatch.setattr(members_module.ir, "get_by_id", Mock(return_value=invitation))
@@ -143,7 +145,7 @@ def test_accept_invitation_rejects_unverified_actor_when_mgmt_unavailable(
     service = MembersService()
     invitation = _invitation(role_id=1)
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = invitation.invited_email
     invitee.email_verified = False
 
@@ -162,7 +164,7 @@ def test_accept_invitation_rejects_unverified_actor_when_live_check_false(
     service = MembersService()
     invitation = _invitation(role_id=1)
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = invitation.invited_email
     invitee.email_verified = False
 
@@ -182,7 +184,7 @@ def test_accept_invitation_succeeds_via_lazy_auth0_check(monkeypatch: pytest.Mon
     role = _role(role_id=1, is_system_role=False)
     invitation = _invitation(role_id=1)
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = invitation.invited_email
     invitee.email_verified = False
     create_membership = Mock(return_value=Mock())
@@ -208,7 +210,7 @@ def test_accept_invitation_skips_live_check_when_already_verified(monkeypatch: p
     role = _role(role_id=1, is_system_role=False)
     invitation = _invitation(role_id=1)
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = invitation.invited_email
     invitee.email_verified = True
     create_membership = Mock(return_value=Mock())
@@ -233,7 +235,7 @@ def test_accept_invitation_by_token_succeeds_and_marks_verified(monkeypatch: pyt
     role = _role(role_id=1, is_system_role=False)
     invitation = _invitation(role_id=1)
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = invitation.invited_email
     invitee.email_verified = False
     create_membership = Mock(return_value=Mock())
@@ -248,7 +250,9 @@ def test_accept_invitation_by_token_succeeds_and_marks_verified(monkeypatch: pyt
     monkeypatch.setattr(members_module.ur, "set_email_verified", set_email_verified)
 
     membership = service.accept_invitation_by_token(
-        Mock(), token="raw-token", actor=invitee,
+        Mock(),
+        token="raw-token",
+        actor=invitee,
     )
 
     assert membership is create_membership.return_value
@@ -266,7 +270,7 @@ def test_accept_invitation_by_token_swallows_auth0_mirror_failure(monkeypatch: p
     role = _role(role_id=1, is_system_role=False)
     invitation = _invitation(role_id=1)
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = invitation.invited_email
     invitee.email_verified = False
     create_membership = Mock(return_value=Mock())
@@ -280,7 +284,9 @@ def test_accept_invitation_by_token_swallows_auth0_mirror_failure(monkeypatch: p
     monkeypatch.setattr(members_module.ur, "set_email_verified", Mock())
 
     membership = service.accept_invitation_by_token(
-        Mock(), token="raw-token", actor=invitee,
+        Mock(),
+        token="raw-token",
+        actor=invitee,
     )
 
     assert membership is create_membership.return_value
@@ -290,7 +296,7 @@ def test_accept_invitation_by_token_rejects_email_mismatch(monkeypatch: pytest.M
     service = MembersService()
     invitation = _invitation(role_id=1)
     invitee = _actor()
-    invitee.id = 2
+    invitee.id = TypeAdapter(UserId).validate_python(2)
     invitee.email = "someone-else@example.com"
 
     monkeypatch.setattr(members_module.ir, "get_by_token", Mock(return_value=invitation))

@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session, selectinload
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.project import ProjectMembership
 from app.schema.orm.core.survey_access import SurveyMembershipRole, SurveyRole
+from app.schema.types import ProjectId, ProjectMembershipId, SurveyId, SurveyRoleId
 
 
-def list_by_survey(db: Session, *, project_id: int, survey_id: int) -> list[SurveyMembershipRole]:
+def list_by_survey(db: Session, *, project_id: ProjectId, survey_id: SurveyId) -> list[SurveyMembershipRole]:
     return list(
         db.scalars(
             select(SurveyMembershipRole)
@@ -26,9 +27,9 @@ def list_by_survey(db: Session, *, project_id: int, survey_id: int) -> list[Surv
 def get_by_membership(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
-    membership_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
+    membership_id: ProjectMembershipId,
 ) -> SurveyMembershipRole | None:
     return db.scalar(
         select(SurveyMembershipRole)
@@ -47,10 +48,10 @@ def get_by_membership(
 def create_assignment(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
-    membership_id: int,
-    role_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
+    membership_id: ProjectMembershipId,
+    role_id: SurveyRoleId,
 ) -> SurveyMembershipRole:
     assignment = SurveyMembershipRole(
         project_id=project_id,
@@ -67,7 +68,7 @@ def update_assignment(
     db: Session,
     assignment: SurveyMembershipRole,
     *,
-    role_id: int,
+    role_id: SurveyRoleId,
 ) -> SurveyMembershipRole:
     assignment.role_id = role_id
     flush_with_err_handle(db, contexts=[assignment])

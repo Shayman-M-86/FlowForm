@@ -4,6 +4,8 @@ import secrets
 from datetime import UTC, datetime
 from typing import Literal
 
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.schema.orm.core.audit_log import AuditLog
@@ -13,8 +15,8 @@ from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectId
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyPublicLink, SurveyRole
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId, ProjectId, ResponseStoreId, SurveyId, UserId
 
 
 def make_token() -> str:
@@ -27,7 +29,7 @@ def make_user(
     display_name: str | None = "U1",
 ) -> User:
     user = User()
-    user.auth0_user_id = auth0_user_id
+    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python(auth0_user_id)
     user.email = email
     user.display_name = display_name
     return user
@@ -37,7 +39,7 @@ def make_project(user_id: int, name: str = "Test Project", slug: str = "test-pro
     project = Project()
     project.name = name
     project.slug = slug
-    project.created_by_user_id = user_id
+    project.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
     return project
 
 
@@ -48,7 +50,7 @@ def make_project_role(
     description: str | None = None,
 ) -> ProjectRole:
     role = ProjectRole()
-    role.project_id = project_id
+    role.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     role.name = name
     role.is_system_role = is_system_role
     role.description = description
@@ -57,20 +59,20 @@ def make_project_role(
 
 def make_response_store(project_id: int, user_id: int, name: str = "main-store") -> ResponseStore:
     store = ResponseStore()
-    store.project_id = project_id
+    store.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     store.name = name
     store.store_type = "platform_postgres"
     store.connection_reference = {"kind": "postgres"}
-    store.created_by_user_id = user_id
+    store.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
     return store
 
 
 def make_survey(project_id: int, response_store_id: int, user_id: int, title: str = "Customer Survey") -> Survey:
     survey = Survey()
-    survey.project_id = project_id
+    survey.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     survey.title = title
-    survey.default_response_store_id = response_store_id
-    survey.created_by_user_id = user_id
+    survey.default_response_store_id = TypeAdapter(ResponseStoreId).validate_python(response_store_id)
+    survey.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
     return survey
 
 
@@ -84,10 +86,10 @@ def make_survey_version(
     status: SurveyVersionStatus = "draft",
 ) -> SurveyVersion:
     version = SurveyVersion()
-    version.survey_id = survey_id
+    version.survey_id = TypeAdapter(SurveyId).validate_python(survey_id)
     version.version_number = version_number
     version.status = status
-    version.created_by_user_id = user_id
+    version.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
     return version
 
 
@@ -114,23 +116,23 @@ def make_participant_chain(
     Pass `user_id` to create an `authenticated_user` identity instead of an
     `email` identity (for authenticated-link tests).
     """
-    subject = ProjectSubject(project_id=project_id, subject_code=subject_code)
+    subject = ProjectSubject(project_id=TypeAdapter(ProjectId).validate_python(project_id), subject_code=subject_code)
     db_session.add(subject)
     db_session.flush()
 
     if user_id is not None:
         identity = ProjectSubjectIdentity(
-            project_id=project_id,
+            project_id=TypeAdapter(ProjectId).validate_python(project_id),
             project_subject_id=subject.id,
             identity_type="authenticated_user",
-            user_id=user_id,
+            user_id=TypeAdapter(UserId).validate_python(user_id),
             normalized_email=normalized_email,
             verification_status="verified",
             verified_at=datetime.now(UTC),
         )
     else:
         identity = ProjectSubjectIdentity(
-            project_id=project_id,
+            project_id=TypeAdapter(ProjectId).validate_python(project_id),
             project_subject_id=subject.id,
             identity_type="email",
             normalized_email=normalized_email,
@@ -139,7 +141,7 @@ def make_participant_chain(
     db_session.flush()
 
     participant = ProjectParticipant(
-        project_id=project_id,
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
         project_subject_id=subject.id,
         identity_id=identity.id,
     )
@@ -154,7 +156,7 @@ def make_survey_role(
     description: str | None = None,
 ) -> SurveyRole:
     role = SurveyRole()
-    role.project_id = project_id
+    role.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     role.name = name
     role.description = description
     return role
@@ -171,7 +173,7 @@ def make_audit_log(
     log.action = action
     log.entity_type = entity_type
     log.entity_id = entity_id
-    log.user_id = user_id
+    log.user_id = TypeAdapter(UserId).validate_python(user_id)
     if metadata is not None:
         log.log_metadata = metadata
     return log

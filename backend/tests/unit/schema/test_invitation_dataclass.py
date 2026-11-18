@@ -5,12 +5,14 @@ from dataclasses import fields, is_dataclass
 from typing import Any, cast
 
 import pytest
+from pydantic import TypeAdapter
 from sqlalchemy import BigInteger, Integer, MetaData, create_engine, event
 from sqlalchemy.orm import Session
 
 from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.project import Project, ProjectRole
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, ProjectRoleId, UserId
 
 
 def test_invitation_has_generated_keyword_only_constructor():
@@ -21,7 +23,9 @@ def test_invitation_has_generated_keyword_only_constructor():
     assert required == {"project_id", "invited_email", "token_hash"}
     excluded = {f.name for f in fields(ProjectInvitation) if not f.init}
     assert excluded == {"id", "created_at", "project", "role", "invited_by", "accepted_by"}
-    invitation = ProjectInvitation(project_id=1, invited_email="person@example.com", token_hash="hash")
+    invitation = ProjectInvitation(
+        project_id=TypeAdapter(ProjectId).validate_python(1), invited_email="person@example.com", token_hash="hash"
+    )
     assert invitation.status == "pending" and invitation.role_id is None
     assert "id" not in invitation.__dict__ and "created_at" not in invitation.__dict__
     assert "role" not in invitation.__dict__
@@ -30,8 +34,12 @@ def test_invitation_has_generated_keyword_only_constructor():
 
 
 def test_dataclass_pilot_does_not_change_orm_identity_equality():
-    one = ProjectInvitation(project_id=1, invited_email="person@example.com", token_hash="hash")
-    two = ProjectInvitation(project_id=1, invited_email="person@example.com", token_hash="hash")
+    one = ProjectInvitation(
+        project_id=TypeAdapter(ProjectId).validate_python(1), invited_email="person@example.com", token_hash="hash"
+    )
+    two = ProjectInvitation(
+        project_id=TypeAdapter(ProjectId).validate_python(1), invited_email="person@example.com", token_hash="hash"
+    )
     assert one == one and one != two
     assert isinstance(hash(one), int)
     assert "token_hash" not in repr(one)
@@ -63,11 +71,11 @@ def test_invitation_persistence_and_relationships_on_sqlite():
             db.execute(Project.__table__.insert().values(id=1, name="Pilot", slug="pilot", created_by_user_id=1))
             db.execute(ProjectRole.__table__.insert().values(id=1, project_id=1, name="Pilot role"))
             invitation = ProjectInvitation(
-                project_id=1,
+                project_id=TypeAdapter(ProjectId).validate_python(1),
                 invited_email="person@example.com",
                 token_hash="pilot-hash",
-                role_id=1,
-                invited_by_user_id=1,
+                role_id=TypeAdapter(ProjectRoleId).validate_python(1),
+                invited_by_user_id=TypeAdapter(UserId).validate_python(1),
             )
             db.add(invitation)
             db.flush()

@@ -42,12 +42,14 @@ from typing import Any
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.core.extensions import auth, db_manager
 from app.repositories.core import project_subject_tokens as sub_tok
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.survey_access import SurveyLink
+from app.schema.types import ParticipantId
 from tests.e2e.conftest import SeedData
 from tests.integration.core.factories import make_participant_chain, make_token, make_user
 
@@ -134,7 +136,7 @@ def _make_link(
         token=raw,
         link_type=link_type,
         assignment_source="manual",
-        assigned_participant_id=assigned_participant_id,
+        assigned_participant_id=TypeAdapter(ParticipantId).validate_python(assigned_participant_id),
     )
     db.add(link)
     db.flush()

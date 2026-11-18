@@ -19,8 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from app.db.base import CoreBase
-from app.schema.models.projects.types import ProjectId
-from app.schema.models.survey.types import SurveyId
+from app.schema.types import ProjectId, SurveyId
 
 
 class SurveyEncryptionKey(CoreBase, kw_only=True):

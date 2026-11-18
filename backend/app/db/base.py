@@ -1,6 +1,8 @@
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
 
+from app.db.type_mapping import IDENTITY_TYPE_MAP
+
 NAMING_CONVENTION = {
     "pk": "pk_%(table_name)s",
     # pk_<table>
@@ -18,10 +20,12 @@ NAMING_CONVENTION = {
 class CoreBase(DeclarativeBase, MappedAsDataclass, kw_only=True, eq=False, repr=False):
     """Application declarative base class for SQLAlchemy ORM models."""
 
+    type_annotation_map = IDENTITY_TYPE_MAP
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
 class ResponseBase(DeclarativeBase, MappedAsDataclass, kw_only=True, eq=False, repr=False):
     """Application declarative base class for SQLAlchemy ORM models."""
 
+    type_annotation_map = IDENTITY_TYPE_MAP
     metadata = MetaData(naming_convention=NAMING_CONVENTION)

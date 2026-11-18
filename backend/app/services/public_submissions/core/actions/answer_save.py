@@ -29,7 +29,7 @@ from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo
 from app.schema.enums import SubmissionAnswerState
-from app.schema.models.submission.types import ClientMutationId
+from app.schema.types import ClientMutationId
 from app.services.results import AnswerSaveResult
 
 logger = logging.getLogger(__name__)

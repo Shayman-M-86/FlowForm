@@ -1,8 +1,7 @@
 from app.schema import limits
 from app.schema.api.common.base import APIRequestModel
 from app.schema.api.common.types import PageNumber, PageSize, SearchText
-from app.schema.models.common.types import EmailAddress
-from app.schema.models.projects.types import SubjectCode
+from app.schema.types import EmailAddress, SubjectCode
 
 
 class ListProjectParticipantsRequest(APIRequestModel):

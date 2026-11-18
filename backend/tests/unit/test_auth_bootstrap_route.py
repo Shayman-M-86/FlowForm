@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest  # type: ignore[import]
 from flask import Flask
+from pydantic import TypeAdapter
 
 import app.api.v1.account.auth as auth_api
 from app.api.utils.errors import register_error_handlers
@@ -10,6 +11,7 @@ from app.core.errors import AuthError
 from app.core.extensions import auth
 from app.middleware.url_converters import register_url_converters
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId, UserId
 from app.services.results import BootstrapCurrentUserResult
 
 
@@ -36,11 +38,11 @@ def test_bootstrap_user_returns_created_response(
 ) -> None:
     """bootstrap-user returns 201 and the normalized user payload on first create."""
     created_user = User(
-        auth0_user_id="auth0|route-created",
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python("auth0|route-created"),
         email="created@example.com",
         display_name="Created User",
     )
-    created_user.id = 42
+    created_user.id = TypeAdapter(UserId).validate_python(42)
 
     monkeypatch.setattr(auth, "_extract_bearer_token", lambda: "token")
     monkeypatch.setattr(auth, "_verify_access_token", lambda _token: {"sub": "auth0|route-created"})
@@ -48,7 +50,7 @@ def test_bootstrap_user_returns_created_response(
     monkeypatch.setattr(
         auth_api.auth_service,
         "bootstrap_current_user",
-        lambda _db, access_token_sub, payload: BootstrapCurrentUserResult( # type: ignore  # noqa: ARG005
+        lambda _db, access_token_sub, payload: BootstrapCurrentUserResult(  # type: ignore  # noqa: ARG005
             user=created_user,
             created=True,
         ),
@@ -84,7 +86,7 @@ def test_bootstrap_user_rejects_subject_mismatch(
     monkeypatch.setattr(
         auth_api.auth_service,
         "bootstrap_current_user",
-        lambda _db, access_token_sub, payload: (_ for _ in ()).throw( # type: ignore  # noqa: ARG005
+        lambda _db, access_token_sub, payload: (_ for _ in ()).throw(  # type: ignore  # noqa: ARG005
             AuthError(
                 message="ID token subject did not match the access token subject.",
                 code="TOKEN_SUBJECT_MISMATCH",

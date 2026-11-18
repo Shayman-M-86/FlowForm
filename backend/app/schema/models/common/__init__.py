@@ -1,1 +1,1 @@
-"""Shared constrained types, validators, and model configuration."""
+"""Shared Pydantic model configuration; scalar values live in app.schema.types."""

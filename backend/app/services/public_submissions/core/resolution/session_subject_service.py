@@ -9,7 +9,6 @@ actions.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -18,6 +17,7 @@ from app.logging.request_timing import request_timing
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subjects as subjects
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, SubjectId
 from app.services.public_submissions.core.resolution.subject_resolver import (
     SubjectResolver,
 )
@@ -31,7 +31,7 @@ from app.services.results import SubjectResolutionResult, SubmissionAccessGrant
 class SessionSubjectResult:
     """Resolved subject context for session start."""
 
-    final_subject_id: UUID
+    final_subject_id: SubjectId
     subject_code: str
     raw_recognition_token: str | None
 
@@ -118,9 +118,9 @@ class SessionSubjectService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         raw_token: str | None,
-    ) -> tuple[UUID | None, UUID | None]:
+    ) -> tuple[SubjectId | None, SubjectId | None]:
         if not raw_token:
             return None, None
 

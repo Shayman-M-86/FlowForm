@@ -1,6 +1,9 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from pydantic import TypeAdapter
+
+from app.schema.types import ProjectId, SurveyId
 from app.services.survey_links import SurveyLinkService
 
 
@@ -50,8 +53,8 @@ def test_disabled_email_delivery_does_not_record_sent_timestamp() -> None:
     ):
         message_id = service.send_link_email(
             db,
-            survey_id=20,
-            project_id=10,
+            survey_id=TypeAdapter(SurveyId).validate_python(20),
+            project_id=TypeAdapter(ProjectId).validate_python(10),
             link_id=MagicMock(),
             actor=MagicMock(),
         )
@@ -92,8 +95,8 @@ def test_successful_email_delivery_records_sent_timestamp() -> None:
     ):
         message_id = service.send_link_email(
             db,
-            survey_id=20,
-            project_id=10,
+            survey_id=TypeAdapter(SurveyId).validate_python(20),
+            project_id=TypeAdapter(ProjectId).validate_python(10),
             link_id=MagicMock(),
             actor=MagicMock(),
         )

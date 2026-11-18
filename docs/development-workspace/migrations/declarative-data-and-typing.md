@@ -10,7 +10,8 @@ tags: [backend, frontend]
 related_code:
   - "../../../backend/app/schema/README.md"
   - "../../../backend/app/db/base.py"
-  - "../../../backend/app/schema/models/common/types.py"
+  - "../../../backend/app/schema/types.py"
+  - "../../../backend/app/db/type_mapping.py"
   - "../../../backend/app/openapi/README.md"
 related_docs: ["Engineering migrations", "FlowForm V2 survey document definition", "FlowForm V2 answer data definition"]
 ---
@@ -47,12 +48,14 @@ central definition. Existing value types are reused before new ones are added.
 
 | Concern | Owner |
 | --- | --- |
-| Generic text, timestamps, email, counts, identity representation | `schema/models/common/` |
-| Project, survey, identity, submission, and response-store values | Their domain under `schema/models/` |
+| Shared identities, text, timestamps, email, counts, and collection types | `schema/types.py`, grouped by domain |
+| Shared value normalization and parsing | `schema/validators.py` |
+| Fixed status and presentation vocabularies | `schema/enums.py` |
 | Shared data structures | Domain models under `schema/models/` |
 | HTTP-specific controls such as pagination and search | `schema/api/common/` |
 | Request and response composition | `schema/api/requests/` and `schema/api/responses/` |
 | SQL storage and relationships | `schema/orm/` |
+| SQL storage mapping for shared nominal identities | `db/type_mapping.py` |
 | Broad resource ceilings and pagination defaults | `schema/limits.py` |
 
 Shared domain models do not import HTTP contracts or ORM mappings. Promote a
@@ -63,6 +66,9 @@ value out of API ownership when persistence or application logic also uses it.
 Named `Annotated` types own normalization, bounds, and formats. Model properties
 reference those types and declare requiredness, defaults, and aliases. Constrain
 text categories, presentation vocabularies, and structured values explicitly.
+String rules consistently use `StringConstraints`; numeric and collection rules
+use `Field`. Shared metadata such as `DATABASE_ID_CONSTRAINTS` is defined once
+and reused without mutation. Property defaults and aliases stay on models.
 Use discriminated variants where a field selects a different valid object shape.
 Reserve validators for relationships such as ordered bounds or dynamically
 checking a submitted value against its answer specification.
@@ -101,10 +107,25 @@ appropriate storage types rather than acquiring unrelated API models.
 
 ## Make the types useful to tools
 
-Annotations and `Annotated` metadata do not validate ordinary Python function
-arguments. Validate untrusted values at ingress and retain database safeguards.
-Semantic aliases also do not automatically create nominally distinct Python
-types: an IDE may display the underlying `int` or `UUID`.
+Meaningful identities use private `NewType` declarations and public annotated
+aliases in the same shared module. For example:
+
+```python
+_ProjectId = NewType("_ProjectId", int)
+type ProjectId = Annotated[_ProjectId, DATABASE_ID_CONSTRAINTS]
+```
+
+The private variable and `NewType` name match for Pyright. Public aliases keep
+different identities statically distinct while preserving their integer, string,
+or UUID wire representation. Ordinary constrained values need no nominal wrapper.
+Both SQLAlchemy bases explicitly map the public identity aliases to SQL types.
+
+Annotations and `NewType` calls do not validate ordinary Python arguments.
+Use `TypeAdapter(...).validate_python(...)` or `Model.model_validate(...)` at
+external boundaries and retain database safeguards. Direct Pydantic constructors
+expect typed identities for static checking; raw input belongs in validation
+methods. Services and repositories carry the same public aliases. Test fixtures
+establish typed values explicitly rather than suppressing mismatches with casts.
 
 Generated constructors must still expose the correct parameter names, primitive
 types, requiredness, and defaults. Negative type checks should diagnose obsolete

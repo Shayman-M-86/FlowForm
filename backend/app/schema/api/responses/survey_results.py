@@ -10,13 +10,21 @@ from app.schema.enums import (
     SubmissionEventType,
     SubmissionSessionStatus,
 )
-from app.schema.models.common.types import Count, Timestamp
-from app.schema.models.projects.types import SubjectCode, SubjectId
-from app.schema.models.submission.types import AnswerList, SubmissionSessionId
 from app.schema.models.survey.answer_spec import AnswerSpec
 from app.schema.models.survey.answer_value import AnswerValue
 from app.schema.models.survey.fields import SurveyField
-from app.schema.models.survey.types import ReadableId, SurveyFieldUuid, SurveyId, SurveyVersionId
+from app.schema.types import (
+    AnswerList,
+    Count,
+    ReadableId,
+    SubjectCode,
+    SubjectId,
+    SubmissionSessionId,
+    SurveyFieldUuid,
+    SurveyId,
+    SurveyVersionId,
+    Timestamp,
+)
 
 
 class SurveySessionResponses(APIResponseModel):

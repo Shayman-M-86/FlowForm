@@ -7,6 +7,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 import pytest
+from pydantic import TypeAdapter
 from sqlalchemy import select
 
 from app.crypto.answers import derive_slot_answer_locator
@@ -16,6 +17,7 @@ from app.domain.errors import QuestionNotInVersionError
 from app.repositories.response import response_envelope_repo
 from app.schema.orm.core import SubmissionAnswerSlot
 from app.schema.orm.response import ResponseAnswer
+from app.schema.types import ClientMutationId
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from tests.integration.core.factories import (
     make_project,
@@ -33,6 +35,7 @@ _LINKAGE_SECRET = b"\xcc" * 32
 _FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 _FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
 _ANSWER_SAVE_MODULE = "app.services.public_submissions.core.actions.answer_save"
+
 
 def _setup_core_fixtures(core_db):
     user = make_user()
@@ -139,7 +142,7 @@ class TestAnswerSave:
             question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello"},
-            client_mutation_id=mutation_id,
+            client_mutation_id=TypeAdapter(ClientMutationId).validate_python(mutation_id),
         )
 
         assert result is not None
@@ -155,16 +158,22 @@ class TestAnswerSave:
         mutation_id = uuid.uuid4()
 
         first = svc.save_answer(
-            core_db, response_db, ctx=ctx,
-            question_node_id=question.id, answer_state="answered",
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=question.id,
+            answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello"},
-            client_mutation_id=mutation_id,
+            client_mutation_id=TypeAdapter(ClientMutationId).validate_python(mutation_id),
         )
         second = svc.save_answer(
-            core_db, response_db, ctx=ctx,
-            question_node_id=question.id, answer_state="answered",
+            core_db,
+            response_db,
+            ctx=ctx,
+            question_node_id=question.id,
+            answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello"},
-            client_mutation_id=mutation_id,
+            client_mutation_id=TypeAdapter(ClientMutationId).validate_python(mutation_id),
         )
 
         assert first == second
@@ -197,7 +206,7 @@ class TestAnswerSave:
             question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello"},
-            client_mutation_id=uuid.uuid4(),
+            client_mutation_id=TypeAdapter(ClientMutationId).validate_python(uuid.uuid4()),
         )
 
         slot = core_db.scalar(
@@ -217,7 +226,7 @@ class TestAnswerSave:
             question_node_id=question.id,
             answer_state="answered",
             answer_value={"field_type": "short_text", "text": "hello again"},
-            client_mutation_id=uuid.uuid4(),
+            client_mutation_id=TypeAdapter(ClientMutationId).validate_python(uuid.uuid4()),
         )
 
         slots = list(
@@ -228,9 +237,7 @@ class TestAnswerSave:
                 )
             )
         )
-        answers = list(
-            response_db.scalars(select(ResponseAnswer).where(ResponseAnswer.envelope_id == ctx.envelope_id))
-        )
+        answers = list(response_db.scalars(select(ResponseAnswer).where(ResponseAnswer.envelope_id == ctx.envelope_id)))
 
         assert [saved_slot.id for saved_slot in slots] == [slot.id]
         assert [answer.answer_locator for answer in answers] == [answer_locator]
@@ -245,11 +252,15 @@ class TestAnswerSave:
         svc = AnswerSaveService()
         with pytest.raises(QuestionNotInVersionError):
             svc.save_answer(
-                core_db, response_db, ctx=ctx,
-                question_node_id=uuid.uuid4(), answer_state="answered",
+                core_db,
+                response_db,
+                ctx=ctx,
+                question_node_id=uuid.uuid4(),
+                answer_state="answered",
                 answer_value={"field_type": "short_text", "text": "hello"},
-                client_mutation_id=uuid.uuid4(),
+                client_mutation_id=TypeAdapter(ClientMutationId).validate_python(uuid.uuid4()),
             )
+
 
 class TestQuestionViewed:
     def test_record_question_viewed_succeeds(self, db_sessions: DbSessions) -> None:

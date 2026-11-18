@@ -6,8 +6,7 @@ from sqlalchemy import BigInteger, Boolean, DateTime, Identity, Text, UniqueCons
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
-from app.schema.models.common.types import EmailAddress, Timestamp
-from app.schema.models.identity.types import Auth0UserId, ProfileName, UserId
+from app.schema.types import Auth0UserId, EmailAddress, ProfileName, Timestamp, UserId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project, ProjectMembership

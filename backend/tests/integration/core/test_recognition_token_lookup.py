@@ -2,14 +2,17 @@
 
 Docs: Flows/shared/check-recognition-token.md
 """
+
 from __future__ import annotations
 
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.repositories.core import project_subject_tokens as sub_tok
 from app.repositories.core.project_subjects import create_subject, set_canonical_subject
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
+from app.schema.types import ProjectId
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
 
 
@@ -47,9 +50,7 @@ class TestRecognitionTokenLookupResult:
         assert result.canonical_token_subject_id is None  # subject is canonical
         assert result.invalid_reason is None
 
-    def test_valid_token_does_not_update_last_used_at(
-        self, db_session: Session, project: Project
-    ) -> None:
+    def test_valid_token_does_not_update_last_used_at(self, db_session: Session, project: Project) -> None:
         subject = _make_subject(db_session, project=project)
         raw = _issue_token(db_session, project=project, subject=subject)
 
@@ -68,9 +69,7 @@ class TestRecognitionTokenLookupResult:
         subject = _make_subject(db_session, project=project)
         _issue_token(db_session, project=project, subject=subject)
 
-        result = SubjectTokenService().lookup(
-            db_session, project_id=project.id, raw_token="tampered-garbage"
-        )
+        result = SubjectTokenService().lookup(db_session, project_id=project.id, raw_token="tampered-garbage")
         assert result.token_valid is False
 
     def test_revoked_token_returns_invalid(self, db_session: Session, project: Project) -> None:
@@ -85,21 +84,17 @@ class TestRecognitionTokenLookupResult:
         result = SubjectTokenService().lookup(db_session, project_id=project.id, raw_token=raw)
         assert result.token_valid is False
 
-    def test_token_wrong_project_returns_invalid(
-        self, db_session: Session, project: Project
-    ) -> None:
+    def test_token_wrong_project_returns_invalid(self, db_session: Session, project: Project) -> None:
         subject = _make_subject(db_session, project=project)
         raw = _issue_token(db_session, project=project, subject=subject)
 
         other_project_id = project.id + 9999
         result = SubjectTokenService().lookup(
-            db_session, project_id=other_project_id, raw_token=raw
+            db_session, project_id=TypeAdapter(ProjectId).validate_python(other_project_id), raw_token=raw
         )
         assert result.token_valid is False
 
-    def test_token_subject_with_canonical_returns_canonical_id(
-        self, db_session: Session, project: Project
-    ) -> None:
+    def test_token_subject_with_canonical_returns_canonical_id(self, db_session: Session, project: Project) -> None:
         canonical = _make_subject(db_session, project=project)
         alias = _make_subject(db_session, project=project)
         set_canonical_subject(db_session, subject=alias, canonical=canonical)

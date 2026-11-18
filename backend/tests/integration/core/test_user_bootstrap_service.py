@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId
 from app.services.users import UserService
 from tests.integration.core.factories import make_user
 
@@ -12,8 +14,8 @@ def test_bootstrap_user_creates_user(db_session: Session) -> None:
     service = UserService()
 
     user, created = service.bootstrap_user(
-        db_session, # type: ignore
-        auth0_user_id="auth0|bootstrap-new",
+        db_session,  # type: ignore
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python("auth0|bootstrap-new"),
         email="bootstrap-new@example.com",
         display_name="Bootstrap New",
     )
@@ -31,8 +33,8 @@ def test_bootstrap_user_creates_user_with_email_verified_true(db_session: Sessio
     service = UserService()
 
     user, created = service.bootstrap_user(
-        db_session, # type: ignore
-        auth0_user_id="auth0|bootstrap-verified",
+        db_session,  # type: ignore
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python("auth0|bootstrap-verified"),
         email="bootstrap-verified@example.com",
         display_name="Bootstrap Verified",
         email_verified=True,
@@ -56,8 +58,8 @@ def test_bootstrap_user_updates_existing_user(
 
     service = UserService()
     user, created = service.bootstrap_user(
-        db_session, # type: ignore
-        auth0_user_id="auth0|bootstrap-existing",
+        db_session,  # type: ignore
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python("auth0|bootstrap-existing"),
         email="new@example.com",
         display_name="New Name",
     )
@@ -87,7 +89,7 @@ def test_bootstrap_user_allows_duplicate_email_for_new_identity(
 
     user, created = service.bootstrap_user(
         db_session,  # type: ignore
-        auth0_user_id="auth0|bootstrap-email-other",
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python("auth0|bootstrap-email-other"),
         email="duplicate@example.com",
         display_name="Other",
     )

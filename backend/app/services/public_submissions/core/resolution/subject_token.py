@@ -4,13 +4,13 @@ Tokens link a returning browser to a stable ProjectSubject without authenticatio
 Only the hash is stored; the raw token travels only in cookies and return values.
 Lookup never touches last_used_at — the caller decides whether to mark the token used.
 """
-from __future__ import annotations
 
-from uuid import UUID
+from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
 from app.repositories.core import project_subject_tokens as sub_tok
+from app.schema.types import ProjectId, SubjectId
 from app.services.results import RecognitionTokenLookupResult, TokenAction
 
 
@@ -30,7 +30,7 @@ class SubjectTokenService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         raw_token: str,
     ) -> RecognitionTokenLookupResult:
         """Return token candidate metadata only. Does not update last_used_at.
@@ -46,11 +46,7 @@ class SubjectTokenService:
                 token_valid=False,
                 invalid_reason="not_found_or_expired",
             )
-        canonical_id = (
-            token.subject.canonical_subject_id
-            if token.subject.canonical_subject_id is not None
-            else None
-        )
+        canonical_id = token.subject.canonical_subject_id if token.subject.canonical_subject_id is not None else None
         return RecognitionTokenLookupResult(
             token_present=True,
             token_valid=True,
@@ -63,8 +59,8 @@ class SubjectTokenService:
         self,
         db: Session,
         *,
-        project_id: int,
-        final_subject_id: UUID,
+        project_id: ProjectId,
+        final_subject_id: SubjectId,
         token_action: TokenAction,
         existing_raw_token: str | None = None,
     ) -> str | None:
@@ -78,9 +74,7 @@ class SubjectTokenService:
         keep / none — no write; return None (browser cookie unchanged).
         """
         if token_action == "issue":
-            _, raw_token = sub_tok.create_token(
-                db, project_id=project_id, project_subject_id=final_subject_id
-            )
+            _, raw_token = sub_tok.create_token(db, project_id=project_id, project_subject_id=final_subject_id)
             return raw_token
 
         if token_action == "rotate":
@@ -89,9 +83,7 @@ class SubjectTokenService:
             )
             if existing is not None:
                 sub_tok.revoke_token(db, token=existing)
-            _, raw_token = sub_tok.create_token(
-                db, project_id=project_id, project_subject_id=final_subject_id
-            )
+            _, raw_token = sub_tok.create_token(db, project_id=project_id, project_subject_id=final_subject_id)
             return raw_token
 
         if token_action == "mark_used":

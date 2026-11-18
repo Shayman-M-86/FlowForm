@@ -7,6 +7,7 @@ Docs: Authenticated-link-access-Flow.md §5
 from __future__ import annotations
 
 import pytest
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.domain.errors import (
@@ -18,6 +19,7 @@ from app.schema.api.requests.survey_access_links import ResolveSurveyAccessLinkT
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
+from app.schema.types import ParticipantId
 from app.services.public_submissions.api.survey_resolve import SurveyResolveService
 from tests.integration.core.factories import make_participant_chain, make_token, make_user
 
@@ -36,7 +38,7 @@ def _make_auth_link(
         token=raw_token,
         link_type="authenticated",
         assignment_source="manual",
-        assigned_participant_id=assigned_participant_id,
+        assigned_participant_id=TypeAdapter(ParticipantId).validate_python(assigned_participant_id),
     )
     db_session.add(link)
     db_session.flush()

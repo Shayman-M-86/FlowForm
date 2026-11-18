@@ -1,5 +1,16 @@
 from uuid import UUID
 
+from app.schema.api.requests.content import (
+    CreateScoringRuleRequest,
+    UpdateScoringRuleRequest,
+)
+from app.schema.api.requests.content.ai_import import AIImportResponse
+from app.schema.api.requests.content.node import (
+    CreateQuestionNodeRequest,
+    CreateRuleNodeRequest,
+    UpdateNodeRequest,
+)
+from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from sqlalchemy.orm import Session
 
 from app.core.config import OpenAISettings
@@ -11,19 +22,9 @@ from app.domain.errors import (
 )
 from app.domain.guards import ensure_present
 from app.repositories import content_repo as cr
-from app.schema.api.requests.content import (
-    CreateScoringRuleRequest,
-    UpdateScoringRuleRequest,
-)
-from app.schema.api.requests.content.ai_import import AIImportResponse
-from app.schema.api.requests.content.node import (
-    CreateQuestionNodeRequest,
-    CreateRuleNodeRequest,
-    UpdateNodeRequest,
-)
 from app.schema.orm.core.survey import SurveyVersion
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, SurveyId
 from app.services.openai import OpenAIService
 from app.services.surveys import SurveyService
 
@@ -34,14 +35,16 @@ _openai_service = OpenAIService()
 class ContentService:
     """Service for draft content operations on survey versions."""
 
-    def _get_version(self, db: Session, project_id: int, survey_id: int, version_number: int) -> SurveyVersion:
+    def _get_version(
+        self, db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: int
+    ) -> SurveyVersion:
         return _survey_service._get_version(db, project_id, survey_id, version_number)
 
     def generate_ai_import(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         prompt: str,
         settings: OpenAISettings,
@@ -57,8 +60,8 @@ class ContentService:
     def list_nodes(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         actor: User,  # noqa: ARG002
     ) -> list[SurveyQuestion]:
@@ -68,8 +71,8 @@ class ContentService:
     def create_node(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         data: CreateQuestionNodeRequest | CreateRuleNodeRequest,
         actor: User,  # noqa: ARG002
@@ -83,8 +86,8 @@ class ContentService:
     def get_node(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         node_id: UUID,
         actor: User,  # noqa: ARG002
@@ -98,8 +101,8 @@ class ContentService:
     def update_node(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         node_id: UUID,
         data: UpdateNodeRequest,
@@ -118,8 +121,8 @@ class ContentService:
     def delete_node(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         node_id: UUID,
         actor: User,  # noqa: ARG002
@@ -138,8 +141,8 @@ class ContentService:
     def list_scoring_rules(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         actor: User,  # noqa: ARG002
     ) -> list[SurveyScoringRule]:
@@ -149,8 +152,8 @@ class ContentService:
     def create_scoring_rule(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         data: CreateScoringRuleRequest,
         actor: User,  # noqa: ARG002
@@ -164,8 +167,8 @@ class ContentService:
     def get_scoring_rule(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         scoring_rule_id: int,
         actor: User,  # noqa: ARG002
@@ -179,8 +182,8 @@ class ContentService:
     def update_scoring_rule(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         scoring_rule_id: int,
         data: UpdateScoringRuleRequest,
@@ -199,8 +202,8 @@ class ContentService:
     def delete_scoring_rule(
         self,
         db: Session,
-        project_id: int,
-        survey_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
         version_number: int,
         scoring_rule_id: int,
         actor: User,  # noqa: ARG002

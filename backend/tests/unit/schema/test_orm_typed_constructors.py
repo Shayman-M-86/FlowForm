@@ -5,14 +5,16 @@ import inspect
 from dataclasses import MISSING, fields, is_dataclass
 from datetime import UTC, datetime
 from types import UnionType
-from typing import Annotated, Any, Literal, Union, cast, get_args, get_origin
+from typing import Annotated, Any, Literal, NewType, TypeAliasType, Union, cast, get_args, get_origin
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import TypeAdapter
 
 import app.schema.orm  # noqa: F401
 from app.db.base import CoreBase, ResponseBase
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
+from app.schema.types import SubmissionSessionId, SurveyFieldUuid, SurveyVersionId
 
 
 def mapped_models():
@@ -20,6 +22,10 @@ def mapped_models():
 
 
 def sample(annotation):
+    if isinstance(annotation, TypeAliasType):
+        return sample(annotation.__value__)
+    if isinstance(annotation, NewType):
+        return sample(annotation.__supertype__)
     origin = get_origin(annotation)
     args = get_args(annotation)
     if origin is Annotated:
@@ -88,7 +94,11 @@ def test_answer_slot_rejects_legacy_constructor_names():
 
 
 def test_generated_id_can_be_omitted_and_is_not_a_constructor_input():
-    slot = SubmissionAnswerSlot(submission_session_id=uuid4(), survey_version_id=1, field_uuid=uuid4())
+    slot = SubmissionAnswerSlot(
+        submission_session_id=TypeAdapter(SubmissionSessionId).validate_python(uuid4()),
+        survey_version_id=TypeAdapter(SurveyVersionId).validate_python(1),
+        field_uuid=TypeAdapter(SurveyFieldUuid).validate_python(uuid4()),
+    )
     assert slot.id is None
     with pytest.raises(TypeError, match="unexpected keyword"):
         cast(Any, SubmissionAnswerSlot)(

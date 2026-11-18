@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.project import ProjectRole
+from app.schema.types import ProjectId, ProjectRoleId
 
 
-def list_by_project(db: Session, project_id: int) -> list[ProjectRole]:
+def list_by_project(db: Session, project_id: ProjectId) -> list[ProjectRole]:
     return list(
         db.scalars(
             select(ProjectRole)
@@ -16,7 +17,7 @@ def list_by_project(db: Session, project_id: int) -> list[ProjectRole]:
     )
 
 
-def get_by_id(db: Session, *, role_id: int, project_id: int) -> ProjectRole | None:
+def get_by_id(db: Session, *, role_id: ProjectRoleId, project_id: ProjectId) -> ProjectRole | None:
     return db.scalar(
         select(ProjectRole)
         .options(selectinload(ProjectRole.permissions))
@@ -27,7 +28,7 @@ def get_by_id(db: Session, *, role_id: int, project_id: int) -> ProjectRole | No
 def create_role(
     db: Session,
     *,
-    project_id: int,
+    project_id: ProjectId,
     name: str,
     description: str | None,
     permissions: list,

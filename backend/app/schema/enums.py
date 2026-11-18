@@ -29,3 +29,12 @@ SubmissionSessionStatus = Literal["in_progress", "completed", "abandoned"]
 SubmissionEventType = Literal["session_started", "field_viewed", "answer_saved", "session_completed"]
 SubmissionAnswerState = Literal["answered", "cleared"]
 ExportFormat = Literal["csv", "json"]
+
+# Survey presentation vocabularies.
+NoticeTone = Literal["info", "success", "warning", "error"]
+NumberPresentation = Literal["input", "stepper"]
+RatingPresentation = Literal["slider", "stars", "scale"]
+SingleChoicePresentation = Literal["radio", "dropdown", "buttons", "cards"]
+MultipleChoicePresentation = Literal["checkboxes", "buttons", "cards"]
+BooleanPresentation = Literal["yes_no", "toggle"]
+DatePresentation = Literal["calendar", "input"]

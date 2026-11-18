@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Literal
 
 from app.schema.api.common.base import APIResponseModel
-from app.schema.models.common.types import Timestamp
+from app.schema.types import Timestamp
 
 
 class CompleteSubmissionSessionResponse(APIResponseModel):

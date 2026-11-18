@@ -2,8 +2,7 @@
 
 from app.schema.api.common.base import APIRequestModel
 from app.schema.api.common.types import ProfilePictureUrl, Username
-from app.schema.models.common.types import EmailAddress
-from app.schema.models.identity.types import ProfileName
+from app.schema.types import EmailAddress, ProfileName
 
 
 class UpdateProfileRequest(APIRequestModel):

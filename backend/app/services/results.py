@@ -14,14 +14,21 @@ from app.schema.enums import (
     SubmissionEventType,
     SubmissionSessionStatus,
 )
-from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import SurveyVersionId
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
+from app.schema.types import (
+    ProjectId,
+    ResponseStoreId,
+    SubjectId,
+    SubmissionSessionId,
+    SurveyId,
+    SurveyLinkId,
+    SurveyVersionId,
+)
 
 # Why the server-owned context resolved (or did not resolve) a stable subject.
 # Mirrors the precedence in subject-identity-and-access.md §4.1.
@@ -51,8 +58,8 @@ class RecognitionTokenLookupResult:
     token_present: bool
     token_valid: bool
     token_id: UUID | None = None
-    token_subject_id: UUID | None = None
-    canonical_token_subject_id: UUID | None = None
+    token_subject_id: SubjectId | None = None
+    canonical_token_subject_id: SubjectId | None = None
     invalid_reason: str | None = None
 
 
@@ -88,16 +95,16 @@ class SubmissionAccessGrant:
     """Validated access context for respondent survey entry."""
 
     access_method: SubmissionAccessMethod
-    project_id: int
-    survey_id: int
+    project_id: ProjectId
+    survey_id: SurveyId
     survey_version_id: SurveyVersionId
-    response_store_id: int
+    response_store_id: ResponseStoreId
     requires_auth: bool
     is_single_use: bool
     survey: Survey
     published_version: SurveyVersion
-    link_id: UUID | None = None
-    assigned_subject_id: UUID | None = None
+    link_id: SurveyLinkId | None = None
+    assigned_subject_id: SubjectId | None = None
     link: SurveyLink | None = None
 
 
@@ -126,13 +133,13 @@ class SubjectResolutionResult:
     Docs: Flows/shared/subject-resolution.md
     """
 
-    final_subject_id: UUID
+    final_subject_id: SubjectId
     subject_code: str
     subject_source: SubjectResolutionSource
     token_action: TokenAction
     needs_identity_write: bool = False
-    merge_subject_id: UUID | None = None
-    merge_into_subject_id: UUID | None = None
+    merge_subject_id: SubjectId | None = None
+    merge_into_subject_id: SubjectId | None = None
 
 
 @dataclass(slots=True)

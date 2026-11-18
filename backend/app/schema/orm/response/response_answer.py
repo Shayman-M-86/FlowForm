@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import ResponseBase
-from app.schema.models.submission.types import ClientMutationId
+from app.schema.types import ClientMutationId
 
 if TYPE_CHECKING:
     from app.schema.orm.response.response_envelope import ResponseEnvelope

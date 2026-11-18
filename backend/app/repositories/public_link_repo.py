@@ -1,5 +1,4 @@
 import secrets
-import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 from app.schema.orm.core.survey_access import SurveyLink
+from app.schema.types import ParticipantId, ProjectId, SurveyId, SurveyLinkId
 
 _TOKEN_BYTES = 32
 
@@ -23,11 +23,11 @@ def _make_token() -> str:
     return secrets.token_urlsafe(_TOKEN_BYTES)
 
 
-def list_links(db: Session, survey_id: int) -> list[SurveyLink]:
+def list_links(db: Session, survey_id: SurveyId) -> list[SurveyLink]:
     return list(db.scalars(select(SurveyLink).where(SurveyLink.survey_id == survey_id)))
 
 
-def get_link(db: Session, survey_id: int, link_id: uuid.UUID) -> SurveyLink | None:
+def get_link(db: Session, survey_id: SurveyId, link_id: SurveyLinkId) -> SurveyLink | None:
     return db.scalar(
         select(SurveyLink).where(
             SurveyLink.survey_id == survey_id,
@@ -39,12 +39,12 @@ def get_link(db: Session, survey_id: int, link_id: uuid.UUID) -> SurveyLink | No
 def create_link(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     name: str,
     link_type: SurveyLinkType,
     assignment_source: SurveyLinkAssignmentSource,
-    assigned_participant_id: uuid.UUID | None,
+    assigned_participant_id: ParticipantId | None,
     expires_at: datetime | None,
 ) -> SurveyLink:
     token = _make_token()
@@ -72,7 +72,7 @@ def update_link(
     name: str | None = None,
     link_type: SurveyLinkType | _UnsetType = _UNSET,
     assignment_source: SurveyLinkAssignmentSource | _UnsetType = _UNSET,
-    assigned_participant_id: uuid.UUID | None | _UnsetType = _UNSET,
+    assigned_participant_id: ParticipantId | None | _UnsetType = _UNSET,
     expires_at: datetime | None | _UnsetType = _UNSET,
 ) -> SurveyLink:
     if is_active is not None:
@@ -123,9 +123,7 @@ def resolve_token(db: Session, token: str) -> SurveyLink | None:
     if not token:
         return None
 
-    return db.scalar(
-        select(SurveyLink).where(SurveyLink.token == token)
-    )
+    return db.scalar(select(SurveyLink).where(SurveyLink.token == token))
 
 
 UNSET = _UNSET

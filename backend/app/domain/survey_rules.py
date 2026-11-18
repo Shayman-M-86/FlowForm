@@ -8,9 +8,12 @@ from app.domain.errors import (
     SurveyVisibilityMismatchError,
 )
 from app.schema.orm.core.survey import Survey, SurveyVersion
+from app.schema.types import ProjectId, ResponseStoreId, SurveyId
 
 
-def ensure_is_published(*, survey: SurveyVersion | None | Survey, survey_id: int, project_id: int) -> SurveyVersion:
+def ensure_is_published(
+    *, survey: SurveyVersion | None | Survey, survey_id: SurveyId, project_id: ProjectId
+) -> SurveyVersion:
     if not survey:
         raise SurveyNotPublishedError(survey_id=survey_id, project_id=project_id)
     if isinstance(survey, Survey):
@@ -27,13 +30,15 @@ def ensure_is_publicly_accessible(*, survey: Survey) -> Survey:
     return survey
 
 
-def ensure_has_response_store(*, survey: Survey) -> int:
+def ensure_has_response_store(*, survey: Survey) -> ResponseStoreId:
     if survey.default_response_store_id is None:
         raise SurveyNoResponseStoreError(message=f"Survey {survey.id} has no default response store configured")
     return survey.default_response_store_id
 
 
-def ensure_survey_belongs_to_project(*, survey_id: int, project_surveys_ids: list[int], project_id: int) -> None:
+def ensure_survey_belongs_to_project(
+    *, survey_id: SurveyId, project_surveys_ids: list[SurveyId], project_id: ProjectId
+) -> None:
     if survey_id not in project_surveys_ids:
         raise SurveyNotFoundError(survey_id=survey_id, project_id=project_id)
 
@@ -41,8 +46,8 @@ def ensure_survey_belongs_to_project(*, survey_id: int, project_surveys_ids: lis
 def ensure_default_response_store(
     *,
     survey: Survey,
-    default_response_store_id: int,
-) -> int:
+    default_response_store_id: ResponseStoreId,
+) -> ResponseStoreId:
     if survey.default_response_store_id is None:
         survey.default_response_store_id = default_response_store_id
     return survey.default_response_store_id

@@ -3,8 +3,15 @@ from pydantic import Field
 from app.schema.api.common.base import APIRequestModel
 from app.schema.api.common.types import ProjectPermissionSet
 from app.schema.enums import ProjectMemberStatus
-from app.schema.models.common.types import EmailAddress, Slug
-from app.schema.models.projects.types import InvitationMessage, ProjectName, ProjectRoleId, RoleDescription, RoleName
+from app.schema.types import (
+    EmailAddress,
+    InvitationMessage,
+    ProjectName,
+    ProjectRoleId,
+    RoleDescription,
+    RoleName,
+    Slug,
+)
 
 
 class CreateProjectRoleRequest(APIRequestModel):

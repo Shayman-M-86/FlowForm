@@ -8,10 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import ResponseStoreType
-from app.schema.models.identity.types import UserId
-from app.schema.models.projects.types import ProjectId
-from app.schema.models.response_store.types import ResponseStoreId
 from app.schema.orm.base import TimestampMixin
+from app.schema.types import ProjectId, ResponseStoreId, UserId
 
 if TYPE_CHECKING:
     from app.schema.orm.core.project import Project

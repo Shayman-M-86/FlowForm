@@ -15,7 +15,7 @@ from app.schema.models.survey.answer_spec import (
     StringAnswerSpec,
 )
 from app.schema.models.survey.answer_value import AnswerValue, MatchingValue
-from app.schema.models.survey.types import ChoiceOptionUuid
+from app.schema.types import ChoiceOptionUuid
 
 _UUID = TypeAdapter(ChoiceOptionUuid)
 

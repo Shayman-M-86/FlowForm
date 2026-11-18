@@ -5,18 +5,27 @@ from annotationlib import Format, get_annotations
 from typing import get_args
 
 import pytest
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import BigInteger, Text
 
 from app.schema.api.requests.projects import SendInvitationRequest
-from app.schema.models.common.types import EmailAddress, Slug, Timestamp
-from app.schema.models.identity.types import Auth0UserId, UserId
-from app.schema.models.projects.types import InvitationMessage, ProjectId, ProjectInvitationId, ProjectRoleId
-from app.schema.models.survey.types import SurveyId, SurveyTitle
 from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.user import User
+from app.schema.types import (
+    Auth0UserId,
+    EmailAddress,
+    InvitationMessage,
+    ProjectId,
+    ProjectInvitationId,
+    ProjectRoleId,
+    Slug,
+    SurveyId,
+    SurveyTitle,
+    Timestamp,
+    UserId,
+)
 
 
 @pytest.mark.parametrize(
@@ -45,7 +54,9 @@ def test_orm_annotation_references_shared_type(model, field, value_type):
 
 
 def test_email_annotation_does_not_add_orm_validation():
-    row = ProjectInvitation(project_id=1, invited_email="not an email", token_hash="test-hash")
+    row = ProjectInvitation(
+        project_id=TypeAdapter(ProjectId).validate_python(1), invited_email="not an email", token_hash="test-hash"
+    )
     assert row.invited_email == "not an email"
     row.invited_email = "  UNNORMALIZED@example.com  "
     assert row.invited_email == "  UNNORMALIZED@example.com  "

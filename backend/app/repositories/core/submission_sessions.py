@@ -11,9 +11,16 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SubmissionSessionStatus
-from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import SurveyVersionId
 from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.types import (
+    ProjectId,
+    ResponseStoreId,
+    SubjectId,
+    SubmissionSessionId,
+    SurveyId,
+    SurveyLinkId,
+    SurveyVersionId,
+)
 
 _BROWSER_SESSION_TOKEN_BYTES = 32
 DEFAULT_SESSION_TTL = timedelta(days=7)
@@ -30,12 +37,12 @@ def hash_browser_session_token(raw_token: str) -> bytes:
 def create_session(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     survey_version_id: SurveyVersionId,
-    response_store_id: int,
-    link_id: UUID | None,
-    project_subject_id: UUID | None,
+    response_store_id: ResponseStoreId,
+    link_id: SurveyLinkId | None,
+    project_subject_id: SubjectId | None,
     raw_browser_session_token: str,
     linkage_key_version: int,
     now: datetime | None = None,
@@ -139,8 +146,8 @@ def mark_abandoned(db: Session, *, submission_session: SubmissionSession) -> Non
 def list_by_survey(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     status: SubmissionSessionStatus | None = None,
     offset: int = 0,
     limit: int = 50,
@@ -163,8 +170,8 @@ def list_by_survey(
 def get_by_ids(
     db: Session,
     *,
-    survey_id: int,
-    session_ids: Sequence[UUID],
+    survey_id: SurveyId,
+    session_ids: Sequence[SubmissionSessionId],
 ) -> Sequence[SubmissionSession]:
     """Fetch sessions by ID, filtered to the given survey."""
     if not session_ids:
@@ -180,7 +187,7 @@ def get_by_ids(
 def list_by_subjects(
     db: Session,
     *,
-    survey_id: int,
+    survey_id: SurveyId,
     project_subject_ids: Sequence[UUID],
 ) -> Sequence[SubmissionSession]:
     """Fetch all sessions in a survey for a set of subjects."""

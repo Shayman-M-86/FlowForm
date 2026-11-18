@@ -3,14 +3,40 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest  # type: ignore[import]
-from flask import Flask, jsonify
-from pydantic import SecretStr
+from flask import Flask, g, jsonify
+from pydantic import SecretStr, TypeAdapter
 
 from app.api.utils.errors import register_error_handlers
-from app.core.errors import ConfigError
+from app.core.errors import AuthError, ConfigError
 from app.middleware.auth import auth0 as auth0_module
 from app.middleware.auth import auth_errors
 from app.middleware.auth.auth0 import AuthExtension, ManagementApiClient, ManagementApiError
+from app.schema.types import Auth0UserId
+
+
+@pytest.mark.parametrize("subject", ["", "x" * 256, 123, None])
+def test_subject_boundary_rejects_invalid_identity(auth_extension, subject):
+    from app.domain.auth_rules import ensure_subject
+    from app.domain.errors import InvalidIdTokenSubjectError
+
+    with Flask(__name__).test_request_context():
+        g.user_claims = {"sub": subject}
+        assert auth_extension.get_optional_current_user_sub() is None
+        with pytest.raises(AuthError) as caught:
+            auth_extension.get_current_user_sub()
+        assert caught.value.code == auth_errors.missing_sub_claim().code
+    with pytest.raises(InvalidIdTokenSubjectError):
+        ensure_subject(claims={"sub": subject})
+
+
+def test_subject_boundary_preserves_opaque_subject(auth_extension):
+    from app.domain.auth_rules import ensure_subject
+
+    subject = "oidc|Opaque_VALUE"
+    with Flask(__name__).test_request_context():
+        g.user_claims = {"sub": subject}
+        assert auth_extension.get_current_user_sub() == subject
+    assert ensure_subject(claims={"sub": subject}) == subject
 
 
 @pytest.fixture
@@ -469,7 +495,7 @@ def test_management_user_operation_error_does_not_expose_user_identifier(
     client._token_scopes = {"update:users"}
 
     with pytest.raises(ManagementApiError) as exc_info:
-        client.update_user("auth0|user-123", display_name="New Name")
+        client.update_user(TypeAdapter(Auth0UserId).validate_python("auth0|user-123"), display_name="New Name")
 
     assert exc_info.value.status_code == 403
     assert exc_info.value.provider_error == "forbidden"
@@ -505,7 +531,7 @@ def test_management_creates_password_change_ticket(monkeypatch: pytest.MonkeyPat
     client._token_expires_at = 10**12
     client._token_scopes = {"create:user_tickets"}
 
-    ticket_url = client.create_password_change_ticket("auth0|user-123")
+    ticket_url = client.create_password_change_ticket(TypeAdapter(Auth0UserId).validate_python("auth0|user-123"))
 
     assert ticket_url == "https://example.auth0.com/password-change-ticket"
     assert captured == {
@@ -548,7 +574,7 @@ def test_management_classifies_unsupported_password_connection(monkeypatch: pyte
     client._token_scopes = {"create:user_tickets"}
 
     with pytest.raises(ManagementApiError) as exc_info:
-        client.create_password_change_ticket("google-oauth2|user-123")
+        client.create_password_change_ticket(TypeAdapter(Auth0UserId).validate_python("google-oauth2|user-123"))
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.provider_error == "operation_not_supported"
@@ -578,7 +604,7 @@ def test_management_password_change_ticket_response_requires_ticket(
     client._token_scopes = {"create:user_tickets"}
 
     with pytest.raises(ManagementApiError) as exc_info:
-        client.create_password_change_ticket("auth0|user-123")
+        client.create_password_change_ticket(TypeAdapter(Auth0UserId).validate_python("auth0|user-123"))
 
     assert exc_info.value.status_code == 201
     assert exc_info.value.provider_error == "invalid_ticket_response"

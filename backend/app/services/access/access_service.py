@@ -17,6 +17,7 @@ from app.domain.errors import ForbiddenError
 from app.repositories import access_repo as ar
 from app.repositories import surveys_repo as sr
 from app.schema.orm.core import ProjectMembership, SurveyMembershipRole, User
+from app.schema.types import ProjectId, SurveyId, UserId
 from app.services.users import UserService
 
 logger = logging.getLogger(__name__)
@@ -89,8 +90,8 @@ class AccessService:
         self,
         db: Session,
         *,
-        project_id: int,
-        user_id: int,
+        project_id: ProjectId,
+        user_id: UserId,
     ) -> ProjectAccess:
         """Resolve project-level access for a user.
 
@@ -126,9 +127,9 @@ class AccessService:
         self,
         db: Session,
         *,
-        project_id: int,
-        survey_id: int,
-        user_id: int,
+        project_id: ProjectId,
+        survey_id: SurveyId,
+        user_id: UserId,
     ) -> SurveyAccess:
         """Resolve project and survey-level access for a user.
 
@@ -236,7 +237,7 @@ def require_project_permission(permission: str) -> Callable[[F], F]:
                     g.project_access = None
                     tracing.fields(outcome="admin_bypass")
                 else:
-                    project_id: int = kwargs["project_id"]
+                    project_id: ProjectId = kwargs["project_id"]
                     access = access_service.get_project_access(
                         db=get_core_db(),
                         project_id=project_id,
@@ -286,8 +287,8 @@ def require_survey_permission(permission: str) -> Callable[[F], F]:
                     g.survey_access = None
                     tracing.fields(outcome="admin_bypass")
                 else:
-                    project_id: int = kwargs["project_id"]
-                    survey_id: int = kwargs["survey_id"]
+                    project_id: ProjectId = kwargs["project_id"]
+                    survey_id: SurveyId = kwargs["survey_id"]
                     access = access_service.get_survey_access(
                         db=get_core_db(),
                         project_id=project_id,

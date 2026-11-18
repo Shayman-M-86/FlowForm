@@ -3,12 +3,19 @@ from pydantic import ConfigDict
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.common.types import PageItems, PageNumber, PageSize, ProjectPermissionSet
 from app.schema.enums import SurveyVersionStatus, SurveyVisibility
-from app.schema.models.common.types import Count, Slug, Timestamp
-from app.schema.models.identity.types import UserId
-from app.schema.models.projects.types import ProjectId
-from app.schema.models.response_store.types import ResponseStoreId
 from app.schema.models.survey.document import SurveyDefinition
-from app.schema.models.survey.types import SurveyId, SurveyTitle, SurveyVersionId, SurveyVersionNumber
+from app.schema.types import (
+    Count,
+    ProjectId,
+    ResponseStoreId,
+    Slug,
+    SurveyId,
+    SurveyTitle,
+    SurveyVersionId,
+    SurveyVersionNumber,
+    Timestamp,
+    UserId,
+)
 
 
 class MySurveyPermissionsResponses(APIResponseModel):

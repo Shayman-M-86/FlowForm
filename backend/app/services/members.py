@@ -34,6 +34,7 @@ from app.schema.api.requests.projects import SendInvitationRequest, UpdateMember
 from app.schema.orm.core.invitation import ProjectInvitation
 from app.schema.orm.core.project import ProjectMembership, ProjectRole
 from app.schema.orm.core.user import User
+from app.schema.types import ProjectId, ProjectInvitationId, ProjectMembershipId, ProjectRoleId
 from app.services.account import _call_mgmt
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,9 @@ logger = logging.getLogger(__name__)
 class MembersService:
     """Service for project member and invitation management."""
 
-    def _get_assignable_role(self, db: Session, *, project_id: int, role_id: int | None) -> ProjectRole | None:
+    def _get_assignable_role(
+        self, db: Session, *, project_id: ProjectId, role_id: ProjectRoleId | None
+    ) -> ProjectRole | None:
         if role_id is None:
             return None
         role = ensure_present(
@@ -57,7 +60,7 @@ class MembersService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         actor: User,  # noqa: ARG002
     ) -> list[ProjectMembership]:
         return mr.list_by_project(db, project_id)
@@ -66,7 +69,7 @@ class MembersService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         actor: User,  # noqa: ARG002
     ) -> list[ProjectInvitation]:
         return ir.list_pending_by_project(db, project_id)
@@ -75,7 +78,7 @@ class MembersService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         data: SendInvitationRequest,
         actor: User,
     ) -> ProjectInvitation:
@@ -99,12 +102,14 @@ class MembersService:
         # The integrity rule translates that to InvitationAlreadyExistsError (409).
         commit_with_err_handle(db)
 
-        get_email_service().send_project_member_invite({
-            "to_email": data.email,
-            "inviter_name": actor.display_name,
-            "project_name": invitation.project.name,
-            "invite_url": f"{current_settings().flowform.server.site_url.rstrip('/')}/invitations/{token}",
-        })
+        get_email_service().send_project_member_invite(
+            {
+                "to_email": data.email,
+                "inviter_name": actor.display_name,
+                "project_name": invitation.project.name,
+                "invite_url": f"{current_settings().flowform.server.site_url.rstrip('/')}/invitations/{token}",
+            }
+        )
 
         return invitation
 
@@ -112,8 +117,8 @@ class MembersService:
         self,
         db: Session,
         *,
-        project_id: int,
-        invitation_id: int,
+        project_id: ProjectId,
+        invitation_id: ProjectInvitationId,
         actor: User,  # noqa: ARG002
     ) -> None:
         invitation = ensure_present(
@@ -134,7 +139,7 @@ class MembersService:
         self,
         db: Session,
         *,
-        invitation_id: int,
+        invitation_id: ProjectInvitationId,
         actor: User,
     ) -> ProjectMembership:
         invitation = ensure_present(
@@ -251,7 +256,7 @@ class MembersService:
 
         return membership
 
-    def decline_invitation(self, db: Session, *, invitation_id: int, actor: User) -> None:
+    def decline_invitation(self, db: Session, *, invitation_id: ProjectInvitationId, actor: User) -> None:
         invitation = ensure_present(
             ir.get_by_id(db, invitation_id),
             error=InvitationNotFoundError(),
@@ -271,13 +276,17 @@ class MembersService:
         )
         return invitation
 
-    def _get_member(self, db: Session, *, membership_id: int, project_id: int) -> ProjectMembership:
+    def _get_member(
+        self, db: Session, *, membership_id: ProjectMembershipId, project_id: ProjectId
+    ) -> ProjectMembership:
         return ensure_present(
             mr.get_by_id(db, membership_id=membership_id, project_id=project_id),
             error=MemberNotFoundError(),
         )
 
-    def remove_member(self, db: Session, *, project_id: int, membership_id: int, actor: User) -> None:
+    def remove_member(
+        self, db: Session, *, project_id: ProjectId, membership_id: ProjectMembershipId, actor: User
+    ) -> None:
         membership = self._get_member(db, membership_id=membership_id, project_id=project_id)
         if membership.user_id == actor.id:
             raise MemberSelfActionError()
@@ -287,7 +296,13 @@ class MembersService:
         commit_with_err_handle(db)
 
     def update_member(
-        self, db: Session, *, project_id: int, membership_id: int, data: UpdateMemberRequest, actor: User
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        membership_id: ProjectMembershipId,
+        data: UpdateMemberRequest,
+        actor: User,
     ) -> ProjectMembership:
         membership = self._get_member(db, membership_id=membership_id, project_id=project_id)
         if membership.user_id == actor.id:

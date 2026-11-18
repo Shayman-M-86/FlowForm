@@ -10,9 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SubmissionEventType
-from app.schema.models.submission.types import SubmissionSessionId
-from app.schema.models.survey.types import SurveyVersionId
 from app.schema.orm.core.submission_session import SubmissionEvent
+from app.schema.types import SubmissionSessionId, SurveyVersionId
 
 logger = logging.getLogger(__name__)
 

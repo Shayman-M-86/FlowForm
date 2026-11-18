@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -20,12 +19,13 @@ from app.schema.api.requests.survey_access_links import CreateSurveyAccessLinkRe
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
+from app.schema.types import ParticipantId, ProjectId, SurveyId, SurveyLinkId
 
 
 class SurveyLinkService:
     """Admin-facing survey link management: list, create, update, delete."""
 
-    def list_links(self, db: Session, project_id: int, survey_id: int, actor: User) -> list[SurveyLink]:  # noqa: ARG002
+    def list_links(self, db: Session, project_id: ProjectId, survey_id: SurveyId, actor: User) -> list[SurveyLink]:  # noqa: ARG002
         """List all links for a given survey."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         return list(plr.list_links(db, survey_id=survey_id))
@@ -34,8 +34,8 @@ class SurveyLinkService:
         self,
         db: Session,
         *,
-        survey_id: int,
-        project_id: int,
+        survey_id: SurveyId,
+        project_id: ProjectId,
         data: CreateSurveyAccessLinkRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyLink:
@@ -62,9 +62,9 @@ class SurveyLinkService:
     def update_link(
         self,
         db: Session,
-        survey_id: int,
-        project_id: int,
-        link_id: UUID,
+        survey_id: SurveyId,
+        project_id: ProjectId,
+        link_id: SurveyLinkId,
         payload: UpdateSurveyAccessLinkRequest,
         actor: User,  # noqa: ARG002
     ) -> SurveyLink:
@@ -99,7 +99,14 @@ class SurveyLinkService:
 
         return updated_link
 
-    def delete_link(self, db: Session, survey_id: int, project_id: int, link_id: UUID, actor: User) -> None:  # noqa: ARG002
+    def delete_link(
+        self,
+        db: Session,
+        survey_id: SurveyId,
+        project_id: ProjectId,
+        link_id: SurveyLinkId,
+        actor: User,  # noqa: ARG002
+    ) -> None:
         """Delete a survey link."""
         self._ensure_survey_and_public_id_match(db, survey_id=survey_id, project_id=project_id)
         link = self._get_link_invalidate(db, survey_id=survey_id, link_id=link_id)
@@ -109,9 +116,9 @@ class SurveyLinkService:
     def send_link_email(
         self,
         db: Session,
-        survey_id: int,
-        project_id: int,
-        link_id: UUID,
+        survey_id: SurveyId,
+        project_id: ProjectId,
+        link_id: SurveyLinkId,
         actor: User,  # noqa: ARG002
     ) -> str | None:
         """Send a survey invite email for an existing link."""
@@ -143,13 +150,13 @@ class SurveyLinkService:
 
         return message_id
 
-    def _ensure_survey_and_public_id_match(self, db: Session, survey_id: int, project_id: int) -> Survey:
+    def _ensure_survey_and_public_id_match(self, db: Session, survey_id: SurveyId, project_id: ProjectId) -> Survey:
         return ensure_present(
             sr.get_survey(db, project_id=project_id, survey_id=survey_id),
             error=SurveyNotFoundError(survey_id=survey_id, project_id=project_id),
         )
 
-    def _get_link_invalidate(self, db: Session, survey_id: int, link_id: UUID) -> SurveyLink:
+    def _get_link_invalidate(self, db: Session, survey_id: SurveyId, link_id: SurveyLinkId) -> SurveyLink:
         return ensure_present(
             plr.get_link(db, survey_id=survey_id, link_id=link_id),
             error=LinkNotFoundError(),
@@ -160,7 +167,7 @@ class SurveyLinkService:
         *,
         survey: Survey,
         link_type: str,
-        assigned_participant_id: UUID | None,
+        assigned_participant_id: ParticipantId | None,
     ) -> None:
         """Write-time check: validate that the link type and assignment fit the survey's visibility."""
         if link_type == "general" and assigned_participant_id is not None:

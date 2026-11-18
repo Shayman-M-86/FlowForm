@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 import app.api.v1  # noqa: F401  (imported for @openapi_route registration side effect)
 import app.openapi.registry as openapi_registry
@@ -17,6 +17,7 @@ from app.schema.api.requests.submission_sessions import (
 )
 from app.schema.api.requests.survey_results import ExportSurveyResultsRequest, ListSubjectsRequest
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
+from app.schema.types import SurveyVersionId
 
 # Snapshot the global @openapi_route registry at import time, once the v1 route
 # decorators (loaded via ``import app.api.v1`` above) have populated it. Other
@@ -80,7 +81,7 @@ def test_submission_session_response_contains_only_acknowledgement_fields() -> N
         status="in_progress",
         started_at=current,
         expires_at=current,
-        survey_version_id=31,
+        survey_version_id=TypeAdapter(SurveyVersionId).validate_python(31),
         subject_code="sub_test",
     )
 

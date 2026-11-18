@@ -4,11 +4,13 @@ from typing import cast
 
 import pytest  # type: ignore[import]
 from psycopg.errors import NotNullViolation, UniqueViolation
+from pydantic import TypeAdapter
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.repositories import users_repo as ur
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId
 from tests.integration.core.factories import make_user
 
 
@@ -66,9 +68,7 @@ def test_user_requires_email(db_session: Session) -> None:
 
     orig = cast(NotNullViolation, exc_info.value.orig)
     column = orig.diag.column_name
-    assert column == "email", (
-        f"Expected NOT NULL violation on 'email', got '{column}'\nDB error: {exc_info.value}"
-    )
+    assert column == "email", f"Expected NOT NULL violation on 'email', got '{column}'\nDB error: {exc_info.value}"
 
     db_session.rollback()
 
@@ -104,7 +104,7 @@ def test_create_user_with_email_verified_true(db_session: Session) -> None:
     """create_user threads email_verified through to the persisted row."""
     user = ur.create_user(
         db_session,
-        auth0_user_id="auth0|createverified",
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python("auth0|createverified"),
         email="createverified@example.com",
         display_name="Created Verified",
         email_verified=True,

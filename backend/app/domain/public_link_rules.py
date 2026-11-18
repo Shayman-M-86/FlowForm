@@ -16,6 +16,7 @@ from app.schema.orm.core.project_subject import ProjectSubjectIdentity
 from app.schema.orm.core.survey import Survey
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
+from app.schema.types import SurveyId
 
 
 def ensure_is_active(*, link: SurveyLink) -> None:
@@ -51,7 +52,7 @@ def ensure_actor_matches_participant_identity(*, identity: ProjectSubjectIdentit
         raise LinkAssignmentMismatchError()
 
 
-def ensure_survey_id_matches(*, link: SurveyLink, survey_id: int) -> None:
+def ensure_survey_id_matches(*, link: SurveyLink, survey_id: SurveyId) -> None:
     if link.survey_id != survey_id:
         raise LinkNotFoundError()
 

@@ -8,6 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.surveys_access import CreateSurveyRoleRequest, UpdateSurveyRoleRequest
 from app.schema.api.responses.surveys_access import SurveyRoleResponses
+from app.schema.types import ProjectId, SurveyRoleId
 from app.services.access.access_service import require_project_permission
 from app.services.survey_roles import survey_roles_service
 
@@ -16,7 +17,7 @@ from app.services.survey_roles import survey_roles_service
 @studio_projects_bp.route("/<bint:project_id>/survey-roles", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def list_survey_roles(project_id: int):
+def list_survey_roles(project_id: ProjectId):
     roles = survey_roles_service.list_survey_roles(db=get_core_db(), project_id=project_id, actor=g.actor)
     return [SurveyRoleResponses.from_orm_with_permissions(r).model_dump(mode="json") for r in roles], 200
 
@@ -31,7 +32,7 @@ def list_survey_roles(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/survey-roles", methods=["POST"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def create_survey_role(project_id: int):
+def create_survey_role(project_id: ProjectId):
     payload = parse(CreateSurveyRoleRequest, request)
     role = survey_roles_service.create_role(db=get_core_db(), project_id=project_id, data=payload, actor=g.actor)
     return SurveyRoleResponses.from_orm_with_permissions(role).model_dump(mode="json"), 201
@@ -46,7 +47,7 @@ def create_survey_role(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>/survey-roles/<bint:role_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def update_survey_role(project_id: int, role_id: int):
+def update_survey_role(project_id: ProjectId, role_id: SurveyRoleId):
     payload = parse(UpdateSurveyRoleRequest, request)
     role = survey_roles_service.update_role(
         db=get_core_db(), project_id=project_id, role_id=role_id, data=payload, actor=g.actor
@@ -58,6 +59,6 @@ def update_survey_role(project_id: int, role_id: int):
 @studio_projects_bp.route("/<bint:project_id>/survey-roles/<bint:role_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_roles)
-def delete_survey_role(project_id: int, role_id: int):
+def delete_survey_role(project_id: ProjectId, role_id: SurveyRoleId):
     survey_roles_service.delete_role(db=get_core_db(), project_id=project_id, role_id=role_id, actor=g.actor)
     return {}, 204

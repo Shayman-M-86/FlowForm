@@ -34,9 +34,9 @@ from app.crypto.models import (
 from app.crypto.survey_key import start_plaintext_survey_key_load
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.response import response_envelope_repo
-from app.schema.models.submission.types import SubmissionSessionId
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.response.response_envelope import ResponseEnvelope
+from app.schema.types import SubmissionSessionId
 
 if TYPE_CHECKING:
     from app.cache import AppCache
@@ -187,7 +187,11 @@ def load_session_envelope_crypto_context(
 ) -> SessionEnvelopeCryptoContext:
     """Load the response envelope and plaintext session key for a session."""
     ctx = build_session_context(
-        db, response_db, session=session, cache=cache, clients=clients,
+        db,
+        response_db,
+        session=session,
+        cache=cache,
+        clients=clients,
     )
 
     envelope = response_db.get(ResponseEnvelope, ctx.envelope_id)

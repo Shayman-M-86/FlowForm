@@ -10,6 +10,7 @@ from app.repositories.core import project_subjects as psr
 from app.repositories.core.project_subjects import CanonicalStatus, SubjectListRow
 from app.schema.api.requests.subjects import UpdateSubjectRequest
 from app.schema.orm.core.project_subject import ProjectSubject
+from app.schema.types import ProjectId, SubjectId
 
 
 class SubjectService:
@@ -19,7 +20,7 @@ class SubjectService:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         canonical_status: CanonicalStatus = "canonical",
         is_participant: bool | None = None,
         search: str | None = None,
@@ -40,8 +41,8 @@ class SubjectService:
         self,
         db: Session,
         *,
-        project_id: int,
-        subject_id: UUID,
+        project_id: ProjectId,
+        subject_id: SubjectId,
     ) -> tuple[ProjectSubject, UUID | None]:
         result = psr.get_subject_with_participant(db, project_id=project_id, subject_id=subject_id)
         return ensure_present(result, error=SubjectNotFoundError())
@@ -50,8 +51,8 @@ class SubjectService:
         self,
         db: Session,
         *,
-        project_id: int,
-        subject_id: UUID,
+        project_id: ProjectId,
+        subject_id: SubjectId,
         data: UpdateSubjectRequest,
     ) -> tuple[ProjectSubject, UUID | None]:
         subject, participant_id = self.get_subject(db, project_id=project_id, subject_id=subject_id)

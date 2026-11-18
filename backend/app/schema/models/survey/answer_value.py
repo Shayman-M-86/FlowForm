@@ -5,12 +5,13 @@ from typing import Annotated
 from pydantic import Field, StrictBool
 
 from app.schema.models.common.base import DataModel
-from app.schema.models.common.types import LimitedList, LongString
-from app.schema.models.survey.types import (
+from app.schema.types import (
     AnswerInteger,
     AnswerNumber,
     CalendarDate,
     ChoiceOptionUuid,
+    LimitedList,
+    LongString,
     MatchingMatchUuid,
     MatchingPromptUuid,
 )

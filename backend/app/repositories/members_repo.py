@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session, selectinload
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import ProjectMemberStatus
 from app.schema.orm.core.project import ProjectMembership
+from app.schema.types import ProjectId, ProjectMembershipId, ProjectRoleId, UserId
 
 
-def list_by_project(db: Session, project_id: int) -> list[ProjectMembership]:
+def list_by_project(db: Session, project_id: ProjectId) -> list[ProjectMembership]:
     return list(
         db.scalars(
             select(ProjectMembership)
@@ -17,9 +18,7 @@ def list_by_project(db: Session, project_id: int) -> list[ProjectMembership]:
     )
 
 
-def get_by_user_and_project(
-    db: Session, *, user_id: int, project_id: int
-) -> ProjectMembership | None:
+def get_by_user_and_project(db: Session, *, user_id: UserId, project_id: ProjectId) -> ProjectMembership | None:
     return db.scalar(
         select(ProjectMembership).where(
             ProjectMembership.user_id == user_id,
@@ -28,7 +27,7 @@ def get_by_user_and_project(
     )
 
 
-def get_by_id(db: Session, *, membership_id: int, project_id: int) -> ProjectMembership | None:
+def get_by_id(db: Session, *, membership_id: ProjectMembershipId, project_id: ProjectId) -> ProjectMembership | None:
     return db.scalar(
         select(ProjectMembership)
         .options(selectinload(ProjectMembership.user), selectinload(ProjectMembership.role))
@@ -44,7 +43,7 @@ def update_membership(
     membership: ProjectMembership,
     *,
     fields_set: set[str],
-    role_id: int | None,
+    role_id: ProjectRoleId | None,
     status: ProjectMemberStatus | None,
 ) -> ProjectMembership:
     if "role_id" in fields_set:
@@ -63,9 +62,9 @@ def delete_membership(db: Session, membership: ProjectMembership) -> None:
 def create_membership(
     db: Session,
     *,
-    project_id: int,
-    user_id: int,
-    role_id: int | None,
+    project_id: ProjectId,
+    user_id: UserId,
+    role_id: ProjectRoleId | None,
 ) -> ProjectMembership:
     membership = ProjectMembership(
         project_id=project_id,

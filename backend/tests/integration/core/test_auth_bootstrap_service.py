@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import pytest  # type: ignore[import]
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.orm.core.project import Project, ProjectMembership
+from app.schema.types import Auth0UserId
 from app.services.auth import AuthService
 from tests.integration.core.factories import make_user
 
@@ -12,6 +14,7 @@ from tests.integration.core.factories import make_user
 def _make_auth_service(db: Session, monkeypatch: pytest.MonkeyPatch, *, sub: str, email: str, name: str) -> AuthService:
     """Return an AuthService with verify_id_token monkeypatched."""
     from app.services import auth as auth_module
+
     monkeypatch.setattr(
         auth_module.auth,
         "verify_id_token",
@@ -35,7 +38,7 @@ def test_bootstrap_new_user_creates_default_project(
 
     result = service.bootstrap_current_user(
         db_session,  # type: ignore
-        access_token_sub="auth0|boot-proj-new",
+        access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|boot-proj-new"),
         payload=BootstrapUserRequest(id_token="raw-token"),
     )
 
@@ -66,7 +69,7 @@ def test_bootstrap_new_user_default_project_has_owner_membership(
 
     result = service.bootstrap_current_user(
         db_session,  # type: ignore
-        access_token_sub="auth0|boot-proj-member",
+        access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|boot-proj-member"),
         payload=BootstrapUserRequest(id_token="raw-token"),
     )
 
@@ -99,7 +102,7 @@ def test_bootstrap_existing_user_does_not_create_project(
 
     result = service.bootstrap_current_user(
         db_session,  # type: ignore
-        access_token_sub="auth0|boot-proj-existing",
+        access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|boot-proj-existing"),
         payload=BootstrapUserRequest(id_token="raw-token"),
     )
 
@@ -122,7 +125,7 @@ def test_bootstrap_new_user_default_project_slug_is_public_id(
 
     result = service.bootstrap_current_user(
         db_session,  # type: ignore
-        access_token_sub="auth0|boot-proj-slug",
+        access_token_sub=TypeAdapter(Auth0UserId).validate_python("auth0|boot-proj-slug"),
         payload=BootstrapUserRequest(id_token="raw-token"),
     )
 
@@ -130,4 +133,3 @@ def test_bootstrap_new_user_default_project_slug_is_public_id(
     assert result.default_project.slug
     assert "_" not in result.default_project.slug
     assert 6 <= len(result.default_project.slug) <= 8
-

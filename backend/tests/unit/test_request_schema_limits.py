@@ -12,7 +12,7 @@ from app.schema.api.requests.survey_access_links import (
     ResolveSurveyAccessLinkTokenRequest,
 )
 from app.schema.api.requests.surveys import CreateSurveyRequest
-from app.schema.models.projects.types import ProjectRoleId
+from app.schema.types import ProjectRoleId
 
 
 @pytest.mark.parametrize(

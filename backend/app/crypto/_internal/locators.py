@@ -4,7 +4,7 @@ import hashlib
 import hmac
 from uuid import UUID
 
-from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.types import SubmissionSessionId
 
 
 def derive_session_locator(core_session_id: SubmissionSessionId, linkage_secret: bytes) -> bytes:

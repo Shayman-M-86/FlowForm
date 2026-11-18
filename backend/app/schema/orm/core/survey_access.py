@@ -20,9 +20,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
-from app.schema.models.common.types import Timestamp
-from app.schema.models.projects.types import ParticipantId, ProjectId, ProjectMembershipId, RoleDescription, RoleName
-from app.schema.models.survey.types import SurveyAccessLinkName, SurveyAccessToken, SurveyId, SurveyLinkId, SurveyRoleId
+from app.schema.types import (
+    ParticipantId,
+    ProjectId,
+    ProjectMembershipId,
+    RoleDescription,
+    RoleName,
+    SurveyAccessLinkName,
+    SurveyAccessToken,
+    SurveyId,
+    SurveyLinkId,
+    SurveyRoleId,
+    Timestamp,
+)
 
 if TYPE_CHECKING:
     from app.schema.orm.core.permission import Permission

@@ -5,11 +5,11 @@ from typing import Annotated, Literal
 from pydantic import Field, StrictBool
 
 from app.schema.models.common.base import DataModel
-from app.schema.models.common.types import LimitedList
-from app.schema.models.survey.types import (
+from app.schema.types import (
     ConditionList,
     ConditionScalar,
     ConditionText,
+    LimitedList,
     OrderedConditionValue,
     OutcomeId,
     ReadableId,

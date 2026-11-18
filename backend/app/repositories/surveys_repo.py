@@ -6,27 +6,28 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import flush_with_err_handle
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
 from app.schema.orm.core.survey import Survey, SurveyVersion
+from app.schema.types import ProjectId, ResponseStoreId, SurveyId, UserId
 
 
-def list_surveys(db: Session, project_id: int) -> list[Survey]:
+def list_surveys(db: Session, project_id: ProjectId) -> list[Survey]:
     return list(db.scalars(select(Survey).where(Survey.project_id == project_id)))
 
 
-def list_surveys_ids(db: Session, project_id: int) -> list[int]:
+def list_surveys_ids(db: Session, project_id: ProjectId) -> list[SurveyId]:
     return list(db.scalars(select(Survey.id).where(Survey.project_id == project_id)))
 
 
-def get_survey(db: Session, project_id: int, survey_id: int) -> Survey | None:
+def get_survey(db: Session, project_id: ProjectId, survey_id: SurveyId) -> Survey | None:
     return db.scalar(select(Survey).where(Survey.project_id == project_id, Survey.id == survey_id))
 
 
 def create_survey(
     db: Session,
-    project_id: int,
+    project_id: ProjectId,
     data: CreateSurveyRequest,
     *,
-    default_response_store_id: int,
-    created_by_user_id: int | None = None,
+    default_response_store_id: ResponseStoreId,
+    created_by_user_id: UserId | None = None,
 ) -> Survey:
     survey = Survey(
         project_id=project_id,
@@ -58,7 +59,7 @@ def delete_survey(db: Session, survey: Survey) -> None:
     flush_with_err_handle(db, contexts=[survey])
 
 
-def list_versions(db: Session, survey_id: int) -> list[SurveyVersion]:
+def list_versions(db: Session, survey_id: SurveyId) -> list[SurveyVersion]:
     return list(
         db.scalars(
             select(SurveyVersion)
@@ -68,7 +69,7 @@ def list_versions(db: Session, survey_id: int) -> list[SurveyVersion]:
     )
 
 
-def get_version(db: Session, project_id: int, survey_id: int, version_number: int) -> SurveyVersion | None:
+def get_version(db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: int) -> SurveyVersion | None:
     return db.scalar(
         select(SurveyVersion)
         .join(Survey, Survey.id == SurveyVersion.survey_id)
@@ -81,7 +82,7 @@ def get_version(db: Session, project_id: int, survey_id: int, version_number: in
     )
 
 
-def create_version(db: Session, survey_id: int, created_by_user_id: int | None = None) -> SurveyVersion:
+def create_version(db: Session, survey_id: SurveyId, created_by_user_id: UserId | None = None) -> SurveyVersion:
     max_num = db.scalar(select(func.max(SurveyVersion.version_number)).where(SurveyVersion.survey_id == survey_id)) or 0
     version = SurveyVersion(
         survey_id=survey_id,
@@ -140,11 +141,7 @@ def unpublish_version(db: Session, survey: Survey, version: SurveyVersion) -> Su
 def list_public_surveys(db: Session, *, page: int, page_size: int) -> tuple[list[Survey], int]:
     base = select(Survey).where(Survey.visibility == "public")
     total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
-    surveys = list(
-        db.scalars(
-            base.order_by(Survey.id).offset((page - 1) * page_size).limit(page_size)
-        )
-    )
+    surveys = list(db.scalars(base.order_by(Survey.id).offset((page - 1) * page_size).limit(page_size)))
     return surveys, total
 
 

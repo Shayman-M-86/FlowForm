@@ -5,9 +5,8 @@ entries (public slug, general link), and always returns the assigned subject for
 private and authenticated links. Returns a SubjectResolutionResult with merge and
 token-action instructions; the caller applies all writes before committing.
 """
-from __future__ import annotations
 
-from uuid import UUID
+from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
@@ -16,6 +15,7 @@ from app.domain.guards import ensure_present
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subjects as subjects
 from app.schema.orm.core.project_subject import ProjectSubject
+from app.schema.types import ProjectId, SubjectId, UserId
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
 from app.services.results import SubjectResolutionResult
 
@@ -43,12 +43,12 @@ class SubjectResolver:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         access_method: str,
-        assigned_subject_id: UUID | None,
-        token_subject_id: UUID | None,
-        canonical_token_subject_id: UUID | None,
-        actor_user_id: int | None,
+        assigned_subject_id: SubjectId | None,
+        token_subject_id: SubjectId | None,
+        canonical_token_subject_id: SubjectId | None,
+        actor_user_id: UserId | None,
     ) -> SubjectResolutionResult:
         """Route to assigned or open-access resolution based on access method.
 
@@ -75,10 +75,10 @@ class SubjectResolver:
         self,
         db: Session,
         *,
-        project_id: int,
-        assigned_subject_id: UUID | None,
-        token_subject_id: UUID | None,
-        canonical_token_subject_id: UUID | None,
+        project_id: ProjectId,
+        assigned_subject_id: SubjectId | None,
+        token_subject_id: SubjectId | None,
+        canonical_token_subject_id: SubjectId | None,
     ) -> SubjectResolutionResult:
         """Assigned subject is always canonical. Token used only for continuity cleanup.
 
@@ -133,10 +133,10 @@ class SubjectResolver:
         self,
         db: Session,
         *,
-        project_id: int,
-        token_subject_id: UUID | None,
-        canonical_token_subject_id: UUID | None,
-        actor_user_id: int | None,
+        project_id: ProjectId,
+        token_subject_id: SubjectId | None,
+        canonical_token_subject_id: SubjectId | None,
+        actor_user_id: UserId | None,
     ) -> SubjectResolutionResult:
         """Public slug / general link resolution.
 
@@ -144,7 +144,7 @@ class SubjectResolver:
         If a logged-in user has no identity yet, one is created on the winning subject.
         """
         # Resolve token candidate to canonical upfront.
-        effective_token_subject_id: UUID | None = None
+        effective_token_subject_id: SubjectId | None = None
         if token_subject_id is not None:
             effective_token_subject_id = canonical_token_subject_id or token_subject_id
 
@@ -158,9 +158,7 @@ class SubjectResolver:
             )
 
         if effective_token_subject_id is not None:
-            effective_subject = self._require_subject(
-                db, project_id=project_id, subject_id=effective_token_subject_id
-            )
+            effective_subject = self._require_subject(db, project_id=project_id, subject_id=effective_token_subject_id)
             return SubjectResolutionResult(
                 final_subject_id=effective_subject.id,
                 subject_code=effective_subject.subject_code,
@@ -180,10 +178,10 @@ class SubjectResolver:
         self,
         db: Session,
         *,
-        project_id: int,
-        actor_user_id: int,
-        token_subject_id: UUID | None,
-        effective_token_subject_id: UUID | None,
+        project_id: ProjectId,
+        actor_user_id: UserId,
+        token_subject_id: SubjectId | None,
+        effective_token_subject_id: SubjectId | None,
     ) -> SubjectResolutionResult:
         """Reconcile logged-in user identity against token candidate.
 
@@ -191,9 +189,7 @@ class SubjectResolver:
         If identity exists: token same canonical → keep/rotate; token different → merge token into identity.
         Returns instructions only — no writes here.
         """
-        identity = sub_id.get_active_user_identity(
-            db, project_id=project_id, user_id=actor_user_id
-        )
+        identity = sub_id.get_active_user_identity(db, project_id=project_id, user_id=actor_user_id)
 
         if identity is None:
             if effective_token_subject_id is not None:
@@ -219,12 +215,8 @@ class SubjectResolver:
             )
 
         # Identity exists — resolve it to canonical.
-        identity_subject = self._require_subject(
-            db, project_id=project_id, subject_id=identity.project_subject_id
-        )
-        canonical_identity = self._resolve_to_canonical(
-            db, project_id=project_id, subject=identity_subject
-        )
+        identity_subject = self._require_subject(db, project_id=project_id, subject_id=identity.project_subject_id)
+        canonical_identity = self._resolve_to_canonical(db, project_id=project_id, subject=identity_subject)
 
         if effective_token_subject_id is None:
             return SubjectResolutionResult(
@@ -265,19 +257,15 @@ class SubjectResolver:
         self,
         db: Session,
         *,
-        project_id: int,
+        project_id: ProjectId,
         subject: ProjectSubject,
     ) -> ProjectSubject:
         """Follow canonical_subject_id one level. Canonical chains are not allowed — one hop only."""
         if subject.canonical_subject_id is None:
             return subject
-        return self._require_subject(
-            db, project_id=project_id, subject_id=subject.canonical_subject_id
-        )
+        return self._require_subject(db, project_id=project_id, subject_id=subject.canonical_subject_id)
 
-    def _require_subject(
-        self, db: Session, *, project_id: int, subject_id: UUID
-    ) -> ProjectSubject:
+    def _require_subject(self, db: Session, *, project_id: ProjectId, subject_id: SubjectId) -> ProjectSubject:
         """Load a subject that must exist — a miss is a broken server invariant."""
         return ensure_present(
             subjects.get_subject(db, project_id=project_id, subject_id=subject_id),

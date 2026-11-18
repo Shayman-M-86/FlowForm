@@ -5,9 +5,9 @@ from pydantic import Field, TypeAdapter, ValidationError
 
 from app.schema.api.requests.ai_import import AIImportRequest
 from app.schema.models.common.base import DataModel
-from app.schema.models.common.types import LimitedDict, LimitedList, LongString, ShortString
 from app.schema.models.survey.answers import AnsweredAnswer
 from app.schema.models.survey.document import SurveySection, TextContent
+from app.schema.types import LimitedDict, LimitedList, LongString, ShortString
 
 
 class Example(DataModel):

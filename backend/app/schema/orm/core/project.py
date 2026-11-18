@@ -20,15 +20,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
 from app.schema.enums import ProjectMemberStatus
-from app.schema.models.common.types import Slug, Timestamp
-from app.schema.models.identity.types import UserId
-from app.schema.models.projects.types import (
+from app.schema.types import (
     ProjectId,
     ProjectMembershipId,
     ProjectName,
     ProjectRoleId,
     RoleDescription,
     RoleName,
+    Slug,
+    Timestamp,
+    UserId,
 )
 
 if TYPE_CHECKING:

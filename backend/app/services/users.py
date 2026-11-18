@@ -7,6 +7,7 @@ from app.domain.errors import UserNotFoundError
 from app.domain.guards import ensure_present
 from app.repositories import users_repo as ur
 from app.schema.orm.core.user import User
+from app.schema.types import Auth0UserId
 
 
 class UserService:
@@ -16,7 +17,7 @@ class UserService:
         self,
         db: Session,
         *,
-        auth0_user_id: str,
+        auth0_user_id: Auth0UserId,
         email: str,
         display_name: str | None,
         email_verified: bool = False,
@@ -58,7 +59,7 @@ class UserService:
 
         return user, created
 
-    def get_user_by_sub(self, db: Session, auth0_user_id: str) -> User:
+    def get_user_by_sub(self, db: Session, auth0_user_id: Auth0UserId) -> User:
         """Get a user by their Auth0 user ID."""
         user = ensure_present(
             ur.get_user_by_auth0_user_id(db, auth0_user_id),

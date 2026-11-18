@@ -4,9 +4,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.error_handling import flush_with_err_handle
-from app.schema.models.projects.types import ParticipantId, ProjectId, SubjectId, SubjectIdentityId
 from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
+from app.schema.types import ParticipantId, ProjectId, SubjectId, SubjectIdentityId
 
 
 def get_participant(db: Session, *, project_id: ProjectId, participant_id: ParticipantId) -> ProjectParticipant | None:

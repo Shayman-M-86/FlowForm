@@ -5,19 +5,18 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.survey_encryption_key import SurveyEncryptionKey
+from app.schema.types import ProjectId, SurveyId
 
 
-def get_by_survey(db: Session, survey_id: int) -> SurveyEncryptionKey | None:
-    return db.scalar(
-        select(SurveyEncryptionKey).where(SurveyEncryptionKey.survey_id == survey_id)
-    )
+def get_by_survey(db: Session, survey_id: SurveyId) -> SurveyEncryptionKey | None:
+    return db.scalar(select(SurveyEncryptionKey).where(SurveyEncryptionKey.survey_id == survey_id))
 
 
 def get_by_project_survey(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
 ) -> SurveyEncryptionKey | None:
     return db.scalar(
         select(SurveyEncryptionKey).where(
@@ -30,8 +29,8 @@ def get_by_project_survey(
 def create(
     db: Session,
     *,
-    project_id: int,
-    survey_id: int,
+    project_id: ProjectId,
+    survey_id: SurveyId,
     wrapped_survey_branch_key: bytes,
     kms_key_arn: str,
     kms_context_version: int,

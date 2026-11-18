@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from flask import request
 
 from app.api.utils.validation import parse, parse_query
@@ -14,6 +12,7 @@ from app.schema.api.responses.subjects import (
     SubjectDetailResponse,
     SubjectResponse,
 )
+from app.schema.types import ProjectId, SubjectId
 from app.services.access.access_service import require_project_permission
 
 _BASE = "/<bint:project_id>/subjects"
@@ -28,7 +27,7 @@ _BASE = "/<bint:project_id>/subjects"
 @studio_projects_bp.route(_BASE, methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def list_subjects(project_id: int):
+def list_subjects(project_id: ProjectId):
     params = parse_query(ListSubjectsQuery, request)
     offset = (params.page - 1) * params.page_size
     rows, total = subject_service.list_subjects(
@@ -52,7 +51,7 @@ def list_subjects(project_id: int):
 @studio_projects_bp.route(f"{_BASE}/<uuid:subject_id>", methods=["GET"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def get_subject(project_id: int, subject_id: UUID):
+def get_subject(project_id: ProjectId, subject_id: SubjectId):
     result = subject_service.get_subject(db=get_core_db(), project_id=project_id, subject_id=subject_id)
     return SubjectDetailResponse.model_validate(result).model_dump(mode="json"), 200
 
@@ -66,7 +65,7 @@ def get_subject(project_id: int, subject_id: UUID):
 @studio_projects_bp.route(f"{_BASE}/<uuid:subject_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
-def update_subject(project_id: int, subject_id: UUID):
+def update_subject(project_id: ProjectId, subject_id: SubjectId):
     payload = parse(UpdateSubjectRequest, request)
     result = subject_service.update_subject(
         db=get_core_db(), project_id=project_id, subject_id=subject_id, data=payload

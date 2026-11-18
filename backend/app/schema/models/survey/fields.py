@@ -4,23 +4,26 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from app.schema.models.common.base import DataModel
-from app.schema.models.common.types import LimitedList, LongString
-from app.schema.models.survey.answer_spec import AnswerSpec
-from app.schema.models.survey.conditions import FieldBehaviour
-from app.schema.models.survey.types import (
+from app.schema.enums import (
     BooleanPresentation,
-    ChoiceOptionLabel,
-    ChoiceOptionUuid,
     DatePresentation,
-    FieldPrompt,
-    InputAffix,
-    InputPlaceholder,
     MultipleChoicePresentation,
     NumberPresentation,
     RatingPresentation,
-    ReadableId,
     SingleChoicePresentation,
+)
+from app.schema.models.common.base import DataModel
+from app.schema.models.survey.answer_spec import AnswerSpec
+from app.schema.models.survey.conditions import FieldBehaviour
+from app.schema.types import (
+    ChoiceOptionLabel,
+    ChoiceOptionUuid,
+    FieldPrompt,
+    InputAffix,
+    InputPlaceholder,
+    LimitedList,
+    LongString,
+    ReadableId,
     SurveyFieldUuid,
 )
 

@@ -8,6 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.projects import CreateProjectRequest, UpdateProjectRequest
 from app.schema.api.responses.projects import MyProjectPermissionsResponses, ProjectResponses
+from app.schema.types import ProjectId
 from app.services.access.access_service import access_service, require_project_permission
 from app.services.users import UserService
 
@@ -44,7 +45,7 @@ def create_project():
 @openapi_route(summary="Get project", response_model=ProjectResponses, tags=["Projects"])
 @studio_projects_bp.route("/<bint:project_id>", methods=["GET"])
 @auth.require_auth()
-def get_project(project_id: int):
+def get_project(project_id: ProjectId):
     actor = _users_service.get_user_by_sub(db=get_core_db(), auth0_user_id=auth.get_current_user_sub())
     g.actor = actor
     project = project_service.get_project(db=get_core_db(), project_id=project_id, actor=actor)
@@ -54,7 +55,7 @@ def get_project(project_id: int):
 @openapi_route(summary="Get my project permissions", response_model=MyProjectPermissionsResponses, tags=["Projects"])
 @studio_projects_bp.route("/<bint:project_id>/my-permissions", methods=["GET"])
 @auth.require_auth()
-def get_my_project_permissions(project_id: int):
+def get_my_project_permissions(project_id: ProjectId):
     db = get_core_db()
     actor = _users_service.get_user_by_sub(db=db, auth0_user_id=auth.get_current_user_sub())
     g.actor = actor
@@ -73,7 +74,7 @@ def get_my_project_permissions(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>", methods=["PATCH"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.edit)
-def update_project(project_id: int):
+def update_project(project_id: ProjectId):
     payload = parse(UpdateProjectRequest, request)
     project = project_service.update_project(db=get_core_db(), project_id=project_id, data=payload, actor=g.actor)
     return ProjectResponses.model_validate(project).model_dump(mode="json"), 200
@@ -83,6 +84,6 @@ def update_project(project_id: int):
 @studio_projects_bp.route("/<bint:project_id>", methods=["DELETE"])
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.delete)
-def delete_project(project_id: int):
+def delete_project(project_id: ProjectId):
     project_service.delete_project(db=get_core_db(), project_id=project_id, actor=g.actor)
     return "", 204

@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from flask import Response, request
 
 from app.api.utils.validation import parse, parse_query
@@ -17,7 +15,7 @@ from app.schema.api.responses.survey_results import (
     PaginatedSurveySubjectTreesResponses,
     SurveySubjectTreeResponses,
 )
-from app.schema.models.submission.types import SubmissionSessionId
+from app.schema.types import ProjectId, SubjectId, SubmissionSessionId, SurveyId
 from app.services.access.access_service import require_survey_permission
 from app.services.admin_results.service import AdminResultsService
 
@@ -40,7 +38,7 @@ def _build_service() -> AdminResultsService:
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/results/subjects", methods=["GET"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.submission.view)
-def list_survey_result_subjects(project_id: int, survey_id: int):
+def list_survey_result_subjects(project_id: ProjectId, survey_id: SurveyId):
     params = parse_query(ListSubjectsRequest, request)
     items, total = _build_service().list_subjects(
         get_core_db(),
@@ -76,7 +74,7 @@ def list_survey_result_subjects(project_id: int, survey_id: int):
 )
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.submission.view)
-def get_subject_tree(project_id: int, survey_id: int, subject_id: UUID):
+def get_subject_tree(project_id: ProjectId, survey_id: SurveyId, subject_id: SubjectId):
     params = parse_query(GetSubjectTreeRequest, request)
     result = _build_service().get_subject_tree(
         get_core_db(),
@@ -103,7 +101,7 @@ def get_subject_tree(project_id: int, survey_id: int, subject_id: UUID):
 @studio_projects_bp.route("/<bint:project_id>/surveys/<bint:survey_id>/results/export", methods=["POST"])
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.submission.view)
-def export_results(project_id: int, survey_id: int):
+def export_results(project_id: ProjectId, survey_id: SurveyId):
     payload = parse(ExportSurveyResultsRequest, request)
     export_file = _build_service().export_results(
         get_core_db(),
@@ -132,7 +130,7 @@ def export_results(project_id: int, survey_id: int):
 )
 @auth.require_auth()
 @require_survey_permission(PERMISSIONS.submission.view)
-def delete_session(project_id: int, survey_id: int, session_id: SubmissionSessionId):
+def delete_session(project_id: ProjectId, survey_id: SurveyId, session_id: SubmissionSessionId):
     _ = project_id
     _build_service().delete_session(
         get_core_db(),
