@@ -6,8 +6,8 @@ from pydantic import Field
 
 from app.schema.enums import NoticeTone, SurveyVersionStatus
 from app.schema.models.common.base import DataModel
-from app.schema.models.survey.conditions import SurveyWorkflow
-from app.schema.models.survey.fields import SurveyField
+from app.schema.models.survey_document.conditions import SurveyWorkflow
+from app.schema.models.survey_document.fields import SurveyField
 from app.schema.types import (
     ContentText,
     DocumentRevision,

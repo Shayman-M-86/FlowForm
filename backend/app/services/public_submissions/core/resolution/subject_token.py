@@ -10,8 +10,9 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.repositories.core import project_subject_tokens as sub_tok
+from app.schema.enums import TokenAction
+from app.schema.models.results.service_results import RecognitionTokenLookupResult
 from app.schema.types import ProjectId, SubjectId
-from app.services.results import RecognitionTokenLookupResult, TokenAction
 
 
 class SubjectTokenService:

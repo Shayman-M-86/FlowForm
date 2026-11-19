@@ -6,7 +6,6 @@ from app.domain.errors import (
     VersionNotPublishedError,
 )
 from app.schema.orm.core.survey import Survey, SurveyVersion
-from app.schema.orm.core.survey_content import SurveyQuestion
 
 
 def ensure_is_draft(*, version: SurveyVersion) -> None:
@@ -14,9 +13,9 @@ def ensure_is_draft(*, version: SurveyVersion) -> None:
         raise SurveyPublishError(f"Cannot publish a version with status '{version.status}'")
 
 
-def ensure_has_questions(*, questions: list[SurveyQuestion]) -> None:
-    if not questions:
-        raise SurveyPublishError("Cannot publish a version with no questions")
+def ensure_has_survey_definition(*, version: SurveyVersion) -> None:
+    if not version.definition:
+        raise SurveyPublishError("Cannot publish a version with no survey definition")
 
 
 def ensure_can_archive(*, version: SurveyVersion) -> None:

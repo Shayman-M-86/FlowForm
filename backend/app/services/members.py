@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.core.config import current_settings
+from app.core.extensions import auth
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import (
     AlreadyAMemberError,
@@ -152,7 +153,6 @@ class MembersService:
             raise InvitationNotPendingError()
 
         if not actor.email_verified:
-            from app.core.extensions import auth
 
             live_verified = False
             if auth.mgmt is not None:

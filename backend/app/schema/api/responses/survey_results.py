@@ -4,18 +4,20 @@ from pydantic import ConfigDict, Field
 
 from app.schema import limits
 from app.schema.api.common.base import APIResponseModel
-from app.schema.api.common.types import PageItems, PageNumber, PageSize
+from app.schema.api.common.types import PageItems
 from app.schema.enums import (
     SubmissionAnswerState,
     SubmissionEventType,
     SubmissionSessionStatus,
 )
-from app.schema.models.survey.answer_spec import AnswerSpec
-from app.schema.models.survey.answer_value import AnswerValue
-from app.schema.models.survey.fields import SurveyField
+from app.schema.models.survey_document.answer_spec import AnswerSpec
+from app.schema.models.survey_document.answer_value import AnswerValue
+from app.schema.models.survey_document.fields import SurveyField
 from app.schema.types import (
     AnswerList,
     Count,
+    PageNumber,
+    PageSize,
     ReadableId,
     SubjectCode,
     SubjectId,

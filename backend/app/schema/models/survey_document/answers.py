@@ -6,9 +6,9 @@ from pydantic import ConfigDict, Field, model_validator
 
 from app.schema import limits
 from app.schema.models.common.base import DataModel
-from app.schema.models.survey.answer_spec import AnswerSpec
-from app.schema.models.survey.answer_value import AnswerValue
-from app.schema.models.survey.validators import validate_answer_value
+from app.schema.models.survey_document.answer_spec import AnswerSpec
+from app.schema.models.survey_document.answer_value import AnswerValue
+from app.schema.models.survey_document.validators import validate_answer_value
 
 
 class AnsweredAnswer(DataModel):

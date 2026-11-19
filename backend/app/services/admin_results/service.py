@@ -25,15 +25,11 @@ from app.repositories.core import project_subjects
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.enums import ExportFormat
+from app.schema.models.results.service_results import DeletionResult, ExportFile, SubjectTreeResult
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.types import ProjectId, SubjectId, SubmissionSessionId, SurveyId
 from app.services.admin_results.core.export import format_export_file, to_export_rows
 from app.services.admin_results.core.session_tree import SessionTreeBuilder
-from app.services.results import (
-    DeletionResult,
-    ExportFile,
-    SubjectTreeResult,
-)
 
 if TYPE_CHECKING:
     from app.cache import AppCache

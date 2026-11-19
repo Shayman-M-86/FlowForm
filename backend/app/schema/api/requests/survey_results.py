@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from app.schema import limits
 from app.schema.api.common.base import APIRequestModel
-from app.schema.api.common.types import PageNumber, PageSize, SessionIdList
+from app.schema.api.common.types import SessionIdList
 from app.schema.enums import ExportFormat
+from app.schema.types import PageNumber, PageSize
 
 
 class ListSubjectsRequest(APIRequestModel):

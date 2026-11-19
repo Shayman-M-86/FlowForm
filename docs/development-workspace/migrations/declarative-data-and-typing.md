@@ -52,14 +52,35 @@ central definition. Existing value types are reused before new ones are added.
 | Shared value normalization and parsing | `schema/validators.py` |
 | Fixed status and presentation vocabularies | `schema/enums.py` |
 | Shared data structures | Domain models under `schema/models/` |
-| HTTP-specific controls such as pagination and search | `schema/api/common/` |
+| Internal service outcomes and result carriers | `schema/models/results/service_results.py` |
+| HTTP-only values and paginated result constraints | `schema/api/common/` |
 | Request and response composition | `schema/api/requests/` and `schema/api/responses/` |
 | SQL storage and relationships | `schema/orm/` |
 | SQL storage mapping for shared nominal identities | `db/type_mapping.py` |
+| Typed survey definition / JSONB conversion | `db/json_types.py` |
 | Broad resource ceilings and pagination defaults | `schema/limits.py` |
 
-Shared domain models do not import HTTP contracts or ORM mappings. Promote a
+Portable domain models do not import HTTP contracts or ORM mappings. Promote a
 value out of API ownership when persistence or application logic also uses it.
+Internal service outcomes are dataclasses in `schema/models/results/service_results.py`.
+Their existing ORM references use `TYPE_CHECKING` imports, preserving workflow
+objects without runtime mapping imports or a second Pydantic validation layer.
+The former `services/results.py` is removed, and consumers import the shared
+result definitions directly. Legacy admin/export shapes remain explicit until
+their producers are migrated; moving them does not make them V2 HTTP contracts.
+
+Shared search text belongs in `schema/types.py`, and the canonical-subject
+filter belongs in `schema/enums.py`; API queries and core repositories reuse
+those definitions. Existing cryptographic key and locator byte labels also have
+their authoritative definitions in `schema/types.py`, without Pydantic bounds.
+Crypto models re-export the same labels for existing callers.
+
+Page numbers and page sizes also live in `schema/types.py` because repositories
+consume them. `PermissionName` composes the existing project/survey permission
+vocabulary in `domain/permissions.py` and is re-exported by `schema/types.py`.
+Role repositories accept actual `list[Permission]` ORM rows, distinct from
+permission-name collections. The permission name column retains VARCHAR storage;
+adding the literal vocabulary must not infer a database ENUM.
 
 ## Define shapes and constraints declaratively
 
@@ -72,6 +93,17 @@ and reused without mutation. Property defaults and aliases stay on models.
 Use discriminated variants where a field selects a different valid object shape.
 Reserve validators for relationships such as ordered bounds or dynamically
 checking a submitted value against its answer specification.
+
+Document and answer models live under `schema/models/survey_document/`.
+Visibility/public-slug combinations live separately in `schema/models/survey_access.py`;
+the API creation variants inherit those shared access models, and merged survey
+updates use the same Pydantic union. The legacy domain answer validator is
+removed. Answer request models already invoke the shared Pydantic validators
+for their self-describing specification and value, without a second family-based
+inspection pass. Definition validation delegates to `SurveyDefinition`.
+Publication/access state, draft editability, and response-store configuration
+still require domain guards. Submitted answer specifications do not establish
+provenance against the published document.
 
 Arbitrary dictionaries and recursive JSON require a real extensibility boundary.
 Survey content and answers should describe their supported structures. Authored
@@ -162,8 +194,28 @@ do not establish a live PostgreSQL deployment or full application correctness.
 
 Known runtime migration gaps include legacy node-model imports blocking full
 route export, version creation that does not yet provide a V2 definition, and
-event creation that still supplies the former question-node field. Do not hide
-these gaps with permissive constructors, compatibility aliases, omitted routes,
+legacy event producers that still supply the former question-node field. The
+core event repository now accepts `field_uuid: SurveyFieldUuid` and constructs
+the mapped field correctly; old node identities are not converted implicitly.
+The obsolete `repositories/content_repo.py` is removed: document persistence
+belongs to survey versions, rather than individual node or scoring-rule tables.
+Its former editing, cloning/publication, answer lookup, and admin-reporting
+callers still require document-based replacements. Do not restore that repository
+as a compatibility layer for removed tables.
+Whole-document reads and replacement live in `surveys_repo.get_definition` and
+`update_definition`. Reads return independent `SurveyDefinition` snapshots;
+replacement flushes without committing. `SurveyDefinitionJSONB` serializes
+typed definitions to JSON and reconstructs the model when loading JSONB. The
+column's nullable annotation reflects empty drafts. Services still own document
+identity, revision/editability/publication policy, and individual field lookup.
+`ContentService.update_definition` is the whole-document edit operation: it
+looks up the scoped version, applies the existing draft-editability guard,
+delegates replacement to the survey repository, and commits. The old node,
+scoring-rule, and AI-preview methods are removed from that service. Existing
+builder/scoring-rule routes still call those removed methods and require their
+own document-based API migration; they are not compatibility shims.
+These repository functions do not finish the legacy workflow migration.
+Do not hide these gaps with permissive constructors, compatibility aliases, omitted routes,
 or a success claim based only on isolated schema checks.
 
 See [Schema conventions](../../../backend/app/schema/README.md) for the practical

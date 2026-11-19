@@ -12,14 +12,14 @@ from dataclasses import dataclass
 from typing import Any, cast, get_args
 from uuid import UUID
 
-from pydantic import ValidationError
-
 from app.schema.api.submission_sessions.answer_payload import (
     SubmissionAnswerValue,
     parse_answer_value,
 )
-from app.schema.enums import AnswerFamily, QuestionFamily, SubmissionAnswerState
 from app.schema.orm.core.survey_content import SurveyQuestion
+from pydantic import ValidationError
+
+from app.schema.enums import AnswerFamily, QuestionFamily, SubmissionAnswerState
 
 logger = logging.getLogger(__name__)
 

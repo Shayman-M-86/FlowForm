@@ -5,11 +5,11 @@ document_type: architecture
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-19
 tags: [backend, frontend, security]
 related_code:
   - "../../../backend/app/services/surveys.py"
-  - "../../../backend/app/services/results.py"
+  - "../../../backend/app/schema/models/results/service_results.py"
 change_triggers:
   - "../../../backend/app/api/v1/"
   - "../../../backend/app/services/public_submissions/"

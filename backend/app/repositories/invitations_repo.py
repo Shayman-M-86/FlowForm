@@ -1,4 +1,3 @@
-from datetime import datetime
 from hashlib import sha256
 from secrets import token_urlsafe
 
@@ -8,7 +7,15 @@ from sqlalchemy.orm import Session, selectinload
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import ProjectInvitationStatus
 from app.schema.orm.core.invitation import ProjectInvitation
-from app.schema.types import ProjectId, ProjectInvitationId, ProjectRoleId, UserId
+from app.schema.types import (
+    EmailAddress,
+    InvitationMessage,
+    ProjectId,
+    ProjectInvitationId,
+    ProjectRoleId,
+    Timestamp,
+    UserId,
+)
 
 
 def list_pending_by_project(db: Session, project_id: ProjectId) -> list[ProjectInvitation]:
@@ -28,7 +35,7 @@ def get_by_id(db: Session, invitation_id: ProjectInvitationId) -> ProjectInvitat
     return db.scalar(select(ProjectInvitation).where(ProjectInvitation.id == invitation_id))
 
 
-def get_pending_by_email(db: Session, *, email: str) -> list[ProjectInvitation]:
+def get_pending_by_email(db: Session, *, email: EmailAddress) -> list[ProjectInvitation]:
     return list(
         db.scalars(
             select(ProjectInvitation)
@@ -53,10 +60,10 @@ def create_invitation(
     db: Session,
     *,
     project_id: ProjectId,
-    invited_email: str,
+    invited_email: EmailAddress,
     role_id: ProjectRoleId | None,
     invited_by_user_id: UserId | None,
-    invite_message: str | None = None,
+    invite_message: InvitationMessage | None = None,
 ) -> tuple[ProjectInvitation, str]:
     """Create an invitation and return ``(invitation, raw_token)``.
 
@@ -89,7 +96,7 @@ def update_status(
     *,
     status: ProjectInvitationStatus,
     accepted_by_user_id: UserId | None = None,
-    accepted_at: datetime | None = None,
+    accepted_at: Timestamp | None = None,
 ) -> ProjectInvitation:
     invitation.status = status
     if accepted_by_user_id is not None:

@@ -13,9 +13,10 @@ from app.domain.guards import ensure_present
 from app.repositories import public_link_repo as plr
 from app.repositories import surveys_repo as sr
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
+from app.schema.enums import SubmissionAccessMethod
+from app.schema.models.results.service_results import SubmissionAccessGrant
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
-from app.services.results import SubmissionAccessGrant, SubmissionAccessMethod
 
 _LINK_ACCESS_METHODS: dict[str, SubmissionAccessMethod] = {
     "general": "general_link",

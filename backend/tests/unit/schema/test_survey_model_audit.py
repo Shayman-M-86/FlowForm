@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from app.schema.models.survey.answer_spec import AnswerSpec
-from app.schema.models.survey.answers import AnsweredAnswer
-from app.schema.models.survey.conditions import Condition
-from app.schema.models.survey.document import HeadingContent, NoticeContent, SurveyDefinition, SurveySection
-from app.schema.models.survey.fields import Interaction, TextInteraction
+from app.schema.models.survey_document.answer_spec import AnswerSpec
+from app.schema.models.survey_document.answers import AnsweredAnswer
+from app.schema.models.survey_document.conditions import Condition
+from app.schema.models.survey_document.document import HeadingContent, NoticeContent, SurveyDefinition, SurveySection
+from app.schema.models.survey_document.fields import Interaction, TextInteraction
 
 FIELD = "10000000-0000-4000-8000-000000000001"
 
@@ -117,7 +117,7 @@ def test_answer_bound_objects_are_typed_serialized_data():
 
 
 def test_survey_models_have_no_raw_scalar_or_arbitrary_json_fields():
-    root = Path(__file__).resolve().parents[3] / "app/schema/models/survey"
+    root = Path(__file__).resolve().parents[3] / "app/schema/models/survey_document"
     for path in root.glob("*.py"):
         for cls in ast.parse(path.read_text()).body:
             if not isinstance(cls, ast.ClassDef):

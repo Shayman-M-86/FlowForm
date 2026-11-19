@@ -7,13 +7,29 @@ These conventions apply when defining or changing value types across FlowForm.
 - `types.py` owns shared value definitions, grouped by domain: identities, text,
   timestamps, counts, email addresses, and collection bounds.
 - `models/` owns complete reusable Pydantic data structures, organized by domain.
+  `models/results/service_results.py` additionally owns internal service-result dataclasses.
+- `models/survey_document/` owns the document, field, workflow, and answer shapes.
+  `models/survey_access.py` separately owns visibility/public-slug variants;
+  survey access metadata is not part of the survey document.
 - `validators.py` owns shared scalar normalization and parsing helpers. Validators
   for complete structures remain beside their domain models.
-- `api/common/types.py` owns HTTP-specific values such as pagination, search,
-  and request-only constraints. Promote a type into `types.py` when other layers need it.
+- `api/common/types.py` owns HTTP-only values and request-only constraints.
+  Promote a type into `types.py` when other layers need it. Page numbers and
+  page sizes are shared with repositories; paginated HTTP result bounds remain
+  in the API package.
 - `api/requests/` and `api/responses/` own operation contracts.
-- `orm/` owns SQLAlchemy mappings. Shared models must not depend on API or ORM packages.
+- `orm/` owns SQLAlchemy mappings. Portable data models must not depend on API
+  or ORM packages. Internal service-result dataclasses may carry existing ORM
+  objects; import those annotations under `TYPE_CHECKING`, without loading
+  mappings or adding Pydantic validation to service outcomes.
 - `enums.py` owns enumerations shared across domains or persistence boundaries.
+  This includes `CanonicalSubjectFilter`, used by queries and repositories.
+- Shared search text and cryptographic byte labels live in `types.py` as they
+  cross application and repository boundaries. Byte labels carry static meaning
+  without imposing Pydantic constraints; crypto models re-export those same types.
+- `PermissionName` composes the existing vocabulary in `domain/permissions.py`
+  and is re-exported by `types.py`. Permission ORM rows remain `Permission`
+  objects; their storage stays VARCHAR rather than an inferred SQL ENUM.
 
 ## Investigate before defining a type
 
@@ -52,6 +68,11 @@ literals do not require artificial wrapper types.
 - Use bounded title/text types and explicit presentation/tone vocabularies.
 - Use model validators for relationships that types cannot express, such as ordered bounds.
   Prefer discriminated models when one field selects a different valid object shape.
+- Validate definitions with `SurveyDefinition` and answers with `AnswerData` or
+  its request subclasses. Their Pydantic validators own specification/value
+  consistency; do not repeat those checks in domain family-dispatch loops.
+  Stored publication/access state and response-store availability remain domain
+  guards. Answer validation alone does not prove published-field provenance.
 
 ## Identity and representation
 
@@ -88,6 +109,14 @@ literals do not require artificial wrapper types.
   need not acquire API-oriented types.
 - JSONB containing a serialized document remains stored JSON, not an instance
   of a Pydantic model unless an explicit conversion layer exists.
+- Survey definitions use `db/json_types.py:SurveyDefinitionJSONB` as that explicit
+  boundary: typed models serialize to JSON on write and stored JSON becomes a
+  `SurveyDefinition` on load. SQL storage remains JSONB; empty drafts may have
+  no definition. There is no Pydantic validation on ordinary ORM assignment.
+- `surveys_repo.get_definition` returns an independent document snapshot scoped
+  to project, survey, and version number. `update_definition` replaces the whole
+  document, marks it modified, and flushes without committing. Services own
+  authorization, editability, revision policy, document identity, and field lookup.
 
 ## Typed ORM construction
 

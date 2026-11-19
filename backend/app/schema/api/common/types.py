@@ -1,6 +1,6 @@
 """Canonical HTTP value types; validation constraints are defined once here."""
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from pydantic import AfterValidator, AwareDatetime, Field, StringConstraints
 
@@ -15,17 +15,12 @@ type SurveyPermissionSet = Annotated[set[SurveyPermission], Field(description="U
 
 
 # Value constraints live here; contracts declare defaults and requiredness.
-type PageNumber = Annotated[int, Field(ge=1)]
-type PageSize = Annotated[int, Field(ge=1, le=limits.LIST_PAGE_SIZE_MAX)]
-type SearchText = Annotated[str, StringConstraints(max_length=limits.DEFAULT_STRING_MAX)]
 type IdentityToken = Annotated[TrimmedString, StringConstraints(max_length=8192)]
 type AIImportPrompt = Annotated[TrimmedString, StringConstraints(max_length=4_000)]
 type ProfilePictureUrl = Annotated[Url, StringConstraints(strip_whitespace=True, min_length=1)]
 type Username = Annotated[TrimmedString, StringConstraints(max_length=128, pattern=r"^[a-zA-Z0-9_.\-]+$")]
 type FutureExpiry = Annotated[AwareDatetime, AfterValidator(validate_future_datetime_utc)]
 type SessionIdList = LimitedList[SubmissionSessionId]
-
-type CanonicalSubjectFilter = Literal["canonical", "alias", "all"]
 
 
 type PageItems[T] = Annotated[list[T], Field(max_length=limits.LIST_PAGE_SIZE_MAX)]

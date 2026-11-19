@@ -1,29 +1,25 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import Field
 
 from app.schema import limits
 from app.schema.api.common.base import APIRequestModel
-from app.schema.api.common.types import PageNumber, PageSize
 from app.schema.enums import SurveyVisibility
-from app.schema.models.survey.document import SurveyDefinition
-from app.schema.types import Slug, SurveyTitle
+from app.schema.models.common.survey_access import NonPublicSurveyAccess, PublicSurveyAccess
+from app.schema.models.survey_document.document import SurveyDefinition
+from app.schema.types import PageNumber, PageSize, Slug, SurveyTitle
 
 
-class PublicSurveyCreateRequest(APIRequestModel):
+class PublicSurveyCreateRequest(PublicSurveyAccess, APIRequestModel):
     """Create a public survey with a required public slug."""
 
     title: SurveyTitle
-    visibility: Literal["public"]
-    public_slug: Slug
 
 
-class NonPublicSurveyCreateRequest(APIRequestModel):
+class NonPublicSurveyCreateRequest(NonPublicSurveyAccess, APIRequestModel):
     """Create a private or link-only survey without a public slug."""
 
     title: SurveyTitle
-    visibility: Literal["private", "link_only"]
-    public_slug: None = None
 
 
 CreateSurveyRequest = Annotated[

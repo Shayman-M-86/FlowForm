@@ -7,11 +7,10 @@ Also provides the question-viewed event helper.
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.crypto.answers import (
@@ -21,7 +20,6 @@ from app.crypto.answers import (
 from app.crypto.models import AnswerContext, SubmissionSessionContext
 from app.db.error_handling import commit_with_err_handle
 from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
-from app.domain.survey_answer_validation import validate_answer
 from app.logging.request_timing import request_timing
 from app.repositories import content_repo
 from app.repositories.core import submission_answer_slots
@@ -29,20 +27,12 @@ from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo
 from app.schema.enums import SubmissionAnswerState
+from app.schema.models.results.service_results import AnswerSaveResult
 from app.schema.types import ClientMutationId
-from app.services.results import AnswerSaveResult
 
 logger = logging.getLogger(__name__)
 
 AnswerValueInput = SubmissionAnswerValue | dict[str, Any] | None
-
-
-def _answer_value_to_json(answer_value: AnswerValueInput) -> dict[str, Any] | None:
-    if answer_value is None:
-        return None
-    if isinstance(answer_value, BaseModel):
-        return cast(dict[str, Any], answer_value.model_dump(mode="json"))
-    return answer_value
 
 
 class AnswerSaveService:
@@ -82,11 +72,6 @@ class AnswerSaveService:
 
         answer_locator = derive_slot_answer_locator(slot.id, ctx.linkage_key)
         request_timing.log("Answer locator is derived")
-
-        json_answer_value = _answer_value_to_json(answer_value)
-        if answer_state != "cleared" and json_answer_value is not None:
-            validate_answer(question.question_schema, json_answer_value)
-        request_timing.log("Answer shape validated")
 
         answer_context = AnswerContext(
             dek=ctx.plaintext_session_dek,

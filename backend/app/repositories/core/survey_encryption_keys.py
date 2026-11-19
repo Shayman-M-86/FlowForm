@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.survey_encryption_key import SurveyEncryptionKey
-from app.schema.types import ProjectId, SurveyId
+from app.schema.types import ProjectId, SurveyId, WrappedSurveyKey
 
 
 def get_by_survey(db: Session, survey_id: SurveyId) -> SurveyEncryptionKey | None:
@@ -31,7 +31,7 @@ def create(
     *,
     project_id: ProjectId,
     survey_id: SurveyId,
-    wrapped_survey_branch_key: bytes,
+    wrapped_survey_branch_key: WrappedSurveyKey,
     kms_key_arn: str,
     kms_context_version: int,
 ) -> SurveyEncryptionKey:

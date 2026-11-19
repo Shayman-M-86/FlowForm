@@ -1,50 +1,99 @@
+"""Internal service outcomes and result carriers, separate from HTTP contracts.
+
+Dataclasses preserve existing construction and workflow behavior. ORM references
+are imported only for static checking, so importing these models does not load
+persistence mappings. Legacy admin/export fields remain explicit until those
+producers are migrated to the V2 document model.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import UUID
 
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from pydantic import BaseModel
 
 from app.schema.enums import (
-    AnswerFamily,
+    SubjectResolutionSource,
+    SubmissionAccessMethod,
     SubmissionAnswerState,
     SubmissionEventType,
     SubmissionSessionStatus,
+    TokenAction,
 )
-from app.schema.orm.core.project import Project
-from app.schema.orm.core.project_subject import ProjectSubject
-from app.schema.orm.core.submission_session import SubmissionSession
-from app.schema.orm.core.survey import Survey, SurveyVersion
-from app.schema.orm.core.survey_access import SurveyLink
-from app.schema.orm.core.user import User
+from app.schema.models.survey_document.answer_value import AnswerValue
 from app.schema.types import (
+    Count,
+    PageNumber,
+    PageSize,
     ProjectId,
+    ReadableId,
     ResponseStoreId,
+    SubjectCode,
     SubjectId,
     SubmissionSessionId,
     SurveyId,
     SurveyLinkId,
     SurveyVersionId,
+    Timestamp,
 )
 
-# Why the server-owned context resolved (or did not resolve) a stable subject.
-# Mirrors the precedence in subject-identity-and-access.md §4.1.
-SubjectResolutionSource = Literal[
-    "assigned_link",
-    "authenticated_user",
-    "recognition_token",
-    "anonymous_created",
-    "none",
-]
-SubmissionAccessMethod = Literal[
-    "public_slug",
-    "general_link",
-    "private_link",
-    "authenticated_assigned_link",
-]
+if TYPE_CHECKING:
+    from app.schema.orm.core.project import Project
+    from app.schema.orm.core.project_subject import ProjectSubject
+    from app.schema.orm.core.submission_session import SubmissionSession
+    from app.schema.orm.core.survey import Survey, SurveyVersion
+    from app.schema.orm.core.survey_access import SurveyLink
+    from app.schema.orm.core.user import User
+
+# Existing export labels, retained locally rather than resurrecting a shared
+# node-era enum or importing deleted API answer schemas.
+type LegacyAnswerFamily = Literal["choice", "field", "matching", "rating"]
+
+# Account outcomes
+
+
+@dataclass(slots=True)
+class BootstrapCurrentUserResult:
+    """Result of bootstrapping the authenticated local user."""
+
+    user: User
+    created: bool
+    default_project: Project | None = None
+
+
+# Survey discovery outcomes
+
+
+@dataclass(slots=True)
+class GetPublicSurveyResult:
+    """Result returned by PublicSurveyService.get_public_survey."""
+
+    survey: Survey
+    published_version: SurveyVersion | None
+
+
+@dataclass(slots=True)
+class ListPublicSurveysResult:
+    """Result returned by PublicSurveyService.list_public_surveys."""
+
+    surveys: list[Survey]
+    total: Count
+    page: PageNumber
+    page_size: PageSize
+
+
+@dataclass(slots=True)
+class ResolveLinkResult:
+    """Result of resolving a respondent survey access link token."""
+
+    link: SurveyLink
+    survey: Survey
+    published_version: SurveyVersion
+
+
+# Submission workflow outcomes
 
 
 @dataclass(slots=True)
@@ -61,33 +110,6 @@ class RecognitionTokenLookupResult:
     token_subject_id: SubjectId | None = None
     canonical_token_subject_id: SubjectId | None = None
     invalid_reason: str | None = None
-
-
-@dataclass(slots=True)
-class GetPublicSurveyResult:
-    """Result returned by PublicSurveyService.get_public_survey."""
-
-    survey: Survey
-    published_version: SurveyVersion | None
-
-
-@dataclass(slots=True)
-class ListPublicSurveysResult:
-    """Result returned by PublicSurveyService.list_public_surveys."""
-
-    surveys: list[Survey]
-    total: int
-    page: int
-    page_size: int
-
-
-@dataclass(slots=True)
-class ResolveLinkResult:
-    """Result of resolving a respondent survey access link token."""
-
-    link: SurveyLink
-    survey: Survey
-    published_version: SurveyVersion
 
 
 @dataclass(slots=True)
@@ -109,23 +131,6 @@ class SubmissionAccessGrant:
 
 
 @dataclass(slots=True)
-class ResolvedProjectSubject:
-    """Outcome of resolving a stable subject from server-owned context.
-
-    `subject` is the resolved row (or None when the flow permits untracked
-    anonymity); `source` records which precedence rule decided it. Callers that
-    expose this to respondents must serialise the safe shape only — never the
-    subject id, identity ids, or token hashes (subject-identity-and-access.md §6.2).
-    """
-
-    subject: ProjectSubject | None
-    source: SubjectResolutionSource
-
-
-TokenAction = Literal["issue", "rotate", "keep", "mark_used", "none"]
-
-
-@dataclass(slots=True)
 class SubjectResolutionResult:
     """Outcome of subject-resolution including required token and merge instructions.
 
@@ -134,7 +139,7 @@ class SubjectResolutionResult:
     """
 
     final_subject_id: SubjectId
-    subject_code: str
+    subject_code: SubjectCode
     subject_source: SubjectResolutionSource
     token_action: TokenAction
     needs_identity_write: bool = False
@@ -155,20 +160,23 @@ class AccountLinkingResult:
     raw_recognition_token: str | None
 
 
-@dataclass(slots=True)
-class BootstrapCurrentUserResult:
-    """Result of bootstrapping the authenticated local user."""
-
-    user: User
-    created: bool
-    default_project: Project | None = None
-
-
 @dataclass(frozen=True, slots=True)
 class AnswerSaveResult:
     """Result of saving a respondent answer."""
 
-    node_key: str
+    node_key: ReadableId
+
+
+@dataclass(frozen=True, slots=True)
+class DeletionResult:
+    """Outcome of a response deletion attempt."""
+
+    session_id: SubmissionSessionId
+    response_deleted: bool
+    core_deleted: bool
+
+
+# Existing admin result trees and exports
 
 
 @dataclass(frozen=True, slots=True)
@@ -177,12 +185,12 @@ class AnswerSlotResult:
 
     slot_id: UUID
     question_node_id: UUID
-    question_key: str | None
-    answer_family: AnswerFamily | None
+    question_key: ReadableId | None
+    answer_family: LegacyAnswerFamily | None
     has_encrypted_answer: bool
     decrypted: bool
     answer_state: SubmissionAnswerState | None
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None
+    answer_value: AnswerValue | dict[str, Any] | None
     question_content: dict[str, Any] | None = None
     question_sort_key: int | None = None
 
@@ -193,7 +201,7 @@ class SessionEventResult:
 
     event_type: SubmissionEventType
     question_node_id: UUID | None
-    received_at: datetime
+    received_at: Timestamp
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,14 +227,14 @@ class ExportRow:
 
     session_id: SubmissionSessionId
     status: SubmissionSessionStatus
-    started_at: datetime
-    completed_at: datetime | None
-    question_key: str | None = None
-    answer_family: AnswerFamily | None = None
+    started_at: Timestamp
+    completed_at: Timestamp | None
+    question_key: ReadableId | None = None
+    answer_family: LegacyAnswerFamily | None = None
     has_encrypted_answer: bool | None = None
     decrypted: bool | None = None
     answer_state: SubmissionAnswerState | None = None
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
+    answer_value: AnswerValue | dict[str, Any] | None = None
 
     def to_json_dict(self) -> dict[str, Any]:
         """Flatten to a JSON/CSV-safe dict, normalising the answer_value union."""
@@ -254,12 +262,3 @@ class ExportFile:
     body: str
     mimetype: str
     filename: str
-
-
-@dataclass(frozen=True, slots=True)
-class DeletionResult:
-    """Outcome of a response deletion attempt."""
-
-    session_id: SubmissionSessionId
-    response_deleted: bool
-    core_deleted: bool

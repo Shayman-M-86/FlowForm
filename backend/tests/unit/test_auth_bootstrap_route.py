@@ -10,9 +10,9 @@ from app.api.v1.account import account_bp
 from app.core.errors import AuthError
 from app.core.extensions import auth
 from app.middleware.url_converters import register_url_converters
+from app.schema.models.results.service_results import BootstrapCurrentUserResult
 from app.schema.orm.core.user import User
 from app.schema.types import Auth0UserId, UserId
-from app.services.results import BootstrapCurrentUserResult
 
 
 @pytest.fixture

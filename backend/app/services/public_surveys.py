@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.domain.errors import SurveyNotFoundBySlugError
 from app.domain.guards import ensure_present
 from app.repositories import surveys_repo as sr
-from app.services.results import GetPublicSurveyResult, ListPublicSurveysResult
+from app.schema.models.results.service_results import GetPublicSurveyResult, ListPublicSurveysResult
 
 
 class PublicSurveyService:

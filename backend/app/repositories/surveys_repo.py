@@ -2,11 +2,23 @@ from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
+from app.schema.models.survey_document import SurveyDefinition
 from app.schema.orm.core.survey import Survey, SurveyVersion
-from app.schema.types import ProjectId, ResponseStoreId, SurveyId, UserId
+from app.schema.types import (
+    Count,
+    PageNumber,
+    PageSize,
+    ProjectId,
+    ResponseStoreId,
+    Slug,
+    SurveyId,
+    SurveyVersionNumber,
+    UserId,
+)
 
 
 def list_surveys(db: Session, project_id: ProjectId) -> list[Survey]:
@@ -69,7 +81,9 @@ def list_versions(db: Session, survey_id: SurveyId) -> list[SurveyVersion]:
     )
 
 
-def get_version(db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: int) -> SurveyVersion | None:
+def get_version(
+    db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: SurveyVersionNumber
+) -> SurveyVersion | None:
     return db.scalar(
         select(SurveyVersion)
         .join(Survey, Survey.id == SurveyVersion.survey_id)
@@ -82,13 +96,37 @@ def get_version(db: Session, project_id: ProjectId, survey_id: SurveyId, version
     )
 
 
-def create_version(db: Session, survey_id: SurveyId, created_by_user_id: UserId | None = None) -> SurveyVersion:
+def get_definition(
+    db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: SurveyVersionNumber
+) -> SurveyDefinition | None:
+    """Read a definition snapshot, or None for a missing version or empty draft."""
+    version = get_version(db, project_id, survey_id, version_number)
+    if version is None or version.definition is None:
+        return None
+    return version.definition.model_copy(deep=True)
+
+
+def update_definition(db: Session, version: SurveyVersion, definition: SurveyDefinition) -> SurveyVersion:
+    """Replace and flush the complete definition; the caller owns the transaction.
+
+    Services own editability, document/version identity, revision policy, and
+    publication checks. Explicitly marking replacement also persists a document
+    whose nested values were edited in memory before this call.
+    """
+    version.definition = definition.model_copy(deep=True)
+    flag_modified(version, "definition")
+    flush_with_err_handle(db, contexts=[version])
+    return version
+
+
+def create_version(db: Session, survey_id: SurveyId, created_by_user_id: UserId | None = None, definition: SurveyDefinition | None = None) -> SurveyVersion:  # noqa: E501
     max_num = db.scalar(select(func.max(SurveyVersion.version_number)).where(SurveyVersion.survey_id == survey_id)) or 0
     version = SurveyVersion(
         survey_id=survey_id,
         version_number=max_num + 1,
         status="draft",
         created_by_user_id=created_by_user_id,
+        definition=definition.model_copy(deep=True) if definition is not None else None,
     )
     db.add(version)
     flush_with_err_handle(db, contexts=[version])
@@ -99,7 +137,6 @@ def publish_version(
     db: Session,
     survey: Survey,
     version: SurveyVersion,
-    compiled_schema: dict,
 ) -> SurveyVersion:
     if survey.published_version_id and survey.published_version_id != version.id:
         current = db.get(SurveyVersion, survey.published_version_id)
@@ -110,7 +147,6 @@ def publish_version(
             flush_with_err_handle(db, contexts=[current, survey])
 
     version.status = "published"
-    version.compiled_schema = compiled_schema
     version.published_at = datetime.now(UTC)
 
     # SQLAlchemy flushes all dirty session objects together, so pass both as
@@ -138,14 +174,14 @@ def unpublish_version(db: Session, survey: Survey, version: SurveyVersion) -> Su
     return version
 
 
-def list_public_surveys(db: Session, *, page: int, page_size: int) -> tuple[list[Survey], int]:
+def list_public_surveys(db: Session, *, page: PageNumber, page_size: PageSize) -> tuple[list[Survey], Count]:
     base = select(Survey).where(Survey.visibility == "public")
     total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
     surveys = list(db.scalars(base.order_by(Survey.id).offset((page - 1) * page_size).limit(page_size)))
     return surveys, total
 
 
-def get_by_public_slug(db: Session, public_slug: str) -> Survey | None:
+def get_by_public_slug(db: Session, public_slug: Slug) -> Survey | None:
     return db.scalar(select(Survey).where(Survey.public_slug == public_slug, Survey.visibility == "public"))
 
 

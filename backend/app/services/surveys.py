@@ -12,9 +12,6 @@ from app.domain import survey_rules, version_rules
 from app.domain.errors import SurveyNotFoundError, VersionNotFoundError
 from app.domain.guards import ensure_present
 from app.repositories import (
-    content_repo as cr,
-)
-from app.repositories import (
     response_stores_repo as rsr,
 )
 from app.repositories import (
@@ -118,7 +115,6 @@ class SurveyService:
 
     def delete_survey(self, db: Session, project_id: ProjectId, survey_id: SurveyId, actor: User) -> None:  # noqa: ARG002
         survey = self._get_survey(db, project_id, survey_id)
-        survey_rules.ensure_can_delete_survey(survey)
         sr.delete_survey(db, survey)
         commit_with_err_handle(db, contexts=[survey])
 
@@ -171,9 +167,7 @@ class SurveyService:
         self._get_survey(db, project_id, survey_id)
         source_version = self._get_version(db, project_id, survey_id, version_number)
 
-        draft = sr.create_version(db, survey_id, created_by_user_id=actor.id)
-        cr.clone_nodes(db, source_version, draft)
-        cr.clone_scoring_rules(db, source_version, draft)
+        draft = sr.create_version(db, survey_id, created_by_user_id=actor.id, definition=source_version.definition)
 
         commit_with_err_handle(db, contexts=[draft])
         return draft
@@ -192,26 +186,8 @@ class SurveyService:
 
         version_rules.ensure_is_draft(version=version)
 
-        questions = cr.list_nodes(db, version.id)
-        version_rules.ensure_has_questions(questions=questions)
+        version_rules.ensure_has_survey_definition(version=version)
 
-        all_nodes = cr.list_nodes(db, version.id)
-        scoring_rules = cr.list_scoring_rules(db, version.id)
-
-        compiled = {
-            "nodes": [
-                {
-                    "node_id": str(n.id),
-                    "type": n.node_type,
-                    "sort_key": n.sort_key,
-                    "content": n.question_schema,
-                }
-                for n in all_nodes
-            ],
-            "scoring_rules": [
-                {"id": s.id, "scoring_key": s.scoring_key, "scoring_schema": s.scoring_schema} for s in scoring_rules
-            ],
-        }
         self._ensure_survey_default_response_store(
             db,
             survey=survey,
@@ -223,7 +199,7 @@ class SurveyService:
             survey_id=survey.id,
         )
 
-        result = sr.publish_version(db, survey, version, compiled)
+        result = sr.publish_version(db, survey, version)
         commit_with_err_handle(db, contexts=[result, survey, version])
         tracing.fields(outcome="published", version_number=version_number)
         return result

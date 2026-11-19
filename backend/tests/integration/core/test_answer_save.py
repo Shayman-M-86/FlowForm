@@ -17,7 +17,7 @@ from app.domain.errors import QuestionNotInVersionError
 from app.repositories.response import response_envelope_repo
 from app.schema.orm.core import SubmissionAnswerSlot
 from app.schema.orm.response import ResponseAnswer
-from app.schema.types import ClientMutationId
+from app.schema.types import ClientMutationId, WrappedSessionKey
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from tests.integration.core.factories import (
     make_project,
@@ -98,7 +98,7 @@ def _create_session_row(core_db, project, survey, version):
 def _create_envelope_and_context(core_db, response_db, session, version):
     loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
     session_locator = loc.session_locator
-    wrapped_session_dek = os.urandom(64)
+    wrapped_session_dek = WrappedSessionKey(os.urandom(64))
 
     envelope = response_envelope_repo.create(
         response_db,

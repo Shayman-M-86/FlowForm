@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 from app.schema.api.common.base import APIRequestModel
-from app.schema.models.survey.answers import AnsweredAnswer, ClearedAnswer
+from app.schema.models.survey_document.answers import AnsweredAnswer, ClearedAnswer
 from app.schema.types import ClientMutationId, Slug, SurveyAccessToken, SurveyFieldUuid
 
 

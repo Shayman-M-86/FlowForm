@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+from pydantic import TypeAdapter, ValidationError
+
 from app.domain.errors import (
     SurveyNoResponseStoreError,
     SurveyNotAccessibleError,
-    SurveyNotFoundError,
     SurveyNotPublishedError,
     SurveyVisibilityMismatchError,
 )
+from app.schema.enums import SurveyVisibility
+from app.schema.models.common.survey_access import SurveyAccess
+from app.schema.models.survey_document import SurveyDefinition
 from app.schema.orm.core.survey import Survey, SurveyVersion
-from app.schema.types import ProjectId, ResponseStoreId, SurveyId
+from app.schema.types import ProjectId, ResponseStoreId, Slug, SurveyId
+
+_ACCESS = TypeAdapter(SurveyAccess)
+
+
+def validate_definition(value: object) -> SurveyDefinition:
+    """Validate a complete V2 document using its authoritative Pydantic model."""
+    return SurveyDefinition.model_validate(value)
 
 
 def ensure_is_published(
@@ -36,13 +47,6 @@ def ensure_has_response_store(*, survey: Survey) -> ResponseStoreId:
     return survey.default_response_store_id
 
 
-def ensure_survey_belongs_to_project(
-    *, survey_id: SurveyId, project_surveys_ids: list[SurveyId], project_id: ProjectId
-) -> None:
-    if survey_id not in project_surveys_ids:
-        raise SurveyNotFoundError(survey_id=survey_id, project_id=project_id)
-
-
 def ensure_default_response_store(
     *,
     survey: Survey,
@@ -53,21 +57,9 @@ def ensure_default_response_store(
     return survey.default_response_store_id
 
 
-def ensure_visibility_slug_coherent(*, visibility: str, public_slug: str | None) -> None:
-    """Validate that ``visibility`` and ``public_slug`` form a coherent pair.
-
-    Mirrors the database CHECK constraints ``ck_surveys_public_requires_slug``
-    and ``ck_surveys_slug_requires_public_visibility``. Call this before any
-    write that may change either field so the request fails fast with a clean
-    422 instead of tripping the CHECK at COMMIT time.
-    """
-    if visibility == "public" and not public_slug:
-        raise SurveyVisibilityMismatchError("public_slug is required when visibility is 'public'.")
-    if public_slug and visibility != "public":
-        raise SurveyVisibilityMismatchError("public_slug requires visibility 'public'.")
-
-
-def ensure_can_delete_survey(survey: Survey) -> None:
-    if survey.published_version_id is not None:
-        pass
-        # raise SurveyDeletePublishedError(survey_id=survey.id)
+def ensure_visibility_slug_coherent(*, visibility: SurveyVisibility, public_slug: Slug | None) -> None:
+    """Validate merged update metadata with the same variants used by requests."""
+    try:
+        _ACCESS.validate_python({"visibility": visibility, "public_slug": public_slug})
+    except ValidationError as exc:
+        raise SurveyVisibilityMismatchError("Survey visibility and public slug are inconsistent.") from exc

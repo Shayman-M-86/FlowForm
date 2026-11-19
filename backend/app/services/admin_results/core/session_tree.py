@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
 
 from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from sqlalchemy.orm import Session
@@ -23,19 +22,15 @@ from app.repositories import content_repo as cr
 from app.repositories.core import submission_answer_slots, submission_events
 from app.repositories.core import submission_sessions as ssr
 from app.schema.enums import SubmissionAnswerState
+from app.schema.models.results.service_results import AnswerSlotResult, SessionEventResult, SessionTreeResult
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SubmissionSession
-from app.schema.types import SurveyId
+from app.schema.types import SubjectId, SurveyId
 from app.services.admin_results.core.decryption import resolve_and_decrypt_answers
 from app.services.admin_results.core.question_meta import (
     QuestionMetaMap,
     build_question_meta_map,
     resolve_answer_value,
-)
-from app.services.results import (
-    AnswerSlotResult,
-    SessionEventResult,
-    SessionTreeResult,
 )
 
 if TYPE_CHECKING:
@@ -62,11 +57,11 @@ class SessionTreeBuilder:
         db: Session,
         *,
         survey_id: SurveyId,
-        subject_ids: list[UUID],
-    ) -> dict[UUID, list[SubmissionSession]]:
+        subject_ids: list[SubjectId],
+    ) -> dict[SubjectId, list[SubmissionSession]]:
         """Group this survey's sessions for the given subjects by subject id."""
         sessions = ssr.list_by_subjects(db, survey_id=survey_id, project_subject_ids=subject_ids)
-        grouped: dict[UUID, list[SubmissionSession]] = defaultdict(list)
+        grouped: dict[SubjectId, list[SubmissionSession]] = defaultdict(list)
         for session in sessions:
             if session.project_subject_id is not None:
                 grouped[session.project_subject_id].append(session)

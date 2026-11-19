@@ -5,11 +5,11 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-11-18
+last_edited: 2026-11-19
 tags: [backend, frontend]
 related_code:
   - "../../../backend/app/schema/orm/core/survey.py"
-  - "../../../backend/app/schema/models/survey/document.py"
+  - "../../../backend/app/schema/models/survey_document/document.py"
   - "../../../backend/app/schema/orm/core/submission_answer_slot.py"
   - "../../../backend/app/services/public_submissions/api/session_management.py"
   - "../../../backend/app/services/admin_results/core/session_tree.py"

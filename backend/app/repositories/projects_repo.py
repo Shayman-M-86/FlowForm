@@ -7,10 +7,10 @@ from app.repositories.permissions_repo import get_permissions_by_names
 from app.repositories.response_stores_repo import get_or_create_platform_primary_store
 from app.schema.api.requests.projects import CreateProjectRequest, UpdateProjectRequest
 from app.schema.orm.core.project import Project, ProjectMembership, ProjectRole
-from app.schema.types import ProjectId, UserId
+from app.schema.types import ProjectId, RoleName, Slug, UserId
 
 # The hardcoded name for the system owner role created on every new project.
-OWNER_ROLE_NAME = "Owner"
+OWNER_ROLE_NAME: RoleName = "Owner"
 
 
 def list_projects(db: Session, user_id: UserId) -> list[Project]:
@@ -32,7 +32,7 @@ def get_project(db: Session, project_id: ProjectId, user_id: UserId) -> Project 
     )
 
 
-def get_project_by_slug(db: Session, slug: str, user_id: UserId) -> Project | None:
+def get_project_by_slug(db: Session, slug: Slug, user_id: UserId) -> Project | None:
     """Fetch a project by slug only if the given user is a member."""
     return db.scalar(
         select(Project)

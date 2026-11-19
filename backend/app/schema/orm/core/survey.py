@@ -13,11 +13,12 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CoreBase
+from app.db.json_types import SurveyDefinitionJSONB
 from app.schema.enums import SurveyVersionStatus, SurveyVisibility
+from app.schema.models.survey_document import SurveyDefinition
 from app.schema.orm.base import TimestampMixin
 from app.schema.types import (
     ProjectId,
@@ -112,7 +113,7 @@ class SurveyVersion(TimestampMixin, CoreBase, kw_only=True):
     )
     version_number: Mapped[SurveyVersionNumber] = mapped_column(Integer, nullable=False)
     status: Mapped[SurveyVersionStatus] = mapped_column(Text, default="draft", nullable=False)
-    definition: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    definition: Mapped[SurveyDefinition | None] = mapped_column(SurveyDefinitionJSONB(), nullable=True, default=None)
     published_at: Mapped[Timestamp | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
     created_by_user_id: Mapped[UserId | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, default=None

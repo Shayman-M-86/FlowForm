@@ -23,6 +23,7 @@ SurveyLinkAssignmentSource = Literal["manual", "automated"]
 SurveyVersionStatus = Literal["draft", "published", "archived"]
 SubjectIdentityType = Literal["email", "authenticated_user"]
 SubjectIdentityVerificationStatus = Literal["unverified", "verified"]
+CanonicalSubjectFilter = Literal["canonical", "alias", "all"]
 SubmissionChannel = Literal["link", "slug", "system"]
 SubmissionStatus = Literal["pending", "stored", "failed"]
 SubmissionSessionStatus = Literal["in_progress", "completed", "abandoned"]
@@ -38,3 +39,21 @@ SingleChoicePresentation = Literal["radio", "dropdown", "buttons", "cards"]
 MultipleChoicePresentation = Literal["checkboxes", "buttons", "cards"]
 BooleanPresentation = Literal["yes_no", "toggle"]
 DatePresentation = Literal["calendar", "input"]
+
+# Submission workflow decisions shared by internal result models.
+type SubjectResolutionSource = Literal[
+    "assigned_link",
+    "authenticated_user",
+    "recognition_token",
+    "anonymous_created",
+    "none",
+]
+
+type SubmissionAccessMethod = Literal[
+    "public_slug",
+    "general_link",
+    "private_link",
+    "authenticated_assigned_link",
+]
+
+type TokenAction = Literal["issue", "rotate", "keep", "mark_used", "none"]

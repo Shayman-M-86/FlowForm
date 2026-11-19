@@ -11,7 +11,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from app.schema.api.requests.submission_sessions import SaveSubmissionSessionAnswerRequest
 from app.schema.api.responses.submission_sessions.answers import SavedAnsweredResponse, SavedClearedResponse
-from app.schema.models.survey.fields import SurveyField
+from app.schema.models.survey_document.fields import SurveyField
 from app.schema.types import ClientMutationId, ProjectMembershipId, ProjectRoleId, SurveyFieldUuid, Timestamp
 
 FIELD = "10000000-0000-4000-8000-000000000001"

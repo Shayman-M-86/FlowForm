@@ -24,17 +24,17 @@ from app.repositories import surveys_repo as sr
 from app.repositories.core import project_participants as ppr
 from app.repositories.core import project_subjects as subjects
 from app.schema.api.requests.survey_access_links import ResolveSurveyAccessLinkTokenRequest
-from app.schema.orm.core.user import User
-from app.services.participants import ParticipantService
-from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
-from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
-from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
-from app.services.results import (
+from app.schema.models.results.service_results import (
     AccountLinkingResult,
     GetPublicSurveyResult,
     ListPublicSurveysResult,
     ResolveLinkResult,
 )
+from app.schema.orm.core.user import User
+from app.services.participants import ParticipantService
+from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
+from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
+from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
 
 
 class SurveyResolveService:

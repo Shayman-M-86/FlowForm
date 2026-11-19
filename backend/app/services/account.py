@@ -107,10 +107,10 @@ class UserAccountService:
         _call_mgmt(
             _mgmt().update_user,
             actor.auth0_user_id,
-            email=data.email,
+            email=data.email.lower(),
         )
 
-        ur.update_user_email(actor, email=data.email)
+        ur.update_user_email(actor, email=data.email.lower())
         commit_with_err_handle(db, contexts=[actor])
         return actor
 

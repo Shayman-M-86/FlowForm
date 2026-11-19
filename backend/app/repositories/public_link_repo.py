@@ -7,7 +7,15 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 from app.schema.orm.core.survey_access import SurveyLink
-from app.schema.types import ParticipantId, ProjectId, SurveyId, SurveyLinkId
+from app.schema.types import (
+    ParticipantId,
+    ProjectId,
+    SurveyAccessLinkName,
+    SurveyAccessToken,
+    SurveyId,
+    SurveyLinkId,
+    Timestamp,
+)
 
 _TOKEN_BYTES = 32
 
@@ -19,7 +27,7 @@ class _UnsetType:
 _UNSET = _UnsetType()
 
 
-def _make_token() -> str:
+def _make_token() -> SurveyAccessToken:
     return secrets.token_urlsafe(_TOKEN_BYTES)
 
 
@@ -41,11 +49,11 @@ def create_link(
     *,
     project_id: ProjectId,
     survey_id: SurveyId,
-    name: str,
+    name: SurveyAccessLinkName,
     link_type: SurveyLinkType,
     assignment_source: SurveyLinkAssignmentSource,
     assigned_participant_id: ParticipantId | None,
-    expires_at: datetime | None,
+    expires_at: Timestamp | None,
 ) -> SurveyLink:
     token = _make_token()
 
@@ -69,11 +77,11 @@ def update_link(
     *,
     link: SurveyLink,
     is_active: bool | None = None,
-    name: str | None = None,
+    name: SurveyAccessLinkName | None = None,
     link_type: SurveyLinkType | _UnsetType = _UNSET,
     assignment_source: SurveyLinkAssignmentSource | _UnsetType = _UNSET,
     assigned_participant_id: ParticipantId | None | _UnsetType = _UNSET,
-    expires_at: datetime | None | _UnsetType = _UNSET,
+    expires_at: Timestamp | None | _UnsetType = _UNSET,
 ) -> SurveyLink:
     if is_active is not None:
         link.is_active = is_active
@@ -119,7 +127,7 @@ def delete_link(db: Session, link: SurveyLink) -> None:
     flush_with_err_handle(db, contexts=[link])
 
 
-def resolve_token(db: Session, token: str) -> SurveyLink | None:
+def resolve_token(db: Session, token: SurveyAccessToken) -> SurveyLink | None:
     if not token:
         return None
 

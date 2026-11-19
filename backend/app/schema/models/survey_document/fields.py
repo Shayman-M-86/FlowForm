@@ -13,8 +13,8 @@ from app.schema.enums import (
     SingleChoicePresentation,
 )
 from app.schema.models.common.base import DataModel
-from app.schema.models.survey.answer_spec import AnswerSpec
-from app.schema.models.survey.conditions import FieldBehaviour
+from app.schema.models.survey_document.answer_spec import AnswerSpec
+from app.schema.models.survey_document.conditions import FieldBehaviour
 from app.schema.types import (
     ChoiceOptionLabel,
     ChoiceOptionUuid,

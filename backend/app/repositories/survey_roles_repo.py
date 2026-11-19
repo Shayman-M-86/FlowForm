@@ -2,8 +2,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.orm.core.permission import Permission
 from app.schema.orm.core.survey_access import SurveyRole
-from app.schema.types import ProjectId, SurveyRoleId
+from app.schema.types import ProjectId, RoleDescription, RoleName, SurveyRoleId
 
 
 def list_by_project(db: Session, project_id: ProjectId) -> list[SurveyRole]:
@@ -29,9 +30,9 @@ def create_role(
     db: Session,
     *,
     project_id: ProjectId,
-    name: str,
-    description: str | None,
-    permissions: list,
+    name: RoleName,
+    description: RoleDescription | None,
+    permissions: list[Permission],
 ) -> SurveyRole:
     role = SurveyRole(project_id=project_id, name=name, description=description)
     role.permissions = permissions
@@ -45,9 +46,9 @@ def update_role(
     role: SurveyRole,
     *,
     fields_set: set[str],
-    name: str | None,
-    description: str | None,
-    permissions: list | None,
+    name: RoleName | None,
+    description: RoleDescription | None,
+    permissions: list[Permission] | None,
 ) -> SurveyRole:
     if "name" in fields_set and name is not None:
         role.name = name

@@ -4,13 +4,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.schema.orm.core.user import User
-from app.schema.types import Auth0UserId
+from app.schema.types import Auth0UserId, EmailAddress, ProfileName
 
 _PUBLIC_ID_CONSTRAINT = "uq_users_public_id"
 _MAX_PUBLIC_ID_RETRIES = 5
 
 
-def get_user_by_email(db: Session, email: str) -> User | None:
+def get_user_by_email(db: Session, email: EmailAddress) -> User | None:
     """Return the user row for a given email address, if it exists."""
     return db.scalar(select(User).where(User.email == email))
 
@@ -24,8 +24,8 @@ def create_user(
     db: Session,
     *,
     auth0_user_id: Auth0UserId,
-    email: str,
-    display_name: str | None,
+    email: EmailAddress,
+    display_name: ProfileName | None,
     email_verified: bool = False,
 ) -> User:
     """Create and flush a new user row, retrying on public_id collisions."""
@@ -58,8 +58,8 @@ def create_user(
 def update_user(
     user: User,
     *,
-    email: str,
-    display_name: str | None,
+    email: EmailAddress,
+    display_name: ProfileName | None,
 ) -> User:
     """Update the mutable identity fields for a user row."""
     user.email = email
@@ -67,7 +67,7 @@ def update_user(
     return user
 
 
-def update_user_email(user: User, *, email: str) -> User:
+def update_user_email(user: User, *, email: EmailAddress) -> User:
     """Update only the email field on a user row."""
     user.email = email
     return user

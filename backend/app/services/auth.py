@@ -9,8 +9,8 @@ from app.repositories import projects_repo as pr
 from app.repositories import users_repo as ur
 from app.schema.api.requests.auth import BootstrapUserRequest
 from app.schema.api.requests.projects import CreateProjectRequest
+from app.schema.models.results.service_results import BootstrapCurrentUserResult
 from app.schema.types import Auth0UserId, UserId
-from app.services.results import BootstrapCurrentUserResult
 from app.services.users import UserService
 
 _SLUG_INVALID_CHARS_RE = re.compile(r"[^a-z0-9-]+")

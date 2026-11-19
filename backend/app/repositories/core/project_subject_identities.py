@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.project_subject import ProjectSubjectIdentity
 from app.schema.orm.core.user import User
-from app.schema.types import ProjectId, SubjectId, SubjectIdentityId, UserId
+from app.schema.types import EmailAddress, ProjectId, SubjectId, SubjectIdentityId, Timestamp, UserId
 
 
 def get_identity(
@@ -49,7 +49,7 @@ def create_user_identity(
     project_id: ProjectId,
     project_subject_id: SubjectId,
     user: User,
-    now: datetime | None = None,
+    now: Timestamp | None = None,
 ) -> ProjectSubjectIdentity:
     current = now or datetime.now(UTC)
     identity = ProjectSubjectIdentity(
@@ -72,7 +72,7 @@ def create_email_identity(
     *,
     project_id: ProjectId,
     project_subject_id: SubjectId,
-    normalized_email: str,
+    normalized_email: EmailAddress,
 ) -> ProjectSubjectIdentity:
     identity = ProjectSubjectIdentity(
         project_id=project_id,
@@ -89,7 +89,7 @@ def set_normalized_email(
     db: Session,
     *,
     identity: ProjectSubjectIdentity,
-    normalized_email: str,
+    normalized_email: EmailAddress,
 ) -> ProjectSubjectIdentity:
     """Re-point an email identity to a new address. Caller ensures it is email-typed."""
     identity.normalized_email = normalized_email

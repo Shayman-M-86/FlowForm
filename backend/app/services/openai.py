@@ -19,24 +19,25 @@ logger = logging.getLogger(__name__)
 class OpenAIService:
     """Generate a survey preview without changing stored survey content."""
 
-    def __init__(self) -> None:
+    def __init__(self, settings: OpenAISettings) -> None:
         self._limiter: RateLimitService | None = None
+        self._settings = settings
 
-    def generate(self, prompt: str, settings: OpenAISettings, user_key: str) -> AIImportResponse:
+    def generate(self, prompt: str, user_key: str) -> AIImportResponse:
         """Call Structured Outputs and validate the resulting builder nodes."""
         try:
-            api_key = settings.api_key
+            api_key = self._settings.api_key
         except ValueError as exc:
             logger.error("OpenAI API key file is unavailable: %s", exc)
             raise AppError(503, "ai_import_unavailable", "Survey generation is not configured") from exc
         if api_key is None or not api_key.get_secret_value():
             raise AppError(503, "ai_import_unavailable", "Survey generation is not configured")
-        self._check_rate_limit(user_key, settings)
+        self._check_rate_limit(user_key, self._settings)
 
         try:
             client = OpenAI(api_key=api_key.get_secret_value(), timeout=30.0, max_retries=1)
             response = client.responses.parse(
-                model=settings.model,
+                model=self._settings.model,
                 instructions=(
                     "Create a concise, neutral survey draft. Return 1 to 20 questions. "
                     "Use text, single_choice, multiple_choice, or rating. "

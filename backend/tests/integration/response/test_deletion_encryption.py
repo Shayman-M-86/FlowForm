@@ -21,6 +21,7 @@ from app.crypto.models import LinkageKey
 from app.domain.errors import EnvelopeNotFoundError
 from app.repositories.core.submission_sessions import create_session
 from app.repositories.response import response_envelope_repo
+from app.schema.types import WrappedSessionKey
 from app.services.admin_results.service import AdminResultsService
 from tests.integration.core.factories import (
     make_project,
@@ -135,7 +136,7 @@ class TestDeletion:
 
         loc = derive_session_locator(session.id, _FAKE_LINKAGE_KEY)
         session_locator = loc.session_locator
-        wrapped_session_dek = os.urandom(64)
+        wrapped_session_dek = WrappedSessionKey(os.urandom(64))
 
         response_envelope_repo.create(
             response_db,

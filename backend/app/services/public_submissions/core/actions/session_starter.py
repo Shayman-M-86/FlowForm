@@ -27,6 +27,7 @@ from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_envelope_repo
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.api.responses.submission_sessions import StartSubmissionSessionResponse
+from app.schema.models.results.service_results import SubmissionAccessGrant
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
 from app.services.public_submissions.core.resolution.session_subject_service import (
@@ -34,7 +35,6 @@ from app.services.public_submissions.core.resolution.session_subject_service imp
 )
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
-from app.services.results import SubmissionAccessGrant
 
 if TYPE_CHECKING:
     from app.cache import AppCache

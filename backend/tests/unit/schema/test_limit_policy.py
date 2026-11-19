@@ -8,7 +8,8 @@ from werkzeug.routing import Map
 from werkzeug.routing import ValidationError as RoutingValidationError
 
 from app.middleware.url_converters import BoundedIntegerConverter
-from app.schema.api.common.types import PageItems, PageSize, ProjectPermission, ProjectPermissionSet
+from app.schema.types import PageSize
+from app.schema.api.common.types import PageItems, ProjectPermission, ProjectPermissionSet
 from app.schema.api.responses.survey_results import SurveySessionTreeResponses
 from app.schema.types import DatabaseIdentity, LimitedList
 

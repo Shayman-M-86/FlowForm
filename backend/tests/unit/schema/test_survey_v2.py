@@ -5,8 +5,8 @@ import json
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from app.schema.models.survey.answers import AnswerSubmission, SurveyCompletion
-from app.schema.models.survey.document import SurveyDefinition
+from app.schema.models.survey_document.answers import AnswerSubmission, SurveyCompletion
+from app.schema.models.survey_document.document import SurveyDefinition
 
 FIELD_UUID = "10000000-0000-4000-8000-000000000001"
 OPTION_UUID = "20000000-0000-4000-8000-000000000001"

@@ -2,12 +2,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.enums import ResponseStoreType
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.types import ProjectId, UserId
 
 DEFAULT_PLATFORM_RESPONSE_STORE_NAME = "Platform Primary"
-DEFAULT_PLATFORM_RESPONSE_STORE_TYPE = "platform_postgres"
-DEFAULT_PLATFORM_RESPONSE_STORE_CONNECTION_REFERENCE = {
+DEFAULT_PLATFORM_RESPONSE_STORE_TYPE: ResponseStoreType = "platform_postgres"
+DEFAULT_PLATFORM_RESPONSE_STORE_CONNECTION_REFERENCE: dict[str, str] = {
     "driver": "postgres",
     "schema": "public",
     "database": "flowform_response",

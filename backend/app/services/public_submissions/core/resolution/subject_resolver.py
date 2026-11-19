@@ -14,10 +14,10 @@ from app.domain.errors import SubjectResolutionError
 from app.domain.guards import ensure_present
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subjects as subjects
+from app.schema.models.results.service_results import SubjectResolutionResult
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.types import ProjectId, SubjectId, UserId
 from app.services.public_submissions.core.resolution.subject_token import SubjectTokenService
-from app.services.results import SubjectResolutionResult
 
 
 class SubjectResolver:

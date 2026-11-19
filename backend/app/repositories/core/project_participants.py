@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
-from app.schema.types import ParticipantId, ProjectId, SubjectId, SubjectIdentityId
+from app.schema.types import Count, ParticipantId, ProjectId, SearchText, SubjectId, SubjectIdentityId
 
 
 def get_participant(db: Session, *, project_id: ProjectId, participant_id: ParticipantId) -> ProjectParticipant | None:
@@ -36,10 +36,10 @@ def list_participants(
     db: Session,
     *,
     project_id: ProjectId,
-    search: str | None = None,
-    offset: int = 0,
-    limit: int = 20,
-) -> tuple[list[ProjectParticipant], int]:
+    search: SearchText | None = None,
+    offset: Count = 0,
+    limit: Count = 20,
+) -> tuple[list[ProjectParticipant], Count]:
     stmt = (
         select(ProjectParticipant)
         .where(ProjectParticipant.project_id == project_id)

@@ -2,29 +2,45 @@ from __future__ import annotations
 
 import secrets
 from collections.abc import Sequence
-from typing import Literal
-from uuid import UUID
+from typing import cast
 
 from sqlalchemy import Row, Select, func, or_, select
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql.selectable import ScalarSelect
 
 from app.db.error_handling import flush_with_err_handle
+from app.schema.enums import CanonicalSubjectFilter
 from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import (
     ProjectSubject,
     ProjectSubjectIdentity,
 )
 from app.schema.orm.core.submission_session import SubmissionSession
-from app.schema.types import ProjectId, SubjectId, SurveyId
+from app.schema.types import Count, ParticipantId, ProjectId, SearchText, SubjectCode, SubjectId, SurveyId
 
 _SUBJECT_CODE_BYTES = 18
 
-CanonicalStatus = Literal["canonical", "alias", "all"]
+type SubjectListValues = tuple[ProjectSubject, Count, ParticipantId | None]
+type SubjectListRow = Row[SubjectListValues]
 
-SubjectListRow = Row[tuple[ProjectSubject, int, UUID | None]]
+
+def _participant_id_for_subject() -> ScalarSelect[ParticipantId | None]:
+    """Project the participant identity, or SQL NULL for an unenrolled subject."""
+    # SQLAlchemy erases NewType and nullability in scalar_subquery() typing.
+    # This projection selects the canonical ParticipantId column exclusively.
+    return cast(
+        ScalarSelect[ParticipantId | None],
+        select(ProjectParticipant.id)
+        .where(
+            ProjectParticipant.project_id == ProjectSubject.project_id,
+            ProjectParticipant.project_subject_id == ProjectSubject.id,
+        )
+        .correlate(ProjectSubject)
+        .scalar_subquery(),
+    )
 
 
-def generate_subject_code() -> str:
+def generate_subject_code() -> SubjectCode:
     return f"sub_{secrets.token_urlsafe(_SUBJECT_CODE_BYTES)}"
 
 
@@ -37,7 +53,7 @@ def get_subject(db: Session, *, project_id: ProjectId, subject_id: SubjectId) ->
     )
 
 
-def create_subject(db: Session, *, project_id: ProjectId, subject_code: str | None = None) -> ProjectSubject:
+def create_subject(db: Session, *, project_id: ProjectId, subject_code: SubjectCode | None = None) -> ProjectSubject:
     subject = ProjectSubject(
         project_id=project_id,
         subject_code=subject_code or generate_subject_code(),
@@ -47,7 +63,7 @@ def create_subject(db: Session, *, project_id: ProjectId, subject_code: str | No
     return subject
 
 
-def set_subject_code(db: Session, *, subject: ProjectSubject, subject_code: str) -> ProjectSubject:
+def set_subject_code(db: Session, *, subject: ProjectSubject, subject_code: SubjectCode) -> ProjectSubject:
     subject.subject_code = subject_code
     flush_with_err_handle(db, contexts=[subject])
     return subject
@@ -68,10 +84,10 @@ def delete_subject(db: Session, *, subject: ProjectSubject) -> None:
 def _list_subjects_base(
     *,
     project_id: ProjectId,
-    canonical_status: CanonicalStatus = "canonical",
+    canonical_status: CanonicalSubjectFilter = "canonical",
     is_participant: bool | None = None,
-    search: str | None = None,
-) -> Select:
+    search: SearchText | None = None,
+) -> Select[SubjectListValues]:
     """Build the shared WHERE clause for list_subjects and its count query."""
     active_identity_count = (
         select(func.count())
@@ -85,16 +101,7 @@ def _list_subjects_base(
         .label("active_identity_count")
     )
 
-    participant_id = (
-        select(ProjectParticipant.id)
-        .where(
-            ProjectParticipant.project_id == ProjectSubject.project_id,
-            ProjectParticipant.project_subject_id == ProjectSubject.id,
-        )
-        .correlate(ProjectSubject)
-        .scalar_subquery()
-        .label("participant_id")
-    )
+    participant_id = _participant_id_for_subject().label("participant_id")
 
     stmt = select(ProjectSubject, active_identity_count, participant_id).where(ProjectSubject.project_id == project_id)
 
@@ -148,12 +155,12 @@ def list_subjects(
     db: Session,
     *,
     project_id: ProjectId,
-    canonical_status: CanonicalStatus = "canonical",
+    canonical_status: CanonicalSubjectFilter = "canonical",
     is_participant: bool | None = None,
-    search: str | None = None,
-    offset: int = 0,
-    limit: int = 50,
-) -> tuple[Sequence[SubjectListRow], int]:
+    search: SearchText | None = None,
+    offset: Count = 0,
+    limit: Count = 50,
+) -> tuple[Sequence[SubjectListRow], Count]:
     """Return paginated subjects with active_identity_count and participant_id."""
     base = _list_subjects_base(
         project_id=project_id,
@@ -174,21 +181,12 @@ def list_subjects(
 
 def get_subject_with_participant(
     db: Session, *, project_id: ProjectId, subject_id: SubjectId
-) -> tuple[ProjectSubject, UUID | None] | None:
+) -> tuple[ProjectSubject, ParticipantId | None] | None:
     """Fetch a subject with its participant_id (if enrolled).
 
     Active identities are eagerly loaded via the ORM relationship.
     """
-    participant_id = (
-        select(ProjectParticipant.id)
-        .where(
-            ProjectParticipant.project_id == ProjectSubject.project_id,
-            ProjectParticipant.project_subject_id == ProjectSubject.id,
-        )
-        .correlate(ProjectSubject)
-        .scalar_subquery()
-        .label("participant_id")
-    )
+    participant_id = _participant_id_for_subject().label("participant_id")
 
     row = (
         db.execute(
@@ -214,9 +212,9 @@ def list_subjects_by_survey(
     *,
     project_id: ProjectId,
     survey_id: SurveyId,
-    offset: int = 0,
-    limit: int = 50,
-) -> tuple[Sequence[ProjectSubject], int]:
+    offset: Count = 0,
+    limit: Count = 50,
+) -> tuple[Sequence[ProjectSubject], Count]:
     """Return paginated subjects with at least one session in this survey."""
     has_session = (
         select(SubmissionSession.id)

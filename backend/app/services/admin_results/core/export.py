@@ -11,8 +11,8 @@ import io
 import json
 
 from app.schema.enums import ExportFormat
+from app.schema.models.results.service_results import ExportFile, ExportRow, SessionTreeResult
 from app.schema.types import SurveyId
-from app.services.results import ExportFile, ExportRow, SessionTreeResult
 
 _EXPORT_FIELDNAMES = [
     "session_id",

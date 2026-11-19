@@ -1,11 +1,13 @@
 from pydantic import ConfigDict
 
 from app.schema.api.common.base import APIResponseModel
-from app.schema.api.common.types import PageItems, PageNumber, PageSize, ProjectPermissionSet
+from app.schema.api.common.types import PageItems, ProjectPermissionSet
 from app.schema.enums import SurveyVersionStatus, SurveyVisibility
-from app.schema.models.survey.document import SurveyDefinition
+from app.schema.models.survey_document.document import SurveyDefinition
 from app.schema.types import (
     Count,
+    PageNumber,
+    PageSize,
     ProjectId,
     ResponseStoreId,
     Slug,

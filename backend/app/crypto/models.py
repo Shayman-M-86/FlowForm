@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import NewType, Self
+from typing import Self
 from uuid import UUID
 
 from pydantic import Field
@@ -28,16 +28,13 @@ from app.crypto._internal.models import (
     PositiveVersion,
     SecretValue,
 )
+from app.schema.types import AnswerLocator as AnswerLocator
+from app.schema.types import PlaintextSessionKey as PlaintextSessionKey
+from app.schema.types import PlaintextSurveyKey as PlaintextSurveyKey
 from app.schema.types import ProjectId, SubmissionSessionId, SurveyId, SurveyVersionId
-
-# --- Key-material labels (NewType over bytes) ---
-
-PlaintextSurveyKey = NewType("PlaintextSurveyKey", bytes)
-WrappedSurveyKey = NewType("WrappedSurveyKey", bytes)
-PlaintextSessionKey = NewType("PlaintextSessionKey", bytes)
-WrappedSessionKey = NewType("WrappedSessionKey", bytes)
-SessionLocator = NewType("SessionLocator", bytes)
-AnswerLocator = NewType("AnswerLocator", bytes)
+from app.schema.types import SessionLocator as SessionLocator
+from app.schema.types import WrappedSessionKey as WrappedSessionKey
+from app.schema.types import WrappedSurveyKey as WrappedSurveyKey
 
 SurveyKeyResolver = Callable[[], PlaintextSurveyKey]
 SessionKeyResolver = Callable[[], PlaintextSessionKey]

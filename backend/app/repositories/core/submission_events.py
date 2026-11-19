@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Any
 
 from sqlalchemy import select
@@ -11,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SubmissionEventType
 from app.schema.orm.core.submission_session import SubmissionEvent
-from app.schema.types import SubmissionSessionId, SurveyVersionId
+from app.schema.types import SubmissionSessionId, SurveyFieldUuid, SurveyVersionId
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ def create_event(
     session_id: SubmissionSessionId,
     survey_version_id: SurveyVersionId,
     event_type: SubmissionEventType,
-    question_node_id: uuid.UUID | None = None,
+    field_uuid: SurveyFieldUuid | None = None,
     event_metadata: dict[str, Any] | None = None,
 ) -> SubmissionEvent:
     """Create and flush one submission event.
@@ -47,7 +46,7 @@ def create_event(
         session_id=session_id,
         survey_version_id=survey_version_id,
         event_type=event_type,
-        question_node_id=question_node_id,
+        field_uuid=field_uuid,
         event_metadata=_normalise_event_metadata(event_metadata),
     )
 
@@ -62,7 +61,7 @@ def record_event(
     session_id: SubmissionSessionId,
     survey_version_id: SurveyVersionId,
     event_type: SubmissionEventType,
-    question_node_id: uuid.UUID | None = None,
+    field_uuid: SurveyFieldUuid | None = None,
     event_metadata: dict[str, Any] | None = None,
     log_label: str = "submission_event",
 ) -> None:
@@ -76,7 +75,7 @@ def record_event(
             session_id=session_id,
             survey_version_id=survey_version_id,
             event_type=event_type,
-            question_node_id=question_node_id,
+            field_uuid=field_uuid,
             event_metadata=event_metadata,
         )
         db.commit()

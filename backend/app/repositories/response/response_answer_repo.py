@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.schema.orm.response.response_answer import ResponseAnswer
-from app.schema.types import ClientMutationId
+from app.schema.types import AnswerLocator, ClientMutationId
 
 
 def upsert_current(
     db: Session,
     *,
     envelope_id: uuid.UUID,
-    answer_locator: bytes,
+    answer_locator: AnswerLocator,
     ciphertext: bytes,
     nonce: bytes,
     client_mutation_id: ClientMutationId | None,
@@ -44,7 +45,7 @@ def upsert_current(
     return db.scalars(stmt).one()
 
 
-def get_by_locator(db: Session, answer_locator: bytes) -> ResponseAnswer | None:
+def get_by_locator(db: Session, answer_locator: AnswerLocator) -> ResponseAnswer | None:
     return db.scalar(select(ResponseAnswer).where(ResponseAnswer.answer_locator == answer_locator))
 
 
@@ -52,7 +53,7 @@ def get_all_by_envelope(db: Session, envelope_id: uuid.UUID) -> list[ResponseAns
     return list(db.scalars(select(ResponseAnswer).where(ResponseAnswer.envelope_id == envelope_id)).all())
 
 
-def get_by_locators(db: Session, answer_locators: list[bytes]) -> list[ResponseAnswer]:
+def get_by_locators(db: Session, answer_locators: Sequence[AnswerLocator]) -> list[ResponseAnswer]:
     """Fetch encrypted answers for a batch of answer locators."""
     if not answer_locators:
         return []

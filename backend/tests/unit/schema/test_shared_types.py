@@ -18,6 +18,23 @@ from app.schema import types
 from app.schema.types import Auth0UserId, ProjectId, ProjectName, UserId
 
 
+def test_permission_catalogue_keeps_string_storage_and_shared_vocabulary():
+    from app.domain.permissions import PERMISSIONS
+    from app.schema.orm.core.permission import Permission
+    from app.schema.types import PermissionName
+
+    adapter = TypeAdapter(PermissionName)
+    for name in PERMISSIONS.all():
+        assert adapter.validate_python(name) == name
+    with pytest.raises(ValidationError):
+        adapter.validate_python("unknown:permission")
+    # Literal annotations must not silently turn the existing VARCHAR into ENUM.
+    from sqlalchemy import Enum, String
+
+    assert isinstance(Permission.__table__.c.name.type, String)
+    assert not isinstance(Permission.__table__.c.name.type, Enum)
+
+
 def identities():
     for name, alias in vars(types).items():
         if name.startswith("_") or not hasattr(alias, "__value__"):
@@ -119,6 +136,14 @@ def test_pyright_distinguishes_identities_and_accepts_validated_boundary_values(
         "def wrong_user(value: UserId) -> ProjectId: return project(value)\n"
         "def wrong_uuid(value: ClientMutationId) -> SurveyFieldUuid: return field(value)\n"
         "invalid = ProjectParticipant(project_id=1, project_subject_id=None, identity_id=None)\n"
+        "from sqlalchemy.orm import Session\n"
+        "from app.schema.types import AnswerLocator, SessionLocator, PlaintextSessionKey\n"
+        "from app.repositories.response import response_answer_repo, response_envelope_repo\n"
+        "def wrong_envelope(db: Session, locator: AnswerLocator, key: PlaintextSessionKey) -> None:\n"
+        "    response_envelope_repo.create(db, session_locator=locator, linkage_key_version=1, "
+        "wrapped_session_dek=key, crypto_version=1)\n"
+        "def wrong_answer(db: Session, locator: SessionLocator) -> None:\n"
+        "    response_answer_repo.get_by_locator(db, locator)\n"
     )
     backend = Path(__file__).resolve().parents[3]
     result = subprocess.run(
@@ -130,8 +155,11 @@ def test_pyright_distinguishes_identities_and_accepts_validated_boundary_values(
     assert result.returncode == 1, result.stdout + result.stderr
     report = json.loads(result.stdout)
     errors = [d for d in report["generalDiagnostics"] if d["severity"] == "error"]
-    assert len(errors) == 5, errors
+    assert len(errors) == 8, errors
     messages = "\n".join(d["message"] for d in errors)
     assert '"_UserId" is not assignable to "_ProjectId"' in messages
     assert '"_ClientMutationId" is not assignable to "_SurveyFieldUuid"' in messages
+    assert '"AnswerLocator" is not assignable to "SessionLocator"' in messages
+    assert '"PlaintextSessionKey" is not assignable to "WrappedSessionKey"' in messages
+    assert '"SessionLocator" is not assignable to "AnswerLocator"' in messages
     assert not any(d["range"]["start"]["line"] == 5 for d in errors)

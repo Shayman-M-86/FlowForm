@@ -11,6 +11,7 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, EmailStr, Field, StrictBool, StrictFloat, StrictInt, StringConstraints
 
+from app.domain.permissions import PermissionName as PermissionName
 from app.schema import limits
 from app.schema.validators import normalise_email, parse_calendar_date
 
@@ -37,7 +38,12 @@ type Timestamp = Annotated[datetime, Field(description="Recorded timestamp suppl
 
 type Count = Annotated[int, Field(ge=0)]
 
+type PageNumber = Annotated[int, Field(ge=1)]
+type PageSize = Annotated[int, Field(ge=1, le=limits.LIST_PAGE_SIZE_MAX)]
+
 type Text = Annotated[str, StringConstraints(max_length=limits.DEFAULT_STRING_MAX)]
+
+type SearchText = Annotated[str, StringConstraints(max_length=limits.DEFAULT_STRING_MAX)]
 
 type Url = Annotated[str, StringConstraints(max_length=2048)]
 
@@ -243,3 +249,14 @@ _ResponseStoreId = NewType("_ResponseStoreId", int)
 type ResponseStoreId = Annotated[
     _ResponseStoreId, DATABASE_ID_CONSTRAINTS, Field(description="Response store identity")
 ]
+
+
+# Cryptographic values are static labels over bytes, without Pydantic constraints.
+# Keep plaintext, wrapped material, and pseudonymous locators distinct.
+
+PlaintextSurveyKey = NewType("PlaintextSurveyKey", bytes)
+WrappedSurveyKey = NewType("WrappedSurveyKey", bytes)
+PlaintextSessionKey = NewType("PlaintextSessionKey", bytes)
+WrappedSessionKey = NewType("WrappedSessionKey", bytes)
+SessionLocator = NewType("SessionLocator", bytes)
+AnswerLocator = NewType("AnswerLocator", bytes)

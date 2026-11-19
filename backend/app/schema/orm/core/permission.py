@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import CoreBase
+from app.schema.types import PermissionName
 
 
 class Permission(CoreBase, kw_only=True):
@@ -11,4 +13,4 @@ class Permission(CoreBase, kw_only=True):
     __tablename__ = "permissions"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    name: Mapped[str] = mapped_column(unique=True, nullable=False)
+    name: Mapped[PermissionName] = mapped_column(String, unique=True, nullable=False)

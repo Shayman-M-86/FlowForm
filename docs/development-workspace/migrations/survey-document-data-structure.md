@@ -5,12 +5,12 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-11-18
+last_edited: 2026-11-19
 tags: [backend, frontend]
 related_code:
-  - "../../../backend/app/schema/models/survey/document.py"
+  - "../../../backend/app/schema/models/survey_document/document.py"
   - "../../../backend/app/services/surveys.py"
-  - "../../../backend/app/schema/models/survey/fields.py"
+  - "../../../backend/app/schema/models/survey_document/fields.py"
   - "../../../backend/app/schema/api/requests/submission_sessions.py"
   - "../../../backend/app/schema/orm/core/submission_answer_slot.py"
   - "../../../backend/app/crypto/_internal/models.py"
@@ -72,8 +72,8 @@ The comparison describes the pre-migration node model. Its node request and
 question-content schema files have been removed during consolidation. Current
 schema definitions and the publication implementation are available here:
 
-- [Document schema](../../../backend/app/schema/models/survey/document.py)
-- [Field schema](../../../backend/app/schema/models/survey/fields.py)
+- [Document schema](../../../backend/app/schema/models/survey_document/document.py)
+- [Field schema](../../../backend/app/schema/models/survey_document/fields.py)
 - [Publication implementation](../../../backend/app/services/surveys.py)
 - [Answer request](../../../backend/app/schema/api/requests/submission_sessions.py)
 

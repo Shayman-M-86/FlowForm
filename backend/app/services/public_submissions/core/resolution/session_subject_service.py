@@ -16,6 +16,7 @@ from app import tracing
 from app.logging.request_timing import request_timing
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subjects as subjects
+from app.schema.models.results.service_results import SubjectResolutionResult, SubmissionAccessGrant
 from app.schema.orm.core.user import User
 from app.schema.types import ProjectId, SubjectId
 from app.services.public_submissions.core.resolution.subject_resolver import (
@@ -24,7 +25,6 @@ from app.services.public_submissions.core.resolution.subject_resolver import (
 from app.services.public_submissions.core.resolution.subject_token import (
     SubjectTokenService,
 )
-from app.services.results import SubjectResolutionResult, SubmissionAccessGrant
 
 
 @dataclass(frozen=True, slots=True)

@@ -5,14 +5,15 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.schema.orm.response.response_envelope import ResponseEnvelope
+from app.schema.types import SessionLocator, WrappedSessionKey
 
 
 def create(
     db: Session,
     *,
-    session_locator: bytes,
+    session_locator: SessionLocator,
     linkage_key_version: int,
-    wrapped_session_dek: bytes,
+    wrapped_session_dek: WrappedSessionKey,
     crypto_version: int,
 ) -> ResponseEnvelope:
     envelope = ResponseEnvelope(
@@ -26,13 +27,11 @@ def create(
     return envelope
 
 
-def get_by_locator(db: Session, session_locator: bytes) -> ResponseEnvelope | None:
-    return db.scalar(
-        select(ResponseEnvelope).where(ResponseEnvelope.session_locator == session_locator)
-    )
+def get_by_locator(db: Session, session_locator: SessionLocator) -> ResponseEnvelope | None:
+    return db.scalar(select(ResponseEnvelope).where(ResponseEnvelope.session_locator == session_locator))
 
 
-def delete_by_locator(db: Session, session_locator: bytes) -> bool:
+def delete_by_locator(db: Session, session_locator: SessionLocator) -> bool:
     """Delete an envelope by session locator. Returns True if a row was deleted."""
     envelope = get_by_locator(db, session_locator)
     if envelope is None:

@@ -1,1 +1,1 @@
-"""Reusable Pydantic data models independent of HTTP contracts and persistence."""
+"""Shared data structures and internal service outcomes, separate from HTTP contracts."""

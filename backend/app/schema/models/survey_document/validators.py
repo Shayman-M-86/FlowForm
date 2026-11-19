@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import TypeAdapter
 
-from app.schema.models.survey.answer_spec import (
+from app.schema.models.survey_document.answer_spec import (
     AnswerSpec,
     ChoiceSetAnswerSpec,
     DateAnswerSpec,
@@ -14,7 +14,7 @@ from app.schema.models.survey.answer_spec import (
     NumericAnswerSpec,
     StringAnswerSpec,
 )
-from app.schema.models.survey.answer_value import AnswerValue, MatchingValue
+from app.schema.models.survey_document.answer_value import AnswerValue, MatchingValue
 from app.schema.types import ChoiceOptionUuid
 
 _UUID = TypeAdapter(ChoiceOptionUuid)

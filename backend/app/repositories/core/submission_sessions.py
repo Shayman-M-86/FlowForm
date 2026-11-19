@@ -4,7 +4,6 @@ import hashlib
 import secrets
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
 
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
@@ -13,6 +12,7 @@ from app.db.error_handling import flush_with_err_handle
 from app.schema.enums import SubmissionSessionStatus
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.types import (
+    Count,
     ProjectId,
     ResponseStoreId,
     SubjectId,
@@ -20,6 +20,7 @@ from app.schema.types import (
     SurveyId,
     SurveyLinkId,
     SurveyVersionId,
+    Timestamp,
 )
 
 _BROWSER_SESSION_TOKEN_BYTES = 32
@@ -45,7 +46,7 @@ def create_session(
     project_subject_id: SubjectId | None,
     raw_browser_session_token: str,
     linkage_key_version: int,
-    now: datetime | None = None,
+    now: Timestamp | None = None,
     ttl: timedelta = DEFAULT_SESSION_TTL,
 ) -> SubmissionSession:
     current = now or datetime.now(UTC)
@@ -87,7 +88,7 @@ def mark_completed(
     db: Session,
     *,
     submission_session: SubmissionSession,
-    completed_at: datetime,
+    completed_at: Timestamp,
 ) -> None:
     submission_session.session_status = "completed"
     submission_session.completed_at = completed_at
@@ -149,9 +150,9 @@ def list_by_survey(
     project_id: ProjectId,
     survey_id: SurveyId,
     status: SubmissionSessionStatus | None = None,
-    offset: int = 0,
-    limit: int = 50,
-) -> tuple[Sequence[SubmissionSession], int]:
+    offset: Count = 0,
+    limit: Count = 50,
+) -> tuple[Sequence[SubmissionSession], Count]:
     """Return paginated submission sessions for a survey."""
     base = select(SubmissionSession).where(
         SubmissionSession.project_id == project_id,
@@ -188,7 +189,7 @@ def list_by_subjects(
     db: Session,
     *,
     survey_id: SurveyId,
-    project_subject_ids: Sequence[UUID],
+    project_subject_ids: Sequence[SubjectId],
 ) -> Sequence[SubmissionSession]:
     """Fetch all sessions in a survey for a set of subjects."""
     if not project_subject_ids:
