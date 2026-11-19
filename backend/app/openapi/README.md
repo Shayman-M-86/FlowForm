@@ -26,10 +26,7 @@ Do not infer constraints from property names, silently resolve schema collisions
 or skip invalid application routes to produce a superficially successful export.
 The frontend generator recognizes both singular and plural response suffixes.
 
-Importing the application package no longer eagerly initializes the runtime.
-The exporter nevertheless registers the real application routes: their contracts
-must be importable. The current V2 migration still has legacy route/service
-imports (including removed node models). Until these are migrated, full application
-export and generated-client synchronization intentionally fail rather than
-publishing an incomplete or obsolete contract. The schema builder and its tests
-can run independently of those handlers.
+The exporter registers the application routes without initializing runtime
+services. Generated Studio API types and permissions describe those routes.
+The local node builder and its paste import use a separate schema snapshot
+under `frontend/packages/schema/` during the V2 migration.

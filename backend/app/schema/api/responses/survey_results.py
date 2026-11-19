@@ -2,27 +2,20 @@ from __future__ import annotations
 
 from pydantic import ConfigDict, Field
 
-from app.schema import limits
 from app.schema.api.common.base import APIResponseModel
 from app.schema.api.common.types import PageItems
 from app.schema.enums import (
-    SubmissionAnswerState,
-    SubmissionEventType,
     SubmissionSessionStatus,
 )
-from app.schema.models.survey_document.answer_spec import AnswerSpec
-from app.schema.models.survey_document.answer_value import AnswerValue
-from app.schema.models.survey_document.fields import SurveyField
+from app.schema.models.results.answer_results import AnswerSlotResult, SessionEventResult
 from app.schema.types import (
     AnswerList,
     Count,
     PageNumber,
     PageSize,
-    ReadableId,
     SubjectCode,
     SubjectId,
     SubmissionSessionId,
-    SurveyFieldUuid,
     SurveyId,
     SurveyVersionId,
     Timestamp,
@@ -47,29 +40,16 @@ class SurveySessionResponses(APIResponseModel):
     last_activity_at: Timestamp
 
 
-class SurveyAnswerSlotResponses(APIResponseModel):
-    """One answer slot in an admin survey-results view, optionally decrypted."""
+class SurveyAnswerSlotResponses(APIResponseModel, AnswerSlotResult):
+    """HTTP representation of the shared AnswerSlotResult projection."""
 
-    model_config = ConfigDict(from_attributes=True, str_max_length=limits.LONG_STRING_MAX)
-
-    field_uuid: SurveyFieldUuid
-    field_id: ReadableId | None = None
-    answer_spec: AnswerSpec | None = None
-    has_encrypted_answer: bool
-    decrypted: bool
-    state: SubmissionAnswerState | None = Field(default=None, validation_alias="answer_state")
-    answer_value: AnswerValue | None = None
-    field: SurveyField | None = None
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
-class SurveySessionEventResponses(APIResponseModel):
-    """One timeline event for a session. Never carries answer values."""
+class SurveySessionEventResponses(APIResponseModel, SessionEventResult):
+    """HTTP representation of the shared SessionEventResult projection."""
 
-    model_config = ConfigDict(from_attributes=True)
-
-    event_type: SubmissionEventType
-    field_uuid: SurveyFieldUuid | None = None
-    received_at: Timestamp
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
 class SurveySessionTreeResponses(APIResponseModel):

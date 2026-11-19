@@ -8,7 +8,7 @@ from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
 from app.schema.api.requests.participants import (
     CreateParticipantRequest,
-    ListParticipantsQuery,
+    ListProjectParticipantsRequest,
     UpdateParticipantRequest,
 )
 from app.schema.api.responses.participants import ListParticipantsResponses, ParticipantResponses
@@ -20,7 +20,7 @@ _BASE = "/<bint:project_id>/participants"
 
 @openapi_route(
     summary="List participants",
-    query_model=ListParticipantsQuery,
+    query_model=ListProjectParticipantsRequest,
     response_model=ListParticipantsResponses,
     tags=["Participants"],
 )
@@ -28,7 +28,7 @@ _BASE = "/<bint:project_id>/participants"
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def list_participants(project_id: ProjectId):
-    params = parse_query(ListParticipantsQuery, request)
+    params = parse_query(ListProjectParticipantsRequest, request)
     offset = (params.page - 1) * params.page_size
     participants, total = participant_service.list_participants(
         db=get_core_db(),

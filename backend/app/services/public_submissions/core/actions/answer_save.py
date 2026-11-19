@@ -1,42 +1,52 @@
-"""Validate, encrypt, and persist the current answer for one session slot.
-
-See docs/project-knowledge/data/responses-and-encryption.md.
-Also provides the question-viewed event helper.
-"""
+"""Persist self-describing answers in stable slots bound to document fields."""
 
 from __future__ import annotations
 
-import logging
-from typing import Any
-from uuid import UUID
-
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from sqlalchemy.orm import Session
 
-from app.crypto.answers import (
-    derive_slot_answer_locator,
-    encrypt_answer_current,
-)
+from app.crypto.answers import derive_slot_answer_locator, encrypt_answer_current
 from app.crypto.models import AnswerContext, SubmissionSessionContext
 from app.db.error_handling import commit_with_err_handle
-from app.domain.errors import AnswerSaveError, QuestionNotInVersionError, SessionInvalidError
+from app.domain.errors import AnswerSaveError, FieldNotInVersionError, SessionInvalidError
 from app.logging.request_timing import request_timing
-from app.repositories import content_repo
 from app.repositories.core import submission_answer_slots
 from app.repositories.core import submission_events as event_repo
 from app.repositories.core import submission_sessions as ssr
 from app.repositories.response import response_answer_repo
-from app.schema.enums import SubmissionAnswerState
 from app.schema.models.results.service_results import AnswerSaveResult
-from app.schema.types import ClientMutationId
+from app.schema.models.survey_document.answers import AnswerData
+from app.schema.models.survey_document.document import InputBlock
+from app.schema.models.survey_document.fields import SurveyField
+from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.types import ClientMutationId, SurveyFieldUuid
 
-logger = logging.getLogger(__name__)
 
-AnswerValueInput = SubmissionAnswerValue | dict[str, Any] | None
+def _field_for_session(
+    session: SubmissionSession, ctx: SubmissionSessionContext, field_uuid: SurveyFieldUuid
+) -> SurveyField:
+    """Resolve one unambiguous field in the session's authoritative pinned version."""
+    if (session.project_id, session.survey_id, session.survey_version_id) != (
+        ctx.project_id,
+        ctx.survey_id,
+        ctx.survey_version_id,
+    ):
+        raise SessionInvalidError("Session context does not match its pinned survey version.")
+    definition = session.survey_version.definition
+    if definition is None:
+        raise FieldNotInVersionError()
+    matches = [
+        block.field
+        for section in definition.document.sections
+        for block in section.blocks
+        if isinstance(block, InputBlock) and block.field.uuid == field_uuid
+    ]
+    if len(matches) != 1:
+        raise FieldNotInVersionError()
+    return matches[0]
 
 
 class AnswerSaveService:
-    """Encrypt and persist current survey answers for active sessions."""
+    """Encrypt and persist validated answers for fields in active sessions."""
 
     def save_answer(
         self,
@@ -44,91 +54,69 @@ class AnswerSaveService:
         response_db: Session,
         *,
         ctx: SubmissionSessionContext,
-        question_node_id: UUID,
-        answer_state: SubmissionAnswerState,
-        answer_value: AnswerValueInput,
+        field_uuid: SurveyFieldUuid,
+        answer: AnswerData,
         client_mutation_id: ClientMutationId,
     ) -> AnswerSaveResult:
-        """Save the current answer for a session/question slot."""
-        locked_session = ssr.lock_for_update(db, ctx.session_id)
-        if locked_session is None:
+        """Save one answered or cleared state under its stable session/field slot."""
+        session = ssr.lock_for_update(db, ctx.session_id)
+        if session is None:
             raise AnswerSaveError("Session disappeared during answer save.")
-        if locked_session.session_status != "in_progress":
-            raise SessionInvalidError(f"Session is {locked_session.session_status}.")
+        if session.session_status != "in_progress":
+            raise SessionInvalidError(f"Session is {session.session_status}.")
         request_timing.log("Session is locked for update")
-
-        question = content_repo.get_question_node(db, ctx.survey_version_id, question_node_id)
-        if question is None:
-            raise QuestionNotInVersionError()
-
+        field = _field_for_session(session, ctx, field_uuid)
         slot = submission_answer_slots.get_or_create(
             db,
             submission_session_id=ctx.session_id,
             survey_version_id=ctx.survey_version_id,
-            question_node_id=question_node_id,
-            question_key=question.question_key,
+            field_uuid=field.uuid,
+            field_id=field.id,
         )
         request_timing.log("Answer slot is ready")
-
-        answer_locator = derive_slot_answer_locator(slot.id, ctx.linkage_key)
-        request_timing.log("Answer locator is derived")
-
-        answer_context = AnswerContext(
+        locator = derive_slot_answer_locator(slot.id, ctx.linkage_key)
+        context = AnswerContext(
             dek=ctx.plaintext_session_dek,
             crypto_version=ctx.crypto_version,
             envelope_id=ctx.envelope_id,
-            answer_locator=answer_locator,
+            answer_locator=locator,
         )
-        encrypted = encrypt_answer_current(
-            context=answer_context,
-            question_node_id=question_node_id,
-            answer_state=answer_state,
-            answer_value=answer_value,
-        )
+        encrypted = encrypt_answer_current(context=context, field_uuid=field.uuid, answer=answer)
         request_timing.log("Answer payload encrypted")
 
-        # Commit the core answer slot immediately before updating the response DB.
+        # Keep the existing two-database ordering and locator derivation.
         commit_with_err_handle(db, contexts=[slot])
-        request_timing.log("Answer slot committed")
-
-        response_answer_repo.upsert_current(
+        saved = response_answer_repo.upsert_current(
             response_db,
             envelope_id=ctx.envelope_id,
-            answer_locator=answer_locator,
+            answer_locator=locator,
             nonce=encrypted.nonce,
             ciphertext=encrypted.ciphertext,
             client_mutation_id=client_mutation_id,
         )
-
+        saved_at = saved.updated_at
         commit_with_err_handle(response_db, contexts=[])
-        request_timing.log("Response transaction committed")
-
         event_repo.record_event(
             db,
             session_id=ctx.session_id,
             survey_version_id=ctx.survey_version_id,
             event_type="answer_saved",
-            question_node_id=question_node_id,
+            field_uuid=field.uuid,
             log_label="answer_save.analytics",
         )
+        return AnswerSaveResult(field_uuid=field.uuid, field_id=field.id, saved_at=saved_at)
 
-        return AnswerSaveResult(node_key=question.question_key)
-
-    def record_question_viewed(
-        self,
-        db: Session,
-        *,
-        ctx: SubmissionSessionContext,
-        question_node_id: UUID,
-    ) -> None:
-        """Record a question-viewed analytics event. Failure does not block the respondent."""
-        if content_repo.get_question_node(db, ctx.survey_version_id, question_node_id) is None:
-            raise QuestionNotInVersionError()
+    def record_field_viewed(self, db: Session, *, ctx: SubmissionSessionContext, field_uuid: SurveyFieldUuid) -> None:
+        """Record a viewed event only for a field in the pinned session document."""
+        session = ssr.get_by_id(db, ctx.session_id)
+        if session is None or session.session_status != "in_progress":
+            raise SessionInvalidError("Session is not active.")
+        field = _field_for_session(session, ctx, field_uuid)
         event_repo.record_event(
             db,
             session_id=ctx.session_id,
             survey_version_id=ctx.survey_version_id,
-            event_type="question_viewed",
-            question_node_id=question_node_id,
-            log_label="question_viewed",
+            event_type="field_viewed",
+            field_uuid=field.uuid,
+            log_label="field_viewed",
         )

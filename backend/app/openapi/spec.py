@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
+from dataclasses import replace
 from typing import Any, Literal, get_origin
 
 from apispec import APISpec
@@ -321,7 +322,7 @@ def _build_operation(
     else:
         responses[str(route.status_code)] = {"description": "Successful response."}
 
-    responses.update(default_error_response_refs())
+    responses.update(default_error_response_refs(additional=route.error_statuses))
     operation["responses"] = responses
 
     return operation
@@ -394,28 +395,17 @@ def build_spec(app: Flask) -> dict[str, Any]:
         },
     )
 
+    routes = get_registered_routes()
+    additional_statuses = {status for route in routes for status in route.error_statuses}
     _register_model(spec, ErrorResponse)
-    for name, response in default_error_response_components().items():
+    for name, response in default_error_response_components(additional=additional_statuses).items():
         spec.components.response(name, response)
     security_scheme_name = _register_security_scheme(spec, app)
 
     grouped: dict[str, dict[str, Any]] = {}
-    for route in get_registered_routes():
+    for route in routes:
         for method, path in _resolve_route_locations(app, route):
-            resolved_route = RouteMetadata(
-                method=method,
-                path=path,
-                summary=route.summary,
-                tags=route.tags,
-                request_model=route.request_model,
-                query_model=route.query_model,
-                response_model=route.response_model,
-                status_code=route.status_code,
-                description=route.description,
-                auth=route.auth,
-                handler_qualname=route.handler_qualname,
-                rbac=route.rbac,
-            )
+            resolved_route = replace(route, method=method, path=path)
             openapi_path, path_params = _normalize_openapi_path(path)
             operation = _build_operation(
                 spec,

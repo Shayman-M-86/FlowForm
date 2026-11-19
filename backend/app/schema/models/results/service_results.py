@@ -2,26 +2,26 @@
 
 Dataclasses preserve existing construction and workflow behavior. ORM references
 are imported only for static checking, so importing these models does not load
-persistence mappings. Legacy admin/export fields remain explicit until those
-producers are migrated to the V2 document model.
+persistence mappings. Portable answer projections reuse the shared V2 document and answer models.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import TypeAdapter
 
 from app.schema.enums import (
     SubjectResolutionSource,
     SubmissionAccessMethod,
     SubmissionAnswerState,
-    SubmissionEventType,
     SubmissionSessionStatus,
     TokenAction,
 )
+from app.schema.models.results.answer_results import AnswerSlotResult, SessionEventResult
+from app.schema.models.survey_document.answer_spec import AnswerSpec
 from app.schema.models.survey_document.answer_value import AnswerValue
 from app.schema.types import (
     Count,
@@ -33,6 +33,7 @@ from app.schema.types import (
     SubjectCode,
     SubjectId,
     SubmissionSessionId,
+    SurveyFieldUuid,
     SurveyId,
     SurveyLinkId,
     SurveyVersionId,
@@ -47,9 +48,7 @@ if TYPE_CHECKING:
     from app.schema.orm.core.survey_access import SurveyLink
     from app.schema.orm.core.user import User
 
-# Existing export labels, retained locally rather than resurrecting a shared
-# node-era enum or importing deleted API answer schemas.
-type LegacyAnswerFamily = Literal["choice", "field", "matching", "rating"]
+_ANSWER_VALUE = TypeAdapter(AnswerValue)
 
 # Account outcomes
 
@@ -164,7 +163,9 @@ class AccountLinkingResult:
 class AnswerSaveResult:
     """Result of saving a respondent answer."""
 
-    node_key: ReadableId
+    field_uuid: SurveyFieldUuid
+    field_id: ReadableId
+    saved_at: Timestamp
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,32 +177,7 @@ class DeletionResult:
     core_deleted: bool
 
 
-# Existing admin result trees and exports
-
-
-@dataclass(frozen=True, slots=True)
-class AnswerSlotResult:
-    """One answer slot, optionally with its decrypted value."""
-
-    slot_id: UUID
-    question_node_id: UUID
-    question_key: ReadableId | None
-    answer_family: LegacyAnswerFamily | None
-    has_encrypted_answer: bool
-    decrypted: bool
-    answer_state: SubmissionAnswerState | None
-    answer_value: AnswerValue | dict[str, Any] | None
-    question_content: dict[str, Any] | None = None
-    question_sort_key: int | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class SessionEventResult:
-    """One timeline event for a session (no answer values)."""
-
-    event_type: SubmissionEventType
-    question_node_id: UUID | None
-    received_at: Timestamp
+# Admin result trees and exports
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,28 +205,30 @@ class ExportRow:
     status: SubmissionSessionStatus
     started_at: Timestamp
     completed_at: Timestamp | None
-    question_key: ReadableId | None = None
-    answer_family: LegacyAnswerFamily | None = None
+    field_uuid: SurveyFieldUuid | None = None
+    field_id: ReadableId | None = None
+    answer_spec: AnswerSpec | None = None
     has_encrypted_answer: bool | None = None
     decrypted: bool | None = None
-    answer_state: SubmissionAnswerState | None = None
-    answer_value: AnswerValue | dict[str, Any] | None = None
+    state: SubmissionAnswerState | None = None
+    answer_value: AnswerValue | None = None
 
     def to_json_dict(self) -> dict[str, Any]:
         """Flatten to a JSON/CSV-safe dict, normalising the answer_value union."""
-        answer_value: Any = self.answer_value
-        if isinstance(answer_value, BaseModel):
-            answer_value = answer_value.model_dump(mode="json")
+        answer_value = (
+            _ANSWER_VALUE.dump_python(self.answer_value, mode="json") if self.answer_value is not None else None
+        )
         return {
             "session_id": str(self.session_id),
             "status": self.status,
             "started_at": self.started_at.isoformat(),
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
-            "question_key": self.question_key,
-            "answer_family": self.answer_family,
+            "field_uuid": str(self.field_uuid) if self.field_uuid is not None else None,
+            "field_id": self.field_id,
+            "answer_spec": self.answer_spec.model_dump(mode="json") if self.answer_spec is not None else None,
             "has_encrypted_answer": self.has_encrypted_answer,
             "decrypted": self.decrypted,
-            "answer_state": self.answer_state,
+            "state": self.state,
             "answer_value": answer_value,
         }
 

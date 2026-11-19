@@ -381,6 +381,28 @@ class ContentKeyConflictError(AppError):
         super().__init__(status_code=409, code="CONFLICT", message=message)
 
 
+class SurveyGenerationUnavailableError(AppError):
+    """Survey draft generation has no configured provider."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=503,
+            code="HTTP_503",
+            message="Survey generation is not configured.",
+        )
+
+
+class SurveyGenerationFailedError(AppError):
+    """The provider failed to produce a usable survey draft."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=502,
+            code="HTTP_502",
+            message="Survey generation did not produce a valid draft.",
+        )
+
+
 class SubmissionInvalidError(AppError):
     """Error raised when a submission is invalid for any reason."""
 
@@ -737,14 +759,14 @@ class AnswerSaveError(AppError):
         )
 
 
-class QuestionNotInVersionError(AppError):
-    """Raised when a question node ID does not belong to the frozen survey version."""
+class FieldNotInVersionError(AppError):
+    """Raised when a field UUID does not identify a field in the pinned survey version."""
 
     def __init__(self) -> None:
         super().__init__(
             status_code=400,
-            code="QUESTION_NOT_IN_VERSION",
-            message="Question does not belong to this survey version.",
+            code="FIELD_NOT_IN_VERSION",
+            message="Field does not belong to this survey version.",
         )
 
 

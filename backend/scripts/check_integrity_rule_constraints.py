@@ -80,7 +80,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-SCHEMA_DIR = REPO_ROOT / "infra" / "postgres" / "init" / "schema"
+SCHEMA_DIR = REPO_ROOT / "infra" / "database" / "init" / "schema"
 SCHEMA_FILES = (
     SCHEMA_DIR / "flowform_core_db_schema_v4.sql",
     SCHEMA_DIR / "flowform_response_db_schema_v4.sql",
@@ -165,8 +165,6 @@ class ReportOptions:
 INTENTIONALLY_UNMAPPED_CONSTRAINTS: dict[str, str] = {
     "ck_project_invitations_accepted_fields": "accepted_by/accepted_at are service-controlled state fields",
     "ck_subject_ip_observations_has_owner": "owner attachment is controlled by subject/session tracking services",
-    "ck_submission_events_question_absent_for_session_events": "event shape is produced by server event code",
-    "ck_submission_events_question_required_for_question_events": "event shape is produced by server event code",
     "ck_survey_links_used_at_requires_assignment": "used_at is only written by link-consumption service code",
     "ck_surveys_public_requires_slug": "survey visibility/public_slug is validated before persistence",
     "ck_surveys_slug_requires_public_visibility": "survey visibility/public_slug is validated before persistence",

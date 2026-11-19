@@ -211,7 +211,7 @@ def test_sql_repository_reads_only_the_packaged_bootstrap_assets():
     assert "rolpassword" not in verification_sql
     assert "rds_iam_membership_valid" in verification_sql
     assert "role_privileges_valid" in verification_sql
-    assert len(repository.schema_table_names("flowform_core_db_schema_v4.sql")) == 28
+    assert len(repository.schema_table_names("flowform_core_db_schema_v4.sql")) == 26
     assert repository.schema_table_names("flowform_response_db_schema_v4.sql") == {
         "response_answers",
         "response_envelopes",

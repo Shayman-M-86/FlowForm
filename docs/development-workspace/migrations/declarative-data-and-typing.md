@@ -5,7 +5,7 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-11-19
+last_edited: 2026-11-20
 tags: [backend, frontend]
 related_code:
   - "../../../backend/app/schema/README.md"
@@ -66,8 +66,9 @@ Internal service outcomes are dataclasses in `schema/models/results/service_resu
 Their existing ORM references use `TYPE_CHECKING` imports, preserving workflow
 objects without runtime mapping imports or a second Pydantic validation layer.
 The former `services/results.py` is removed, and consumers import the shared
-result definitions directly. Legacy admin/export shapes remain explicit until
-their producers are migrated; moving them does not make them V2 HTTP contracts.
+result definitions directly. Portable answer-slot and event projections live in
+`schema/models/results/answer_results.py`; API responses inherit those same
+fields rather than maintaining parallel definitions.
 
 Shared search text belongs in `schema/types.py`, and the canonical-subject
 filter belongs in `schema/enums.py`; API queries and core repositories reuse
@@ -193,14 +194,14 @@ formatting cases. PostgreSQL DDL was compared across all 27 tables. These checks
 do not establish a live PostgreSQL deployment or full application correctness.
 
 Known runtime migration gaps include legacy node-model imports blocking full
-route export, version creation that does not yet provide a V2 definition, and
-legacy event producers that still supply the former question-node field. The
+route export and remaining legacy routes/lifecycle consumers. The
 core event repository now accepts `field_uuid: SurveyFieldUuid` and constructs
 the mapped field correctly; old node identities are not converted implicitly.
 The obsolete `repositories/content_repo.py` is removed: document persistence
 belongs to survey versions, rather than individual node or scoring-rule tables.
-Its former editing, cloning/publication, answer lookup, and admin-reporting
-callers still require document-based replacements. Do not restore that repository
+Some former editing and cloning/publication callers still require document-based
+replacements. Answer saving and field-view events now
+resolve fields directly from the pinned version document. Do not restore that repository
 as a compatibility layer for removed tables.
 Whole-document reads and replacement live in `surveys_repo.get_definition` and
 `update_definition`. Reads return independent `SurveyDefinition` snapshots;
@@ -210,11 +211,26 @@ column's nullable annotation reflects empty drafts. Services still own document
 identity, revision/editability/publication policy, and individual field lookup.
 `ContentService.update_definition` is the whole-document edit operation: it
 looks up the scoped version, applies the existing draft-editability guard,
-delegates replacement to the survey repository, and commits. The old node,
-scoring-rule, and AI-preview methods are removed from that service. Existing
-builder/scoring-rule routes still call those removed methods and require their
-own document-based API migration; they are not compatibility shims.
+delegates replacement to the survey repository, and commits. AI import is a
+separate prompt-to-`SurveyContent` operation. The app initializes the generator
+at startup, and Studio can request a preview before selecting a project, survey,
+or version. The node and scoring-rule routes have been removed. The bootstrap
+schema stores whole definitions, locks non-draft definitions, and uses field
+UUIDs for answer slots and events. Integrity translation matches those
+PostgreSQL constraints. This bootstrap change applies to fresh databases.
 These repository functions do not finish the legacy workflow migration.
+The field-save path now sends `field_uuid` and `field_id` to the slot repository,
+retains one stable slot/locator for answered and cleared states, and encrypts
+self-describing shared answer data in plaintext format version 2. Its response
+uses the response database's saved timestamp. The decoder does not reinterpret
+node-era version-1 ciphertext; historical payload migration remains separate work.
+Admin result trees now use pinned document fields and typed V2 decrypted answers,
+with no family-based reparsing or arbitrary dictionary fallback. A decrypted
+field UUID must match its core slot. Missing field metadata preserves the stored
+readable slot ID; metadata-only results do not load a session decryption key.
+JSON/CSV exports use field UUID/ID, state, and answer specification/value rather
+than node keys and answer families. Locator derivation, associated data, and two-database commit
+ordering are preserved.
 Do not hide these gaps with permissive constructors, compatibility aliases, omitted routes,
 or a success claim based only on isolated schema checks.
 

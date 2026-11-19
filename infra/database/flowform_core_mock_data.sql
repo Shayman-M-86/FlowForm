@@ -8,13 +8,7 @@
 -- - uses explicit UUIDs for submission_sessions so the response DB seed can
 --   derive matching session_locator values
 --
--- Notes:
--- - survey_questions now stores both question and rule nodes, with a UUID id
--- - sort_key and node_type are first-class columns
--- - question_schema follows the current { type, content } node shape
--- - compiled_schema mirrors the same node shape used by survey_questions
--- - project_subjects/submission_sessions/submission_events replace the old
---   response_subject_mappings/survey_submissions tables
+-- - Survey versions contain V2 definitions with stable field UUIDs.
 --
 -- Safe to run on an empty schema.
 
@@ -130,44 +124,82 @@ INSERT INTO surveys (id, project_id, title, visibility, public_slug, default_res
 -- =========================================
 -- SURVEY VERSIONS
 -- =========================================
--- Insert all versions as draft first so nodes can be added before publishing.
+-- Insert the versions as drafts before loading definitions and publishing.
 
-INSERT INTO survey_versions (id, survey_id, version_number, status, compiled_schema, published_at, created_by_user_id, created_at, updated_at, deleted_at) VALUES
-    (1, 1, 1, 'draft', NULL, NULL, 2, NOW() - INTERVAL '27 days', NOW() - INTERVAL '27 days', NULL),
-    (2, 1, 2, 'draft', NULL, NULL, 3, NOW() - INTERVAL '7 days',  NOW() - INTERVAL '7 days',  NULL),
-    (3, 2, 1, 'draft', NULL, NULL, 3, NOW() - INTERVAL '17 days', NOW() - INTERVAL '17 days', NULL),
-    (4, 3, 1, 'draft', NULL, NULL, 5, NOW() - INTERVAL '13 days', NOW() - INTERVAL '13 days', NULL),
-    (5, 3, 2, 'draft', NULL, NULL, 5, NOW() - INTERVAL '3 days',  NOW() - INTERVAL '3 days',  NULL);
+INSERT INTO survey_versions (id, survey_id, version_number, status, published_at, created_by_user_id, created_at, updated_at, deleted_at) VALUES
+    (1, 1, 1, 'draft', NULL, 2, NOW() - INTERVAL '27 days', NOW() - INTERVAL '27 days', NULL),
+    (2, 1, 2, 'draft', NULL, 3, NOW() - INTERVAL '7 days',  NOW() - INTERVAL '7 days',  NULL),
+    (3, 2, 1, 'draft', NULL, 3, NOW() - INTERVAL '17 days', NOW() - INTERVAL '17 days', NULL),
+    (4, 3, 1, 'draft', NULL, 5, NOW() - INTERVAL '13 days', NOW() - INTERVAL '13 days', NULL),
+    (5, 3, 2, 'draft', NULL, 5, NOW() - INTERVAL '3 days',  NOW() - INTERVAL '3 days',  NULL);
 
--- =========================================
--- SURVEY QUESTIONS / NODES
--- =========================================
-
-INSERT INTO survey_questions (id, survey_version_id, question_key, sort_key, node_type, question_schema, created_at, updated_at) VALUES
-    ('00000000-0000-0000-0000-000000000001', 1, 'engagement_score', 100000, 'question', $json${"type":"question","content":{"id":"engagement_score","title":"Engagement Score","label":"How engaged do you feel at work?","family":"rating","definition":{"variant":"slider","range":{"min":1,"max":10,"step":1},"ui":{"left_label":"Not engaged","right_label":"Very engaged"}}}}$json$::jsonb, NOW() - INTERVAL '27 days', NOW() - INTERVAL '27 days'),
-    ('00000000-0000-0000-0000-000000000002', 1, 'team_support', 200000, 'question', $json${"type":"question","content":{"id":"team_support","title":"Team Support","label":"How supported do you feel by your team?","family":"choice","definition":{"min":1,"max":1,"options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}]}}}$json$::jsonb, NOW() - INTERVAL '27 days', NOW() - INTERVAL '27 days'),
-    ('00000000-0000-0000-0000-000000000003', 2, 'engagement_score', 100000, 'question', $json${"type":"question","content":{"id":"engagement_score","title":"Engagement Score","label":"How engaged do you feel at work?","family":"rating","definition":{"variant":"slider","range":{"min":1,"max":10,"step":1},"ui":{"left_label":"Not engaged","right_label":"Very engaged"}}}}$json$::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-    ('00000000-0000-0000-0000-000000000004', 2, 'team_support', 200000, 'question', $json${"type":"question","content":{"id":"team_support","title":"Team Support","label":"How supported do you feel by your team?","family":"choice","definition":{"min":1,"max":1,"options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}]}}}$json$::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-    ('00000000-0000-0000-0000-000000000005', 2, 'manager_feedback', 300000, 'question', $json${"type":"question","content":{"id":"manager_feedback","title":"Manager Feedback","label":"What is one thing your manager could do better?","family":"field","definition":{"variant":"textarea","field_type":"text","placeholder":"Share one practical improvement"}}}$json$::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-    ('00000000-0000-0000-0000-000000000006', 2, 'show_manager_feedback_low_score', 400000, 'rule', $json${"type":"rule","content":{"id":"show_manager_feedback_low_score","title":"Show manager feedback for low scores","target":"manager_feedback","condition":{"question_key":"engagement_score","operator":"lte","value":6},"effects":{"visible":true,"required":true}}}$json$::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-    ('00000000-0000-0000-0000-000000000007', 3, 'clarity_rating', 100000, 'question', $json${"type":"question","content":{"id":"clarity_rating","title":"Clear Expectations","label":"My manager sets clear expectations.","family":"rating","definition":{"variant":"slider","range":{"min":1,"max":5,"step":1},"ui":{"left_label":"Strongly disagree","right_label":"Strongly agree"}}}}$json$::jsonb, NOW() - INTERVAL '17 days', NOW() - INTERVAL '17 days'),
-    ('00000000-0000-0000-0000-000000000008', 3, 'coaching_examples', 200000, 'question', $json${"type":"question","content":{"id":"coaching_examples","title":"Coaching Example","label":"Share an example of good coaching.","family":"field","definition":{"variant":"textarea","field_type":"text","placeholder":"Describe a specific example"}}}$json$::jsonb, NOW() - INTERVAL '17 days', NOW() - INTERVAL '17 days'),
-    ('00000000-0000-0000-0000-000000000009', 4, 'signup_ease', 100000, 'question', $json${"type":"question","content":{"id":"signup_ease","title":"Signup Ease","label":"How easy was signup?","family":"rating","definition":{"variant":"slider","range":{"min":1,"max":10,"step":1},"ui":{"left_label":"Difficult","right_label":"Easy"}}}}$json$::jsonb, NOW() - INTERVAL '13 days', NOW() - INTERVAL '13 days'),
-    ('00000000-0000-0000-0000-000000000010', 4, 'feature_interest', 200000, 'question', $json${"type":"question","content":{"id":"feature_interest","title":"Feature Interest","label":"Match each persona to the feature they cared about most.","family":"matching","definition":{"left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]}}}$json$::jsonb, NOW() - INTERVAL '13 days', NOW() - INTERVAL '13 days'),
-    ('00000000-0000-0000-0000-000000000011', 5, 'signup_ease', 100000, 'question', $json${"type":"question","content":{"id":"signup_ease","title":"Signup Ease","label":"How easy was signup?","family":"rating","definition":{"variant":"slider","range":{"min":1,"max":10,"step":1},"ui":{"left_label":"Difficult","right_label":"Easy"}}}}$json$::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-    ('00000000-0000-0000-0000-000000000012', 5, 'feature_interest', 200000, 'question', $json${"type":"question","content":{"id":"feature_interest","title":"Feature Interest","label":"Match each persona to the feature they cared about most.","family":"matching","definition":{"left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]}}}$json$::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-    ('00000000-0000-0000-0000-000000000013', 5, 'followup_email', 300000, 'question', $json${"type":"question","content":{"id":"followup_email","title":"Follow-up Email","label":"Leave your email if you want follow-up.","family":"field","definition":{"variant":"input","field_type":"email","placeholder":"name@example.com"}}}$json$::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-    ('00000000-0000-0000-0000-000000000014', 5, 'show_followup_email_high_ease', 400000, 'rule', $json${"type":"rule","content":{"id":"show_followup_email_high_ease","title":"Show follow-up email for high ease","target":"followup_email","condition":{"question_key":"signup_ease","operator":"gte","value":8},"effects":{"visible":true,"required":false}}}$json$::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days');
-
--- =========================================
--- SURVEY SCORING RULES
--- =========================================
-
-INSERT INTO survey_scoring_rules (id, survey_version_id, scoring_key, scoring_schema, created_at, updated_at) VALUES
-    (1, 2, 'engagement_score_direct', $json${"target":"engagement_score","bucket":"engagement","strategy":"rating_direct","config":{"multiplier":1}}$json$::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-    (2, 2, 'team_support_option_map', $json${"target":"team_support","bucket":"engagement","strategy":"choice_option_map","config":{"option_scores":{"very_supported":10,"somewhat_supported":6,"not_supported":2},"combine":"max"}}$json$::jsonb, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-    (3, 5, 'signup_ease_direct', $json${"target":"signup_ease","bucket":"total","strategy":"rating_direct","config":{"multiplier":1}}$json$::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-    (4, 5, 'feature_interest_answer_key', $json${"target":"feature_interest","bucket":"total","strategy":"matching_answer_key","config":{"correct_pairs":[{"left_id":"founder","right_id":"automation"},{"left_id":"marketer","right_id":"analytics"}],"points_per_correct":1,"penalty_per_incorrect":0,"max_score":2}}$json$::jsonb, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days');
+UPDATE survey_versions AS v
+SET definition = fixture.definition
+FROM (VALUES
+    (1, $json${
+        "id": "employee-engagement",
+        "versionId": 1,
+        "revision": 1,
+        "title": "Employee Engagement Pulse",
+        "projectName": "Acme Employee Feedback",
+        "status": "draft",
+        "document": {"sections": [{"id": "main", "title": "Employee Engagement Pulse", "blocks": [
+            {"id": "engagement_score", "type": "input", "field": {"id": "engagement_score", "uuid": "00000000-0000-0000-0000-000000000001", "prompt": "How engaged do you feel at work?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
+            {"id": "team_support", "type": "input", "field": {"id": "team_support", "uuid": "00000000-0000-0000-0000-000000000002", "prompt": "How supported do you feel by your team?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "very_supported", "uuid": "ec1d5ef8-756b-5a36-9f9c-98cf6c2585b8", "label": "Very supported"}, {"id": "somewhat_supported", "uuid": "c6e7cd3c-21c6-5dfb-b648-396f814e6862", "label": "Somewhat supported"}, {"id": "not_supported", "uuid": "f65dde98-5297-5c40-b88f-1d26209a5a9f", "label": "Not supported"}]}, "answerSpec": {"type": "choice", "required": true}}}
+        ]}]}
+    }$json$::jsonb),
+    (2, $json${
+        "id": "employee-engagement",
+        "versionId": 2,
+        "revision": 1,
+        "title": "Employee Engagement Pulse",
+        "projectName": "Acme Employee Feedback",
+        "status": "published",
+        "document": {"sections": [{"id": "main", "title": "Employee Engagement Pulse", "blocks": [
+            {"id": "engagement_score", "type": "input", "field": {"id": "engagement_score", "uuid": "00000000-0000-0000-0000-000000000003", "prompt": "How engaged do you feel at work?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
+            {"id": "team_support", "type": "input", "field": {"id": "team_support", "uuid": "00000000-0000-0000-0000-000000000004", "prompt": "How supported do you feel by your team?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "very_supported", "uuid": "7d319775-c118-5ca2-83a9-3ecd50bb6bf3", "label": "Very supported"}, {"id": "somewhat_supported", "uuid": "097ada5d-4eec-51a7-97e4-f7bbe7efa336", "label": "Somewhat supported"}, {"id": "not_supported", "uuid": "bb61b09a-4cbf-5cc4-bf28-00fcdb1a8655", "label": "Not supported"}]}, "answerSpec": {"type": "choice", "required": true}}},
+            {"id": "manager_feedback", "type": "input", "field": {"id": "manager_feedback", "uuid": "00000000-0000-0000-0000-000000000005", "prompt": "What is one thing your manager could do better?", "interaction": {"kind": "long_text", "placeholder": "Share one practical improvement"}, "answerSpec": {"type": "string", "required": true}, "behaviour": {"visibility": {"mode": "conditional", "condition": {"fieldUuid": "00000000-0000-0000-0000-000000000003", "operator": "less_than", "value": 7}}}}}
+        ]}]}
+    }$json$::jsonb),
+    (3, $json${
+        "id": "manager-effectiveness",
+        "versionId": 3,
+        "revision": 1,
+        "title": "Manager Effectiveness Review",
+        "projectName": "Acme Employee Feedback",
+        "status": "draft",
+        "document": {"sections": [{"id": "main", "title": "Manager Effectiveness Review", "blocks": [
+            {"id": "clarity_rating", "type": "input", "field": {"id": "clarity_rating", "uuid": "00000000-0000-0000-0000-000000000007", "prompt": "My manager sets clear expectations.", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 5}, "required": true}}},
+            {"id": "coaching_examples", "type": "input", "field": {"id": "coaching_examples", "uuid": "00000000-0000-0000-0000-000000000008", "prompt": "Share an example of good coaching.", "interaction": {"kind": "long_text", "placeholder": "Describe a specific example"}, "answerSpec": {"type": "string", "required": false}}}
+        ]}]}
+    }$json$::jsonb),
+    (4, $json${
+        "id": "beta-signup",
+        "versionId": 4,
+        "revision": 1,
+        "title": "Beta Signup Experience",
+        "projectName": "Beta Product Research",
+        "status": "draft",
+        "document": {"sections": [{"id": "main", "title": "Beta Signup Experience", "blocks": [
+            {"id": "signup_ease", "type": "input", "field": {"id": "signup_ease", "uuid": "00000000-0000-0000-0000-000000000009", "prompt": "How easy was signup?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
+            {"id": "feature_interest", "type": "input", "field": {"id": "feature_interest", "uuid": "00000000-0000-0000-0000-000000000010", "prompt": "Which feature interested you most?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "automation", "uuid": "4bf83e1a-7b04-5cd7-a7bc-fc9158082033", "label": "Automation"}, {"id": "analytics", "uuid": "27f562dc-9a37-5819-9870-8ed6b3ddd40a", "label": "Analytics"}]}, "answerSpec": {"type": "choice", "required": true}}}
+        ]}]}
+    }$json$::jsonb),
+    (5, $json${
+        "id": "beta-signup",
+        "versionId": 5,
+        "revision": 1,
+        "title": "Beta Signup Experience",
+        "projectName": "Beta Product Research",
+        "status": "published",
+        "document": {"sections": [{"id": "main", "title": "Beta Signup Experience", "blocks": [
+            {"id": "signup_ease", "type": "input", "field": {"id": "signup_ease", "uuid": "00000000-0000-0000-0000-000000000011", "prompt": "How easy was signup?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
+            {"id": "feature_interest", "type": "input", "field": {"id": "feature_interest", "uuid": "00000000-0000-0000-0000-000000000012", "prompt": "Which feature interested you most?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "automation", "uuid": "c7198ca4-e18d-5595-8541-7888c31f5e0b", "label": "Automation"}, {"id": "analytics", "uuid": "3a1d8028-21ec-55fe-aeef-57402bacf866", "label": "Analytics"}]}, "answerSpec": {"type": "choice", "required": true}}},
+            {"id": "followup_email", "type": "input", "field": {"id": "followup_email", "uuid": "00000000-0000-0000-0000-000000000013", "prompt": "Leave your email if you want follow-up.", "interaction": {"kind": "short_text", "placeholder": "name@example.com"}, "answerSpec": {"type": "string", "required": false}, "behaviour": {"visibility": {"mode": "conditional", "condition": {"fieldUuid": "00000000-0000-0000-0000-000000000011", "operator": "greater_than", "value": 7}}}}}
+        ]}]}
+    }$json$::jsonb)
+) AS fixture(version_id, definition)
+WHERE v.id = fixture.version_id;
 
 -- =========================================
 -- PROJECT SUBJECTS
@@ -192,9 +224,9 @@ INSERT INTO project_subjects (id, project_id, subject_code, created_at) VALUES
 
 INSERT INTO project_subject_identities
     (id, project_id, project_subject_id, identity_type, user_id, normalized_email, verification_status, verified_at, attached_at) VALUES
-    ('a1a1a1a1-0000-0000-0000-000000000001', 1, '11111111-1111-1111-1111-111111111111', 'authenticated_user', 2, NULL, 'verified', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days'),
-    ('a1a1a1a1-0000-0000-0000-000000000002', 1, '22222222-2222-2222-2222-222222222222', 'authenticated_user', 3, NULL, 'verified', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days'),
-    ('a1a1a1a1-0000-0000-0000-000000000003', 2, '33333333-3333-3333-3333-333333333333', 'authenticated_user', 5, NULL, 'verified', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days'),
+    ('a1a1a1a1-0000-0000-0000-000000000001', 1, '11111111-1111-1111-1111-111111111111', 'authenticated_user', 2, 'maya@acme.dev', 'verified', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days'),
+    ('a1a1a1a1-0000-0000-0000-000000000002', 1, '22222222-2222-2222-2222-222222222222', 'authenticated_user', 3, 'liam@acme.dev', 'verified', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days'),
+    ('a1a1a1a1-0000-0000-0000-000000000003', 2, '33333333-3333-3333-3333-333333333333', 'authenticated_user', 5, 'noah@beta.dev', 'verified', NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days'),
     ('a1a1a1a1-0000-0000-0000-000000000004', 1, '66666666-6666-6666-6666-666666666666', 'email', NULL, 'guest@example.test', 'unverified', NULL, NOW() - INTERVAL '5 days');
 
 -- =========================================
@@ -236,6 +268,11 @@ INSERT INTO survey_links (id, project_id, survey_id, name, token, is_active, lin
 -- SUBMISSION SESSIONS
 -- =========================================
 
+-- Seed the linkage version used by the sample sessions.
+INSERT INTO linkage_key_versions (version, aws_secret_id, aws_secret_version_id)
+VALUES (1, 'flowform/local/mock-linkage', '00000000-0000-0000-0000-000000000001')
+ON CONFLICT (version) DO NOTHING;
+
 INSERT INTO submission_sessions (id, project_id, survey_id, survey_version_id, response_store_id, link_id, project_subject_id, browser_session_token_hash, linkage_key_version, session_status, started_at, completed_at, expires_at, last_activity_at) VALUES
     ('aaaaaaaa-0000-0000-0000-000000000001', 1, 1, 2, 1, NULL, '11111111-1111-1111-1111-111111111111', digest('session-token-0001', 'sha256'), 1, 'completed', NOW() - INTERVAL '4 days 15 minutes', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days' + INTERVAL '7 days', NOW() - INTERVAL '4 days'),
     ('aaaaaaaa-0000-0000-0000-000000000002', 1, 1, 2, 1, 'dddddddd-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666', digest('session-token-0002', 'sha256'), 1, 'completed', NOW() - INTERVAL '3 days 20 minutes', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days' + INTERVAL '7 days', NOW() - INTERVAL '3 days'),
@@ -246,7 +283,7 @@ INSERT INTO submission_sessions (id, project_id, survey_id, survey_version_id, r
 -- SUBMISSION EVENTS
 -- =========================================
 
-INSERT INTO submission_events (id, session_id, survey_version_id, event_type, question_node_id, received_at) VALUES
+INSERT INTO submission_events (id, session_id, survey_version_id, event_type, field_uuid, received_at) VALUES
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 2, 'session_started', NULL, NOW() - INTERVAL '4 days 15 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 2, 'answer_saved', '00000000-0000-0000-0000-000000000003', NOW() - INTERVAL '4 days 10 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000001', 2, 'session_completed', NULL, NOW() - INTERVAL '4 days'),
@@ -254,7 +291,7 @@ INSERT INTO submission_events (id, session_id, survey_version_id, event_type, qu
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000002', 2, 'answer_saved', '00000000-0000-0000-0000-000000000003', NOW() - INTERVAL '3 days 10 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000002', 2, 'session_completed', NULL, NOW() - INTERVAL '3 days'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000003', 5, 'session_started', NULL, NOW() - INTERVAL '2 days 40 minutes'),
-    (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000003', 5, 'question_viewed', '00000000-0000-0000-0000-000000000011', NOW() - INTERVAL '2 days 39 minutes'),
+    (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000003', 5, 'field_viewed', '00000000-0000-0000-0000-000000000011', NOW() - INTERVAL '2 days 39 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000004', 5, 'session_started', NULL, NOW() - INTERVAL '18 hours 10 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000004', 5, 'answer_saved', '00000000-0000-0000-0000-000000000011', NOW() - INTERVAL '18 hours 5 minutes'),
     (gen_random_uuid(), 'aaaaaaaa-0000-0000-0000-000000000004', 5, 'session_completed', NULL, NOW() - INTERVAL '18 hours');
@@ -287,7 +324,6 @@ INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, metadata, c
 UPDATE survey_versions
 SET
     status = 'published',
-    compiled_schema = $json${"schema_version":1,"nodes":[{"sort_key":100000,"node_type":"question","question_key":"engagement_score","question_schema":{"type":"question","content":{"id":"engagement_score","title":"Engagement Score","label":"How engaged do you feel at work?","family":"rating","definition":{"variant":"slider","range":{"min":1,"max":10,"step":1},"ui":{"left_label":"Not engaged","right_label":"Very engaged"}}}}},{"sort_key":200000,"node_type":"question","question_key":"team_support","question_schema":{"type":"question","content":{"id":"team_support","title":"Team Support","label":"How supported do you feel by your team?","family":"choice","definition":{"min":1,"max":1,"options":[{"id":"very_supported","label":"Very supported"},{"id":"somewhat_supported","label":"Somewhat supported"},{"id":"not_supported","label":"Not supported"}]}}}},{"sort_key":300000,"node_type":"question","question_key":"manager_feedback","question_schema":{"type":"question","content":{"id":"manager_feedback","title":"Manager Feedback","label":"What is one thing your manager could do better?","family":"field","definition":{"variant":"textarea","field_type":"text","placeholder":"Share one practical improvement"}}}},{"sort_key":400000,"node_type":"rule","question_key":"show_manager_feedback_low_score","question_schema":{"type":"rule","content":{"id":"show_manager_feedback_low_score","title":"Show manager feedback for low scores","target":"manager_feedback","condition":{"question_key":"engagement_score","operator":"lte","value":6},"effects":{"visible":true,"required":true}}}}],"scoring":[{"scoring_key":"engagement_score_direct","scoring_schema":{"target":"engagement_score","bucket":"engagement","strategy":"rating_direct","config":{"multiplier":1}}},{"scoring_key":"team_support_option_map","scoring_schema":{"target":"team_support","bucket":"engagement","strategy":"choice_option_map","config":{"option_scores":{"very_supported":10,"somewhat_supported":6,"not_supported":2},"combine":"max"}}}]}$json$::jsonb,
     published_at = NOW() - INTERVAL '6 days',
     updated_at = NOW() - INTERVAL '6 days'
 WHERE id = 2;
@@ -295,7 +331,6 @@ WHERE id = 2;
 UPDATE survey_versions
 SET
     status = 'published',
-    compiled_schema = $json${"schema_version":1,"nodes":[{"sort_key":100000,"node_type":"question","question_key":"signup_ease","question_schema":{"type":"question","content":{"id":"signup_ease","title":"Signup Ease","label":"How easy was signup?","family":"rating","definition":{"variant":"slider","range":{"min":1,"max":10,"step":1},"ui":{"left_label":"Difficult","right_label":"Easy"}}}}},{"sort_key":200000,"node_type":"question","question_key":"feature_interest","question_schema":{"type":"question","content":{"id":"feature_interest","title":"Feature Interest","label":"Match each persona to the feature they cared about most.","family":"matching","definition":{"left_items":[{"id":"founder","label":"Founder"},{"id":"marketer","label":"Marketer"}],"right_items":[{"id":"automation","label":"Automation"},{"id":"analytics","label":"Analytics"}]}}}},{"sort_key":300000,"node_type":"question","question_key":"followup_email","question_schema":{"type":"question","content":{"id":"followup_email","title":"Follow-up Email","label":"Leave your email if you want follow-up.","family":"field","definition":{"variant":"input","field_type":"email","placeholder":"name@example.com"}}}},{"sort_key":400000,"node_type":"rule","question_key":"show_followup_email_high_ease","question_schema":{"type":"rule","content":{"id":"show_followup_email_high_ease","title":"Show follow-up email for high ease","target":"followup_email","condition":{"question_key":"signup_ease","operator":"gte","value":8},"effects":{"visible":true,"required":false}}}}],"scoring":[{"scoring_key":"signup_ease_direct","scoring_schema":{"target":"signup_ease","bucket":"total","strategy":"rating_direct","config":{"multiplier":1}}},{"scoring_key":"feature_interest_answer_key","scoring_schema":{"target":"feature_interest","bucket":"total","strategy":"matching_answer_key","config":{"correct_pairs":[{"left_id":"founder","right_id":"automation"},{"left_id":"marketer","right_id":"analytics"}],"points_per_correct":1,"penalty_per_incorrect":0,"max_score":2}}}]}$json$::jsonb,
     published_at = NOW() - INTERVAL '2 days',
     updated_at = NOW() - INTERVAL '2 days'
 WHERE id = 5;
@@ -322,14 +357,15 @@ SELECT setval('project_memberships_id_seq', COALESCE((SELECT MAX(id) FROM projec
 -- PROJECT INVITATIONS
 -- =========================================
 
-INSERT INTO project_invitations (id, project_id, invited_email, role_id, invited_by_user_id, status, created_at) VALUES
-    (1, 1, 'pending.invite@example.com', 3, 2, 'pending', NOW() - INTERVAL '5 days');
+INSERT INTO project_invitations
+    (id, project_id, invited_email, role_id, invited_by_user_id, status, token_hash, created_at) VALUES
+    (1, 1, 'pending.invite@example.com', 3, 2, 'pending', encode(digest('mock-invitation-0001', 'sha256'), 'hex'),
+     NOW() - INTERVAL '5 days');
 
 SELECT setval('project_invitations_id_seq', COALESCE((SELECT MAX(id) FROM project_invitations), 1), true);
 SELECT setval('response_stores_id_seq', COALESCE((SELECT MAX(id) FROM response_stores), 1), true);
 SELECT setval('surveys_id_seq', COALESCE((SELECT MAX(id) FROM surveys), 1), true);
 SELECT setval('survey_versions_id_seq', COALESCE((SELECT MAX(id) FROM survey_versions), 1), true);
-SELECT setval('survey_scoring_rules_id_seq', COALESCE((SELECT MAX(id) FROM survey_scoring_rules), 1), true);
 SELECT setval('survey_roles_id_seq', COALESCE((SELECT MAX(id) FROM survey_roles), 1), true);
 SELECT setval('subject_ip_observations_id_seq', COALESCE((SELECT MAX(id) FROM subject_ip_observations), 1), true);
 SELECT setval('audit_logs_id_seq', COALESCE((SELECT MAX(id) FROM audit_logs), 1), true);

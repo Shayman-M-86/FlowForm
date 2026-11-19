@@ -24,7 +24,8 @@ from app.crypto.models import (
     SessionDEKContext,
     SessionLocator,
 )
-from app.schema.types import ProjectId, SubmissionSessionId, SurveyId
+from app.schema.models.survey_document.answers import AnswerData
+from app.schema.types import ProjectId, SubmissionSessionId, SurveyFieldUuid, SurveyId
 
 
 class TestLocalCryptoRoundTrip:
@@ -51,12 +52,13 @@ class TestLocalCryptoRoundTrip:
 
     def test_answer_encrypt_decrypt_round_trip(self) -> None:
         plaintext_dek = PlaintextSessionKey(os.urandom(32))
-        question_node_id = uuid.uuid4()
+        field_uuid = TypeAdapter(SurveyFieldUuid).validate_python(uuid.uuid4())
 
         payload_bytes = build_plaintext_payload(
-            question_node_id=question_node_id,
-            answer_state="answered",
-            answer_value={"choice": "option_a"},
+            field_uuid=field_uuid,
+            answer=TypeAdapter(AnswerData).validate_python(
+                {"state": "answered", "answer_spec": {"type": "string", "required": True}, "answer_value": "yes"}
+            ),
         )
         nonce = generate_nonce()
         aad = b"test-aad-binding"
@@ -64,9 +66,10 @@ class TestLocalCryptoRoundTrip:
 
         decrypted = decrypt_answer(ciphertext, plaintext_dek, nonce, aad)
         parsed = parse_plaintext_payload(decrypted)
-        assert parsed.question_node_id == question_node_id
-        assert parsed.answer_state == "answered"
-        assert parsed.answer_value == {"choice": "option_a"}
+        assert parsed.field_uuid == field_uuid
+        assert parsed.state == "answered"
+        assert parsed.state == "answered"
+        assert parsed.answer_value == "yes"
 
     def test_session_locator_deterministic(self) -> None:
         session_id = uuid.uuid4()

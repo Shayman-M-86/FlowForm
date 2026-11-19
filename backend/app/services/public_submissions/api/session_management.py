@@ -7,10 +7,8 @@ core/answer_save.py. Complete delegates to core/completion.py.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from uuid import UUID
+from typing import TYPE_CHECKING
 
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from sqlalchemy.orm import Session
 
 from app.cache import get_app_cache
@@ -27,11 +25,11 @@ from app.schema.api.responses.submission_sessions import (
     StartSubmissionSessionResponse,
 )
 from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
-from app.schema.enums import SubmissionAnswerState
 from app.schema.models.results.service_results import AnswerSaveResult
+from app.schema.models.survey_document.answers import AnswerData
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.user import User
-from app.schema.types import ClientMutationId
+from app.schema.types import ClientMutationId, SurveyFieldUuid
 from app.services.public_submissions.core.actions.answer_save import AnswerSaveService
 from app.services.public_submissions.core.actions.completion import (
     CompletionResult,
@@ -195,9 +193,8 @@ class SessionManagementService:
         response_db: Session,
         *,
         raw_resume_token: str | None,
-        question_node_id: UUID,
-        answer_state: SubmissionAnswerState,
-        answer_value: SubmissionAnswerValue | dict[str, Any] | None,
+        field_uuid: SurveyFieldUuid,
+        answer: AnswerData,
         client_mutation_id: ClientMutationId,
     ) -> AnswerSaveResult:
         """Save a respondent answer. Returns the save result."""
@@ -215,21 +212,20 @@ class SessionManagementService:
             db,
             response_db,
             ctx=ctx,
-            question_node_id=question_node_id,
-            answer_state=answer_state,
-            answer_value=answer_value,
+            field_uuid=field_uuid,
+            answer=answer,
             client_mutation_id=client_mutation_id,
         )
 
-    def record_question_viewed(
+    def record_field_viewed(
         self,
         db: Session,
         response_db: Session,
         *,
         raw_resume_token: str | None,
-        question_node_id: UUID,
+        field_uuid: SurveyFieldUuid,
     ) -> None:
-        """Record a question-viewed analytics event."""
+        """Record a field-viewed analytics event."""
         if raw_resume_token is None:
             raise SessionNotFoundError()
         cache, clients = self._cache_and_clients()
@@ -240,8 +236,8 @@ class SessionManagementService:
             cache=cache,
             clients=clients,
         )
-        self._answer_save_service.record_question_viewed(
+        self._answer_save_service.record_field_viewed(
             db,
             ctx=ctx,
-            question_node_id=question_node_id,
+            field_uuid=field_uuid,
         )

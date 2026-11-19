@@ -5,7 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-20
 tags: [backend]
 related_code:
   - "../../../backend/app/schema/orm/core/submission_session.py"
@@ -38,6 +38,14 @@ answer save, events, or completion. The legacy model treats answer slots as
 core pointers and response answers as encrypted data in a separate store.
 Reconciliation handles a subset of partial cross-store failures by examining
 in-progress sessions and envelope presence.
+
+Answer saving now addresses a `field_uuid` in the session's pinned document.
+The stable slot is keyed by session and field UUID, with its readable field ID
+taken from that document. The request's body UUID must match the URL UUID.
+Answered and cleared variants use the shared answer models through the service
+and encryption boundary. Field-view events use the same pinned-field lookup.
+The response acknowledgement uses the persisted save time. Remaining startup,
+reporting, and historical payload migration gaps are tracked separately.
 
 On respondent page load, the browser presents its resume cookie with the
 current link token or public slug. A matching in-progress session returns its

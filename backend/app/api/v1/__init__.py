@@ -5,6 +5,7 @@ from flask import Blueprint, Flask
 from app.api.v1.account import account_bp
 from app.api.v1.respondent import respondent_bp
 from app.api.v1.studio import studio_projects_bp
+from app.api.v1.studio.ai_import import studio_ai_import_bp
 from app.api.v1.system import system_bp
 
 __all__ = ["register_api_v1"]
@@ -13,6 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 ROUTES: list[tuple[Blueprint, str]] = [
     (account_bp, "/api/v1/account"),
+    (studio_ai_import_bp, "/api/v1/studio"),
     (studio_projects_bp, "/api/v1/studio/projects"),
     (respondent_bp, "/api/v1/respondent"),
     (system_bp, "/api/v1/system"),

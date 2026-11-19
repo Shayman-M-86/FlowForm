@@ -6,7 +6,7 @@ from app.core.extensions import auth
 from app.db.context import get_core_db
 from app.domain.permissions import PERMISSIONS
 from app.openapi import openapi_route
-from app.schema.api.requests.subjects import ListSubjectsQuery, UpdateSubjectRequest
+from app.schema.api.requests.subjects import ListProjectSubjectsRequest, UpdateSubjectRequest
 from app.schema.api.responses.subjects import (
     ListSubjectsResponse,
     SubjectDetailResponse,
@@ -20,7 +20,7 @@ _BASE = "/<bint:project_id>/subjects"
 
 @openapi_route(
     summary="List subjects",
-    query_model=ListSubjectsQuery,
+    query_model=ListProjectSubjectsRequest,
     response_model=ListSubjectsResponse,
     tags=["Subjects"],
 )
@@ -28,7 +28,7 @@ _BASE = "/<bint:project_id>/subjects"
 @auth.require_auth()
 @require_project_permission(PERMISSIONS.project.manage_members)
 def list_subjects(project_id: ProjectId):
-    params = parse_query(ListSubjectsQuery, request)
+    params = parse_query(ListProjectSubjectsRequest, request)
     offset = (params.page - 1) * params.page_size
     rows, total = subject_service.list_subjects(
         db=get_core_db(),

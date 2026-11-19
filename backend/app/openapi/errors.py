@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Annotated, Any
 
 from pydantic import Field, TypeAdapter
@@ -24,6 +25,8 @@ _STATUS_DESCRIPTIONS: dict[int, str] = {
     422: "Request was syntactically valid but semantically invalid.",
     429: "Rate limit exceeded.",
     500: "Internal server error.",
+    502: "Upstream service failed to provide a usable response.",
+    503: "Service unavailable.",
 }
 
 _STATUS_RESPONSE_COMPONENTS: dict[int, str] = {
@@ -38,6 +41,8 @@ _STATUS_RESPONSE_COMPONENTS: dict[int, str] = {
     422: "ValidationError",
     429: "RateLimitError",
     500: "InternalServerError",
+    502: "BadGatewayError",
+    503: "ServiceUnavailableError",
 }
 
 
@@ -59,14 +64,16 @@ def _response_with_examples(
     }
 
 
-def _default_error_statuses(*, include_auth: bool = True) -> list[int]:
+def _error_statuses(*, include_auth: bool, additional: Iterable[int]) -> list[int]:
     statuses: list[int] = [400, 404, 405, 409, 413, 415, 422, 429, 500]
     if include_auth:
         statuses.extend([401, 403])
-    return sorted(set(statuses))
+    return sorted(set(statuses).union(additional))
 
 
-def default_error_response_components(*, include_auth: bool = True) -> dict[str, dict[str, Any]]:
+def default_error_response_components(
+    *, include_auth: bool = True, additional: Iterable[int] = ()
+) -> dict[str, dict[str, Any]]:
     """Return reusable default error response components.
 
     Examples are derived from real error classes via
@@ -80,11 +87,13 @@ def default_error_response_components(*, include_auth: bool = True) -> dict[str,
             _STATUS_DESCRIPTIONS.get(status, ""),
             by_status.get(status, {}),
         )
-        for status in _default_error_statuses(include_auth=include_auth)
+        for status in _error_statuses(include_auth=include_auth, additional=additional)
     }
 
 
-def default_error_response_refs(*, include_auth: bool = True) -> dict[str, dict[str, str]]:
+def default_error_response_refs(
+    *, include_auth: bool = True, additional: Iterable[int] = ()
+) -> dict[str, dict[str, str]]:
     """Return default operation responses as bare $ref objects.
 
     The description lives on the reusable component in components/responses —
@@ -92,5 +101,5 @@ def default_error_response_refs(*, include_auth: bool = True) -> dict[str, dict[
     """
     return {
         str(status): {"$ref": f"#/components/responses/{_STATUS_RESPONSE_COMPONENTS[status]}"}
-        for status in _default_error_statuses(include_auth=include_auth)
+        for status in _error_statuses(include_auth=include_auth, additional=additional)
     }

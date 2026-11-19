@@ -1,37 +1,28 @@
-"""Session/subject tree assembly for admin results.
-
-``SessionTreeBuilder`` turns submission sessions into result trees: per-slot
-answer results (optionally decrypted) plus an optional event timeline. It holds
-the cache and crypto clients and delegates decryption to ``core.decryption`` and
-metadata lookups to ``core.question_meta``.
-"""
+"""Assemble field-answer result trees from each session's pinned document."""
 
 from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
 from sqlalchemy.orm import Session
 
 from app.cache import get_app_cache
 from app.crypto._internal.client_extension import get_crypto_clients
-from app.crypto.models import AnswerLocator
-from app.repositories import content_repo as cr
+from app.crypto._internal.errors import PayloadDecodeError
+from app.crypto._internal.models import DecryptedAnswerPayload
 from app.repositories.core import submission_answer_slots, submission_events
 from app.repositories.core import submission_sessions as ssr
-from app.schema.enums import SubmissionAnswerState
-from app.schema.models.results.service_results import AnswerSlotResult, SessionEventResult, SessionTreeResult
+from app.schema.models.results.answer_results import AnswerSlotResult, SessionEventResult
+from app.schema.models.results.service_results import SessionTreeResult
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SubmissionSession
-from app.schema.types import SubjectId, SurveyId
+from app.schema.orm.response.response_answer import ResponseAnswer
+from app.schema.types import AnswerLocator, SubjectId, SurveyId
 from app.services.admin_results.core.decryption import resolve_and_decrypt_answers
-from app.services.admin_results.core.question_meta import (
-    QuestionMetaMap,
-    build_question_meta_map,
-    resolve_answer_value,
-)
+from app.services.admin_results.core.field_meta import FieldMap, build_field_map
 
 if TYPE_CHECKING:
     from app.cache import AppCache
@@ -41,25 +32,16 @@ logger = logging.getLogger(__name__)
 
 
 class SessionTreeBuilder:
-    """Assemble session result trees, optionally decrypting answer values."""
+    """Build metadata-only or decrypted trees without inspecting legacy question families."""
 
-    def __init__(
-        self,
-        *,
-        cache: AppCache | None = None,
-        clients: CryptoClients | None = None,
-    ) -> None:
+    def __init__(self, *, cache: AppCache | None = None, clients: CryptoClients | None = None) -> None:
         self._cache = cache or get_app_cache()
         self._clients = clients or get_crypto_clients()
 
     def group_sessions_by_subject(
-        self,
-        db: Session,
-        *,
-        survey_id: SurveyId,
-        subject_ids: list[SubjectId],
+        self, db: Session, *, survey_id: SurveyId, subject_ids: list[SubjectId]
     ) -> dict[SubjectId, list[SubmissionSession]]:
-        """Group this survey's sessions for the given subjects by subject id."""
+        """Group sessions by their canonical subject identity."""
         sessions = ssr.list_by_subjects(db, survey_id=survey_id, project_subject_ids=subject_ids)
         grouped: dict[SubjectId, list[SubmissionSession]] = defaultdict(list)
         for session in sessions:
@@ -76,15 +58,12 @@ class SessionTreeBuilder:
         include_decrypted_answer_values: bool,
         include_events: bool,
     ) -> SessionTreeResult:
-        """Build one session's answer-slot results, optionally decrypted, with optional events."""
+        """Use the pinned document for metadata and the encrypted payload for answer data."""
         events = self.load_events(db, session=session) if include_events else None
-
         slots = submission_answer_slots.list_by_session(db, submission_session_id=session.id)
         if not slots:
             return SessionTreeResult(session=session, answers=[], events=events)
-
-        question_meta_map = build_question_meta_map(cr.list_question_nodes(db, session.survey_version_id))
-
+        fields = build_field_map(session.survey_version.definition)
         resolved = resolve_and_decrypt_answers(
             db,
             response_db,
@@ -94,70 +73,52 @@ class SessionTreeBuilder:
             cache=self._cache,
             clients=self._clients,
         )
-
-        answer_results = [
+        answers = [
             build_answer_slot_result(
                 slot,
                 locator=resolved.locators[slot.id],
                 found=resolved.found,
                 decrypted_by_locator=resolved.decrypted_by_locator,
-                question_meta_map=question_meta_map,
+                fields=fields,
             )
             for slot in slots
         ]
-        return SessionTreeResult(session=session, answers=answer_results, events=events)
+        return SessionTreeResult(session=session, answers=answers, events=events)
 
     def load_events(self, db: Session, *, session: SubmissionSession) -> list[SessionEventResult] | None:
-        """Load timeline events for a session. Failures are logged and swallowed."""
+        """Return field-based timeline events; optional analytics remain best effort."""
         try:
-            events = submission_events.list_by_session(db, session_id=session.id)
+            return [
+                SessionEventResult(
+                    event_type=event.event_type, field_uuid=event.field_uuid, received_at=event.received_at
+                )
+                for event in submission_events.list_by_session(db, session_id=session.id)
+            ]
         except Exception:
             logger.exception("admin_results.events_load_failed session_id=%s", session.id)
             return None
-        return [
-            SessionEventResult(
-                event_type=e.event_type,
-                question_node_id=e.question_node_id,
-                received_at=e.received_at,
-            )
-            for e in events
-        ]
 
 
 def build_answer_slot_result(
     slot: SubmissionAnswerSlot,
     *,
     locator: AnswerLocator,
-    found: dict[bytes, Any],
-    decrypted_by_locator: dict[bytes, Any],
-    question_meta_map: QuestionMetaMap,
+    found: Mapping[AnswerLocator, ResponseAnswer],
+    decrypted_by_locator: Mapping[AnswerLocator, DecryptedAnswerPayload],
+    fields: FieldMap,
 ) -> AnswerSlotResult:
-    """Build one answer-slot result, resolving its decrypted value when present."""
-    has_encrypted_answer = bytes(locator) in found
-    decrypted_payload = decrypted_by_locator.get(bytes(locator))
-    question_meta = question_meta_map.get(slot.question_node_id)
-    question_key = question_meta.key if question_meta is not None else slot.question_key
-    answer_family = question_meta.family if question_meta is not None else None
-
-    answer_state: SubmissionAnswerState | None = None
-    answer_value: SubmissionAnswerValue | dict[str, Any] | None = None
-    if decrypted_payload is not None:
-        answer_state = decrypted_payload.answer_state
-        answer_value = resolve_answer_value(
-            answer_family=answer_family,
-            answer_state=decrypted_payload.answer_state,
-            raw_value=decrypted_payload.answer_value,
-        )
-
+    """Combine existing field metadata with already-validated decrypted answer data."""
+    field = fields.get(slot.field_uuid)
+    payload = decrypted_by_locator.get(locator)
+    if payload is not None and payload.field_uuid != slot.field_uuid:
+        raise PayloadDecodeError("Decrypted field identity does not match the answer slot.")
     return AnswerSlotResult(
-        slot_id=slot.id,
-        question_node_id=slot.question_node_id,
-        question_key=question_key,
-        answer_family=answer_family,
-        has_encrypted_answer=has_encrypted_answer,
-        decrypted=decrypted_payload is not None,
-        answer_state=answer_state,
-        answer_value=answer_value,
-        question_content=question_meta.content if question_meta is not None else None,
-        question_sort_key=question_meta.sort_key if question_meta is not None else None,
+        field_uuid=slot.field_uuid,
+        field_id=field.id if field is not None else slot.field_id,
+        has_encrypted_answer=locator in found,
+        decrypted=payload is not None,
+        state=payload.state if payload is not None else None,
+        answer_spec=payload.answer_spec if payload is not None else None,
+        answer_value=payload.answer_value if payload is not None and payload.state == "answered" else None,
+        field=field,
     )

@@ -105,15 +105,20 @@ class SurveyDocument(DataModel):
     sections: LimitedList[SurveySection]
 
 
-class SurveyDefinition(DataModel):
+class SurveyContent(DataModel):
+    """Authored survey content shared by draft generation and survey definitions."""
+
+    title: SurveyTitle
+    description: LongString | None = None
+    document: SurveyDocument
+    workflow: SurveyWorkflow | None = None
+
+
+class SurveyDefinition(SurveyContent):
     """Canonical FlowForm V2 survey definition."""
 
     id: ReadableId
     versionId: SurveyVersionId
     revision: DocumentRevision
-    title: SurveyTitle
-    description: LongString | None = None
     projectName: ProjectName
     status: SurveyVersionStatus
-    document: SurveyDocument
-    workflow: SurveyWorkflow | None = None

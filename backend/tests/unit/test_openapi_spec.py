@@ -97,6 +97,30 @@ def test_default_error_responses_are_component_refs() -> None:
     assert responses["500"] == {"$ref": "#/components/responses/InternalServerError"}
 
 
+def test_upstream_errors_use_shared_components_only_on_declaring_routes() -> None:
+    app = Flask(__name__)
+
+    @openapi_route(summary="Generate preview", error_statuses=(502, 503))
+    @app.post("/preview")
+    def generate_preview():  # pragma: no cover
+        return {}, 200
+
+    @openapi_route(summary="Get widget")
+    @app.get("/widget")
+    def get_widget():  # pragma: no cover
+        return {}, 200
+
+    document = build_spec(app)
+    for status, component in (("502", "BadGatewayError"), ("503", "ServiceUnavailableError")):
+        assert status not in document["paths"]["/widget"]["get"]["responses"]
+        assert document["paths"]["/preview"]["post"]["responses"][status] == {
+            "$ref": f"#/components/responses/{component}"
+        }
+        response = document["components"]["responses"][component]
+        media_type = response["content"]["application/json"]
+        assert media_type["schema"] == {"$ref": "#/components/schemas/ErrorResponse"}
+
+
 def test_default_error_response_examples_are_registered_once() -> None:
     document = build_spec(Flask(__name__))
 

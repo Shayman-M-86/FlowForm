@@ -5,11 +5,13 @@ document_type: implementation
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-20
 tags: [backend, configuration]
 related_code:
   - "../../../../backend/app/core/config.py"
+  - "../../../../backend/app/core/extensions.py"
   - "../../../../backend/app/core/factory.py"
+  - "../../../../backend/app/services/openai.py"
   - "../../../../backend/app/aws/startup_validation.py"
 change_triggers:
   - "../../../../infra/env/"
@@ -47,6 +49,14 @@ validate incompatible settings during configuration construction; then pass the
 typed value through the factory/extension boundary. Secrets need a delivery
 mechanism appropriate to their sensitivity rather than a tracked plaintext
 environment file.
+
+AI survey generation follows this startup path. `OpenAISettings` resolves the
+optional mounted key as settings load. The extension initializer calls
+`OpenAIServiceManager.init_app(app)`, which registers one generator for the
+Flask app and creates a provider client when a key is available. A configured
+file path must be readable. The route calls the service from the application
+context. The service reports a missing client or failed generation to the shared
+API error handler.
 
 Exact setting names and provider checks require re-verification against the
 linked code and configuration references before this document can be promoted.

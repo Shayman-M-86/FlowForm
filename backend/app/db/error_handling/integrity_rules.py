@@ -34,11 +34,9 @@ Almost every rule returns **409 Conflict** — the request was structurally
 valid but collided with current database state.
 
 A small number of rules return **500 Internal Server Error** for CHECK
-violations on *server-controlled* fields that clients cannot set
-(submission ``status``, version ``status``/``compiled_schema``/
-``published_at``). If those CHECKs fire, internal code wrote inconsistent
-state — that is a server bug, not a client error, and the message says so
-explicitly.
+violations on server-controlled state, such as submission status, event
+shape, and publication without a document and timestamp. These indicate
+an inconsistent write by application code.
 
 **No rule returns 422.** Structural invariants on client-supplied payloads
 are validated upstream by Pydantic, where they belong. If you find yourself
@@ -98,9 +96,7 @@ from app.schema.orm.core import (
     SurveyEncryptionKey,
     SurveyLink,
     SurveyMembershipRole,
-    SurveyQuestion,
     SurveyRole,
-    SurveyScoringRule,
     SurveyVersion,
     User,
 )
@@ -122,10 +118,8 @@ type RuleContext = (
     | SubmissionSession
     | SubmissionAnswerSlot
     | SubmissionEvent
-    | SurveyQuestion
     | SurveyEncryptionKey
     | SurveyRole
-    | SurveyScoringRule
     | ProjectRole
     | ProjectMembership
     | SurveyMembershipRole
@@ -160,8 +154,6 @@ allowed_parameters = {
     "event_type",
     "subject_code",
     "normalized_email",
-    "node_type",
-    "scoring_key",
     "name",
     "invited_email",
     "client_mutation_id",
@@ -281,15 +273,7 @@ def _submission_event_ctx(event: SubmissionEvent) -> dict[str, object]:
         "session_id": event.session_id,
         "survey_version_id": event.survey_version_id,
         "event_type": event.event_type,
-        "question_node_id": event.question_node_id,
-    }
-
-
-def _survey_question_ctx(question: SurveyQuestion) -> dict[str, object]:
-    return {
-        "survey_question_id": question.id,
-        "survey_version_id": question.survey_version_id,
-        "node_type": question.node_type,
+        "field_uuid": event.field_uuid,
     }
 
 
@@ -299,14 +283,6 @@ def _survey_encryption_key_ctx(key: SurveyEncryptionKey) -> dict[str, object]:
         "project_id": key.project_id,
         "survey_id": key.survey_id,
         "kms_context_version": key.kms_context_version,
-    }
-
-
-def _survey_scoring_rule_ctx(rule: SurveyScoringRule) -> dict[str, object]:
-    return {
-        "survey_scoring_rule_id": rule.id,
-        "survey_version_id": rule.survey_version_id,
-        "scoring_key": rule.scoring_key,
     }
 
 
@@ -353,7 +329,6 @@ def _response_answer_ctx(answer: ResponseAnswer) -> dict[str, object]:
     return {
         "envelope_id": answer.envelope_id,
     }
-
 
 
 def _invitation_ctx(invitation: ProjectInvitation) -> dict[str, object]:
@@ -438,7 +413,6 @@ SURVEY_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_survey_ctx,
     ),
-
 )
 
 SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
@@ -479,28 +453,23 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_survey_version_ctx,
     ),
-    # ck_survey_versions_published_requires_schema_and_timestamp
-    #
-    # This CHECK is internal-invariant defence in depth. The fields
-    # (status, compiled_schema, published_at) are not exposed in any request
-    # schema — surveys_repo.publish_version is the only code path that flips
-    # status to "published" and it writes all three together. So there is no
-    # Pydantic or service-level guard to add: nothing the client can send
-    # could trigger this.
-    #
-    # If this CHECK ever fires, a non-API code path mutated SurveyVersion in
-    # an inconsistent way — that is a server bug, not a client error.
-    # The kept rule below intentionally returns 500 with a loud message so
-    # the bug is visible in logs and to the caller, instead of disguising
-    # the invariant violation as a 422.
+    message_rule(
+        "Cannot modify the definition of a non-draft survey version",
+        lambda _ctx, _exc: DbIntegrityError(
+            409,
+            "VERSION_NOT_EDITABLE",
+            "The survey definition can only be changed on a draft version.",
+        ),
+        extractor=_survey_version_ctx,
+    ),
+    # The service checks that the draft has a definition before publishing.
+    # This CHECK catches an inconsistent write at the database boundary.
     check_rule(
-        "ck_survey_versions_published_requires_schema_and_timestamp",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
+        "ck_survey_versions_published_requires_definition_and_timestamp",
+        lambda _ctx, _exc: DbIntegrityError(
             500,
             "VERSION_PUBLISH_STATE_INVALID",
-            "Server invariant violated: a survey version reached"
-            " status='published' without both compiled_schema and published_at."
-            " This indicates a code path bypassed surveys_repo.publish_version.",
+            "A published survey version must have both a definition and a publication timestamp.",
         ),
         extractor=_survey_version_ctx,
     ),
@@ -764,8 +733,7 @@ SUBMISSION_SESSION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
             500,
             "SESSION_COMPLETION_STATE_INVALID",
-            "Server invariant violated: a submission session has an inconsistent"
-            " completed_at for its session_status.",
+            "Server invariant violated: a submission session has an inconsistent completed_at for its session_status.",
         ),
         extractor=_submission_session_ctx,
     ),
@@ -781,92 +749,25 @@ SUBMISSION_EVENT_RULES: tuple[DbErrorRule, ...] = (
         ),
         extractor=_submission_event_ctx,
     ),
-    foreign_key_rule(
-        "fk_submission_events_question_node_same_version",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
-            409,
-            "EVENT_QUESTION_VERSION_CONFLICT",
-            "The question node does not belong to this survey version.",
-        ),
-        extractor=_submission_event_ctx,
-    ),
-    #
-    # ck_submission_events_event_type_valid
-    #
-    # `event_type` is server-controlled — it is not exposed in any request
-    # schema. If this CHECK fires, internal code wrote an invalid event
-    # type — a server bug, not a client error.
+    # The service chooses the event type and resolves the field from the
+    # pinned document. SQL checks event shape and the session/version pair.
     check_rule(
         "ck_submission_events_event_type_valid",
         lambda ctx, _exc: DbIntegrityError(
             500,
             "EVENT_TYPE_INVALID",
-            "Server invariant violated: a submission event was written with"
-            f" invalid event_type={ctx['event_type']!r}.",
+            f"Server invariant violated: a submission event was written with invalid event_type={ctx['event_type']!r}.",
         ),
         extractor=_submission_event_ctx,
     ),
-)
-
-SURVEY_QUESTION_RULES: tuple[DbErrorRule, ...] = (
-    unique_rule(
-        "survey_questions_pkey",
+    check_rule(
+        "ck_submission_events_field_presence_consistent",
         lambda _ctx, _exc: DbIntegrityError(
-            409,
-            "NODE_ID_CONFLICT",
-            "A node with this ID already exists.",
+            500,
+            "EVENT_FIELD_PRESENCE_INVALID",
+            "Field events must have a field UUID and session events must omit it.",
         ),
-        extractor=_survey_question_ctx,
-    ),
-    unique_rule(
-        "uq_survey_questions_survey_version_id_question_key",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "QUESTION_KEY_CONFLICT" if ctx.get("node_type") == "question" else "RULE_KEY_CONFLICT",
-            f"This survey version already uses that"
-            f" {'question' if ctx.get('node_type') == 'question' else 'rule'}_key.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-    unique_rule(
-        "uq_survey_questions_survey_version_id_sort_key",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
-            409,
-            "SORT_KEY_CONFLICT",
-            "This survey version already uses that sort_key.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-
-    message_rule(
-        "Cannot modify components of a published survey version",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "QUESTION_VERSION_LOCKED" if ctx.get("node_type") == "question" else "RULE_VERSION_LOCKED",
-            "This node cannot be changed because its survey version is published.",
-        ),
-        extractor=_survey_question_ctx,
-    ),
-)
-
-SURVEY_SCORING_RULE_RULES: tuple[DbErrorRule, ...] = (
-    unique_rule(
-        "uq_survey_scoring_rules_survey_version_id_scoring_key",
-        lambda ctx, _exc: DbIntegrityError(
-            409,
-            "SCORING_KEY_CONFLICT",
-            f"This survey version already uses scoring_key={ctx['scoring_key']!r}.",
-        ),
-        extractor=_survey_scoring_rule_ctx,
-    ),
-    message_rule(
-        "Cannot modify components of a published survey version",
-        lambda ctx, _exc: DbIntegrityError(  # noqa: ARG005
-            409,
-            "SCORING_VERSION_LOCKED",
-            "Scoring rules cannot be changed on a published survey version.",
-        ),
-        extractor=_survey_scoring_rule_ctx,
+        extractor=_submission_event_ctx,
     ),
 )
 
@@ -931,8 +832,7 @@ PROJECT_MEMBERSHIP_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             500,
             "MEMBERSHIP_STATE_INVALID",
-            "Server invariant violated: a project membership was"
-            f" written with invalid status={ctx['status']!r}.",
+            f"Server invariant violated: a project membership was written with invalid status={ctx['status']!r}.",
         ),
         extractor=_project_membership_ctx,
     ),
@@ -1005,8 +905,7 @@ PROJECT_INVITATION_RULES: tuple[DbErrorRule, ...] = (
         lambda ctx, _exc: DbIntegrityError(
             500,
             "INVITATION_STATE_INVALID",
-            "Server invariant violated: a project invitation was written"
-            f" with invalid status={ctx['status']!r}.",
+            f"Server invariant violated: a project invitation was written with invalid status={ctx['status']!r}.",
         ),
         extractor=_invitation_ctx,
     ),
@@ -1122,9 +1021,7 @@ RULES_BY_CONTEXT: dict[type[object], tuple[DbErrorRule, ...]] = {
     SubmissionSession: SUBMISSION_SESSION_RULES,
     SubmissionAnswerSlot: SUBMISSION_ANSWER_SLOT_RULES,
     SubmissionEvent: SUBMISSION_EVENT_RULES,
-    SurveyQuestion: SURVEY_QUESTION_RULES,
     SurveyEncryptionKey: SURVEY_ENCRYPTION_KEY_RULES,
-    SurveyScoringRule: SURVEY_SCORING_RULE_RULES,
     ProjectRole: PROJECT_ROLE_RULES,
     ProjectMembership: PROJECT_MEMBERSHIP_RULES,
     SurveyMembershipRole: SURVEY_MEMBERSHIP_ROLE_RULES,

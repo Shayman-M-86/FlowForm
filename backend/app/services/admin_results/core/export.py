@@ -19,11 +19,12 @@ _EXPORT_FIELDNAMES = [
     "status",
     "started_at",
     "completed_at",
-    "question_key",
-    "answer_family",
+    "field_uuid",
+    "field_id",
+    "answer_spec",
     "has_encrypted_answer",
     "decrypted",
-    "answer_state",
+    "state",
     "answer_value",
 ]
 
@@ -46,11 +47,12 @@ def to_export_rows(result: SessionTreeResult) -> list[ExportRow]:
             status=session.session_status,
             started_at=session.started_at,
             completed_at=session.completed_at,
-            question_key=answer.question_key,
-            answer_family=answer.answer_family,
+            field_uuid=answer.field_uuid,
+            field_id=answer.field_id,
+            answer_spec=answer.answer_spec,
             has_encrypted_answer=answer.has_encrypted_answer,
             decrypted=answer.decrypted,
-            answer_state=answer.answer_state,
+            state=answer.state,
             answer_value=answer.answer_value,
         )
         for answer in result.answers
@@ -70,7 +72,14 @@ def format_export_file(rows: list[ExportRow], *, export_format: ExportFormat, su
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=_EXPORT_FIELDNAMES)
     writer.writeheader()
-    writer.writerows(row.to_json_dict() for row in rows)
+    for row in rows:
+        data = row.to_json_dict()
+        writer.writerow(
+            {
+                key: json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else value
+                for key, value in data.items()
+            }
+        )
     return ExportFile(
         body=output.getvalue(),
         mimetype="text/csv",

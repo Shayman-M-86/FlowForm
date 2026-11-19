@@ -15,7 +15,7 @@ from app.schema.api.requests.submission_sessions import StartSubmissionSessionRe
 def build_examples_by_status() -> dict[int, dict[str, dict]]:
     """Build representative HTTP errors plus a real Pydantic validation failure."""
     grouped = {}
-    for status in (400, 401, 403, 404, 405, 409, 413, 415, 429, 500):
+    for status in (400, 401, 403, 404, 405, 409, 413, 415, 429, 500, 502, 503):
         error = default_exceptions[status]()
         grouped[status] = {
             error.name.replace(" ", ""): {

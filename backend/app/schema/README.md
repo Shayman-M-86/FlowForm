@@ -8,6 +8,9 @@ These conventions apply when defining or changing value types across FlowForm.
   timestamps, counts, email addresses, and collection bounds.
 - `models/` owns complete reusable Pydantic data structures, organized by domain.
   `models/results/service_results.py` additionally owns internal service-result dataclasses.
+- `models/results/answer_results.py` owns portable answer-slot and event
+  projections. API responses inherit these fields; tree assembly consumes the
+  typed decrypted answer instead of rebuilding a legacy question-family shape.
 - `models/survey_document/` owns the document, field, workflow, and answer shapes.
   `models/survey_access.py` separately owns visibility/public-slug variants;
   survey access metadata is not part of the survey document.

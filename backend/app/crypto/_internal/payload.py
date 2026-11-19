@@ -1,53 +1,31 @@
-"""Encode/decode versioned plaintext answer payloads for encryption.
-
-This layer is deliberately family-agnostic.
-
-The encrypted payload stores ``answer_value`` as plain JSON. It does not record
-the question family. The decrypt service must use the survey definition to
-reconstruct and validate the typed answer model.
-"""
+"""Encode and decode self-describing V2 field answers for encryption."""
 
 from __future__ import annotations
 
-from uuid import UUID
-
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from app.crypto._internal.errors import PayloadDecodeError
-from app.crypto._internal.models import (
-    PLAINTEXT_PAYLOAD_VERSION,
-    PlaintextAnswerValue,
-    PlaintextPayload,
-    PlaintextPayloadInput,
-)
-from app.schema.api.submission_sessions.answer_payload import SubmissionAnswerValue
-from app.schema.enums import SubmissionAnswerState
+from app.crypto._internal.models import PLAINTEXT_PAYLOAD_VERSION, PlaintextPayload
+from app.schema.models.survey_document.answers import AnswerData
+from app.schema.types import SurveyFieldUuid
+
+_ANSWER = TypeAdapter(AnswerData)
+_PAYLOAD = TypeAdapter(PlaintextPayload)
 
 
-def build_plaintext_payload(
-    *,
-    question_node_id: UUID,
-    answer_state: SubmissionAnswerState,
-    answer_value: SubmissionAnswerValue | PlaintextAnswerValue,
-) -> bytes:
-    """Build the current plaintext payload bytes for encryption."""
-    payload = PlaintextPayloadInput(
-        payload_version=PLAINTEXT_PAYLOAD_VERSION,
-        question_node_id=question_node_id,
-        answer_state=answer_state,
-        answer_value=answer_value,
-    ).to_plaintext_payload()
-
-    return payload.model_dump_json(by_alias=True).encode("utf-8")
+def build_plaintext_payload(*, field_uuid: SurveyFieldUuid, answer: AnswerData) -> bytes:
+    """Serialize shared answer fields, excluding request-only subclass metadata."""
+    data = _ANSWER.dump_python(answer, mode="json", exclude_none=True)
+    payload = _PAYLOAD.validate_python({"v": PLAINTEXT_PAYLOAD_VERSION, "field_uuid": field_uuid, **data})
+    return _PAYLOAD.dump_json(payload, by_alias=True, exclude_none=True)
 
 
 def parse_plaintext_payload(raw: bytes) -> PlaintextPayload:
-    """Parse decrypted plaintext bytes into the canonical payload model."""
+    """Parse a typed field answer and reject unsupported payload versions."""
     try:
-        payload = PlaintextPayload.model_validate_json(raw)
+        payload = _PAYLOAD.validate_json(raw)
     except ValidationError as exc:
         raise PayloadDecodeError("Invalid plaintext payload") from exc
-
     if payload.payload_version != PLAINTEXT_PAYLOAD_VERSION:
         raise PayloadDecodeError(f"Unsupported plaintext payload version: {payload.payload_version}")
     return payload

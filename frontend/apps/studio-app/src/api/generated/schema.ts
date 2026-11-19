@@ -408,7 +408,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/respondent/submission-sessions/current/answers/{question_node_id}": {
+    "/api/v1/respondent/submission-sessions/current/answers/{field_uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -836,78 +836,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/ai-import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Generate survey builder node preview with AI
-         * @description Generate survey builder node preview with AI
-         */
-        post: operations["generateAiImport"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List survey builder nodes
-         * @description List survey builder nodes
-         */
-        get: operations["listNodes"];
-        put?: never;
-        /**
-         * Create survey builder node
-         * @description Create survey builder node
-         */
-        post: operations["createNode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/nodes/{node_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get survey builder node
-         * @description Get survey builder node
-         */
-        get: operations["getNode"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete survey builder node
-         * @description Delete survey builder node
-         */
-        delete: operations["deleteNode"];
-        options?: never;
-        head?: never;
-        /**
-         * Update survey builder node
-         * @description Update survey builder node
-         */
-        patch: operations["updateNode"];
-        trace?: never;
-    };
     "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/members": {
         parameters: {
             query?: never;
@@ -1156,54 +1084,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List scoring rules
-         * @description List scoring rules
-         */
-        get: operations["listScoringRules"];
-        put?: never;
-        /**
-         * Create scoring rule
-         * @description Create scoring rule
-         */
-        post: operations["createScoringRule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_number}/scoring-rules/{scoring_rule_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete scoring rule
-         * @description Delete scoring rule
-         */
-        delete: operations["deleteScoringRule"];
-        options?: never;
-        head?: never;
-        /**
-         * Update scoring rule
-         * @description Update scoring rule
-         */
-        patch: operations["updateScoringRule"];
-        trace?: never;
-    };
     "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions": {
         parameters: {
             query?: never;
@@ -1308,6 +1188,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/studio/surveys/ai-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a survey draft with AI
+         * @description Generate a survey draft with AI
+         */
+        post: operations["generateAiImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/health": {
         parameters: {
             query?: never;
@@ -1352,57 +1252,69 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        ErrorResponse: {
-            /** @description Machine-readable error code. */
-            code: string;
-            /** @description Human-readable error message. */
-            message: string;
-            /** @description Optional structured extras. Pydantic validation errors place their per-field failures here as ``details.errors``. */
-            details?: {
-                [key: string]: unknown;
-            };
+        /** @description Machine-readable error code */
+        ErrorCode: string;
+        ErrorDetails: {
+            [key: string]: unknown;
         };
+        /** @description Human-readable error message */
+        ErrorMessage: string;
+        /**
+         * ErrorPayload
+         * @description Wire envelope shared by runtime error handlers and OpenAPI.
+         */
+        ErrorPayload: {
+            code: components["schemas"]["ErrorCode"];
+            message: components["schemas"]["ErrorMessage"];
+            details?: components["schemas"]["ErrorDetails"];
+        };
+        /** ErrorResponse */
+        ErrorResponse: components["schemas"]["ErrorPayload"];
+        IdentityToken: string;
         /**
          * BootstrapUserRequest
          * @description Request body for post-auth user bootstrap.
          */
         BootstrapUserRequest: {
-            /** Id Token */
-            id_token: string;
+            id_token: components["schemas"]["IdentityToken"];
         };
+        /** @description Opaque external Auth0 subject; distinct from the internal user ID */
+        Auth0UserId: string;
         /**
          * CurrentUserResponses
          * @description API response shape for a bootstrapped user.
          */
         CurrentUserResponses: {
-            /** Id */
-            id: number;
-            /** Auth0 User Id */
-            auth0_user_id: string;
-            /** Email */
-            email: string;
-            /** Display Name */
-            display_name: string | null;
+            id: components["schemas"]["UserId"];
+            auth0_user_id: components["schemas"]["Auth0UserId"];
+            email: components["schemas"]["EmailAddress"];
+            display_name: components["schemas"]["ProfileName"] | null;
         };
+        /** Format: email */
+        EmailAddress: string;
+        ProfileName: string;
+        /** @description Project identity */
+        ProjectId: number;
+        ProjectName: string;
         /**
          * ProjectResponses
          * @description API response shape for a project.
          */
         ProjectResponses: {
-            /** Id */
-            id: number;
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
-            /** Created By User Id */
-            created_by_user_id: number | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            id: components["schemas"]["ProjectId"];
+            name: components["schemas"]["ProjectName"];
+            slug: components["schemas"]["Slug"];
+            created_by_user_id: components["schemas"]["UserId"] | null;
+            created_at: components["schemas"]["Timestamp"];
         };
+        Slug: string;
+        /**
+         * Format: date-time
+         * @description Recorded timestamp supplied by the owning operation
+         */
+        Timestamp: string;
+        /** @description Internal users.id database identity */
+        UserId: number;
         /**
          * BootstrapUserResponses
          * @description API response shape for a bootstrap-user request.
@@ -1414,86 +1326,63 @@ export interface components {
             /** @default null */
             default_project: components["schemas"]["ProjectResponses"] | null;
         };
+        InvitationMessage: string;
+        /** @description Project invitation identity */
+        ProjectInvitationId: number;
         /**
          * ProjectInvitationResponses
          * @description API response shape for a project invitation.
          */
         ProjectInvitationResponses: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /**
-             * Project Name
-             * @default null
-             */
-            project_name: string | null;
-            /** Invited Email */
-            invited_email: string;
-            /**
-             * Invite Message
-             * @default null
-             */
-            invite_message: string | null;
-            /** Invited By User Id */
-            invited_by_user_id: number | null;
-            /**
-             * Invited By Display
-             * @default null
-             */
-            invited_by_display: string | null;
-            /** Role Id */
-            role_id: number | null;
+            id: components["schemas"]["ProjectInvitationId"];
+            project_id: components["schemas"]["ProjectId"];
+            /** @default null */
+            project_name: components["schemas"]["ProjectName"] | null;
+            invited_email: components["schemas"]["EmailAddress"];
+            /** @default null */
+            invite_message: components["schemas"]["InvitationMessage"] | null;
+            invited_by_user_id: components["schemas"]["UserId"] | null;
+            /** @default null */
+            invited_by_display: components["schemas"]["Text"] | null;
+            role_id: components["schemas"]["ProjectRoleId"] | null;
             /**
              * Status
              * @enum {string}
              */
             status: "pending" | "accepted" | "declined" | "revoked";
-            /** Expires At */
-            expires_at: string | null;
-            /** Accepted At */
-            accepted_at: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            expires_at: components["schemas"]["Timestamp"] | null;
+            accepted_at: components["schemas"]["Timestamp"] | null;
+            created_at: components["schemas"]["Timestamp"];
         };
+        /** @description Project role identity */
+        ProjectRoleId: number;
+        Text: string;
         /**
          * MemberUserResponses
          * @description Embedded user details on a project member response.
          */
         MemberUserResponses: {
-            /** Id */
-            id: number;
-            /** Email */
-            email: string;
-            /** Display Name */
-            display_name: string | null;
+            id: components["schemas"]["UserId"];
+            email: components["schemas"]["EmailAddress"];
+            display_name: components["schemas"]["ProfileName"] | null;
         };
+        /** @description Project membership identity */
+        ProjectMembershipId: number;
         /**
          * ProjectMemberResponses
          * @description API response shape for a project membership.
          */
         ProjectMemberResponses: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
-            /** Project Id */
-            project_id: number;
-            /** Role Id */
-            role_id: number | null;
+            id: components["schemas"]["ProjectMembershipId"];
+            user_id: components["schemas"]["UserId"];
+            project_id: components["schemas"]["ProjectId"];
+            role_id: components["schemas"]["ProjectRoleId"] | null;
             /**
              * Status
              * @enum {string}
              */
             status: "active" | "suspended";
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            created_at: components["schemas"]["Timestamp"];
             user: components["schemas"]["MemberUserResponses"];
         };
         /**
@@ -1501,20 +1390,12 @@ export interface components {
          * @description Public-facing response when resolving an invitation token.
          */
         PublicInvitationResolveResponse: {
-            /** Invited Email */
-            invited_email: string;
-            /** Project Name */
-            project_name: string;
-            /**
-             * Inviter Name
-             * @default null
-             */
-            inviter_name: string | null;
-            /**
-             * Expires At
-             * @default null
-             */
-            expires_at: string | null;
+            invited_email: components["schemas"]["EmailAddress"];
+            project_name: components["schemas"]["ProjectName"];
+            /** @default null */
+            inviter_name: components["schemas"]["Text"] | null;
+            /** @default null */
+            expires_at: components["schemas"]["Timestamp"] | null;
             /**
              * Status
              * @enum {string}
@@ -1523,64 +1404,51 @@ export interface components {
         };
         /**
          * CurrentUserProfileResponses
-         * @description API response shape for the current user's profile.
+         * @description Current-user identity and profile with verification state.
          */
         CurrentUserProfileResponses: {
-            /** Id */
-            id: number;
-            /** Auth0 User Id */
-            auth0_user_id: string;
-            /** Email */
-            email: string;
-            /** Display Name */
-            display_name: string | null;
+            id: components["schemas"]["UserId"];
+            auth0_user_id: components["schemas"]["Auth0UserId"];
+            email: components["schemas"]["EmailAddress"];
+            display_name: components["schemas"]["ProfileName"] | null;
             /** Email Verified */
             email_verified: boolean;
         };
+        ProfilePictureUrl: string;
         /**
          * UpdateProfileRequest
          * @description Update display name, nickname, and/or profile picture.
          */
         UpdateProfileRequest: {
-            /**
-             * Display Name
-             * @default null
-             */
-            display_name: string | null;
-            /**
-             * Nickname
-             * @default null
-             */
-            nickname: string | null;
-            /**
-             * Picture
-             * @default null
-             */
-            picture: string | null;
+            /** @default null */
+            display_name: components["schemas"]["ProfileName"] | null;
+            /** @default null */
+            nickname: components["schemas"]["ProfileName"] | null;
+            /** @default null */
+            picture: components["schemas"]["ProfilePictureUrl"] | null;
         };
         /**
          * ChangeEmailRequest
          * @description Request body for changing the account email address.
          */
         ChangeEmailRequest: {
-            /** Email */
-            email: string;
+            email: components["schemas"]["EmailAddress"];
         };
+        Username: string;
         /**
          * ChangeUsernameRequest
          * @description Request body for changing the Auth0 username.
          */
         ChangeUsernameRequest: {
-            /** Username */
-            username: string;
+            username: components["schemas"]["Username"];
         };
+        Url: string;
         /**
          * PasswordChangeTicketResponses
          * @description Hosted Auth0 password-change ticket URL.
          */
         PasswordChangeTicketResponses: {
-            /** Ticket Url */
-            ticket_url: string;
+            ticket_url: components["schemas"]["Url"];
         };
         /**
          * EmailVerificationCheckResponses
@@ -1590,30 +1458,493 @@ export interface components {
             /** Email Verified */
             email_verified: boolean;
         };
+        SurveyAccessToken: string;
         /**
          * ResolveSurveyAccessLinkTokenRequest
          * @description Request body for resolving a respondent survey access link token.
          */
         ResolveSurveyAccessLinkTokenRequest: {
-            /** Token */
-            token: string;
+            token: components["schemas"]["SurveyAccessToken"];
         };
+        /**
+         * AllCondition
+         * @description Conjunction of one or more conditions.
+         */
+        AllCondition: {
+            all: components["schemas"]["ConditionList_Union_Annotated_Union_ValueComparison__OrderedComparison__ContainsComparison__AnsweredCondition___FieldInfo_annotation_NoneType__required_True__title__ComparisonCondition___discriminator__operator_____AllCondition__AnyCondition__NotCondition__"];
+        };
+        /**
+         * AlwaysVisible
+         * @description Unconditional visibility.
+         */
+        AlwaysVisible: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "always";
+        };
+        AnswerInteger: number;
+        AnswerLength: number;
+        AnswerNumber: number;
+        /**
+         * AnsweredCondition
+         * @description Test whether the field is answered; no comparison value is supplied.
+         */
+        AnsweredCondition: {
+            fieldUuid: components["schemas"]["SurveyFieldUuid"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operator: "is_answered";
+        };
+        /**
+         * AnyCondition
+         * @description Disjunction of one or more conditions.
+         */
+        AnyCondition: {
+            any: components["schemas"]["ConditionList_Union_Annotated_Union_ValueComparison__OrderedComparison__ContainsComparison__AnsweredCondition___FieldInfo_annotation_NoneType__required_True__title__ComparisonCondition___discriminator__operator_____AllCondition__AnyCondition__NotCondition__"];
+        };
+        /**
+         * BooleanAnswerSpec
+         * @description Boolean value specification.
+         */
+        BooleanAnswerSpec: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boolean";
+            /** Required */
+            required: boolean;
+        };
+        /**
+         * BooleanInteraction
+         * @description Boolean input presentation.
+         */
+        BooleanInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "boolean";
+            /**
+             * Presentation
+             * @default null
+             */
+            presentation: ("yes_no" | "toggle") | null;
+        };
+        /** Format: date */
+        CalendarDate: string;
+        /**
+         * ChoiceAnswerSpec
+         * @description Single option UUID specification.
+         */
+        ChoiceAnswerSpec: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice";
+            /** Required */
+            required: boolean;
+        };
+        /**
+         * ChoiceOption
+         * @description A readable option identifier and its stable machine identity.
+         */
+        ChoiceOption: {
+            id: components["schemas"]["ReadableId"];
+            uuid: components["schemas"]["ChoiceOptionUuid"];
+            label: components["schemas"]["ChoiceOptionLabel"];
+        };
+        ChoiceOptionLabel: string;
+        /**
+         * Format: uuid
+         * @description Stable selectable option identity
+         */
+        ChoiceOptionUuid: string;
+        /**
+         * ChoiceSetAnswerSpec
+         * @description Array of option UUIDs specification.
+         */
+        ChoiceSetAnswerSpec: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice_set";
+            /** Required */
+            required: boolean;
+            /** @default null */
+            constraints: components["schemas"]["SelectionAnswerBounds"] | null;
+        };
+        ConditionList_Union_Annotated_Union_ValueComparison__OrderedComparison__ContainsComparison__AnsweredCondition___FieldInfo_annotation_NoneType__required_True__title__ComparisonCondition___discriminator__operator_____AllCondition__AnyCondition__NotCondition__: ((components["schemas"]["ValueComparison"] | components["schemas"]["OrderedComparison"] | components["schemas"]["ContainsComparison"] | components["schemas"]["AnsweredCondition"]) | components["schemas"]["AllCondition"] | components["schemas"]["AnyCondition"] | components["schemas"]["NotCondition"])[];
+        ConditionNumber: components["schemas"]["AnswerInteger"] | components["schemas"]["AnswerNumber"];
+        ConditionScalar: components["schemas"]["LongString"] | components["schemas"]["AnswerInteger"] | components["schemas"]["AnswerNumber"] | boolean | components["schemas"]["CalendarDate"];
+        ConditionText: string;
+        /**
+         * ConditionalVisibility
+         * @description Visibility described by a condition.
+         */
+        ConditionalVisibility: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "conditional";
+            /** Condition */
+            condition: (components["schemas"]["ValueComparison"] | components["schemas"]["OrderedComparison"] | components["schemas"]["ContainsComparison"] | components["schemas"]["AnsweredCondition"]) | components["schemas"]["AllCondition"] | components["schemas"]["AnyCondition"] | components["schemas"]["NotCondition"];
+        };
+        /**
+         * ContainsComparison
+         * @description Text or choice-set membership comparison.
+         */
+        ContainsComparison: {
+            fieldUuid: components["schemas"]["SurveyFieldUuid"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operator: "contains";
+            value: components["schemas"]["ConditionText"];
+        };
+        ContentText: string;
+        /**
+         * DateAnswerBounds
+         * @description Inclusive calendar-date bounds.
+         */
+        DateAnswerBounds: {
+            /** @default null */
+            min: components["schemas"]["CalendarDate"] | null;
+            /** @default null */
+            max: components["schemas"]["CalendarDate"] | null;
+        };
+        /**
+         * DateAnswerSpec
+         * @description Calendar date specification.
+         */
+        DateAnswerSpec: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "date";
+            /** Required */
+            required: boolean;
+            /** @default null */
+            constraints: components["schemas"]["DateAnswerBounds"] | null;
+        };
+        /**
+         * DateInteraction
+         * @description Calendar date input presentation.
+         */
+        DateInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "date";
+            /**
+             * Presentation
+             * @default null
+             */
+            presentation: ("calendar" | "input") | null;
+        };
+        /**
+         * DividerBlock
+         * @description Visual separator.
+         */
+        DividerBlock: {
+            id: components["schemas"]["ReadableId"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "divider";
+        };
+        DocumentRevision: number;
+        /**
+         * FieldBehaviour
+         * @description Optional field visibility data.
+         */
+        FieldBehaviour: {
+            /** FieldVisibility */
+            visibility: components["schemas"]["AlwaysVisible"] | components["schemas"]["ConditionalVisibility"];
+        };
+        FieldPrompt: string;
+        /**
+         * HeadingBlock
+         * @description Heading content block.
+         */
+        HeadingBlock: {
+            id: components["schemas"]["ReadableId"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "heading";
+            content: components["schemas"]["HeadingContent"];
+        };
+        /**
+         * HeadingContent
+         * @description Heading text and level.
+         */
+        HeadingContent: {
+            text: components["schemas"]["ContentText"];
+            level: components["schemas"]["HeadingLevel"];
+        };
+        HeadingLevel: number;
+        InputAffix: string;
+        /**
+         * InputBlock
+         * @description A block containing an answerable field.
+         */
+        InputBlock: {
+            id: components["schemas"]["ReadableId"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "input";
+            field: components["schemas"]["SurveyField"];
+        };
+        InputPlaceholder: string;
+        LimitedList_ChoiceOption_: components["schemas"]["ChoiceOption"][];
+        LimitedList_SurveySection_: components["schemas"]["SurveySection"][];
+        LimitedList_WorkflowRule_: components["schemas"]["WorkflowRule"][];
+        LongString: string;
+        /**
+         * MatchingAnswerSpec
+         * @description The documented structured matching value specification.
+         */
+        MatchingAnswerSpec: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "object";
+            /** Required */
+            required: boolean;
+            /**
+             * Valuetype
+             * @constant
+             */
+            valueType: "matching";
+        };
+        /**
+         * MultipleChoiceInteraction
+         * @description Presentation and options for multiple selections.
+         */
+        MultipleChoiceInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "multiple_choice";
+            /**
+             * Presentation
+             * @default null
+             */
+            presentation: ("checkboxes" | "buttons" | "cards") | null;
+            options: components["schemas"]["LimitedList_ChoiceOption_"];
+        };
+        /**
+         * NotCondition
+         * @description Negation of a condition.
+         */
+        NotCondition: {
+            /** Not */
+            not: (components["schemas"]["ValueComparison"] | components["schemas"]["OrderedComparison"] | components["schemas"]["ContainsComparison"] | components["schemas"]["AnsweredCondition"]) | components["schemas"]["AllCondition"] | components["schemas"]["AnyCondition"] | components["schemas"]["NotCondition"];
+        };
+        /**
+         * NoticeBlock
+         * @description Notice content block.
+         */
+        NoticeBlock: {
+            id: components["schemas"]["ReadableId"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "notice";
+            content: components["schemas"]["NoticeContent"];
+        };
+        /**
+         * NoticeContent
+         * @description Notice presentation and text.
+         */
+        NoticeContent: {
+            /**
+             * Tone
+             * @enum {string}
+             */
+            tone: "info" | "success" | "warning" | "error";
+            title: components["schemas"]["NoticeTitle"];
+            text: components["schemas"]["ContentText"];
+        };
+        NoticeTitle: string;
+        /**
+         * NumberInteraction
+         * @description Numeric input presentation.
+         */
+        NumberInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "number";
+            /**
+             * Presentation
+             * @default null
+             */
+            presentation: ("input" | "stepper") | null;
+            /** @default null */
+            prefix: components["schemas"]["InputAffix"] | null;
+            /** @default null */
+            suffix: components["schemas"]["InputAffix"] | null;
+        };
+        /**
+         * NumericAnswerBounds
+         * @description Inclusive numeric bounds.
+         */
+        NumericAnswerBounds: {
+            /**
+             * Min
+             * @default null
+             */
+            min: components["schemas"]["AnswerInteger"] | components["schemas"]["AnswerNumber"] | null;
+            /**
+             * Max
+             * @default null
+             */
+            max: components["schemas"]["AnswerInteger"] | components["schemas"]["AnswerNumber"] | null;
+        };
+        /**
+         * NumericAnswerSpec
+         * @description Integer or decimal-capable number specification.
+         */
+        NumericAnswerSpec: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer" | "number";
+            /** Required */
+            required: boolean;
+            /** @default null */
+            constraints: components["schemas"]["NumericAnswerBounds"] | null;
+        };
+        /**
+         * OrderedComparison
+         * @description Ordered comparison against a numeric or calendar-date answer value.
+         */
+        OrderedComparison: {
+            fieldUuid: components["schemas"]["SurveyFieldUuid"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operator: "greater_than" | "less_than";
+            value: components["schemas"]["OrderedConditionValue"];
+        };
+        OrderedConditionValue: components["schemas"]["ConditionNumber"] | components["schemas"]["CalendarDate"];
+        OutcomeId: string;
+        /**
+         * ParagraphBlock
+         * @description Paragraph content block.
+         */
+        ParagraphBlock: {
+            id: components["schemas"]["ReadableId"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "paragraph";
+            content: components["schemas"]["TextContent"];
+        };
+        /**
+         * Format: uuid
+         * @description Project participant identity
+         */
+        ParticipantId: string;
+        /**
+         * RatingInteraction
+         * @description Rating input presentation.
+         */
+        RatingInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "rating";
+            /**
+             * Presentation
+             * @default null
+             */
+            presentation: ("slider" | "stars" | "scale") | null;
+            /** @default null */
+            prefix: components["schemas"]["InputAffix"] | null;
+            /** @default null */
+            suffix: components["schemas"]["InputAffix"] | null;
+        };
+        ReadableId: string;
+        /** @description Response store identity */
+        ResponseStoreId: number;
+        SectionTitle: string;
+        /**
+         * SelectionAnswerBounds
+         * @description Bounds on the number of selected options.
+         */
+        SelectionAnswerBounds: {
+            /** @default null */
+            minSelections: components["schemas"]["AnswerLength"] | null;
+            /** @default null */
+            maxSelections: components["schemas"]["AnswerLength"] | null;
+        };
+        /**
+         * SingleChoiceInteraction
+         * @description Presentation and options for a single selection.
+         */
+        SingleChoiceInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "single_choice";
+            /**
+             * Presentation
+             * @default null
+             */
+            presentation: ("radio" | "dropdown" | "buttons" | "cards") | null;
+            options: components["schemas"]["LimitedList_ChoiceOption_"];
+        };
+        /**
+         * StringAnswerSpec
+         * @description Text value specification.
+         */
+        StringAnswerSpec: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "string";
+            /** Required */
+            required: boolean;
+            /** @default null */
+            constraints: components["schemas"]["TextAnswerBounds"] | null;
+        };
+        SurveyAccessLinkName: string;
         /**
          * SurveyAccessLinkResponse
          * @description API response shape for a survey access link.
          */
         SurveyAccessLinkResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Survey Id */
-            survey_id: number;
-            /** Name */
-            name: string;
-            /** Token */
-            token: string;
+            id: components["schemas"]["SurveyLinkId"];
+            survey_id: components["schemas"]["SurveyId"];
+            name: components["schemas"]["SurveyAccessLinkName"];
+            token: components["schemas"]["SurveyAccessToken"];
             /** Is Active */
             is_active: boolean;
             /**
@@ -1626,94 +1957,188 @@ export interface components {
              * @enum {string}
              */
             assignment_source: "manual" | "automated";
-            /** Assigned Participant Id */
-            assigned_participant_id: string | null;
-            /**
-             * Assigned Participant Email
-             * @default null
-             */
-            assigned_participant_email: string | null;
-            /** Expires At */
-            expires_at: string | null;
-            /** Used At */
-            used_at: string | null;
-            /** Emailed At */
-            emailed_at: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            assigned_participant_id: components["schemas"]["ParticipantId"] | null;
+            /** @default null */
+            assigned_participant_email: components["schemas"]["EmailAddress"] | null;
+            expires_at: components["schemas"]["Timestamp"] | null;
+            used_at: components["schemas"]["Timestamp"] | null;
+            emailed_at: components["schemas"]["Timestamp"] | null;
+            created_at: components["schemas"]["Timestamp"];
         };
+        SurveyBlocks_Annotated_Union_HeadingBlock__ParagraphBlock__NoticeBlock__DividerBlock__InputBlock___FieldInfo_annotation_NoneType__required_True__title__SurveyBlock___discriminator__type____: (components["schemas"]["HeadingBlock"] | components["schemas"]["ParagraphBlock"] | components["schemas"]["NoticeBlock"] | components["schemas"]["DividerBlock"] | components["schemas"]["InputBlock"])[];
         /**
-         * SurveyResponses
-         * @description API response shape for a survey.
+         * SurveyDefinition
+         * @description Canonical FlowForm V2 survey definition.
          */
-        SurveyResponses: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Title */
-            title: string;
-            /**
-             * Visibility
-             * @enum {string}
-             */
-            visibility: "private" | "link_only" | "public";
-            /** Public Slug */
-            public_slug: string | null;
-            /** Default Response Store Id */
-            default_response_store_id: number | null;
-            /** Published Version Id */
-            published_version_id: number | null;
-            /** Created By User Id */
-            created_by_user_id: number | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * SurveyVersionResponses
-         * @description API response shape for a survey version.
-         */
-        SurveyVersionResponses: {
-            /** Id */
-            id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Version Number */
-            version_number: number;
+        SurveyDefinition: {
+            title: components["schemas"]["SurveyTitle"];
+            /** @default null */
+            description: components["schemas"]["LongString"] | null;
+            document: components["schemas"]["SurveyDocument"];
+            /** @default null */
+            workflow: components["schemas"]["SurveyWorkflow"] | null;
+            id: components["schemas"]["ReadableId"];
+            versionId: components["schemas"]["SurveyVersionId"];
+            revision: components["schemas"]["DocumentRevision"];
+            projectName: components["schemas"]["ProjectName"];
             /**
              * Status
              * @enum {string}
              */
             status: "draft" | "published" | "archived";
-            /** Compiled Schema */
-            compiled_schema: {
-                [key: string]: unknown;
-            } | null;
-            /** Published At */
-            published_at: string | null;
-            /** Created By User Id */
-            created_by_user_id: number | null;
+        };
+        /**
+         * SurveyDocument
+         * @description Ordered survey sections.
+         */
+        SurveyDocument: {
+            sections: components["schemas"]["LimitedList_SurveySection_"];
+        };
+        /**
+         * SurveyField
+         * @description An answerable field with separate presentation and accepted value data.
+         */
+        SurveyField: {
+            id: components["schemas"]["ReadableId"];
+            uuid: components["schemas"]["SurveyFieldUuid"];
+            prompt: components["schemas"]["FieldPrompt"];
+            /** @default null */
+            description: components["schemas"]["LongString"] | null;
+            /** FieldInteraction */
+            interaction: components["schemas"]["TextInteraction"] | components["schemas"]["NumberInteraction"] | components["schemas"]["RatingInteraction"] | components["schemas"]["SingleChoiceInteraction"] | components["schemas"]["MultipleChoiceInteraction"] | components["schemas"]["BooleanInteraction"] | components["schemas"]["DateInteraction"];
+            /** AnswerSpec */
+            answerSpec: components["schemas"]["StringAnswerSpec"] | components["schemas"]["NumericAnswerSpec"] | components["schemas"]["BooleanAnswerSpec"] | components["schemas"]["DateAnswerSpec"] | components["schemas"]["ChoiceAnswerSpec"] | components["schemas"]["ChoiceSetAnswerSpec"] | components["schemas"]["MatchingAnswerSpec"];
+            /** @default null */
+            behaviour: components["schemas"]["FieldBehaviour"] | null;
+        };
+        /**
+         * Format: uuid
+         * @description Stable answerable field identity in a survey document
+         */
+        SurveyFieldUuid: string;
+        /** @description Survey identity */
+        SurveyId: number;
+        /**
+         * Format: uuid
+         * @description Survey access link identity
+         */
+        SurveyLinkId: string;
+        /**
+         * SurveyResponses
+         * @description API response shape for a survey.
+         */
+        SurveyResponses: {
+            id: components["schemas"]["SurveyId"];
+            project_id: components["schemas"]["ProjectId"];
+            title: components["schemas"]["SurveyTitle"];
             /**
-             * Created At
-             * Format: date-time
+             * Visibility
+             * @enum {string}
              */
-            created_at: string;
+            visibility: "private" | "link_only" | "public";
+            public_slug: components["schemas"]["Slug"] | null;
+            default_response_store_id: components["schemas"]["ResponseStoreId"] | null;
+            published_version_id: components["schemas"]["SurveyVersionId"] | null;
+            created_by_user_id: components["schemas"]["UserId"] | null;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * SurveySection
+         * @description An ordered group of survey blocks.
+         */
+        SurveySection: {
+            id: components["schemas"]["ReadableId"];
+            title: components["schemas"]["SectionTitle"];
+            /** @default null */
+            description: components["schemas"]["LongString"] | null;
+            blocks: components["schemas"]["SurveyBlocks_Annotated_Union_HeadingBlock__ParagraphBlock__NoticeBlock__DividerBlock__InputBlock___FieldInfo_annotation_NoneType__required_True__title__SurveyBlock___discriminator__type____"];
+        };
+        SurveyTitle: string;
+        /** @description Identity of a persisted survey version */
+        SurveyVersionId: number;
+        /** @description Sequential version number within a survey */
+        SurveyVersionNumber: number;
+        /**
+         * SurveyVersionResponses
+         * @description API response shape for a survey version.
+         */
+        SurveyVersionResponses: {
+            id: components["schemas"]["SurveyVersionId"];
+            survey_id: components["schemas"]["SurveyId"];
+            version_number: components["schemas"]["SurveyVersionNumber"];
             /**
-             * Updated At
-             * Format: date-time
+             * Status
+             * @enum {string}
              */
-            updated_at: string;
+            status: "draft" | "published" | "archived";
+            definition: components["schemas"]["SurveyDefinition"];
+            published_at: components["schemas"]["Timestamp"] | null;
+            created_by_user_id: components["schemas"]["UserId"] | null;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * SurveyWorkflow
+         * @description Survey-level rule collection.
+         */
+        SurveyWorkflow: {
+            rules: components["schemas"]["LimitedList_WorkflowRule_"];
+        };
+        /**
+         * TextAnswerBounds
+         * @description String length bounds.
+         */
+        TextAnswerBounds: {
+            /** @default null */
+            minLength: components["schemas"]["AnswerLength"] | null;
+            /** @default null */
+            maxLength: components["schemas"]["AnswerLength"] | null;
+        };
+        /**
+         * TextContent
+         * @description Paragraph text.
+         */
+        TextContent: {
+            text: components["schemas"]["ContentText"];
+        };
+        /**
+         * TextInteraction
+         * @description Text input presentation.
+         */
+        TextInteraction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "long_text" | "short_text";
+            /** @default null */
+            placeholder: components["schemas"]["InputPlaceholder"] | null;
+        };
+        /**
+         * ValueComparison
+         * @description Equality against a scalar answer value.
+         */
+        ValueComparison: {
+            fieldUuid: components["schemas"]["SurveyFieldUuid"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operator: "equals" | "not_equals";
+            value: components["schemas"]["ConditionScalar"];
+        };
+        /**
+         * WorkflowRule
+         * @description Condition and outcome data, without execution semantics.
+         */
+        WorkflowRule: {
+            id: components["schemas"]["ReadableId"];
+            /** Enabled */
+            enabled: boolean;
+            /** When */
+            when: (components["schemas"]["ValueComparison"] | components["schemas"]["OrderedComparison"] | components["schemas"]["ContainsComparison"] | components["schemas"]["AnsweredCondition"]) | components["schemas"]["AllCondition"] | components["schemas"]["AnyCondition"] | components["schemas"]["NotCondition"];
+            outcome: components["schemas"]["OutcomeId"];
         };
         /**
          * ResolveSurveyAccessLinkResponse
@@ -1726,19 +2151,29 @@ export interface components {
             /** @default null */
             published_version: components["schemas"]["SurveyVersionResponses"] | null;
         };
+        PageNumber: number;
+        PageSize: number;
+        /**
+         * ListPublicSurveysRequest
+         * @description Query parameters for listing public surveys.
+         */
+        ListPublicSurveysRequest: {
+            /** @default 1 */
+            page: components["schemas"]["PageNumber"];
+            /** @default 20 */
+            page_size: components["schemas"]["PageSize"];
+        };
+        Count: number;
+        PageItems_SurveyResponses_: components["schemas"]["SurveyResponses"][];
         /**
          * PaginatedPublicSurveysResponses
          * @description API response shape for a paginated list of public surveys.
          */
         PaginatedPublicSurveysResponses: {
-            /** Items */
-            items: components["schemas"]["SurveyResponses"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
+            items: components["schemas"]["PageItems_SurveyResponses_"];
+            total: components["schemas"]["Count"];
+            page: components["schemas"]["PageNumber"];
+            page_size: components["schemas"]["PageSize"];
         };
         /**
          * PublicSurveyResponses
@@ -1750,39 +2185,38 @@ export interface components {
             published_version: components["schemas"]["SurveyVersionResponses"] | null;
         };
         /**
-         * LinkTokenAccess
-         * @description Access descriptor for starting a respondent session from a private link token.
+         * LinkTokenAccessNestedModel
+         * @description Start a respondent session using a survey access link token.
          */
-        LinkTokenAccess: {
+        LinkTokenAccessNestedModel: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "link_token";
-            /** Token */
-            token: string;
+            token: components["schemas"]["SurveyAccessToken"];
         };
         /**
-         * PublicSlugAccess
-         * @description Access descriptor for starting a respondent session from a public survey slug.
+         * PublicSlugAccessNestedModel
+         * @description Start a respondent session using a public survey slug.
          */
-        PublicSlugAccess: {
+        PublicSlugAccessNestedModel: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "public_slug";
-            /** Public Slug */
-            public_slug: string;
+            public_slug: components["schemas"]["Slug"];
         };
         /**
          * StartSubmissionSessionRequest
          * @description Request body for starting or resuming a respondent submission session.
          */
         StartSubmissionSessionRequest: {
-            /** SessionStartAccess */
-            access: components["schemas"]["PublicSlugAccess"] | components["schemas"]["LinkTokenAccess"];
+            /** SessionStartAccessNestedModel */
+            access: components["schemas"]["PublicSlugAccessNestedModel"] | components["schemas"]["LinkTokenAccessNestedModel"];
         };
+        SubjectCode: string;
         /**
          * StartSubmissionSessionResponse
          * @description Session start acknowledgement.
@@ -1796,20 +2230,10 @@ export interface components {
              * @enum {string}
              */
             status: "in_progress" | "completed" | "abandoned";
-            /**
-             * Started At
-             * Format: date-time
-             */
-            started_at: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /** Subject Code */
-            subject_code: string;
+            started_at: components["schemas"]["Timestamp"];
+            expires_at: components["schemas"]["Timestamp"];
+            survey_version_id: components["schemas"]["SurveyVersionId"];
+            subject_code: components["schemas"]["SubjectCode"];
         };
         /**
          * ResumeSubmissionSessionResponse
@@ -1825,215 +2249,113 @@ export interface components {
             published_version: components["schemas"]["SurveyVersionResponses"];
         };
         /**
-         * ChoiceAnswerValue
-         * @description Answer value for a choice question.
+         * AnsweredSubmissionRequest
+         * @description Save one self-describing field answer.
          */
-        ChoiceAnswerValue: {
-            /** Selected */
-            selected: string[];
-        };
-        /**
-         * DateFieldAnswerValue
-         * @description Answer value for a date field question.
-         */
-        DateFieldAnswerValue: {
+        AnsweredSubmissionRequest: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            field_type: "date";
-            /** Date */
-            date: string;
+            state: "answered";
+            /** AnswerSpec */
+            answer_spec: components["schemas"]["StringAnswerSpec"] | components["schemas"]["NumericAnswerSpec"] | components["schemas"]["BooleanAnswerSpec"] | components["schemas"]["DateAnswerSpec"] | components["schemas"]["ChoiceAnswerSpec"] | components["schemas"]["ChoiceSetAnswerSpec"] | components["schemas"]["MatchingAnswerSpec"];
+            /** AnswerValue */
+            answer_value: components["schemas"]["LongString"] | components["schemas"]["AnswerInteger"] | components["schemas"]["AnswerNumber"] | boolean | components["schemas"]["CalendarDate"] | components["schemas"]["LimitedList_ChoiceOptionUuid_"] | components["schemas"]["MatchingValue"];
+            field_uuid: components["schemas"]["SurveyFieldUuid"];
+            client_mutation_id: components["schemas"]["ClientMutationId"];
         };
         /**
-         * EmailFieldAnswerValue
-         * @description Answer value for an email field question.
+         * ClearedSubmissionRequest
+         * @description Explicitly clear one field answer.
          */
-        EmailFieldAnswerValue: {
+        ClearedSubmissionRequest: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            field_type: "email";
+            state: "cleared";
             /**
-             * Email
-             * Format: email
-             */
-            email: string;
-        };
-        /**
-         * EmojiRatingAnswerValue
-         * @description Answer value for an emoji rating question.
-         */
-        EmojiRatingAnswerValue: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "emoji";
-            /** Number */
-            number: number;
-        };
-        /**
-         * LongTextFieldAnswerValue
-         * @description Answer value for a long-text field question.
-         */
-        LongTextFieldAnswerValue: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            field_type: "long_text";
-            /** Text */
-            text: string;
-        };
-        /**
-         * MatchingAnswerPair
-         * @description One prompt-to-match pair in a matching answer.
-         */
-        MatchingAnswerPair: {
-            /** Prompt Id */
-            prompt_id: string;
-            /** Match Id */
-            match_id: string;
-        };
-        /**
-         * MatchingAnswerValue
-         * @description Answer value for a matching question.
-         */
-        MatchingAnswerValue: {
-            /** Pairs */
-            pairs: components["schemas"]["MatchingAnswerPair"][];
-        };
-        /**
-         * NumberFieldAnswerValue
-         * @description Answer value for a numeric field question.
-         */
-        NumberFieldAnswerValue: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            field_type: "number";
-            /** Number */
-            number: number;
-        };
-        /**
-         * PhoneFieldAnswerValue
-         * @description Answer value for a phone field question.
-         */
-        PhoneFieldAnswerValue: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            field_type: "phone";
-            /** Phone */
-            phone: string;
-        };
-        /**
-         * ShortTextFieldAnswerValue
-         * @description Answer value for a short-text field question.
-         */
-        ShortTextFieldAnswerValue: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            field_type: "short_text";
-            /** Text */
-            text: string;
-        };
-        /**
-         * SliderRatingAnswerValue
-         * @description Answer value for a slider rating question.
-         */
-        SliderRatingAnswerValue: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "slider";
-            /** Number */
-            number: number;
-        };
-        /**
-         * StarsRatingAnswerValue
-         * @description Answer value for a star rating question.
-         */
-        StarsRatingAnswerValue: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "stars";
-            /** Number */
-            number: number;
-        };
-        /**
-         * SaveSubmissionSessionAnswerRequest
-         * @description Request body for saving or clearing one respondent answer revision.
-         */
-        SaveSubmissionSessionAnswerRequest: {
-            /**
-             * Client Mutation Id
-             * Format: uuid
-             */
-            client_mutation_id: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
+             * Answer Spec
              * @default null
              */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | null;
+            answer_spec: (components["schemas"]["StringAnswerSpec"] | components["schemas"]["NumericAnswerSpec"] | components["schemas"]["BooleanAnswerSpec"] | components["schemas"]["DateAnswerSpec"] | components["schemas"]["ChoiceAnswerSpec"] | components["schemas"]["ChoiceSetAnswerSpec"] | components["schemas"]["MatchingAnswerSpec"]) | null;
+            field_uuid: components["schemas"]["SurveyFieldUuid"];
+            client_mutation_id: components["schemas"]["ClientMutationId"];
         };
         /**
-         * SubmissionSessionAnswerResponse
-         * @description Canonical latest answer state returned to a respondent.
+         * Format: uuid
+         * @description Identity of a client answer mutation
          */
-        SubmissionSessionAnswerResponse: {
+        ClientMutationId: string;
+        LimitedList_ChoiceOptionUuid_: components["schemas"]["ChoiceOptionUuid"][];
+        LimitedList_MatchingPair_: components["schemas"]["MatchingPair"][];
+        /**
+         * Format: uuid
+         * @description Stable matching target identity
+         */
+        MatchingMatchUuid: string;
+        /**
+         * MatchingPair
+         * @description One prompt-to-match association.
+         */
+        MatchingPair: {
+            prompt_uuid: components["schemas"]["MatchingPromptUuid"];
+            match_uuid: components["schemas"]["MatchingMatchUuid"];
+        };
+        /**
+         * Format: uuid
+         * @description Stable matching prompt identity
+         */
+        MatchingPromptUuid: string;
+        /**
+         * MatchingValue
+         * @description Documented matching answer structure.
+         */
+        MatchingValue: {
+            pairs: components["schemas"]["LimitedList_MatchingPair_"];
+        };
+        /** SaveSubmissionSessionAnswerRequest */
+        SaveSubmissionSessionAnswerRequest: components["schemas"]["AnsweredSubmissionRequest"] | components["schemas"]["ClearedSubmissionRequest"];
+        /**
+         * SavedAnsweredResponse
+         * @description Acknowledged answered state.
+         */
+        SavedAnsweredResponse: {
             /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /** Node Key */
-            node_key: string;
-            /**
-             * State
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            state: "answered" | "cleared";
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
-            /**
-             * Answer Value
-             * @default null
-             */
-            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | null;
-            /**
-             * Client Mutation Id
-             * Format: uuid
-             */
-            client_mutation_id: string;
-            /**
-             * Saved At
-             * Format: date-time
-             */
-            saved_at: string;
+            state: "answered";
+            /** AnswerSpec */
+            answer_spec: components["schemas"]["StringAnswerSpec"] | components["schemas"]["NumericAnswerSpec"] | components["schemas"]["BooleanAnswerSpec"] | components["schemas"]["DateAnswerSpec"] | components["schemas"]["ChoiceAnswerSpec"] | components["schemas"]["ChoiceSetAnswerSpec"] | components["schemas"]["MatchingAnswerSpec"];
+            /** AnswerValue */
+            answer_value: components["schemas"]["LongString"] | components["schemas"]["AnswerInteger"] | components["schemas"]["AnswerNumber"] | boolean | components["schemas"]["CalendarDate"] | components["schemas"]["LimitedList_ChoiceOptionUuid_"] | components["schemas"]["MatchingValue"];
+            field_uuid: components["schemas"]["SurveyFieldUuid"];
+            client_mutation_id: components["schemas"]["ClientMutationId"];
+            saved_at: components["schemas"]["Timestamp"];
         };
+        /**
+         * SavedClearedResponse
+         * @description Acknowledged cleared state.
+         */
+        SavedClearedResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            state: "cleared";
+            /**
+             * Answer Spec
+             * @default null
+             */
+            answer_spec: (components["schemas"]["StringAnswerSpec"] | components["schemas"]["NumericAnswerSpec"] | components["schemas"]["BooleanAnswerSpec"] | components["schemas"]["DateAnswerSpec"] | components["schemas"]["ChoiceAnswerSpec"] | components["schemas"]["ChoiceSetAnswerSpec"] | components["schemas"]["MatchingAnswerSpec"]) | null;
+            field_uuid: components["schemas"]["SurveyFieldUuid"];
+            client_mutation_id: components["schemas"]["ClientMutationId"];
+            saved_at: components["schemas"]["Timestamp"];
+        };
+        /** SubmissionSessionAnswerResponse */
+        SubmissionSessionAnswerResponse: components["schemas"]["SavedAnsweredResponse"] | components["schemas"]["SavedClearedResponse"];
         /**
          * SubmissionSessionEventRequest
          * @description Request body for recording a respondent session event.
@@ -2043,12 +2365,8 @@ export interface components {
              * Event Type
              * @constant
              */
-            event_type: "question_viewed";
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
+            event_type: "field_viewed";
+            field_uuid: components["schemas"]["SurveyFieldUuid"];
         };
         /**
          * CompleteSubmissionSessionResponse
@@ -2057,35 +2375,22 @@ export interface components {
         CompleteSubmissionSessionResponse: {
             /**
              * Status
+             * @default completed
              * @constant
              */
             status: "completed";
-            /**
-             * Completed At
-             * Format: date-time
-             */
-            completed_at: string;
+            completed_at: components["schemas"]["Timestamp"];
         };
         /**
          * SendInvitationRequest
          * @description Request body for inviting a user to a project by email.
          */
         SendInvitationRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Role Id
-             * @default null
-             */
-            role_id: number | null;
-            /**
-             * Invite Message
-             * @default null
-             */
-            invite_message: string | null;
+            email: components["schemas"]["EmailAddress"];
+            /** @default null */
+            role_id: components["schemas"]["ProjectRoleId"] | null;
+            /** @default null */
+            invite_message: components["schemas"]["InvitationMessage"] | null;
         };
         /**
          * UpdateMemberRequest
@@ -2094,278 +2399,232 @@ export interface components {
          *     Omit a field to leave it unchanged. Pass role_id: null to clear the role.
          */
         UpdateMemberRequest: {
-            /**
-             * Role Id
-             * @default null
-             */
-            role_id: number | null;
+            /** @default null */
+            role_id: components["schemas"]["ProjectRoleId"] | null;
             /**
              * Status
              * @default null
              */
             status: ("active" | "suspended") | null;
         };
+        SearchText: string;
+        /**
+         * ListProjectParticipantsRequest
+         * @description Query params for listing a project's participants.
+         */
+        ListProjectParticipantsRequest: {
+            /** @default null */
+            search: components["schemas"]["SearchText"] | null;
+            /** @default 1 */
+            page: components["schemas"]["PageNumber"];
+            /** @default 20 */
+            page_size: components["schemas"]["PageSize"];
+        };
+        PageItems_ParticipantResponses_: components["schemas"]["ParticipantResponses"][];
         /**
          * ParticipantResponses
          * @description API response shape for a project participant.
          */
         ParticipantResponses: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Subject Id
-             * Format: uuid
-             */
-            subject_id: string;
-            /** Subject Code */
-            subject_code: string;
-            /** Email */
-            email: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            id: components["schemas"]["ParticipantId"];
+            subject_id: components["schemas"]["SubjectId"];
+            subject_code: components["schemas"]["SubjectCode"];
+            email: components["schemas"]["EmailAddress"] | null;
+            created_at: components["schemas"]["Timestamp"];
         };
+        /**
+         * Format: uuid
+         * @description Project subject identity
+         */
+        SubjectId: string;
         /**
          * ListParticipantsResponses
          * @description API response shape for listing a project's participants.
          */
         ListParticipantsResponses: {
-            /** Participants */
-            participants: components["schemas"]["ParticipantResponses"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
+            participants: components["schemas"]["PageItems_ParticipantResponses_"];
+            total: components["schemas"]["Count"];
+            page: components["schemas"]["PageNumber"];
+            page_size: components["schemas"]["PageSize"];
         };
         /**
          * CreateParticipantRequest
          * @description Request body for creating a participant (subject + email identity + participant).
          */
         CreateParticipantRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Subject Code
-             * @default null
-             */
-            subject_code: string | null;
+            email: components["schemas"]["EmailAddress"];
+            /** @default null */
+            subject_code: components["schemas"]["SubjectCode"] | null;
         };
         /**
          * UpdateParticipantRequest
          * @description Request body for updating a participant's assigned email and/or subject code.
          */
         UpdateParticipantRequest: {
-            /**
-             * Email
-             * @default null
-             */
-            email: string | null;
-            /**
-             * Subject Code
-             * @default null
-             */
-            subject_code: string | null;
+            /** @default null */
+            email: components["schemas"]["EmailAddress"] | null;
+            /** @default null */
+            subject_code: components["schemas"]["SubjectCode"] | null;
         };
+        /** @description Unique project permissions */
+        ProjectPermissionSet: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
         /**
          * ProjectRoleResponses
          * @description API response shape for a project role.
          */
         ProjectRoleResponses: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
+            id: components["schemas"]["ProjectRoleId"];
+            project_id: components["schemas"]["ProjectId"];
+            name: components["schemas"]["RoleName"];
+            description: components["schemas"]["RoleDescription"] | null;
             /** Is System Role */
             is_system_role: boolean;
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            permissions: components["schemas"]["ProjectPermissionSet"];
+            created_at: components["schemas"]["Timestamp"];
         };
+        RoleDescription: string;
+        RoleName: string;
         /**
          * CreateProjectRoleRequest
          * @description Request body for creating a new project role.
          */
         CreateProjectRoleRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /** Permissions */
-            permissions?: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            name: components["schemas"]["RoleName"];
+            /** @default null */
+            description: components["schemas"]["RoleDescription"] | null;
+            permissions?: components["schemas"]["ProjectPermissionSet"];
         };
         /**
          * UpdateProjectRoleRequest
          * @description Request body for updating a project role.
          */
         UpdateProjectRoleRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /**
-             * Permissions
-             * @default null
-             */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
+            /** @default null */
+            name: components["schemas"]["RoleName"] | null;
+            /** @default null */
+            description: components["schemas"]["RoleDescription"] | null;
+            /** @default null */
+            permissions: components["schemas"]["ProjectPermissionSet"] | null;
         };
         /**
          * CreateProjectRequest
          * @description Request body for creating a new project.
          */
         CreateProjectRequest: {
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
+            name: components["schemas"]["ProjectName"];
+            slug: components["schemas"]["Slug"];
         };
         /**
          * MyProjectPermissionsResponses
          * @description API response shape for the current user's effective permissions in a project.
          */
         MyProjectPermissionsResponses: {
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            permissions: components["schemas"]["ProjectPermissionSet"];
         };
         /**
          * UpdateProjectRequest
          * @description Request body for partially updating a project.
          */
         UpdateProjectRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Slug
-             * @default null
-             */
-            slug: string | null;
+            /** @default null */
+            name: components["schemas"]["ProjectName"] | null;
+            /** @default null */
+            slug: components["schemas"]["Slug"] | null;
         };
+        /**
+         * ListProjectSubjectsRequest
+         * @description Query params for listing a project's subjects.
+         */
+        ListProjectSubjectsRequest: {
+            /**
+             * Canonical Status
+             * @default canonical
+             * @enum {string}
+             */
+            canonical_status: "canonical" | "alias" | "all";
+            /**
+             * Is Participant
+             * @default null
+             */
+            is_participant: boolean | null;
+            /** @default null */
+            search: components["schemas"]["SearchText"] | null;
+            /** @default 1 */
+            page: components["schemas"]["PageNumber"];
+            /** @default 20 */
+            page_size: components["schemas"]["PageSize"];
+        };
+        PageItems_SubjectResponse_: components["schemas"]["SubjectResponse"][];
         /**
          * SubjectResponse
          * @description List-item shape for a project subject.
          */
         SubjectResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Subject Code */
-            subject_code: string;
-            /** Canonical Subject Id */
-            canonical_subject_id: string | null;
+            id: components["schemas"]["SubjectId"];
+            subject_code: components["schemas"]["SubjectCode"];
+            canonical_subject_id: components["schemas"]["SubjectId"] | null;
             /** Is Participant */
             is_participant: boolean;
-            /** Participant Id */
-            participant_id: string | null;
-            /** Active Identity Count */
-            active_identity_count: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            participant_id: components["schemas"]["ParticipantId"] | null;
+            active_identity_count: components["schemas"]["Count"];
+            created_at: components["schemas"]["Timestamp"];
         };
         /**
          * ListSubjectsResponse
          * @description Paginated project subject listing.
          */
         ListSubjectsResponse: {
-            /** Subjects */
-            subjects: components["schemas"]["SubjectResponse"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
+            subjects: components["schemas"]["PageItems_SubjectResponse_"];
+            total: components["schemas"]["Count"];
+            page: components["schemas"]["PageNumber"];
+            page_size: components["schemas"]["PageSize"];
         };
+        /**
+         * Format: uuid
+         * @description Identity attached to a project subject
+         */
+        SubjectIdentityId: string;
         /**
          * SubjectIdentityResponse
          * @description Read-only identity attached to a subject.
          */
         SubjectIdentityResponse: {
+            id: components["schemas"]["SubjectIdentityId"];
             /**
-             * Id
-             * Format: uuid
+             * Identity Type
+             * @enum {string}
              */
-            id: string;
-            /** Identity Type */
-            identity_type: string;
-            /** Normalized Email */
-            normalized_email: string | null;
-            /** Verification Status */
-            verification_status: string;
+            identity_type: "email" | "authenticated_user";
+            normalized_email: components["schemas"]["EmailAddress"] | null;
             /**
-             * Attached At
-             * Format: date-time
+             * Verification Status
+             * @enum {string}
              */
-            attached_at: string;
-            /** Revoked At */
-            revoked_at: string | null;
+            verification_status: "unverified" | "verified";
+            attached_at: components["schemas"]["Timestamp"];
+            revoked_at: components["schemas"]["Timestamp"] | null;
         };
         /**
          * SubjectDetailResponse
          * @description Detail shape for a single project subject.
          */
         SubjectDetailResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Subject Code */
-            subject_code: string;
-            /** Canonical Subject Id */
-            canonical_subject_id: string | null;
+            id: components["schemas"]["SubjectId"];
+            subject_code: components["schemas"]["SubjectCode"];
+            canonical_subject_id: components["schemas"]["SubjectId"] | null;
             /** Is Participant */
             is_participant: boolean;
-            /** Participant Id */
-            participant_id: string | null;
+            participant_id: components["schemas"]["ParticipantId"] | null;
             /** Identities */
             identities: components["schemas"]["SubjectIdentityResponse"][];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            created_at: components["schemas"]["Timestamp"];
         };
         /**
          * UpdateSubjectRequest
          * @description Request body for updating a subject's code.
          */
         UpdateSubjectRequest: {
-            /** Subject Code */
-            subject_code: string;
+            subject_code: components["schemas"]["SubjectCode"];
         };
         /**
          * ListSurveyAccessLinksResponse
@@ -2375,13 +2634,14 @@ export interface components {
             /** Links */
             links: components["schemas"]["SurveyAccessLinkResponse"][];
         };
+        /** Format: date-time */
+        FutureExpiry: string;
         /**
          * CreateSurveyAccessLinkRequest
          * @description Request body for creating a new survey access link.
          */
         CreateSurveyAccessLinkRequest: {
-            /** Name */
-            name: string;
+            name: components["schemas"]["SurveyAccessLinkName"];
             /**
              * Link Type
              * @default general
@@ -2394,16 +2654,10 @@ export interface components {
              * @enum {string}
              */
             assignment_source: "manual" | "automated";
-            /**
-             * Assigned Participant Id
-             * @default null
-             */
-            assigned_participant_id: string | null;
-            /**
-             * Expires At
-             * @default null
-             */
-            expires_at: string | null;
+            /** @default null */
+            assigned_participant_id: components["schemas"]["ParticipantId"] | null;
+            /** @default null */
+            expires_at: components["schemas"]["FutureExpiry"] | null;
         };
         /**
          * CreateSurveyAccessLinkResponse
@@ -2411,8 +2665,7 @@ export interface components {
          */
         CreateSurveyAccessLinkResponse: {
             link: components["schemas"]["SurveyAccessLinkResponse"];
-            /** Url */
-            url: string;
+            url: components["schemas"]["Url"];
         };
         /**
          * UpdateSurveyAccessLinkRequest
@@ -2424,11 +2677,8 @@ export interface components {
              * @default null
              */
             is_active: boolean | null;
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
+            /** @default null */
+            name: components["schemas"]["SurveyAccessLinkName"] | null;
             /**
              * Link Type
              * @default null
@@ -2439,706 +2689,116 @@ export interface components {
              * @default null
              */
             assignment_source: ("manual" | "automated") | null;
-            /**
-             * Assigned Participant Id
-             * @default null
-             */
-            assigned_participant_id: string | null;
-            /**
-             * Expires At
-             * @default null
-             */
-            expires_at: string | null;
+            /** @default null */
+            assigned_participant_id: components["schemas"]["ParticipantId"] | null;
+            /** @default null */
+            expires_at: components["schemas"]["FutureExpiry"] | null;
         };
         /**
          * SendSurveyLinkEmailResponse
          * @description API response shape for sending a survey link email.
          */
         SendSurveyLinkEmailResponse: {
-            /**
-             * Message Id
-             * @default null
-             */
-            message_id: string | null;
-        };
-        /**
-         * AIImportRequest
-         * @description A short instruction for a survey draft.
-         */
-        AIImportRequest: {
-            /** Prompt */
-            prompt: string;
-        };
-        /**
-         * ChoiceDefinitionIn
-         * @description definition block for a choice question.
-         */
-        ChoiceDefinitionIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-            /** Options */
-            options: components["schemas"]["ChoiceOptionIn"][];
-        };
-        /**
-         * ChoiceOptionIn
-         * @description A single selectable option for a choice question.
-         */
-        ChoiceOptionIn: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-        };
-        /**
-         * ChoiceQuestionSchemaIn
-         * @description Incoming choice-question content schema.
-         */
-        ChoiceQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "choice";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["ChoiceDefinitionIn"];
-        };
-        /**
-         * CreateQuestionNodeRequest
-         * @description Validates requests that create a new question node.
-         */
-        CreateQuestionNodeRequest: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "question";
-            /** Sort Key */
-            sort_key: number;
-            /** Content */
-            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
-        };
-        /**
-         * FieldDefinitionIn
-         * @description definition block for a field question.
-         */
-        FieldDefinitionIn: {
-            /**
-             * Field Type
-             * @enum {string}
-             */
-            field_type: "short_text" | "long_text" | "email" | "number" | "date" | "phone";
-            ui?: components["schemas"]["FieldUIIn"];
-        };
-        /**
-         * FieldQuestionSchemaIn
-         * @description Incoming field-question content schema.
-         */
-        FieldQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "field";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["FieldDefinitionIn"];
-        };
-        /**
-         * FieldUIIn
-         * @description UI block for a field question.
-         */
-        FieldUIIn: {
-            /**
-             * Placeholder
-             * @default
-             */
-            placeholder: string;
-        };
-        /**
-         * MatchingDefinitionIn
-         * @description definition block for a matching question.
-         */
-        MatchingDefinitionIn: {
-            /** Prompts */
-            prompts: components["schemas"]["MatchingItemIn"][];
-            /** Matches */
-            matches: components["schemas"]["MatchingItemIn"][];
-        };
-        /**
-         * MatchingItemIn
-         * @description One item on either side of a matching question.
-         */
-        MatchingItemIn: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-        };
-        /**
-         * MatchingQuestionSchemaIn
-         * @description Incoming matching-question content schema.
-         */
-        MatchingQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "matching";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            definition: components["schemas"]["MatchingDefinitionIn"];
-        };
-        /**
-         * RatingEmojiDefinitionIn
-         * @description definition block for an emoji-style rating question.
-         */
-        RatingEmojiDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "emoji";
-            /**
-             * Emoji List
-             * @enum {string}
-             */
-            emoji_list: "sad_to_happy" | "angry_to_happy" | "disgust_to_happy";
-            /**
-             * Words
-             * @default false
-             */
-            words: boolean;
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingQuestionSchemaIn
-         * @description Incoming rating-question content schema.
-         */
-        RatingQuestionSchemaIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "rating";
-            /** Label */
-            label: string;
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
-            /** Definition */
-            definition: components["schemas"]["RatingSliderDefinitionIn"] | components["schemas"]["RatingStarDefinitionIn"] | components["schemas"]["RatingEmojiDefinitionIn"];
-        };
-        /**
-         * RatingRangeIn
-         * @description Range block for a slider rating — min, max, and step in one object.
-         */
-        RatingRangeIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-            /** Step */
-            step: number;
-        };
-        /**
-         * RatingSliderDefinitionIn
-         * @description definition block for a slider-style rating question.
-         */
-        RatingSliderDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "slider";
-            range: components["schemas"]["RatingRangeIn"];
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingStarDefinitionIn
-         * @description definition block for a star-style rating question.
-         */
-        RatingStarDefinitionIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            variant: "stars";
-            /** Stars */
-            stars: number;
-            ui: components["schemas"]["RatingUIIn"];
-        };
-        /**
-         * RatingUIIn
-         * @description Left/right labels for all rating variants.
-         */
-        RatingUIIn: {
-            /** Left Label */
-            left_label: string;
-            /** Right Label */
-            right_label: string;
-        };
-        /**
-         * AIImportResponse
-         * @description Validated preview; callers can create nodes after reviewing it.
-         */
-        AIImportResponse: {
-            /** Title */
-            title: string;
-            /** Description */
-            description: string;
-            /** Nodes */
-            nodes: components["schemas"]["CreateQuestionNodeRequest"][];
-        };
-        /**
-         * ChoiceConditionIn
-         * @description Represents a condition block targeting a choice question.
-         */
-        ChoiceConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "choice";
-            requirements: components["schemas"]["ChoiceRequirementsIn"];
-        };
-        /**
-         * ChoiceRequirementsIn
-         * @description Validation requirements for a choice-question condition.
-         */
-        ChoiceRequirementsIn: {
-            /** Required */
-            required?: string[];
-            /** Forbidden */
-            forbidden?: string[];
-            /** Any Of */
-            any_of?: string[];
-        };
-        /**
-         * DateFieldRequirementsIn
-         * @description Validation requirements for a date field-question condition.
-         */
-        DateFieldRequirementsIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "date";
-            /**
-             * Operator
-             * @enum {string}
-             */
-            operator: "before" | "after";
-            /** Value */
-            value: string;
-        };
-        /**
-         * EndAndDiscardActionIn
-         * @description Navigation action that ends the survey and discards the response.
-         */
-        EndAndDiscardActionIn: {
-            /**
-             * End And Discard
-             * @default true
-             */
-            end_and_discard: boolean;
-        };
-        /**
-         * EndAndSubmitActionIn
-         * @description Navigation action that ends the survey and submits the response.
-         */
-        EndAndSubmitActionIn: {
-            /**
-             * End And Submit
-             * @default true
-             */
-            end_and_submit: boolean;
-        };
-        /**
-         * FieldConditionIn
-         * @description Represents a condition block targeting a field question.
-         */
-        FieldConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "field";
-            /** Requirements */
-            requirements: components["schemas"]["NumberFieldRequirementsIn"] | components["schemas"]["DateFieldRequirementsIn"];
-        };
-        /**
-         * MatchingConditionIn
-         * @description Represents a condition block targeting a matching question.
-         */
-        MatchingConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "matching";
-            requirements: components["schemas"]["MatchingRequirementsIn"];
-        };
-        /**
-         * MatchingPairIn
-         * @description A single prompt-to-match pairing in a matching condition.
-         */
-        MatchingPairIn: {
-            /** Prompt Id */
-            prompt_id: string;
-            /** Match Id */
-            match_id: string;
-        };
-        /**
-         * MatchingRequirementsIn
-         * @description Validation requirements for a matching-question condition.
-         */
-        MatchingRequirementsIn: {
-            /** Required */
-            required: components["schemas"]["MatchingPairIn"][];
-        };
-        /**
-         * NumberFieldRequirementsIn
-         * @description Validation requirements for a numeric field-question condition.
-         */
-        NumberFieldRequirementsIn: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "number";
-            /**
-             * Operator
-             * @enum {string}
-             */
-            operator: "LT" | "LTE" | "GT" | "GTE" | "EQ" | "NEQ";
-            /** Value */
-            value: number;
-        };
-        /**
-         * QuestionNodeResponse
-         * @description API response shape for a question node.
-         */
-        QuestionNodeResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /** Sort Key */
-            sort_key: number;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "question";
-            /** Content */
-            content: components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"];
-        };
-        /**
-         * RatingConditionIn
-         * @description Represents a condition block targeting a rating question.
-         */
-        RatingConditionIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            family: "rating";
-            requirements: components["schemas"]["RatingRequirementsIn"];
-        };
-        /**
-         * RatingRequirementsIn
-         * @description Validation requirements for a rating-question condition.
-         */
-        RatingRequirementsIn: {
-            /**
-             * Min
-             * @default null
-             */
-            min: number | null;
-            /**
-             * Max
-             * @default null
-             */
-            max: number | null;
-        };
-        /**
-         * RuleBranchIn
-         * @description Represents the effects applied by a then or else branch.
-         */
-        RuleBranchIn: {
-            /**
-             * Set
-             * @default null
-             */
-            set: components["schemas"]["RuleSetItemIn"][] | null;
-            /**
-             * Do
-             * @default null
-             */
-            do: components["schemas"]["SkipToActionIn"] | components["schemas"]["EndAndSubmitActionIn"] | components["schemas"]["EndAndDiscardActionIn"] | null;
-        };
-        /**
-         * RuleIfIn
-         * @description Represents the rule predicate and how its conditions are matched.
-         */
-        RuleIfIn: {
-            /**
-             * Match
-             * @enum {string}
-             */
-            match: "ALL" | "ANY" | "NONE";
-            /** Conditions */
-            conditions: (components["schemas"]["ChoiceConditionIn"] | components["schemas"]["MatchingConditionIn"] | components["schemas"]["RatingConditionIn"] | components["schemas"]["FieldConditionIn"])[];
-        };
-        /**
-         * RuleNodeResponse
-         * @description API response shape for a rule node.
-         */
-        RuleNodeResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /** Sort Key */
-            sort_key: number;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "rule";
-            content: components["schemas"]["RuleSchemaIn"];
-        };
-        /**
-         * RuleSchemaIn
-         * @description Represents the full rule content stored in question_schema for a rule node.
-         */
-        RuleSchemaIn: {
-            if: components["schemas"]["RuleIfIn"];
-            then: components["schemas"]["RuleBranchIn"];
             /** @default null */
-            else: components["schemas"]["RuleBranchIn"] | null;
-        };
-        /**
-         * RuleSetItemIn
-         * @description Represents one visibility or required-state change applied by a branch.
-         */
-        RuleSetItemIn: {
-            /** Target Id */
-            target_id: string;
-            /**
-             * Visible
-             * @default null
-             */
-            visible: boolean | null;
-            /**
-             * Required
-             * @default null
-             */
-            required: boolean | null;
-        };
-        /**
-         * SkipToActionIn
-         * @description Navigation action that jumps to a specific question.
-         */
-        SkipToActionIn: {
-            /** Skip To */
-            skip_to: string;
-        };
-        /** NodeResponses */
-        NodeResponses: components["schemas"]["QuestionNodeResponse"] | components["schemas"]["RuleNodeResponse"];
-        /**
-         * CreateRuleNodeRequest
-         * @description Validates requests that create a new rule node.
-         */
-        CreateRuleNodeRequest: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Node Key */
-            node_key: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            node_type: "rule";
-            /** Sort Key */
-            sort_key: number;
-            content: components["schemas"]["RuleSchemaIn"];
-        };
-        /** CreateNodeRequest */
-        CreateNodeRequest: components["schemas"]["CreateQuestionNodeRequest"] | components["schemas"]["CreateRuleNodeRequest"];
-        /**
-         * UpdateNodeRequest
-         * @description Validates partial updates to an existing survey content node.
-         */
-        UpdateNodeRequest: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Node Key
-             * @default null
-             */
-            node_key: string | null;
-            /**
-             * Node Type
-             * @default null
-             */
-            node_type: ("question" | "rule") | null;
-            /**
-             * Sort Key
-             * @default null
-             */
-            sort_key: number | null;
-            /**
-             * Content
-             * @default null
-             */
-            content: (components["schemas"]["ChoiceQuestionSchemaIn"] | components["schemas"]["FieldQuestionSchemaIn"] | components["schemas"]["MatchingQuestionSchemaIn"] | components["schemas"]["RatingQuestionSchemaIn"]) | components["schemas"]["RuleSchemaIn"] | null;
+            message_id: components["schemas"]["Text"] | null;
         };
         /**
          * SurveyMemberResponses
          * @description Embedded user details on a survey member row.
          */
         SurveyMemberResponses: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
-            /** Project Id */
-            project_id: number;
-            /** Role Id */
-            role_id: number | null;
-            /** Status */
-            status: string;
-        };
-        /**
-         * SurveyRoleResponses
-         * @description API response shape for a survey role.
-         */
-        SurveyRoleResponses: {
-            /** Id */
-            id: number;
-            /** Project Id */
-            project_id: number;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /** Permissions */
-            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            id: components["schemas"]["ProjectMembershipId"];
+            user_id: components["schemas"]["UserId"];
+            project_id: components["schemas"]["ProjectId"];
+            role_id: components["schemas"]["ProjectRoleId"] | null;
             /**
-             * Created At
-             * Format: date-time
+             * Status
+             * @enum {string}
              */
-            created_at: string;
+            status: "active" | "suspended";
         };
         /**
          * SurveyMemberRoleResponses
          * @description API response shape for a survey membership role assignment.
          */
         SurveyMemberRoleResponses: {
-            /** Project Id */
-            project_id: number;
-            /** Survey Id */
-            survey_id: number;
-            /** Membership Id */
-            membership_id: number;
-            /** Role Id */
-            role_id: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
+            project_id: components["schemas"]["ProjectId"];
+            survey_id: components["schemas"]["SurveyId"];
+            membership_id: components["schemas"]["ProjectMembershipId"];
+            role_id: components["schemas"]["SurveyRoleId"];
+            created_at: components["schemas"]["Timestamp"];
             /** @default null */
             member: components["schemas"]["SurveyMemberResponses"] | null;
             /** @default null */
             role: components["schemas"]["SurveyRoleResponses"] | null;
+        };
+        /** @description Unique survey permissions */
+        SurveyPermissionSet: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+        /** @description Survey role identity */
+        SurveyRoleId: number;
+        /**
+         * SurveyRoleResponses
+         * @description API response shape for a survey role.
+         */
+        SurveyRoleResponses: {
+            id: components["schemas"]["SurveyRoleId"];
+            project_id: components["schemas"]["ProjectId"];
+            name: components["schemas"]["RoleName"];
+            description: components["schemas"]["RoleDescription"] | null;
+            permissions: components["schemas"]["SurveyPermissionSet"];
+            created_at: components["schemas"]["Timestamp"];
         };
         /**
          * AssignSurveyMemberRoleRequest
          * @description Request body for assigning a survey role to a project member for a survey.
          */
         AssignSurveyMemberRoleRequest: {
-            /** Membership Id */
-            membership_id: number;
-            /** Role Id */
-            role_id: number;
+            membership_id: components["schemas"]["ProjectMembershipId"];
+            role_id: components["schemas"]["SurveyRoleId"];
         };
         /**
          * UpdateSurveyMemberRoleRequest
          * @description Request body for updating a survey member role assignment.
          */
         UpdateSurveyMemberRoleRequest: {
-            /** Role Id */
-            role_id: number;
+            role_id: components["schemas"]["SurveyRoleId"];
         };
         /**
+         * ListSubjectsRequest
+         * @description Query params for listing a survey's subjects with their session trees.
+         */
+        ListSubjectsRequest: {
+            /** @default 1 */
+            page: components["schemas"]["PageNumber"];
+            /** @default 20 */
+            page_size: components["schemas"]["PageSize"];
+            /**
+             * Include Decrypted Answer Values
+             * @default false
+             */
+            include_decrypted_answer_values: boolean;
+            /**
+             * Include Events
+             * @default false
+             */
+            include_events: boolean;
+        };
+        /** @description Saved answers belonging to the session */
+        AnswerList_SurveyAnswerSlotResponses_: components["schemas"]["SurveyAnswerSlotResponses"][];
+        PageItems_SurveySubjectTreeResponses_: components["schemas"]["SurveySubjectTreeResponses"][];
+        /**
+         * Format: uuid
+         * @description Respondent submission session identity
+         */
+        SubmissionSessionId: string;
+        /**
          * SurveyAnswerSlotResponses
-         * @description One answer slot in an admin survey-results view, optionally decrypted.
+         * @description HTTP representation of the shared AnswerSlotResult projection.
          */
         SurveyAnswerSlotResponses: {
-            /**
-             * Question Node Id
-             * Format: uuid
-             */
-            question_node_id: string;
-            /**
-             * Question Key
-             * @default null
-             */
-            question_key: string | null;
-            /**
-             * Answer Family
-             * @default null
-             */
-            answer_family: ("choice" | "field" | "matching" | "rating") | null;
+            field_uuid: components["schemas"]["SurveyFieldUuid"];
+            /** @default null */
+            field_id: components["schemas"]["ReadableId"] | null;
             /** Has Encrypted Answer */
             has_encrypted_answer: boolean;
             /** Decrypted */
@@ -3149,45 +2809,31 @@ export interface components {
              */
             state: ("answered" | "cleared") | null;
             /**
+             * Answer Spec
+             * @default null
+             */
+            answer_spec: (components["schemas"]["StringAnswerSpec"] | components["schemas"]["NumericAnswerSpec"] | components["schemas"]["BooleanAnswerSpec"] | components["schemas"]["DateAnswerSpec"] | components["schemas"]["ChoiceAnswerSpec"] | components["schemas"]["ChoiceSetAnswerSpec"] | components["schemas"]["MatchingAnswerSpec"]) | null;
+            /**
              * Answer Value
              * @default null
              */
-            answer_value: components["schemas"]["ChoiceAnswerValue"] | (components["schemas"]["ShortTextFieldAnswerValue"] | components["schemas"]["LongTextFieldAnswerValue"] | components["schemas"]["EmailFieldAnswerValue"] | components["schemas"]["NumberFieldAnswerValue"] | components["schemas"]["DateFieldAnswerValue"] | components["schemas"]["PhoneFieldAnswerValue"]) | components["schemas"]["MatchingAnswerValue"] | (components["schemas"]["SliderRatingAnswerValue"] | components["schemas"]["StarsRatingAnswerValue"] | components["schemas"]["EmojiRatingAnswerValue"]) | {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Question Content
-             * @default null
-             */
-            question_content: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Question Sort Key
-             * @default null
-             */
-            question_sort_key: number | null;
+            answer_value: (components["schemas"]["LongString"] | components["schemas"]["AnswerInteger"] | components["schemas"]["AnswerNumber"] | boolean | components["schemas"]["CalendarDate"] | components["schemas"]["LimitedList_ChoiceOptionUuid_"] | components["schemas"]["MatchingValue"]) | null;
+            /** @default null */
+            field: components["schemas"]["SurveyField"] | null;
         };
         /**
          * SurveySessionEventResponses
-         * @description One timeline event for a session. Never carries answer values.
+         * @description HTTP representation of the shared SessionEventResult projection.
          */
         SurveySessionEventResponses: {
             /**
              * Event Type
              * @enum {string}
              */
-            event_type: "session_started" | "question_viewed" | "answer_saved" | "session_completed";
-            /**
-             * Question Node Id
-             * @default null
-             */
-            question_node_id: string | null;
-            /**
-             * Received At
-             * Format: date-time
-             */
-            received_at: string;
+            event_type: "session_started" | "field_viewed" | "answer_saved" | "session_completed";
+            /** @default null */
+            field_uuid: components["schemas"]["SurveyFieldUuid"] | null;
+            received_at: components["schemas"]["Timestamp"];
         };
         /**
          * SurveySessionResponses
@@ -3197,35 +2843,18 @@ export interface components {
          *     payloads and no response-database locators or crypto material.
          */
         SurveySessionResponses: {
-            /**
-             * Session Id
-             * Format: uuid
-             */
-            session_id: string;
-            /** Survey Id */
-            survey_id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
+            session_id: components["schemas"]["SubmissionSessionId"];
+            survey_id: components["schemas"]["SurveyId"];
+            survey_version_id: components["schemas"]["SurveyVersionId"];
             /**
              * Status
              * @enum {string}
              */
             status: "in_progress" | "completed" | "abandoned";
-            /**
-             * Started At
-             * Format: date-time
-             */
-            started_at: string;
-            /**
-             * Completed At
-             * @default null
-             */
-            completed_at: string | null;
-            /**
-             * Last Activity At
-             * Format: date-time
-             */
-            last_activity_at: string;
+            started_at: components["schemas"]["Timestamp"];
+            /** @default null */
+            completed_at: components["schemas"]["Timestamp"] | null;
+            last_activity_at: components["schemas"]["Timestamp"];
         };
         /**
          * SurveySessionTreeResponses
@@ -3233,8 +2862,7 @@ export interface components {
          */
         SurveySessionTreeResponses: {
             session: components["schemas"]["SurveySessionResponses"];
-            /** Answers */
-            answers: components["schemas"]["SurveyAnswerSlotResponses"][];
+            answers: components["schemas"]["AnswerList_SurveyAnswerSlotResponses_"];
             /**
              * Events
              * @default null
@@ -3246,13 +2874,8 @@ export interface components {
          * @description Admin-facing summary of one project subject.
          */
         SurveySubjectResponses: {
-            /**
-             * Subject Id
-             * Format: uuid
-             */
-            subject_id: string;
-            /** Subject Code */
-            subject_code: string;
+            subject_id: components["schemas"]["SubjectId"];
+            subject_code: components["schemas"]["SubjectCode"];
         };
         /**
          * SurveySubjectTreeResponses
@@ -3268,17 +2891,30 @@ export interface components {
          * @description Paginated list of subject result trees.
          */
         PaginatedSurveySubjectTreesResponses: {
-            /** Items */
-            items: components["schemas"]["SurveySubjectTreeResponses"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
+            items: components["schemas"]["PageItems_SurveySubjectTreeResponses_"];
+            total: components["schemas"]["Count"];
+            page: components["schemas"]["PageNumber"];
+            page_size: components["schemas"]["PageSize"];
             /** Include Decrypted Answer Values */
             include_decrypted_answer_values: boolean;
         };
+        /**
+         * GetSubjectTreeRequest
+         * @description Query params for fetching one subject's full session tree.
+         */
+        GetSubjectTreeRequest: {
+            /**
+             * Include Decrypted Answer Values
+             * @default false
+             */
+            include_decrypted_answer_values: boolean;
+            /**
+             * Include Events
+             * @default false
+             */
+            include_events: boolean;
+        };
+        SessionIdList: components["schemas"]["SubmissionSessionId"][];
         /**
          * ExportSurveyResultsRequest
          * @description Request body for exporting a survey's results.
@@ -3295,334 +2931,111 @@ export interface components {
              * @default false
              */
             include_decrypted_answer_values: boolean;
-            /**
-             * Session Ids
-             * @default null
-             */
-            session_ids: string[] | null;
+            /** @default null */
+            session_ids: components["schemas"]["SessionIdList"] | null;
         };
         /**
          * CreateSurveyRoleRequest
          * @description Request body for creating a survey role.
          */
         CreateSurveyRoleRequest: {
-            /** Name */
-            name: string;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /** Permissions */
-            permissions?: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            name: components["schemas"]["RoleName"];
+            /** @default null */
+            description: components["schemas"]["RoleDescription"] | null;
+            permissions?: components["schemas"]["SurveyPermissionSet"];
         };
         /**
          * UpdateSurveyRoleRequest
          * @description Request body for partially updating a survey role.
          */
         UpdateSurveyRoleRequest: {
-            /**
-             * Name
-             * @default null
-             */
-            name: string | null;
-            /**
-             * Description
-             * @default null
-             */
-            description: string | null;
-            /**
-             * Permissions
-             * @default null
-             */
-            permissions: ("survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[] | null;
+            /** @default null */
+            name: components["schemas"]["RoleName"] | null;
+            /** @default null */
+            description: components["schemas"]["RoleDescription"] | null;
+            /** @default null */
+            permissions: components["schemas"]["SurveyPermissionSet"] | null;
         };
         /**
-         * CreateSurveyRequest
-         * @description Request body for creating a new survey.
+         * NonPublicSurveyCreateRequest
+         * @description Create a private or link-only survey without a public slug.
          */
-        CreateSurveyRequest: {
-            /** Title */
-            title: string;
+        NonPublicSurveyCreateRequest: {
             /**
-             * Visibility
-             * @default private
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            visibility: "private" | "link_only" | "public";
+            visibility: "link_only" | "private";
             /**
              * Public Slug
              * @default null
              */
-            public_slug: string | null;
+            public_slug: null;
+            title: components["schemas"]["SurveyTitle"];
         };
+        /**
+         * PublicSurveyCreateRequest
+         * @description Create a public survey with a required public slug.
+         */
+        PublicSurveyCreateRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            visibility: "public";
+            public_slug: components["schemas"]["Slug"];
+            title: components["schemas"]["SurveyTitle"];
+        };
+        /** CreateSurveyRequest */
+        CreateSurveyRequest: components["schemas"]["PublicSurveyCreateRequest"] | components["schemas"]["NonPublicSurveyCreateRequest"];
         /**
          * UpdateSurveyRequest
          * @description Request body for partially updating a survey.
          */
         UpdateSurveyRequest: {
-            /**
-             * Title
-             * @default null
-             */
-            title: string | null;
+            /** @default null */
+            title: components["schemas"]["SurveyTitle"] | null;
             /**
              * Visibility
              * @default null
              */
             visibility: ("private" | "link_only" | "public") | null;
-            /**
-             * Public Slug
-             * @default null
-             */
-            public_slug: string | null;
+            /** @default null */
+            public_slug: components["schemas"]["Slug"] | null;
         };
         /**
          * MySurveyPermissionsResponses
          * @description API response shape for the current user's effective permissions on a survey.
          */
         MySurveyPermissionsResponses: {
-            /** Permissions */
-            permissions: ("project:edit" | "project:delete" | "project:manage_members" | "project:manage_roles" | "survey:view" | "survey:create" | "survey:edit" | "survey:delete" | "survey:publish" | "survey:archive" | "submission:view")[];
+            permissions: components["schemas"]["ProjectPermissionSet"];
+        };
+        AIImportPrompt: string;
+        /**
+         * AIImportRequest
+         * @description Instructions for survey generation.
+         */
+        AIImportRequest: {
+            prompt: components["schemas"]["AIImportPrompt"];
         };
         /**
-         * ScoringRuleResponses
-         * @description API response shape for a scoring rule.
+         * SurveyContent
+         * @description Authored survey content shared by draft generation and survey definitions.
          */
-        ScoringRuleResponses: {
-            /** Id */
-            id: number;
-            /** Survey Version Id */
-            survey_version_id: number;
-            /** Scoring Key */
-            scoring_key: string;
-            /** Scoring Schema */
-            scoring_schema: {
-                [key: string]: unknown;
-            };
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
+        SurveyContent: {
+            title: components["schemas"]["SurveyTitle"];
+            /** @default null */
+            description: components["schemas"]["LongString"] | null;
+            document: components["schemas"]["SurveyDocument"];
+            /** @default null */
+            workflow: components["schemas"]["SurveyWorkflow"] | null;
         };
         /**
-         * ChoiceOptionMapConfig
-         * @description Configuration for choice option mapping scoring strategy.
-         *
-         *     Maps each choice option ID to a score and optionally combines multiple scores
-         *     by summing or taking the maximum value.
+         * AIImportResponse
+         * @description Generated survey content before it is assigned to a persisted version.
          */
-        ChoiceOptionMapConfig: {
-            /** Option Scores */
-            option_scores: {
-                [key: string]: number;
-            };
-            /**
-             * Combine
-             * @default sum
-             * @enum {string}
-             */
-            combine: "sum" | "max";
-        };
-        /**
-         * ChoiceOptionMapScoringSchemaIn
-         * @description Request schema for choice option mapping scoring rule.
-         *
-         *     Applies scores based on selected choice options, targeting a specific bucket
-         *     and optionally filtered by a condition.
-         */
-        ChoiceOptionMapScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "choice_option_map";
-            config: components["schemas"]["ChoiceOptionMapConfig"];
-        };
-        /**
-         * FieldNumericRangesConfig
-         * @description Configuration for field numeric ranges scoring strategy.
-         *
-         *     Defines numeric ranges and their corresponding scores for evaluating numeric
-         *     field answers.
-         */
-        FieldNumericRangesConfig: {
-            /** Ranges */
-            ranges: components["schemas"]["NumericRangeScoreIn"][];
-        };
-        /**
-         * FieldNumericRangesScoringSchemaIn
-         * @description Request schema for field numeric ranges scoring rule.
-         *
-         *     Scores numeric responses based on which range interval they fall into,
-         *     targeting a specific bucket and optionally filtered by a condition.
-         */
-        FieldNumericRangesScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "field_numeric_ranges";
-            config: components["schemas"]["FieldNumericRangesConfig"];
-        };
-        /**
-         * MatchingAnswerKeyConfig
-         * @description Configuration for matching answer key scoring strategy.
-         *
-         *     Defines correct answer pairs and scoring rules: points awarded for correct
-         *     matches, penalties for incorrect ones, and an optional score ceiling.
-         */
-        MatchingAnswerKeyConfig: {
-            /** Correct Pairs */
-            correct_pairs: components["schemas"]["MatchingPairIn"][];
-            /**
-             * Points Per Correct
-             * @default 1
-             */
-            points_per_correct: number;
-            /**
-             * Penalty Per Incorrect
-             * @default 0
-             */
-            penalty_per_incorrect: number;
-            /**
-             * Max Score
-             * @default null
-             */
-            max_score: number | null;
-        };
-        /**
-         * MatchingAnswerKeyScoringSchemaIn
-         * @description Request schema for matching answer key scoring rule.
-         *
-         *     Evaluates matching answers against correct pairs, scoring based on accuracy.
-         *     Targets a specific bucket and optionally filtered by a condition.
-         */
-        MatchingAnswerKeyScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "matching_answer_key";
-            config: components["schemas"]["MatchingAnswerKeyConfig"];
-        };
-        /**
-         * NumericRangeScoreIn
-         * @description Request model for a numeric range with associated score.
-         *
-         *     Validates that max is greater than or equal to min.
-         */
-        NumericRangeScoreIn: {
-            /** Min */
-            min: number;
-            /** Max */
-            max: number;
-            /** Score */
-            score: number;
-        };
-        /**
-         * RatingDirectConfig
-         * @description Configuration for direct rating scoring strategy.
-         *
-         *     Multiplies the raw rating value by the specified multiplier.
-         */
-        RatingDirectConfig: {
-            /**
-             * Multiplier
-             * @default 1
-             */
-            multiplier: number;
-        };
-        /**
-         * RatingDirectScoringSchemaIn
-         * @description Request schema for direct rating scoring rule.
-         *
-         *     Directly scores a rating response by multiplying by a factor, targeting a
-         *     specific bucket and optionally filtered by a condition.
-         */
-        RatingDirectScoringSchemaIn: {
-            /** Target */
-            target: string;
-            /** Bucket */
-            bucket: string;
-            /**
-             * Condition
-             * @default null
-             */
-            condition: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            strategy: "rating_direct";
-            config: components["schemas"]["RatingDirectConfig"];
-        };
-        /**
-         * CreateScoringRuleRequest
-         * @description Validates requests that create a new scoring rule schema entry.
-         */
-        CreateScoringRuleRequest: {
-            /** Scoring Key */
-            scoring_key: string;
-            /** Scoring Schema */
-            scoring_schema: components["schemas"]["ChoiceOptionMapScoringSchemaIn"] | components["schemas"]["MatchingAnswerKeyScoringSchemaIn"] | components["schemas"]["RatingDirectScoringSchemaIn"] | components["schemas"]["FieldNumericRangesScoringSchemaIn"];
-        };
-        /**
-         * UpdateScoringRuleRequest
-         * @description Validates requests that partially update a scoring rule schema entry.
-         */
-        UpdateScoringRuleRequest: {
-            /**
-             * Scoring Key
-             * @default null
-             */
-            scoring_key: string | null;
-            /**
-             * Scoring Schema
-             * @default null
-             */
-            scoring_schema: (components["schemas"]["ChoiceOptionMapScoringSchemaIn"] | components["schemas"]["MatchingAnswerKeyScoringSchemaIn"] | components["schemas"]["RatingDirectScoringSchemaIn"] | components["schemas"]["FieldNumericRangesScoringSchemaIn"]) | null;
+        AIImportResponse: {
+            definition: components["schemas"]["SurveyContent"];
         };
     };
     responses: {
@@ -3662,8 +3075,32 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        MethodNotAllowedError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
         /** @description Conflict with the current resource state. */
         ConflictError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        RequestEntityTooLargeError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        UnsupportedMediaTypeError: {
             headers: {
                 [name: string]: unknown;
             };
@@ -3698,123 +3135,222 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Upstream service failed to provide a usable response. */
+        BadGatewayError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Service unavailable. */
+        ServiceUnavailableError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: never;
     requestBodies: never;
     headers: never;
     pathItems: never;
 }
+export type ErrorCode = components['schemas']['ErrorCode'];
+export type ErrorDetails = components['schemas']['ErrorDetails'];
+export type ErrorMessage = components['schemas']['ErrorMessage'];
+export type ErrorPayload = components['schemas']['ErrorPayload'];
 export type ErrorResponse = components['schemas']['ErrorResponse'];
+export type IdentityToken = components['schemas']['IdentityToken'];
 export type BootstrapUserRequest = components['schemas']['BootstrapUserRequest'];
+export type Auth0UserId = components['schemas']['Auth0UserId'];
 export type CurrentUserResponses = components['schemas']['CurrentUserResponses'];
+export type EmailAddress = components['schemas']['EmailAddress'];
+export type ProfileName = components['schemas']['ProfileName'];
+export type ProjectId = components['schemas']['ProjectId'];
+export type ProjectName = components['schemas']['ProjectName'];
 export type ProjectResponses = components['schemas']['ProjectResponses'];
+export type Slug = components['schemas']['Slug'];
+export type Timestamp = components['schemas']['Timestamp'];
+export type UserId = components['schemas']['UserId'];
 export type BootstrapUserResponses = components['schemas']['BootstrapUserResponses'];
+export type InvitationMessage = components['schemas']['InvitationMessage'];
+export type ProjectInvitationId = components['schemas']['ProjectInvitationId'];
 export type ProjectInvitationResponses = components['schemas']['ProjectInvitationResponses'];
+export type ProjectRoleId = components['schemas']['ProjectRoleId'];
+export type Text = components['schemas']['Text'];
 export type MemberUserResponses = components['schemas']['MemberUserResponses'];
+export type ProjectMembershipId = components['schemas']['ProjectMembershipId'];
 export type ProjectMemberResponses = components['schemas']['ProjectMemberResponses'];
 export type PublicInvitationResolveResponse = components['schemas']['PublicInvitationResolveResponse'];
 export type CurrentUserProfileResponses = components['schemas']['CurrentUserProfileResponses'];
+export type ProfilePictureUrl = components['schemas']['ProfilePictureUrl'];
 export type UpdateProfileRequest = components['schemas']['UpdateProfileRequest'];
 export type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
+export type Username = components['schemas']['Username'];
 export type ChangeUsernameRequest = components['schemas']['ChangeUsernameRequest'];
+export type Url = components['schemas']['Url'];
 export type PasswordChangeTicketResponses = components['schemas']['PasswordChangeTicketResponses'];
 export type EmailVerificationCheckResponses = components['schemas']['EmailVerificationCheckResponses'];
+export type SurveyAccessToken = components['schemas']['SurveyAccessToken'];
 export type ResolveSurveyAccessLinkTokenRequest = components['schemas']['ResolveSurveyAccessLinkTokenRequest'];
+export type AllCondition = components['schemas']['AllCondition'];
+export type AlwaysVisible = components['schemas']['AlwaysVisible'];
+export type AnswerInteger = components['schemas']['AnswerInteger'];
+export type AnswerLength = components['schemas']['AnswerLength'];
+export type AnswerNumber = components['schemas']['AnswerNumber'];
+export type AnsweredCondition = components['schemas']['AnsweredCondition'];
+export type AnyCondition = components['schemas']['AnyCondition'];
+export type BooleanAnswerSpec = components['schemas']['BooleanAnswerSpec'];
+export type BooleanInteraction = components['schemas']['BooleanInteraction'];
+export type CalendarDate = components['schemas']['CalendarDate'];
+export type ChoiceAnswerSpec = components['schemas']['ChoiceAnswerSpec'];
+export type ChoiceOption = components['schemas']['ChoiceOption'];
+export type ChoiceOptionLabel = components['schemas']['ChoiceOptionLabel'];
+export type ChoiceOptionUuid = components['schemas']['ChoiceOptionUuid'];
+export type ChoiceSetAnswerSpec = components['schemas']['ChoiceSetAnswerSpec'];
+export type ConditionListUnionAnnotatedUnionValueComparisonOrderedComparisonContainsComparisonAnsweredConditionFieldInfoAnnotationNoneTypeRequiredTrueTitleComparisonConditionDiscriminatorOperatorAllConditionAnyConditionNotCondition = components['schemas']['ConditionList_Union_Annotated_Union_ValueComparison__OrderedComparison__ContainsComparison__AnsweredCondition___FieldInfo_annotation_NoneType__required_True__title__ComparisonCondition___discriminator__operator_____AllCondition__AnyCondition__NotCondition__'];
+export type ConditionNumber = components['schemas']['ConditionNumber'];
+export type ConditionScalar = components['schemas']['ConditionScalar'];
+export type ConditionText = components['schemas']['ConditionText'];
+export type ConditionalVisibility = components['schemas']['ConditionalVisibility'];
+export type ContainsComparison = components['schemas']['ContainsComparison'];
+export type ContentText = components['schemas']['ContentText'];
+export type DateAnswerBounds = components['schemas']['DateAnswerBounds'];
+export type DateAnswerSpec = components['schemas']['DateAnswerSpec'];
+export type DateInteraction = components['schemas']['DateInteraction'];
+export type DividerBlock = components['schemas']['DividerBlock'];
+export type DocumentRevision = components['schemas']['DocumentRevision'];
+export type FieldBehaviour = components['schemas']['FieldBehaviour'];
+export type FieldPrompt = components['schemas']['FieldPrompt'];
+export type HeadingBlock = components['schemas']['HeadingBlock'];
+export type HeadingContent = components['schemas']['HeadingContent'];
+export type HeadingLevel = components['schemas']['HeadingLevel'];
+export type InputAffix = components['schemas']['InputAffix'];
+export type InputBlock = components['schemas']['InputBlock'];
+export type InputPlaceholder = components['schemas']['InputPlaceholder'];
+export type LimitedListChoiceOption = components['schemas']['LimitedList_ChoiceOption_'];
+export type LimitedListSurveySection = components['schemas']['LimitedList_SurveySection_'];
+export type LimitedListWorkflowRule = components['schemas']['LimitedList_WorkflowRule_'];
+export type LongString = components['schemas']['LongString'];
+export type MatchingAnswerSpec = components['schemas']['MatchingAnswerSpec'];
+export type MultipleChoiceInteraction = components['schemas']['MultipleChoiceInteraction'];
+export type NotCondition = components['schemas']['NotCondition'];
+export type NoticeBlock = components['schemas']['NoticeBlock'];
+export type NoticeContent = components['schemas']['NoticeContent'];
+export type NoticeTitle = components['schemas']['NoticeTitle'];
+export type NumberInteraction = components['schemas']['NumberInteraction'];
+export type NumericAnswerBounds = components['schemas']['NumericAnswerBounds'];
+export type NumericAnswerSpec = components['schemas']['NumericAnswerSpec'];
+export type OrderedComparison = components['schemas']['OrderedComparison'];
+export type OrderedConditionValue = components['schemas']['OrderedConditionValue'];
+export type OutcomeId = components['schemas']['OutcomeId'];
+export type ParagraphBlock = components['schemas']['ParagraphBlock'];
+export type ParticipantId = components['schemas']['ParticipantId'];
+export type RatingInteraction = components['schemas']['RatingInteraction'];
+export type ReadableId = components['schemas']['ReadableId'];
+export type ResponseStoreId = components['schemas']['ResponseStoreId'];
+export type SectionTitle = components['schemas']['SectionTitle'];
+export type SelectionAnswerBounds = components['schemas']['SelectionAnswerBounds'];
+export type SingleChoiceInteraction = components['schemas']['SingleChoiceInteraction'];
+export type StringAnswerSpec = components['schemas']['StringAnswerSpec'];
+export type SurveyAccessLinkName = components['schemas']['SurveyAccessLinkName'];
 export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
+export type SurveyBlocksAnnotatedUnionHeadingBlockParagraphBlockNoticeBlockDividerBlockInputBlockFieldInfoAnnotationNoneTypeRequiredTrueTitleSurveyBlockDiscriminatorType = components['schemas']['SurveyBlocks_Annotated_Union_HeadingBlock__ParagraphBlock__NoticeBlock__DividerBlock__InputBlock___FieldInfo_annotation_NoneType__required_True__title__SurveyBlock___discriminator__type____'];
+export type SurveyDefinition = components['schemas']['SurveyDefinition'];
+export type SurveyDocument = components['schemas']['SurveyDocument'];
+export type SurveyField = components['schemas']['SurveyField'];
+export type SurveyFieldUuid = components['schemas']['SurveyFieldUuid'];
+export type SurveyId = components['schemas']['SurveyId'];
+export type SurveyLinkId = components['schemas']['SurveyLinkId'];
 export type SurveyResponses = components['schemas']['SurveyResponses'];
+export type SurveySection = components['schemas']['SurveySection'];
+export type SurveyTitle = components['schemas']['SurveyTitle'];
+export type SurveyVersionId = components['schemas']['SurveyVersionId'];
+export type SurveyVersionNumber = components['schemas']['SurveyVersionNumber'];
 export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
+export type SurveyWorkflow = components['schemas']['SurveyWorkflow'];
+export type TextAnswerBounds = components['schemas']['TextAnswerBounds'];
+export type TextContent = components['schemas']['TextContent'];
+export type TextInteraction = components['schemas']['TextInteraction'];
+export type ValueComparison = components['schemas']['ValueComparison'];
+export type WorkflowRule = components['schemas']['WorkflowRule'];
 export type ResolveSurveyAccessLinkResponse = components['schemas']['ResolveSurveyAccessLinkResponse'];
+export type PageNumber = components['schemas']['PageNumber'];
+export type PageSize = components['schemas']['PageSize'];
+export type ListPublicSurveysRequest = components['schemas']['ListPublicSurveysRequest'];
+export type Count = components['schemas']['Count'];
+export type PageItemsSurveyResponses = components['schemas']['PageItems_SurveyResponses_'];
 export type PaginatedPublicSurveysResponses = components['schemas']['PaginatedPublicSurveysResponses'];
 export type PublicSurveyResponses = components['schemas']['PublicSurveyResponses'];
-export type LinkTokenAccess = components['schemas']['LinkTokenAccess'];
-export type PublicSlugAccess = components['schemas']['PublicSlugAccess'];
+export type LinkTokenAccessNestedModel = components['schemas']['LinkTokenAccessNestedModel'];
+export type PublicSlugAccessNestedModel = components['schemas']['PublicSlugAccessNestedModel'];
 export type StartSubmissionSessionRequest = components['schemas']['StartSubmissionSessionRequest'];
+export type SubjectCode = components['schemas']['SubjectCode'];
 export type StartSubmissionSessionResponse = components['schemas']['StartSubmissionSessionResponse'];
 export type ResumeSubmissionSessionResponse = components['schemas']['ResumeSubmissionSessionResponse'];
-export type ChoiceAnswerValue = components['schemas']['ChoiceAnswerValue'];
-export type DateFieldAnswerValue = components['schemas']['DateFieldAnswerValue'];
-export type EmailFieldAnswerValue = components['schemas']['EmailFieldAnswerValue'];
-export type EmojiRatingAnswerValue = components['schemas']['EmojiRatingAnswerValue'];
-export type LongTextFieldAnswerValue = components['schemas']['LongTextFieldAnswerValue'];
-export type MatchingAnswerPair = components['schemas']['MatchingAnswerPair'];
-export type MatchingAnswerValue = components['schemas']['MatchingAnswerValue'];
-export type NumberFieldAnswerValue = components['schemas']['NumberFieldAnswerValue'];
-export type PhoneFieldAnswerValue = components['schemas']['PhoneFieldAnswerValue'];
-export type ShortTextFieldAnswerValue = components['schemas']['ShortTextFieldAnswerValue'];
-export type SliderRatingAnswerValue = components['schemas']['SliderRatingAnswerValue'];
-export type StarsRatingAnswerValue = components['schemas']['StarsRatingAnswerValue'];
+export type AnsweredSubmissionRequest = components['schemas']['AnsweredSubmissionRequest'];
+export type ClearedSubmissionRequest = components['schemas']['ClearedSubmissionRequest'];
+export type ClientMutationId = components['schemas']['ClientMutationId'];
+export type LimitedListChoiceOptionUuid = components['schemas']['LimitedList_ChoiceOptionUuid_'];
+export type LimitedListMatchingPair = components['schemas']['LimitedList_MatchingPair_'];
+export type MatchingMatchUuid = components['schemas']['MatchingMatchUuid'];
+export type MatchingPair = components['schemas']['MatchingPair'];
+export type MatchingPromptUuid = components['schemas']['MatchingPromptUuid'];
+export type MatchingValue = components['schemas']['MatchingValue'];
 export type SaveSubmissionSessionAnswerRequest = components['schemas']['SaveSubmissionSessionAnswerRequest'];
+export type SavedAnsweredResponse = components['schemas']['SavedAnsweredResponse'];
+export type SavedClearedResponse = components['schemas']['SavedClearedResponse'];
 export type SubmissionSessionAnswerResponse = components['schemas']['SubmissionSessionAnswerResponse'];
 export type SubmissionSessionEventRequest = components['schemas']['SubmissionSessionEventRequest'];
 export type CompleteSubmissionSessionResponse = components['schemas']['CompleteSubmissionSessionResponse'];
 export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
 export type UpdateMemberRequest = components['schemas']['UpdateMemberRequest'];
+export type SearchText = components['schemas']['SearchText'];
+export type ListProjectParticipantsRequest = components['schemas']['ListProjectParticipantsRequest'];
+export type PageItemsParticipantResponses = components['schemas']['PageItems_ParticipantResponses_'];
 export type ParticipantResponses = components['schemas']['ParticipantResponses'];
+export type SubjectId = components['schemas']['SubjectId'];
 export type ListParticipantsResponses = components['schemas']['ListParticipantsResponses'];
 export type CreateParticipantRequest = components['schemas']['CreateParticipantRequest'];
 export type UpdateParticipantRequest = components['schemas']['UpdateParticipantRequest'];
+export type ProjectPermissionSet = components['schemas']['ProjectPermissionSet'];
 export type ProjectRoleResponses = components['schemas']['ProjectRoleResponses'];
+export type RoleDescription = components['schemas']['RoleDescription'];
+export type RoleName = components['schemas']['RoleName'];
 export type CreateProjectRoleRequest = components['schemas']['CreateProjectRoleRequest'];
 export type UpdateProjectRoleRequest = components['schemas']['UpdateProjectRoleRequest'];
 export type CreateProjectRequest = components['schemas']['CreateProjectRequest'];
 export type MyProjectPermissionsResponses = components['schemas']['MyProjectPermissionsResponses'];
 export type UpdateProjectRequest = components['schemas']['UpdateProjectRequest'];
+export type ListProjectSubjectsRequest = components['schemas']['ListProjectSubjectsRequest'];
+export type PageItemsSubjectResponse = components['schemas']['PageItems_SubjectResponse_'];
 export type SubjectResponse = components['schemas']['SubjectResponse'];
 export type ListSubjectsResponse = components['schemas']['ListSubjectsResponse'];
+export type SubjectIdentityId = components['schemas']['SubjectIdentityId'];
 export type SubjectIdentityResponse = components['schemas']['SubjectIdentityResponse'];
 export type SubjectDetailResponse = components['schemas']['SubjectDetailResponse'];
 export type UpdateSubjectRequest = components['schemas']['UpdateSubjectRequest'];
 export type ListSurveyAccessLinksResponse = components['schemas']['ListSurveyAccessLinksResponse'];
+export type FutureExpiry = components['schemas']['FutureExpiry'];
 export type CreateSurveyAccessLinkRequest = components['schemas']['CreateSurveyAccessLinkRequest'];
 export type CreateSurveyAccessLinkResponse = components['schemas']['CreateSurveyAccessLinkResponse'];
 export type UpdateSurveyAccessLinkRequest = components['schemas']['UpdateSurveyAccessLinkRequest'];
 export type SendSurveyLinkEmailResponse = components['schemas']['SendSurveyLinkEmailResponse'];
-export type AiImportRequest = components['schemas']['AIImportRequest'];
-export type ChoiceDefinitionIn = components['schemas']['ChoiceDefinitionIn'];
-export type ChoiceOptionIn = components['schemas']['ChoiceOptionIn'];
-export type ChoiceQuestionSchemaIn = components['schemas']['ChoiceQuestionSchemaIn'];
-export type CreateQuestionNodeRequest = components['schemas']['CreateQuestionNodeRequest'];
-export type FieldDefinitionIn = components['schemas']['FieldDefinitionIn'];
-export type FieldQuestionSchemaIn = components['schemas']['FieldQuestionSchemaIn'];
-export type FieldUiIn = components['schemas']['FieldUIIn'];
-export type MatchingDefinitionIn = components['schemas']['MatchingDefinitionIn'];
-export type MatchingItemIn = components['schemas']['MatchingItemIn'];
-export type MatchingQuestionSchemaIn = components['schemas']['MatchingQuestionSchemaIn'];
-export type RatingEmojiDefinitionIn = components['schemas']['RatingEmojiDefinitionIn'];
-export type RatingQuestionSchemaIn = components['schemas']['RatingQuestionSchemaIn'];
-export type RatingRangeIn = components['schemas']['RatingRangeIn'];
-export type RatingSliderDefinitionIn = components['schemas']['RatingSliderDefinitionIn'];
-export type RatingStarDefinitionIn = components['schemas']['RatingStarDefinitionIn'];
-export type RatingUiIn = components['schemas']['RatingUIIn'];
-export type AiImportResponse = components['schemas']['AIImportResponse'];
-export type ChoiceConditionIn = components['schemas']['ChoiceConditionIn'];
-export type ChoiceRequirementsIn = components['schemas']['ChoiceRequirementsIn'];
-export type DateFieldRequirementsIn = components['schemas']['DateFieldRequirementsIn'];
-export type EndAndDiscardActionIn = components['schemas']['EndAndDiscardActionIn'];
-export type EndAndSubmitActionIn = components['schemas']['EndAndSubmitActionIn'];
-export type FieldConditionIn = components['schemas']['FieldConditionIn'];
-export type MatchingConditionIn = components['schemas']['MatchingConditionIn'];
-export type MatchingPairIn = components['schemas']['MatchingPairIn'];
-export type MatchingRequirementsIn = components['schemas']['MatchingRequirementsIn'];
-export type NumberFieldRequirementsIn = components['schemas']['NumberFieldRequirementsIn'];
-export type QuestionNodeResponse = components['schemas']['QuestionNodeResponse'];
-export type RatingConditionIn = components['schemas']['RatingConditionIn'];
-export type RatingRequirementsIn = components['schemas']['RatingRequirementsIn'];
-export type RuleBranchIn = components['schemas']['RuleBranchIn'];
-export type RuleIfIn = components['schemas']['RuleIfIn'];
-export type RuleNodeResponse = components['schemas']['RuleNodeResponse'];
-export type RuleSchemaIn = components['schemas']['RuleSchemaIn'];
-export type RuleSetItemIn = components['schemas']['RuleSetItemIn'];
-export type SkipToActionIn = components['schemas']['SkipToActionIn'];
-export type NodeResponses = components['schemas']['NodeResponses'];
-export type CreateRuleNodeRequest = components['schemas']['CreateRuleNodeRequest'];
-export type CreateNodeRequest = components['schemas']['CreateNodeRequest'];
-export type UpdateNodeRequest = components['schemas']['UpdateNodeRequest'];
 export type SurveyMemberResponses = components['schemas']['SurveyMemberResponses'];
-export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
 export type SurveyMemberRoleResponses = components['schemas']['SurveyMemberRoleResponses'];
+export type SurveyPermissionSet = components['schemas']['SurveyPermissionSet'];
+export type SurveyRoleId = components['schemas']['SurveyRoleId'];
+export type SurveyRoleResponses = components['schemas']['SurveyRoleResponses'];
 export type AssignSurveyMemberRoleRequest = components['schemas']['AssignSurveyMemberRoleRequest'];
 export type UpdateSurveyMemberRoleRequest = components['schemas']['UpdateSurveyMemberRoleRequest'];
+export type ListSubjectsRequest = components['schemas']['ListSubjectsRequest'];
+export type AnswerListSurveyAnswerSlotResponses = components['schemas']['AnswerList_SurveyAnswerSlotResponses_'];
+export type PageItemsSurveySubjectTreeResponses = components['schemas']['PageItems_SurveySubjectTreeResponses_'];
+export type SubmissionSessionId = components['schemas']['SubmissionSessionId'];
 export type SurveyAnswerSlotResponses = components['schemas']['SurveyAnswerSlotResponses'];
 export type SurveySessionEventResponses = components['schemas']['SurveySessionEventResponses'];
 export type SurveySessionResponses = components['schemas']['SurveySessionResponses'];
@@ -3822,32 +3358,33 @@ export type SurveySessionTreeResponses = components['schemas']['SurveySessionTre
 export type SurveySubjectResponses = components['schemas']['SurveySubjectResponses'];
 export type SurveySubjectTreeResponses = components['schemas']['SurveySubjectTreeResponses'];
 export type PaginatedSurveySubjectTreesResponses = components['schemas']['PaginatedSurveySubjectTreesResponses'];
+export type GetSubjectTreeRequest = components['schemas']['GetSubjectTreeRequest'];
+export type SessionIdList = components['schemas']['SessionIdList'];
 export type ExportSurveyResultsRequest = components['schemas']['ExportSurveyResultsRequest'];
 export type CreateSurveyRoleRequest = components['schemas']['CreateSurveyRoleRequest'];
 export type UpdateSurveyRoleRequest = components['schemas']['UpdateSurveyRoleRequest'];
+export type NonPublicSurveyCreateRequest = components['schemas']['NonPublicSurveyCreateRequest'];
+export type PublicSurveyCreateRequest = components['schemas']['PublicSurveyCreateRequest'];
 export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
 export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
 export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
-export type ScoringRuleResponses = components['schemas']['ScoringRuleResponses'];
-export type ChoiceOptionMapConfig = components['schemas']['ChoiceOptionMapConfig'];
-export type ChoiceOptionMapScoringSchemaIn = components['schemas']['ChoiceOptionMapScoringSchemaIn'];
-export type FieldNumericRangesConfig = components['schemas']['FieldNumericRangesConfig'];
-export type FieldNumericRangesScoringSchemaIn = components['schemas']['FieldNumericRangesScoringSchemaIn'];
-export type MatchingAnswerKeyConfig = components['schemas']['MatchingAnswerKeyConfig'];
-export type MatchingAnswerKeyScoringSchemaIn = components['schemas']['MatchingAnswerKeyScoringSchemaIn'];
-export type NumericRangeScoreIn = components['schemas']['NumericRangeScoreIn'];
-export type RatingDirectConfig = components['schemas']['RatingDirectConfig'];
-export type RatingDirectScoringSchemaIn = components['schemas']['RatingDirectScoringSchemaIn'];
-export type CreateScoringRuleRequest = components['schemas']['CreateScoringRuleRequest'];
-export type UpdateScoringRuleRequest = components['schemas']['UpdateScoringRuleRequest'];
+export type AiImportPrompt = components['schemas']['AIImportPrompt'];
+export type AiImportRequest = components['schemas']['AIImportRequest'];
+export type SurveyContent = components['schemas']['SurveyContent'];
+export type AiImportResponse = components['schemas']['AIImportResponse'];
 export type ResponseBadRequestError = components['responses']['BadRequestError'];
 export type ResponseUnauthorizedError = components['responses']['UnauthorizedError'];
 export type ResponseForbiddenError = components['responses']['ForbiddenError'];
 export type ResponseNotFoundError = components['responses']['NotFoundError'];
+export type ResponseMethodNotAllowedError = components['responses']['MethodNotAllowedError'];
 export type ResponseConflictError = components['responses']['ConflictError'];
+export type ResponseRequestEntityTooLargeError = components['responses']['RequestEntityTooLargeError'];
+export type ResponseUnsupportedMediaTypeError = components['responses']['UnsupportedMediaTypeError'];
 export type ResponseValidationError = components['responses']['ValidationError'];
 export type ResponseRateLimitError = components['responses']['RateLimitError'];
 export type ResponseInternalServerError = components['responses']['InternalServerError'];
+export type ResponseBadGatewayError = components['responses']['BadGatewayError'];
+export type ResponseServiceUnavailableError = components['responses']['ServiceUnavailableError'];
 export type $defs = Record<string, never>;
 export interface operations {
     bootstrapUser: {
@@ -3876,7 +3413,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -3904,7 +3444,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -3934,7 +3477,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -3962,7 +3508,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -3992,7 +3541,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4022,7 +3574,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4050,7 +3605,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4082,7 +3640,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4112,7 +3673,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4142,7 +3706,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4170,7 +3737,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4196,7 +3766,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4222,7 +3795,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4250,7 +3826,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4276,7 +3855,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4308,7 +3890,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4340,7 +3925,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4349,8 +3937,8 @@ export interface operations {
     listPublicSurveys: {
         parameters: {
             query?: {
-                page?: number;
-                page_size?: number;
+                page?: components["schemas"]["PageNumber"];
+                page_size?: components["schemas"]["PageSize"];
             };
             header?: never;
             path?: never;
@@ -4371,7 +3959,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4401,7 +3992,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4433,7 +4027,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4465,7 +4062,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4476,7 +4076,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                question_node_id: string;
+                field_uuid: string;
             };
             cookie?: never;
         };
@@ -4499,7 +4099,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4529,7 +4132,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4557,7 +4163,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4587,7 +4196,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4621,7 +4233,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4650,7 +4265,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4680,7 +4298,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4709,7 +4330,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4744,7 +4368,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4753,9 +4380,9 @@ export interface operations {
     listParticipants: {
         parameters: {
             query?: {
-                search?: string | null;
-                page?: number;
-                page_size?: number;
+                search?: components["schemas"]["SearchText"] | null;
+                page?: components["schemas"]["PageNumber"];
+                page_size?: components["schemas"]["PageSize"];
             };
             header?: never;
             path: {
@@ -4778,7 +4405,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4812,7 +4442,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4841,7 +4474,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4876,7 +4512,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4906,7 +4545,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4940,7 +4582,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -4969,7 +4614,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5004,7 +4652,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5032,7 +4683,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5064,7 +4718,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5094,7 +4751,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5122,7 +4782,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5156,7 +4819,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5186,7 +4852,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5197,9 +4866,9 @@ export interface operations {
             query?: {
                 canonical_status?: "canonical" | "alias" | "all";
                 is_participant?: boolean | null;
-                search?: string | null;
-                page?: number;
-                page_size?: number;
+                search?: components["schemas"]["SearchText"] | null;
+                page?: components["schemas"]["PageNumber"];
+                page_size?: components["schemas"]["PageSize"];
             };
             header?: never;
             path: {
@@ -5222,7 +4891,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5253,7 +4925,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5288,7 +4963,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5319,7 +4997,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5354,7 +5035,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5384,7 +5068,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5420,7 +5107,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5452,212 +5142,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    generateAiImport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AIImportRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AIImportResponse"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listNodes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateNodeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    getNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateNode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateNodeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5688,7 +5176,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5723,7 +5214,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5753,7 +5247,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5789,7 +5286,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5798,8 +5298,8 @@ export interface operations {
     listSurveyResultSubjects: {
         parameters: {
             query?: {
-                page?: number;
-                page_size?: number;
+                page?: components["schemas"]["PageNumber"];
+                page_size?: components["schemas"]["PageSize"];
                 include_decrypted_answer_values?: boolean;
                 include_events?: boolean;
             };
@@ -5825,7 +5325,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5860,7 +5363,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5893,7 +5399,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5923,7 +5432,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5953,7 +5465,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -5987,7 +5502,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6016,7 +5534,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6051,7 +5572,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6081,7 +5605,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6115,7 +5642,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6146,7 +5676,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6175,7 +5708,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6210,7 +5746,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6241,143 +5780,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    listScoringRules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"][];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    createScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateScoringRuleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    deleteScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                scoring_rule_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No content. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
-            422: components["responses"]["ValidationError"];
-            429: components["responses"]["RateLimitError"];
-            500: components["responses"]["InternalServerError"];
-        };
-    };
-    updateScoringRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: number;
-                survey_id: number;
-                version_number: number;
-                scoring_rule_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateScoringRuleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoringRuleResponses"];
-                };
-            };
-            400: components["responses"]["BadRequestError"];
-            401: components["responses"]["UnauthorizedError"];
-            403: components["responses"]["ForbiddenError"];
-            404: components["responses"]["NotFoundError"];
-            409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6408,7 +5814,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6439,7 +5848,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6471,7 +5883,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6503,7 +5918,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6535,7 +5953,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6567,10 +5988,50 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
+        };
+    };
+    generateAiImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIImportResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
+            409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+            502: components["responses"]["BadGatewayError"];
+            503: components["responses"]["ServiceUnavailableError"];
         };
     };
     healthCheck: {
@@ -6593,7 +6054,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];
@@ -6619,7 +6083,10 @@ export interface operations {
             401: components["responses"]["UnauthorizedError"];
             403: components["responses"]["ForbiddenError"];
             404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
             409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["RateLimitError"];
             500: components["responses"]["InternalServerError"];

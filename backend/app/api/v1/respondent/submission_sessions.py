@@ -1,7 +1,5 @@
-from datetime import UTC, datetime
-from uuid import UUID
-
 from flask import request
+from pydantic import TypeAdapter
 
 from app.api.utils.submission_session_cookie import (
     get_recognition_token,
@@ -13,6 +11,7 @@ from app.api.utils.validation import parse
 from app.api.v1.respondent import respondent_bp, session_management_service, users_service
 from app.core.extensions import auth
 from app.db.context import get_core_db, get_response_db
+from app.domain.errors import AnswerSaveError
 from app.openapi import openapi_route
 from app.schema.api.requests.submission_sessions import (
     SaveSubmissionSessionAnswerRequest,
@@ -25,6 +24,7 @@ from app.schema.api.responses.submission_sessions import (
     StartSubmissionSessionResponse,
     SubmissionSessionAnswerResponse,
 )
+from app.schema.types import SurveyFieldUuid
 
 
 @openapi_route(
@@ -81,9 +81,11 @@ def resume_submission_session():
     tags=["Respondent Submission Sessions"],
     auth_required=False,
 )
-@respondent_bp.route("/submission-sessions/current/answers/<uuid:question_node_id>", methods=["PUT"])
-def save_submission_session_answer(question_node_id: UUID):
+@respondent_bp.route("/submission-sessions/current/answers/<uuid:field_uuid>", methods=["PUT"])
+def save_submission_session_answer(field_uuid: SurveyFieldUuid):
     payload = parse(SaveSubmissionSessionAnswerRequest, request)
+    if payload.field_uuid != field_uuid:
+        raise AnswerSaveError("field_uuid must match the answer URL.")
     core_db = get_core_db()
     response_db = get_response_db()
 
@@ -91,22 +93,15 @@ def save_submission_session_answer(question_node_id: UUID):
         core_db,
         response_db,
         raw_resume_token=get_submission_session_token(),
-        question_node_id=question_node_id,
-        answer_state=payload.state,
-        answer_value=payload.answer_value,
+        field_uuid=payload.field_uuid,
+        answer=payload,
         client_mutation_id=payload.client_mutation_id,
     )
 
-    response = SubmissionSessionAnswerResponse(
-        question_node_id=question_node_id,
-        node_key=result.node_key,
-        state=payload.state,
-        answer_family=payload.answer_family,
-        answer_value=payload.answer_value,
-        client_mutation_id=payload.client_mutation_id,
-        saved_at=datetime.now(UTC),
+    response = _SAVED_ANSWER.validate_python(
+        payload.model_dump() | {"field_uuid": result.field_uuid, "saved_at": result.saved_at}
     )
-    return response.model_dump(mode="json"), 200
+    return response.model_dump(mode="json", exclude_none=True), 200
 
 
 @openapi_route(
@@ -122,11 +117,11 @@ def record_submission_session_event():
     core_db = get_core_db()
     response_db = get_response_db()
 
-    session_management_service.record_question_viewed(
+    session_management_service.record_field_viewed(
         core_db,
         response_db,
         raw_resume_token=get_submission_session_token(),
-        question_node_id=payload.question_node_id,
+        field_uuid=payload.field_uuid,
     )
     return "", 204
 
@@ -149,3 +144,6 @@ def complete_submission_session():
     )
     response = CompleteSubmissionSessionResponse(status="completed", completed_at=result.completed_at)
     return response.model_dump(mode="json"), 200
+
+
+_SAVED_ANSWER = TypeAdapter(SubmissionSessionAnswerResponse)

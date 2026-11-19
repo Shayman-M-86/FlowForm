@@ -1,127 +1,83 @@
-"""OpenAI-backed survey draft generation and conversion."""
+"""OpenAI survey generation and Flask service setup."""
 
+import json
 import logging
-import math
-from uuid import uuid4
+from typing import cast
 
+from flask import Flask, current_app
 from openai import APIError, OpenAI
 from pydantic import ValidationError
 
-from app.core.config import OpenAISettings
-from app.core.errors import AppError
-from app.middleware.rate_limit.service import RateLimitConfig, RateLimitService
-from app.schema.api.requests.content.ai_import import AIImportResponse, GeneratedQuestion, GeneratedSurvey
-from app.schema.api.requests.content.node import CreateQuestionNodeRequest
+from app.core.config import Settings
+from app.domain.errors import SurveyGenerationFailedError, SurveyGenerationUnavailableError
+from app.schema.models.survey_document.document import SurveyContent
 
 logger = logging.getLogger(__name__)
 
+EXTENSION_KEY = "openai_service"
+
+# JSON mode accepts the canonical schema as instructions, including its
+# discriminated unions and optional fields. Pydantic validates the result.
+_GENERATION_INSTRUCTIONS = (
+    "Generate a concise, neutral FlowForm survey as a JSON object using the schema below. "
+    "Include at least one input block. Use unique readable IDs and distinct valid UUIDs "
+    "for fields and options. Match each interaction with its answerSpec. "
+    "Avoid collecting sensitive personal data unless explicitly requested.\n"
+    + json.dumps(SurveyContent.model_json_schema(), separators=(",", ":"))
+)
+
 
 class OpenAIService:
-    """Generate a survey preview without changing stored survey content."""
+    """Generate authored content for a survey preview."""
 
-    def __init__(self, settings: OpenAISettings) -> None:
-        self._limiter: RateLimitService | None = None
-        self._settings = settings
+    def __init__(self, client: OpenAI | None, *, model: str) -> None:
+        self._client = client
+        self._model = model
 
-    def generate(self, prompt: str, user_key: str) -> AIImportResponse:
-        """Call Structured Outputs and validate the resulting builder nodes."""
-        try:
-            api_key = self._settings.api_key
-        except ValueError as exc:
-            logger.error("OpenAI API key file is unavailable: %s", exc)
-            raise AppError(503, "ai_import_unavailable", "Survey generation is not configured") from exc
-        if api_key is None or not api_key.get_secret_value():
-            raise AppError(503, "ai_import_unavailable", "Survey generation is not configured")
-        self._check_rate_limit(user_key, self._settings)
+    def generate(self, prompt: str) -> SurveyContent:
+        """Generate and validate a complete draft."""
+        client = self._client
+        if client is None:
+            raise SurveyGenerationUnavailableError()
 
         try:
-            client = OpenAI(api_key=api_key.get_secret_value(), timeout=30.0, max_retries=1)
-            response = client.responses.parse(
-                model=self._settings.model,
-                instructions=(
-                    "Create a concise, neutral survey draft. Return 1 to 20 questions. "
-                    "Use text, single_choice, multiple_choice, or rating. "
-                    "Choice questions need 2 to 10 distinct options; other types need an empty options list. "
-                    "Keep labels short and avoid personal or sensitive data requests unless explicitly asked."
-                ),
-                input=prompt,
-                text_format=GeneratedSurvey,
-                max_output_tokens=4000,
-                store=False,
-            )
+            return self._request_draft(client, prompt)
         except (APIError, ValidationError) as exc:
-            logger.warning("OpenAI survey generation failed: %s", type(exc).__name__)
-            raise AppError(502, "ai_import_failed", "Survey generation failed") from exc
+            logger.warning("OpenAI survey generation failed (%s)", type(exc).__name__)
+            # Provider and validation errors can contain generated content.
+            raise SurveyGenerationFailedError() from None
 
-        generated = response.output_parsed
-        if generated is None:
-            raise AppError(502, "ai_import_failed", "Survey generation produced no draft")
-
-        try:
-            nodes = [self._to_node(question, index) for index, question in enumerate(generated.questions, start=1)]
-            return AIImportResponse.model_validate(
-                {"title": generated.title, "description": generated.description, "nodes": nodes}
-            )
-        except (ValidationError, ValueError) as exc:
-            logger.warning("OpenAI survey draft failed FlowForm validation: %s", type(exc).__name__)
-            raise AppError(502, "ai_import_invalid", "Generated survey does not meet builder rules") from exc
-
-    def _check_rate_limit(self, user_key: str, settings: OpenAISettings) -> None:
-        """Count every request that reaches OpenAI, including failed generations."""
-        if self._limiter is None:
-            self._limiter = RateLimitService(
-                RateLimitConfig(
-                    max_requests=settings.rate_limit_max_requests,
-                    window_seconds=settings.rate_limit_window_seconds,
-                )
-            )
-        decision = self._limiter.check(user_key)
-        if not decision.allowed:
-            minutes = math.ceil((decision.retry_after_seconds or 60) / 60)
-            raise AppError(
-                429,
-                "ai_import_rate_limited",
-                f"AI import limit reached. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
-            )
-
-    @staticmethod
-    def _to_node(question: GeneratedQuestion, index: int) -> CreateQuestionNodeRequest:
-        # Labels are trimmed and length-checked by the node schema; only rules it
-        # does not cover are enforced here. Stray options on non-choice types are ignored.
-        if question.type in {"single_choice", "multiple_choice"}:
-            options = [option.strip() for option in question.options]
-            if len(options) < 2 or len(set(options)) != len(options):
-                raise ValueError("choice questions need at least two distinct options")
-            content = {
-                "family": "choice",
-                "label": question.label,
-                "definition": {
-                    "min": 0,
-                    "max": 1 if question.type == "single_choice" else len(options),
-                    "options": [
-                        {"id": f"option_{number}", "label": option} for number, option in enumerate(options, 1)
-                    ],
-                },
-            }
-        elif question.type == "text":
-            content = {"family": "field", "label": question.label, "definition": {"field_type": "long_text"}}
-        else:
-            content = {
-                "family": "rating",
-                "label": question.label,
-                "definition": {
-                    "variant": "stars",
-                    "stars": 5,
-                    "ui": {"left_label": "Low", "right_label": "High"},
-                },
-            }
-        node_id = uuid4()
-        return CreateQuestionNodeRequest.model_validate(
-            {
-                "id": node_id,
-                "node_key": f"ai_question_{node_id.hex}",
-                "node_type": "question",
-                "sort_key": index,
-                "content": content,
-            }
+    def _request_draft(self, client: OpenAI, prompt: str) -> SurveyContent:
+        response = client.responses.create(
+            model=self._model,
+            instructions=_GENERATION_INSTRUCTIONS,
+            input=prompt,
+            text={"format": {"type": "json_object"}},
+            max_output_tokens=4000,
+            store=False,
         )
+        if response.status != "completed" or not (output := response.output_text):
+            logger.warning("OpenAI survey generation returned no complete draft (status=%s)", response.status)
+            raise SurveyGenerationFailedError()
+
+        return SurveyContent.model_validate_json(output)
+
+
+class OpenAIServiceManager:
+    """Initialize a shared generator for each Flask application."""
+
+    def init_app(self, app: Flask) -> None:
+        """Build the generator from the application's loaded settings."""
+        settings: Settings = app.extensions["settings"]
+        openai_settings = settings.flowform.openai
+
+        client = None
+        if openai_settings.api_key and (key := openai_settings.api_key.get_secret_value().strip()):
+            client = OpenAI(api_key=key, timeout=30.0, max_retries=1)
+
+        app.extensions[EXTENSION_KEY] = OpenAIService(client, model=openai_settings.model)
+
+
+def get_openai_service() -> OpenAIService:
+    """Return the generator registered on the current application."""
+    return cast(OpenAIService, current_app.extensions[EXTENSION_KEY])

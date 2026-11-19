@@ -16,7 +16,7 @@ import {
 } from '../../../../packages/builder/src/components/Utils/ai-import/surveyNodeImport'
 
 const { load } = createRequire(import.meta.url)('js-yaml') as {
-  load(source: string): { components: { schemas: Record<string, unknown> } }
+  load(source: string): Record<string, unknown>
 }
 
 function extractSchema(prompt: string): typeof surveyNodeImportJsonSchema {
@@ -24,10 +24,13 @@ function extractSchema(prompt: string): typeof surveyNodeImportJsonSchema {
 }
 
 describe('AI import prompt contract', () => {
-  it('includes the entire OpenAPI input contract with every reference resolvable', () => {
+  it('includes the local builder input contract with every reference resolvable', () => {
     const prompt = buildSurveyNodePrompt('All question types, including countries and states')
     const schema = extractSchema(prompt)
-    const spec = load(readFileSync(new URL('../../../../../backend/openapi.yaml', import.meta.url), 'utf8'))
+    const schemas = load(readFileSync(new URL(
+      '../../../../packages/schema/legacy-builder-schemas.yaml',
+      import.meta.url,
+    ), 'utf8'))
     const definitions: Record<string, unknown> = schema.$defs
     const refs = [...JSON.stringify(schema).matchAll(/#\/\$defs\/([A-Za-z0-9_-]+)/g)]
     expect(refs.length).toBeGreaterThan(0)
@@ -35,7 +38,7 @@ describe('AI import prompt contract', () => {
     // Preserve every constraint and optional/required field, not a handpicked subset.
     for (const [name, definition] of Object.entries(definitions)) {
       expect(definition).toEqual(JSON.parse(
-        JSON.stringify(spec.components.schemas[name]).replaceAll('#/components/schemas/', '#/$defs/'),
+        JSON.stringify(schemas[name]).replaceAll('#/components/schemas/', '#/$defs/'),
       ))
     }
     expect(schema.$defs.RatingSliderDefinitionIn.required).toContain('range')

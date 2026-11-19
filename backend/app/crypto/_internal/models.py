@@ -5,26 +5,22 @@ from __future__ import annotations
 import base64
 import binascii
 from typing import Annotated, Any
-from uuid import UUID
 
 from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
     Field,
-    JsonValue,
     SecretStr,
-    field_validator,
 )
 
-from app.schema.enums import SubmissionAnswerState
+from app.schema.models.survey_document.answers import AnsweredAnswer, ClearedAnswer
+from app.schema.types import SurveyFieldUuid
 
 MIN_LINKAGE_SECRET_BYTES = 32
-PLAINTEXT_PAYLOAD_VERSION = 1
+PLAINTEXT_PAYLOAD_VERSION = 2
 SESSION_DEK_BYTES = 32
 SESSION_DEK_WRAP_NONCE_BYTES = 12
-
-PlaintextAnswerValue = JsonValue
 
 PositiveVersion = Annotated[int, Field(ge=1)]
 NonEmptyStr = Annotated[str, Field(min_length=1)]
@@ -109,14 +105,6 @@ class EncryptedAnswerPayload(CryptoValueModel):
     nonce: bytes
 
 
-class DecryptedAnswerPayload(CryptoValueModel):
-    """Parsed plaintext recovered from one encrypted answer payload."""
-
-    question_node_id: UUID
-    answer_state: SubmissionAnswerState
-    answer_value: PlaintextAnswerValue
-
-
 class SecretValue(AliasedCryptoValueModel):
     """A secret string and its AWS-assigned version identifier."""
 
@@ -144,33 +132,22 @@ class LinkageSecretPayload(AliasedCryptoValueModel):
 
 
 class _PlaintextPayloadBase(AliasedCryptoValueModel):
-    """Shared plaintext answer payload metadata."""
+    """Versioned field identity alongside the shared V2 answer data."""
 
-    payload_version: PositiveVersion = Field(
-        validation_alias="v",
-        serialization_alias="v",
-    )
-    question_node_id: UUID
-    answer_state: SubmissionAnswerState
+    payload_version: PositiveVersion = Field(validation_alias="v", serialization_alias="v")
+    field_uuid: SurveyFieldUuid
 
 
-class PlaintextPayload(_PlaintextPayloadBase):
-    """Canonical JSON-safe plaintext answer payload before encryption."""
-
-    answer_value: PlaintextAnswerValue
+class AnsweredPlaintextPayload(AnsweredAnswer, _PlaintextPayloadBase):
+    """An encrypted answered value retains its complete specification."""
 
 
-class PlaintextPayloadInput(_PlaintextPayloadBase):
-    """Input shape that accepts app/API answer models before encryption."""
+class ClearedPlaintextPayload(ClearedAnswer, _PlaintextPayloadBase):
+    """An encrypted cleared state has no answer value."""
 
-    answer_value: PlaintextAnswerValue | BaseModel
 
-    @field_validator("answer_value", mode="before")
-    @classmethod
-    def _normalise_answer_value(cls, value: Any) -> Any:
-        if isinstance(value, BaseModel):
-            return value.model_dump(mode="json")
-        return value
-
-    def to_plaintext_payload(self) -> PlaintextPayload:
-        return PlaintextPayload.model_validate(self.model_dump(mode="json"))
+type PlaintextPayload = Annotated[
+    AnsweredPlaintextPayload | ClearedPlaintextPayload,
+    Field(discriminator="state"),
+]
+type DecryptedAnswerPayload = PlaintextPayload

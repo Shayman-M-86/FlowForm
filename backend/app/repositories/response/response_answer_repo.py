@@ -42,7 +42,8 @@ def upsert_current(
         )
         .returning(ResponseAnswer)
     )
-    return db.scalars(stmt).one()
+    # Refresh an already-loaded answer when ON CONFLICT returns its replacement.
+    return db.scalars(stmt, execution_options={"populate_existing": True}).one()
 
 
 def get_by_locator(db: Session, answer_locator: AnswerLocator) -> ResponseAnswer | None:

@@ -10,6 +10,7 @@ from app.db.manager import DatabaseManager
 from app.email_service import EmailServiceManager
 from app.middleware.auth import AuthExtension
 from app.middleware.url_converters import register_url_converters
+from app.services.openai import OpenAIServiceManager
 
 logger = getLogger(__name__)
 
@@ -17,6 +18,7 @@ aws_client_manager = AwsClientManager()
 app_cache = create_app_cache()
 
 email_service_manager = EmailServiceManager()
+openai_service_manager = OpenAIServiceManager()
 db_manager = DatabaseManager()
 auth = AuthExtension()
 cors = CORS()
@@ -30,6 +32,7 @@ def init_extensions(app: Flask, settings: Settings) -> None:
 
     aws_client_manager.init_app(app)
     email_service_manager.init_app(app)
+    openai_service_manager.init_app(app)
     logger.debug("Initializing core database")
     db_manager.init_app(app)
     auth.init_app(app)

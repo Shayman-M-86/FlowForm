@@ -35,6 +35,7 @@ class RouteMetadata:
     auth: AuthMode
     handler_qualname: str
     rbac: Any | None = None
+    error_statuses: tuple[int, ...] = ()
 
 
 def _find_rbac_requirement(view: Callable[..., Any]) -> Any | None:
@@ -61,6 +62,7 @@ def openapi_route(
     query_model: type[BaseModel] | None = None,
     response_model: ResponseModel | None = None,
     status_code: int = 200,
+    error_statuses: Sequence[int] = (),
     description: str | None = None,
     auth: AuthMode = "required",
     auth_required: bool | None = None,
@@ -90,6 +92,7 @@ def openapi_route(
                 auth=auth_mode,
                 handler_qualname=f"{func.__module__}.{func.__qualname__}",
                 rbac=_find_rbac_requirement(func),
+                error_statuses=tuple(error_statuses),
             )
         )
         return func

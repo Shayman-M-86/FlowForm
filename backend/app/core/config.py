@@ -172,17 +172,18 @@ class OpenAISettings(BaseModel):
     """Optional server-side survey generation settings."""
 
     api_key_file: str | None = None
+    api_key: SecretStr | None = Field(default=None, exclude=True)
     model: str = "gpt-4.1-mini"
-    # Per-user cap on generation requests (in-memory, per worker process).
-    rate_limit_max_requests: int = 10
-    rate_limit_window_seconds: int = 3600
 
-    @property
-    def api_key(self) -> SecretStr | None:
-        """Read the mounted key only when generation is requested."""
-        if self.api_key_file is None:
-            return None
-        return _load_secret_from_file(self.api_key_file, label="OpenAI API key")
+    @model_validator(mode="after")
+    def load_api_key_from_file(self) -> OpenAISettings:
+        """Resolve the optional mounted credential when settings are loaded."""
+        if self.api_key_file is not None:
+            try:
+                self.api_key = _load_secret_from_file(self.api_key_file, label="OpenAI API key")
+            except OSError as exc:
+                raise ValueError("Unable to read OpenAI API key file") from exc
+        return self
 
 
 class EmailSettings(BaseModel):

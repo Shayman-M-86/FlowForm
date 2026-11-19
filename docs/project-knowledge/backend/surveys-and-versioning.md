@@ -5,7 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-11-19
+last_edited: 2026-11-20
 tags: [backend]
 related_code:
   - "../../../backend/app/services/surveys.py"
@@ -58,6 +58,9 @@ check before promoting this draft.
 The survey-version document is a `SurveyDefinition`, stored as JSONB through
 `SurveyDefinitionJSONB`. The conversion serializes JSON-compatible values on
 write and reconstructs the model on load. Empty drafts may have no definition.
+The fresh database schema requires a JSON object and a timestamp for publication,
+and a trigger prevents replacing a definition after the version leaves draft.
+Database violations use the integrity rules for `SurveyVersion`.
 
 `surveys_repo.get_definition` scopes retrieval to project, survey, and version
 number, excludes soft-deleted versions, and returns an independent snapshot.
@@ -66,17 +69,22 @@ the calling service owns the transaction. Explicit replacement also persists
 nested model edits, which SQLAlchemy does not otherwise track automatically.
 
 Services own authorization, draft editability, document/version identity,
-revision policy, and publication validation. Field lookup is document traversal;
-saved-answer retrieval remains a response-repository operation. The legacy
-node-based editing, cloning/publication, and respondent/reporting services are
-not yet fully migrated to these boundaries.
+revision policy, and publication validation. A field is resolved from the pinned
+version document. PostgreSQL enforces the session/version reference and one
+answer slot per session and field UUID. Saved-answer retrieval remains a
+response-repository operation.
 
 `ContentService.update_definition` now provides the draft-editability guard and
 transaction for a whole-document update. It obtains the project/survey-scoped
 version, rejects non-drafts, saves through the repository, and commits. Survey
-permission enforcement belongs to its caller. The old node/scoring-rule routes
-and AI-preview entry point still need replacement or relocation; their former
-methods no longer exist on `ContentService`.
+permission enforcement belongs to its caller.
+
+Studio's authenticated `POST /api/v1/studio/surveys/ai-import` accepts a prompt
+and returns a draft as `SurveyContent`. It includes the title, optional
+description, document and optional workflow shared by saved definitions. A
+caller can use it before a survey or project has been selected. Version metadata
+belongs to the separate save flow. The common error handler returns 503 when
+generation is disabled and 502 when an upstream call yields no usable draft.
 
 ## Related documents
 

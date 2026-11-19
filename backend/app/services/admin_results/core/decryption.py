@@ -9,11 +9,12 @@ decrypt it under the session's envelope key. Callers receive a single
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.crypto._internal.models import DecryptedAnswerPayload
 from app.crypto.answers import decrypt_answer_current
 from app.crypto.locators import resolve_answer_locators
 from app.crypto.models import AnswerContext, AnswerLocator
@@ -21,6 +22,7 @@ from app.crypto.session_key import load_session_envelope_crypto_context
 from app.repositories.response import response_answer_repo
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.orm.response.response_answer import ResponseAnswer
 
 if TYPE_CHECKING:
     from app.cache import AppCache
@@ -37,8 +39,8 @@ class ResolvedAnswers:
     """
 
     locators: dict[UUID, AnswerLocator]
-    found: dict[bytes, Any]
-    decrypted_by_locator: dict[bytes, Any]
+    found: dict[AnswerLocator, ResponseAnswer]
+    decrypted_by_locator: dict[AnswerLocator, DecryptedAnswerPayload]
 
 
 def resolve_and_decrypt_answers(
@@ -60,15 +62,13 @@ def resolve_and_decrypt_answers(
         clients=clients,
     )
     found = {
-        answer.answer_locator: answer
+        AnswerLocator(answer.answer_locator): answer
         for answer in response_answer_repo.get_by_locators(response_db, list(locators.values()))
     }
 
-    decrypted_by_locator: dict[bytes, Any] = {}
+    decrypted_by_locator: dict[AnswerLocator, DecryptedAnswerPayload] = {}
     if include_decrypted_answer_values and found:
-        ectx = load_session_envelope_crypto_context(
-            db, response_db, session=session, cache=cache, clients=clients
-        )
+        ectx = load_session_envelope_crypto_context(db, response_db, session=session, cache=cache, clients=clients)
         for raw_locator, answer in found.items():
             decrypted_by_locator[raw_locator] = decrypt_answer_current(
                 ciphertext=answer.ciphertext,
@@ -77,7 +77,7 @@ def resolve_and_decrypt_answers(
                     dek=ectx.plaintext_key,
                     crypto_version=ectx.envelope.crypto_version,
                     envelope_id=answer.envelope_id,
-                    answer_locator=AnswerLocator(answer.answer_locator),
+                    answer_locator=raw_locator,
                 ),
             )
 

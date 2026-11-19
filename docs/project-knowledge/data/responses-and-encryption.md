@@ -5,7 +5,7 @@ document_type: domain
 status: draft
 authority: canonical
 verified_evidence_digest: null
-last_edited: 2026-07-30
+last_edited: 2026-11-20
 tags: [security]
 related_code:
   - "../../../backend/app/cache/crypto.py"
@@ -52,7 +52,7 @@ The two stores intentionally know different things:
 | Project, survey, and frozen version | Opaque response envelope |
 | Subject, link, and session metadata | Wrapped per-session key |
 | Browser resume-token hash | Current encrypted answer rows |
-| Answer slots with question identity | Opaque session and answer locators |
+| Answer slots with field UUID and readable field ID | Opaque session and answer locators |
 | Wrapped survey key and KMS metadata | Ciphertext, nonce, and mutation identifier |
 
 The response-side ORM and SQL schema model response envelopes and answers rather
@@ -157,20 +157,22 @@ be cached, but the persistent session and envelope remain the durable records.
 ## Current-answer semantics
 
 FlowForm stores one current encrypted row per answer locator. Saving the same
-question again performs an upsert that replaces the previous ciphertext,
+field again performs an upsert that replaces the previous ciphertext,
 nonce, mutation identifier, and update time. There is no encrypted answer
 revision history, revision counter, or latest-revision pointer.
 
 ![Current encrypted answer upsert](../../assets/architecture/current-answer-upsert.svg)
 
-Before writing, the backend checks that the question belongs to the session's
-frozen survey version and validates a non-cleared value against that question's
-schema. A cleared answer is represented as an encrypted cleared state rather
+Before writing, the backend locks the active session and resolves the field UUID
+in its pinned survey-version document. Missing or ambiguous field identities are
+rejected before slot creation. Pydantic validates the value against the submitted
+answer specification; that specification is not proof of the published constraints.
+A cleared answer is represented as an encrypted cleared state rather
 than deletion of the response row. Each encryption uses a fresh nonce, and the
 response schema rejects nonce reuse within one envelope.
 
 ```text
-question in frozen version
+field in pinned document
             |
       validate one answer
             |
@@ -188,12 +190,36 @@ is currently a core session state transition: answers are validated when saved,
 but completion does not evaluate cross-question requirements or reconstruct and
 validate the complete answer set.
 
+Plaintext payload format version 2 stores `field_uuid`, `state`, and the shared
+answer data. Answered states retain `answer_spec` and `answer_value`; cleared
+states omit `answer_value`. Request-only mutation metadata is excluded from
+the encrypted body. Locator derivation and envelope/locator-bound associated
+data are unchanged. The V2 decoder rejects old node-based version-1 payloads;
+historical ciphertext migration is a separate task.
+
+The acknowledgement uses the response row's persisted `updated_at`. Upsert
+refreshes an already-loaded ORM answer so replacements return current values.
+
 ## Authorized reads and deletion
 
 Studio results routes require the relevant survey permission before calling the
-results service. Result assembly starts with core subjects, sessions, frozen
-questions, and answer slots. It derives response locators, fetches matching
+results service. Result assembly starts with core subjects, sessions, pinned
+document fields, and answer slots. It derives response locators, fetches matching
 ciphertext, and decrypts only when the request asks for answer values.
+
+`core/field_meta.py` indexes the existing field models without creating a second
+metadata schema. Result assembly consumes the typed V2 decrypted payload directly;
+it rejects a decrypted field UUID that does not match the slot. When a document
+field is unavailable, the slot's stored readable ID remains available and its
+self-describing decrypted answer can still be represented.
+
+Portable answer and event result models are shared with API response classes.
+Metadata-only reads expose presence flags and field metadata without loading
+the session decryption key or returning plaintext answer data. Linkage-key
+material is still needed to derive the opaque lookup locators. JSON and CSV
+exports use field UUID/ID, state, and the retained answer specification/value;
+structured CSV cells contain JSON. Historical version-1 ciphertext remains a
+separate migration task, and full application startup still has legacy consumers.
 
 ![Authorized results read](../../assets/architecture/authorized-results-read.svg)
 

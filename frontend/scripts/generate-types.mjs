@@ -8,6 +8,8 @@
  *     — TypeScript interfaces + *Constraints objects (runtime constraint metadata for UI)
  *
  * The openapi-typescript schema (schema.ts) is generated separately via openapi:types.
+ * The local node builder and paste import use the snapshot in
+ * packages/schema/legacy-builder-schemas.yaml.
  *
  * Run from the frontend/ directory:
  *   node scripts/generate-types.mjs
@@ -37,6 +39,9 @@ mkdirSync(schemaPackageDir, { recursive: true });
 
 const spec = yaml.load(readFileSync(specPath, "utf8"));
 const allSchemas = spec.components?.schemas ?? {};
+const localBuilderSchemas = yaml.load(
+  readFileSync(resolve(__dirname, "../packages/schema/legacy-builder-schemas.yaml"), "utf8"),
+);
 
 // OpenAPI infrastructure schemas — skip for domain codegen
 const SKIP = new Set(["ErrorResponse"]);
@@ -59,7 +64,7 @@ const sorted = topoSort(domainEntries, allSchemas);
 
 // Collect entry points — schemas with x-flowform-export: builder
 const builderEntryPoints = new Set(
-  Object.entries(allSchemas)
+  Object.entries(localBuilderSchemas)
     .filter(([, schema]) => schema["x-flowform-export"] === "builder")
     .map(([name]) => name),
 );
@@ -76,8 +81,9 @@ function collectTransitiveDeps(names, allSchemas) {
   return collected;
 }
 
-const builderSchemas = collectTransitiveDeps(builderEntryPoints, allSchemas);
-const builderSorted = sorted.filter(([name]) => builderSchemas.has(name));
+const builderSchemas = collectTransitiveDeps(builderEntryPoints, localBuilderSchemas);
+const builderSorted = topoSort(Object.entries(localBuilderSchemas), localBuilderSchemas)
+  .filter(([name]) => builderSchemas.has(name));
 
 const interfaceLines = [
   "// This file is auto-generated — do not edit manually",
@@ -96,7 +102,7 @@ for (const category of ["subtype", "request", "response"]) {
   for (const [name, schema] of subset) {
     if (!schema.properties && (schema.oneOf || schema.anyOf)) {
       const variants = (schema.oneOf ?? schema.anyOf)
-        .map((v) => v.$ref ? v.$ref.split("/").pop() : resolveType(v, allSchemas))
+        .map((v) => v.$ref ? v.$ref.split("/").pop() : resolveType(v, localBuilderSchemas))
         .join(" | ");
       interfaceLines.push(`export type ${name} = ${variants};`);
       interfaceLines.push("");
@@ -108,7 +114,7 @@ for (const category of ["subtype", "request", "response"]) {
 
     interfaceLines.push(`export interface ${name} {`);
     for (const [field, def] of Object.entries(props)) {
-      interfaceLines.push(`  ${field}${required.has(field) ? "" : "?"}: ${resolveType(def, allSchemas)};`);
+      interfaceLines.push(`  ${field}${required.has(field) ? "" : "?"}: ${resolveType(def, localBuilderSchemas)};`);
     }
     interfaceLines.push(`}`);
     interfaceLines.push("");
@@ -141,7 +147,7 @@ for (const category of ["subtype", "request", "response"]) {
     if (!schema.properties && (schema.oneOf || schema.anyOf)) {
       const variants = (schema.oneOf ?? schema.anyOf).filter((v) => v.type !== "null");
       const zodVariants = variants.map((v) =>
-        v.$ref ? `${v.$ref.split("/").pop()}Schema` : resolveZodType(v, allSchemas),
+        v.$ref ? `${v.$ref.split("/").pop()}Schema` : resolveZodType(v, localBuilderSchemas),
       );
       if (zodVariants.length === 1) {
         zodLines.push(`export const ${name}Schema = ${zodVariants[0]};`);
@@ -158,7 +164,7 @@ for (const category of ["subtype", "request", "response"]) {
     zodLines.push(`export const ${name}Schema = z.object({`);
     for (const [field, def] of Object.entries(props)) {
       const isRequired = required.has(field);
-      zodLines.push(`  ${field}: ${resolveZodField(def, allSchemas, isRequired)},`);
+      zodLines.push(`  ${field}: ${resolveZodField(def, localBuilderSchemas, isRequired)},`);
     }
     zodLines.push(`});`);
     zodLines.push("");
@@ -170,12 +176,12 @@ const builderZodChanged = writeGeneratedFile(builderZodFile, zodLines.join("\n")
 console.log(`Generated ${builderZodFile}`);
 
 // Full input contract for copied AI prompts, including every nested variant.
-// Keep the original OpenAPI constraints and make all references self-contained.
+// Keep the local builder constraints and make all references self-contained.
 const importRoots = ["CreateQuestionNodeRequest", "CreateRuleNodeRequest"];
 for (const name of importRoots) {
-  if (!allSchemas[name]) throw new Error(`Missing AI import schema: ${name}`);
+  if (!localBuilderSchemas[name]) throw new Error(`Missing local builder import schema: ${name}`);
 }
-const importDependencies = collectTransitiveDeps(importRoots, allSchemas);
+const importDependencies = collectTransitiveDeps(importRoots, localBuilderSchemas);
 const importSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   type: "array",
@@ -183,7 +189,7 @@ const importSchema = {
   maxItems: 500,
   items: { oneOf: importRoots.map((name) => ({ $ref: `#/$defs/${name}` })) },
   $defs: Object.fromEntries(
-    [...importDependencies].sort().map((name) => [name, allSchemas[name]]),
+    [...importDependencies].sort().map((name) => [name, localBuilderSchemas[name]]),
   ),
 };
 const importSchemaJson = JSON.stringify(importSchema, null, 2)
@@ -235,11 +241,10 @@ const constraintsFile = `${schemaPackageDir}/constraints.gen.ts`;
 writeGeneratedFile(constraintsFile, buildConstraintFileLines(sorted).join("\n"));
 console.log(`Generated ${constraintsFile}`);
 
-const builderSortedForConstraints = sorted.filter(([name]) => builderSchemas.has(name));
 const builderConstraintsFile = `${schemaPackageDir}/builder-constraints.gen.ts`;
 const builderConstraintsChanged = writeGeneratedFile(
   builderConstraintsFile,
-  buildConstraintFileLines(builderSortedForConstraints).join("\n"),
+  buildConstraintFileLines(builderSorted).join("\n"),
 );
 console.log(`Generated ${builderConstraintsFile}`);
 

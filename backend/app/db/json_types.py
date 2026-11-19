@@ -12,7 +12,7 @@ from app.schema.models.survey_document import SurveyDefinition
 class SurveyDefinitionJSONB(TypeDecorator[SurveyDefinition]):
     """Store JSON data and reconstruct the canonical survey definition on load."""
 
-    impl = JSONB
+    impl = JSONB(none_as_null=True)
     cache_ok = True
 
     def process_bind_param(self, value: SurveyDefinition | None, dialect: Dialect) -> dict[str, Any] | None:  # noqa: ARG002
