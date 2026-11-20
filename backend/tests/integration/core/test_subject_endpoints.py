@@ -31,7 +31,7 @@ def _make_bare_subject(
     subject = ProjectSubject(
         project_id=TypeAdapter(ProjectId).validate_python(project_id),
         subject_code=subject_code,
-        canonical_subject_id=TypeAdapter(SubjectId).validate_python(canonical_subject_id),
+        canonical_subject_id=TypeAdapter(SubjectId | None).validate_python(canonical_subject_id),
     )
     db.add(subject)
     db.flush()
@@ -46,12 +46,14 @@ def _make_identity(
     email: str = "test@example.com",
     revoked: bool = False,
 ) -> ProjectSubjectIdentity:
+    now = datetime.now(UTC)
     identity = ProjectSubjectIdentity(
         project_id=TypeAdapter(ProjectId).validate_python(project_id),
         project_subject_id=TypeAdapter(SubjectId).validate_python(subject_id),
         identity_type="email",
         normalized_email=email,
-        revoked_at=datetime.now(UTC) if revoked else None,
+        revoked_at=now if revoked else None,
+        attached_at=now,
     )
     db.add(identity)
     db.flush()

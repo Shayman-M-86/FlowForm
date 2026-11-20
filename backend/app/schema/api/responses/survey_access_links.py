@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import ConfigDict, model_validator
 
 from app.schema.api.common.base import APIResponseModel
-from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
+from app.schema.api.responses.surveys import RespondentSurveyVersionNestedModel, SurveyResponses
 from app.schema.enums import SurveyLinkAssignmentSource, SurveyLinkType
 from app.schema.types import (
     EmailAddress,
@@ -64,7 +64,7 @@ class ResolveSurveyAccessLinkResponse(APIResponseModel):
     model_config = ConfigDict(from_attributes=True)
     link: SurveyAccessLinkResponse
     survey: SurveyResponses | None = None
-    published_version: SurveyVersionResponses | None = None
+    published_version: RespondentSurveyVersionNestedModel | None = None
 
 
 class ListSurveyAccessLinksResponse(APIResponseModel):

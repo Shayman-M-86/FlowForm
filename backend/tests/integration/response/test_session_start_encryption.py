@@ -36,6 +36,7 @@ from app.schema.orm.response.response_envelope import ResponseEnvelope
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from app.services.public_submissions.core.session_loader import load_current_session
 from tests.integration.core.factories import (
+    define_version,
     make_project,
     make_response_store,
     make_survey,
@@ -46,7 +47,6 @@ from tests.integration.core.factories import (
 if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
-_SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
 _LINKAGE_SECRET = b"\xcc" * 32
 _FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 _FAKE_SESSION_LOCATOR = SessionLocator(os.urandom(32))
@@ -77,7 +77,7 @@ def _seed_published_survey(db: Session, slug: str) -> int:
 
     version = make_survey_version(survey.id, user.id)
     version.status = "published"
-    version.compiled_schema = _SCHEMA
+    define_version(db, version)
     version.published_at = datetime.now(UTC)
     db.add(version)
     db.flush()

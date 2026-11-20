@@ -26,7 +26,7 @@ class AuditLog(CoreBase, kw_only=True):
     action: Mapped[str] = mapped_column(Text, nullable=False)
     entity_type: Mapped[str] = mapped_column(Text, nullable=False)
     entity_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, default=None)
-    log_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True, default=None)
+    log_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB(none_as_null=True), nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, init=False
     )

@@ -21,11 +21,9 @@ from app.schema.api.requests.submission_sessions import (
     StartSubmissionSessionRequest,
 )
 from app.schema.api.responses.submission_sessions import (
-    ResumeSubmissionSessionResponse,
     StartSubmissionSessionResponse,
 )
-from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
-from app.schema.models.results.service_results import AnswerSaveResult
+from app.schema.models.results.service_results import AnswerSaveResult, ResumeSubmissionSessionResult
 from app.schema.models.survey_document.answers import AnswerData
 from app.schema.orm.core.survey import SurveyVersion
 from app.schema.orm.core.user import User
@@ -110,7 +108,7 @@ class SessionManagementService:
         *,
         payload: StartSubmissionSessionRequest,
         raw_resume_token: str | None,
-    ) -> ResumeSubmissionSessionResponse:
+    ) -> ResumeSubmissionSessionResult:
         """Return the pinned survey context for a matching browser session.
 
         The entry descriptor prevents a cookie from one survey being resumed
@@ -155,10 +153,10 @@ class SessionManagementService:
         if survey is None or version is None or version.survey_id != survey.id:
             raise SessionNotFoundError()
 
-        return ResumeSubmissionSessionResponse(
+        return ResumeSubmissionSessionResult(
             status=session.session_status,
-            survey=SurveyResponses.model_validate(survey),
-            published_version=SurveyVersionResponses.model_validate(version),
+            survey=survey,
+            published_version=version,
         )
 
     def complete_session(

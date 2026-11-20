@@ -70,7 +70,7 @@ def test_non_authenticated_link_raises_on_account_linking_endpoint(
     with pytest.raises(LinkAuthRequiredError):
         SurveyResolveService().verify_authenticated_link_participant(
             db_session,
-            payload=_resolve_payload(raw_token),
+            token=_resolve_payload(raw_token).token,
             actor=user,
             recognition_token=None,
         )
@@ -96,7 +96,7 @@ def test_email_mismatch_raises(
     with pytest.raises(ParticipantIdentityEmailMismatchError):
         SurveyResolveService().verify_authenticated_link_participant(
             db_session,
-            payload=_resolve_payload(raw_token),
+            token=_resolve_payload(raw_token).token,
             actor=other_user,
             recognition_token=None,
         )
@@ -118,7 +118,7 @@ def test_email_match_no_browser_token_issues_token(
 
     result = SurveyResolveService().verify_authenticated_link_participant(
         db_session,
-        payload=_resolve_payload(raw_token),
+        token=_resolve_payload(raw_token).token,
         actor=user,
         recognition_token=None,
     )
@@ -150,7 +150,7 @@ def test_browser_token_same_subject_no_cookie_rotation(
 
     result = SurveyResolveService().verify_authenticated_link_participant(
         db_session,
-        payload=_resolve_payload(raw_token),
+        token=_resolve_payload(raw_token).token,
         actor=user,
         recognition_token=existing_raw,
     )
@@ -187,7 +187,7 @@ def test_browser_token_different_subject_rotated(
 
     result = SurveyResolveService().verify_authenticated_link_participant(
         db_session,
-        payload=_resolve_payload(raw_token),
+        token=_resolve_payload(raw_token).token,
         actor=user,
         recognition_token=other_raw,
     )

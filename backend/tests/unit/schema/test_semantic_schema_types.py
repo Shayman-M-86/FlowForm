@@ -70,7 +70,7 @@ def test_timestamp_preserves_source_value():
     recorded = datetime(2020, 1, 1, tzinfo=UTC)
     assert TypeAdapter(Timestamp).validate_python(recorded) == recorded
     with pytest.raises(ValidationError):
-        SavedClearedResponse(field_uuid=FIELD, client_mutation_id=MUTATION)
+        SavedClearedResponse.model_validate({"field_uuid": FIELD, "client_mutation_id": MUTATION})
 
 
 def test_api_models_use_named_value_types():

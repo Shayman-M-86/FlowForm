@@ -6,8 +6,8 @@ from app.schema import limits
 from app.schema.api.common.base import APIRequestModel
 from app.schema.enums import SurveyVisibility
 from app.schema.models.common.survey_access import NonPublicSurveyAccess, PublicSurveyAccess
-from app.schema.models.survey_document.document import SurveyDefinition
-from app.schema.types import PageNumber, PageSize, Slug, SurveyTitle
+from app.schema.models.survey_document.document import SurveyContent
+from app.schema.types import DocumentRevision, PageNumber, PageSize, Slug, SurveyTitle
 
 
 class PublicSurveyCreateRequest(PublicSurveyAccess, APIRequestModel):
@@ -49,7 +49,8 @@ class ListPublicSurveysRequest(APIRequestModel):
     page_size: PageSize = limits.LIST_PAGE_SIZE_DEFAULT
 
 
-class SaveSurveyDocumentRequest(APIRequestModel):
-    """Replace the survey definition with a complete V2 document."""
+class SaveSurveyRequest(APIRequestModel):
+    """Replace the content of the draft at the revision the editor read."""
 
-    definition: SurveyDefinition
+    expected_revision: DocumentRevision
+    content: SurveyContent

@@ -13,9 +13,7 @@ from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_project, make_survey_role
 
 
-def test_survey_role_can_be_created(
-    db_session: Session, project: Project
-) -> None:
+def test_survey_role_can_be_created(db_session: Session, project: Project) -> None:
     """All fields are persisted and the server default populates created_at."""
     role = make_survey_role(project.id, name="reviewer")
     db_session.add(role)
@@ -28,9 +26,7 @@ def test_survey_role_can_be_created(
     assert saved.created_at is not None, "created_at was not set by the server default"
 
 
-def test_survey_role_unique_name_within_project(
-    db_session: Session, project: Project
-) -> None:
+def test_survey_role_unique_name_within_project(db_session: Session, project: Project) -> None:
     """Two survey roles in the same project cannot share a name."""
     role_a = make_survey_role(project.id, name="analyst")
     db_session.add(role_a)
@@ -45,16 +41,13 @@ def test_survey_role_unique_name_within_project(
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "uq_survey_roles_project_id_name", (
-        f"Expected constraint 'uq_survey_roles_project_id_name', got '{constraint}'\n"
-        f"DB error: {exc_info.value}"
+        f"Expected constraint 'uq_survey_roles_project_id_name', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
-def test_survey_role_same_name_allowed_across_projects(
-    db_session: Session, user: User
-) -> None:
+def test_survey_role_same_name_allowed_across_projects(db_session: Session, user: User) -> None:
     """Role name uniqueness is scoped to a project — different projects may reuse names."""
     project_a = make_project(user.id, name="A", slug="sr-proj-a")
     project_b = make_project(user.id, name="B", slug="sr-proj-b")
@@ -66,18 +59,15 @@ def test_survey_role_same_name_allowed_across_projects(
     db_session.add_all([role_a, role_b])
     db_session.flush()
 
-    assert role_a.id != role_b.id, (
-        f"Expected distinct role IDs across projects, got id={role_a.id!r} for both"
-    )
+    assert role_a.id != role_b.id, f"Expected distinct role IDs across projects, got id={role_a.id!r} for both"
 
 
-def test_survey_role_requires_name(
-    db_session: Session, project: Project
-) -> None:
+def test_survey_role_requires_name(db_session: Session, project: Project) -> None:
     """name is NOT NULL — omitting it raises an IntegrityError."""
-    role = SurveyRole()
-    role.project_id = project.id
-    role.name = None  # type: ignore[assignment]
+    role = SurveyRole(
+        project_id=project.id,
+        name=None,  # type: ignore[arg-type]
+    )
     db_session.add(role)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -85,17 +75,12 @@ def test_survey_role_requires_name(
 
     orig = cast(NotNullViolation, exc_info.value.orig)
     column = orig.diag.column_name
-    assert column == "name", (
-        f"Expected NOT NULL violation on 'name', got '{column}'\n"
-        f"DB error: {exc_info.value}"
-    )
+    assert column == "name", f"Expected NOT NULL violation on 'name', got '{column}'\nDB error: {exc_info.value}"
 
     db_session.rollback()
 
 
-def test_survey_role_cascades_on_project_delete(
-    db_session: Session, user: User
-) -> None:
+def test_survey_role_cascades_on_project_delete(db_session: Session, user: User) -> None:
     """Deleting the project removes all its survey roles."""
     project = make_project(user.id, slug="sr-cascade-proj")
     db_session.add(project)
@@ -115,9 +100,7 @@ def test_survey_role_cascades_on_project_delete(
     )
 
 
-def test_survey_role_description_is_persisted(
-    db_session: Session, project: Project
-) -> None:
+def test_survey_role_description_is_persisted(db_session: Session, project: Project) -> None:
     """description is stored and round-trips correctly."""
     role = make_survey_role(project.id, name="desc-role", description="Handles survey review tasks.")
     db_session.add(role)
@@ -130,9 +113,7 @@ def test_survey_role_description_is_persisted(
     )
 
 
-def test_survey_role_description_nullable(
-    db_session: Session, project: Project
-) -> None:
+def test_survey_role_description_nullable(db_session: Session, project: Project) -> None:
     """description defaults to NULL when omitted."""
     role = make_survey_role(project.id, name="no-desc-role")
     db_session.add(role)
@@ -140,14 +121,10 @@ def test_survey_role_description_nullable(
 
     saved = db_session.get(SurveyRole, role.id)
     assert saved is not None
-    assert saved.description is None, (
-        f"Expected description=None, got {saved.description!r}"
-    )
+    assert saved.description is None, f"Expected description=None, got {saved.description!r}"
 
 
-def test_survey_role_description_blank_rejected(
-    db_session: Session, project: Project
-) -> None:
+def test_survey_role_description_blank_rejected(db_session: Session, project: Project) -> None:
     """Blank/whitespace-only description violates the CHECK constraint."""
     role = make_survey_role(project.id, name="blank-desc-role", description="   ")
     db_session.add(role)
@@ -158,16 +135,13 @@ def test_survey_role_description_blank_rejected(
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "ck_survey_roles_description_len", (
-        f"Expected constraint 'ck_survey_roles_description_len', got '{constraint}'\n"
-        f"DB error: {exc_info.value}"
+        f"Expected constraint 'ck_survey_roles_description_len', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
-def test_survey_role_description_too_long_rejected(
-    db_session: Session, project: Project
-) -> None:
+def test_survey_role_description_too_long_rejected(db_session: Session, project: Project) -> None:
     """A description exceeding 500 characters violates the CHECK constraint."""
     role = make_survey_role(project.id, name="long-desc-role", description="x" * 501)
     db_session.add(role)
@@ -178,8 +152,7 @@ def test_survey_role_description_too_long_rejected(
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "ck_survey_roles_description_len", (
-        f"Expected constraint 'ck_survey_roles_description_len', got '{constraint}'\n"
-        f"DB error: {exc_info.value}"
+        f"Expected constraint 'ck_survey_roles_description_len', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()

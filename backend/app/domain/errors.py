@@ -1,7 +1,7 @@
 from typing import Any
 
 from app.core.errors import AppError, AuthError
-from app.schema.types import ProjectId, SurveyId
+from app.schema.types import DocumentRevision, ProjectId, SurveyId
 
 
 class ForbiddenError(AppError):
@@ -313,6 +313,25 @@ class VersionNotFoundError(AppError):
             status_code=404,
             code="NOT_FOUND",
             message=f"Version {version_number} was not found in survey {survey_id}.",
+        )
+
+
+class SurveyVersionIdNotFoundError(AppError):
+    """No version with this identity exists within the requested survey."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=404, code="NOT_FOUND", message="Survey version not found.")
+
+
+class VersionRevisionConflictError(AppError):
+    """The draft has changed since the editor read it."""
+
+    def __init__(self, *, expected_revision: DocumentRevision, current_revision: DocumentRevision) -> None:
+        super().__init__(
+            status_code=409,
+            code="VERSION_REVISION_CONFLICT",
+            message="The draft has changed. Reload it before saving again.",
+            details={"expected_revision": expected_revision, "current_revision": current_revision},
         )
 
 

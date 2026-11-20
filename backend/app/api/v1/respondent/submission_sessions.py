@@ -24,6 +24,7 @@ from app.schema.api.responses.submission_sessions import (
     StartSubmissionSessionResponse,
     SubmissionSessionAnswerResponse,
 )
+from app.schema.api.responses.surveys import RespondentSurveyVersionNestedModel, SurveyResponses
 from app.schema.types import SurveyFieldUuid
 
 
@@ -66,10 +67,15 @@ def start_submission_session():
 @respondent_bp.route("/submission-sessions/current/resolve", methods=["POST"])
 def resume_submission_session():
     payload = parse(StartSubmissionSessionRequest, request)
-    response = session_management_service.resume_session(
+    result = session_management_service.resume_session(
         get_core_db(),
         payload=payload,
         raw_resume_token=get_submission_session_token(),
+    )
+    response = ResumeSubmissionSessionResponse(
+        status=result.status,
+        survey=SurveyResponses.model_validate(result.survey),
+        published_version=RespondentSurveyVersionNestedModel.model_validate(result.published_version),
     )
     return response.model_dump(mode="json"), 200
 

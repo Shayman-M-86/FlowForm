@@ -19,9 +19,7 @@ from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.types import ParticipantId
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
-from tests.integration.core.factories import make_participant_chain, make_token
-
-_SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
+from tests.integration.core.factories import define_version, make_participant_chain, make_token
 
 
 def _publish_survey(
@@ -37,7 +35,7 @@ def _publish_survey(
     else:
         survey.visibility = "link_only"
     survey_version.status = "published"
-    survey_version.compiled_schema = _SCHEMA
+    define_version(db, survey_version)
     survey_version.published_at = datetime.now(UTC)
     db.flush()
     survey.published_version_id = survey_version.id

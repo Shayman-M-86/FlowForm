@@ -1,6 +1,7 @@
 """Persist answers by pinned document field identity across both databases."""
 
 import os
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -13,7 +14,7 @@ from app.crypto.models import AnswerContext, LinkageKey, PlaintextSessionKey
 from app.domain.errors import FieldNotInVersionError, SessionInvalidError
 from app.repositories.core import submission_answer_slots, submission_events, submission_sessions
 from app.repositories.response import response_answer_repo, response_envelope_repo
-from app.schema.models.survey_document import SurveyDefinition
+from app.schema.models.survey_document import SurveyContent
 from app.schema.models.survey_document.answers import AnswerData
 from app.schema.orm.core.project import Project
 from app.schema.orm.core.response_store import ResponseStore
@@ -51,38 +52,33 @@ def setup(db_sessions):
     core_db.add(version)
     core_db.flush()
     field_uuid = TypeAdapter(SurveyFieldUuid).validate_python(uuid4())
-    version.definition = SurveyDefinition.model_validate(
+    version.content = SurveyContent.model_validate(
         {
-            "id": "survey",
-            "versionId": version.id,
-            "revision": 1,
             "title": "Survey",
-            "projectName": "Field answers",
-            "status": "published",
-            "document": {
-                "sections": [
-                    {
-                        "id": "section",
-                        "title": "Section",
-                        "blocks": [
-                            {
-                                "id": "age_block",
-                                "type": "input",
-                                "field": {
-                                    "id": "age",
-                                    "uuid": field_uuid,
-                                    "prompt": "Age?",
-                                    "interaction": {"kind": "number"},
-                                    "answerSpec": {"type": "integer", "required": True},
-                                },
-                            }
-                        ],
-                    }
-                ]
-            },
+            "sections": [
+                {
+                    "id": "section",
+                    "title": "Section",
+                    "blocks": [
+                        {
+                            "id": "age_block",
+                            "type": "input",
+                            "field": {
+                                "id": "age",
+                                "uuid": field_uuid,
+                                "prompt": "Age?",
+                                "interaction": {"kind": "number"},
+                                "answerSpec": {"type": "integer", "required": True},
+                            },
+                        }
+                    ],
+                }
+            ],
         }
     )
+    version.revision = 1
     version.status = "published"
+    version.published_at = datetime.now(UTC)
     core_db.flush()
     session = submission_sessions.create_session(
         core_db,
@@ -167,8 +163,7 @@ def test_field_must_belong_to_the_pinned_definition(db_sessions: DbSessions):
 
 def test_completed_session_cannot_save(db_sessions: DbSessions):
     session, ctx, field_uuid = setup(db_sessions)
-    session.session_status = "completed"
-    db_sessions.core.flush()
+    submission_sessions.mark_completed(db_sessions.core, submission_session=session, completed_at=datetime.now(UTC))
     with pytest.raises(SessionInvalidError):
         save(db_sessions, ctx, field_uuid, _ANSWER.validate_python({"state": "cleared"}))
 

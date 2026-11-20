@@ -17,23 +17,21 @@ from app.services.openai import OpenAIService, get_openai_service
 
 _GENERATED_JSON = """{
     "title": "Sleep habits",
-    "document": {
-        "sections": [{
-            "id": "habits",
-            "title": "Habits",
-            "blocks": [{
-                "id": "sleep",
-                "type": "input",
-                "field": {
-                    "id": "sleep_hours",
-                    "uuid": "7c283418-01c8-422d-ba30-2f905b2db70f",
-                    "prompt": "How many hours do you sleep?",
-                    "interaction": {"kind": "number"},
-                    "answerSpec": {"type": "integer", "required": true, "constraints": {"min": 0, "max": 24}}
-                }
-            }]
+    "sections": [{
+        "id": "habits",
+        "title": "Habits",
+        "blocks": [{
+            "id": "sleep",
+            "type": "input",
+            "field": {
+                "id": "sleep_hours",
+                "uuid": "7c283418-01c8-422d-ba30-2f905b2db70f",
+                "prompt": "How many hours do you sleep?",
+                "interaction": {"kind": "number"},
+                "answerSpec": {"type": "integer", "required": true, "constraints": {"min": 0, "max": 24}}
+            }
         }]
-    }
+    }]
 }"""
 
 
@@ -62,7 +60,7 @@ def test_application_reuses_configured_generator(tmp_path: Path) -> None:
             for _ in range(2):
                 content = generator.generate("Sleep habits")
                 assert content.title == "Sleep habits"
-                block = content.document.sections[0].blocks[0]
+                block = content.sections[0].blocks[0]
                 assert isinstance(block, InputBlock)
                 assert block.field.answerSpec.type == "integer"
         client_type.assert_called_once_with(api_key="test-key", timeout=30.0, max_retries=1)

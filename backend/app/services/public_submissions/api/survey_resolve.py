@@ -23,7 +23,6 @@ from app.repositories import public_link_repo as plr
 from app.repositories import surveys_repo as sr
 from app.repositories.core import project_participants as ppr
 from app.repositories.core import project_subjects as subjects
-from app.schema.api.requests.survey_access_links import ResolveSurveyAccessLinkTokenRequest
 from app.schema.models.results.service_results import (
     AccountLinkingResult,
     GetPublicSurveyResult,
@@ -31,6 +30,7 @@ from app.schema.models.results.service_results import (
     ResolveLinkResult,
 )
 from app.schema.orm.core.user import User
+from app.schema.types import SurveyAccessToken
 from app.services.participants import ParticipantService
 from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
 from app.services.public_submissions.core.resolution.subject_resolver import SubjectResolver
@@ -76,7 +76,7 @@ class SurveyResolveService:
     def resolve_link(
         self,
         db: Session,
-        payload: ResolveSurveyAccessLinkTokenRequest,
+        token: SurveyAccessToken,
         actor: User | None,
     ) -> ResolveLinkResult:
         """Resolve a survey link token to its survey and published version.
@@ -85,7 +85,7 @@ class SurveyResolveService:
         user_id matches the authenticated actor. Raises LinkNotFoundError if
         the token does not exist, or access errors if identity checks fail.
         """
-        link = ensure_present(plr.resolve_token(db, payload.token), error=LinkNotFoundError())
+        link = ensure_present(plr.resolve_token(db, token), error=LinkNotFoundError())
         grant = self._access_resolver.resolve_link_token(db, link=link, actor=actor)
         return ResolveLinkResult(
             link=link,
@@ -97,7 +97,7 @@ class SurveyResolveService:
         self,
         db: Session,
         *,
-        payload: ResolveSurveyAccessLinkTokenRequest,
+        token: SurveyAccessToken,
         actor: User,
         recognition_token: str | None,
     ) -> AccountLinkingResult:
@@ -112,7 +112,7 @@ class SurveyResolveService:
         Returns the raw recognition token only when the cookie must change (issue or rotate).
         None means the existing cookie is correct.
         """
-        link = ensure_present(plr.resolve_token(db, payload.token), error=LinkNotFoundError())
+        link = ensure_present(plr.resolve_token(db, token), error=LinkNotFoundError())
         public_link_rules.ensure_is_active(link=link)
         public_link_rules.ensure_not_expired(link=link)
         public_link_rules.ensure_not_used(link=link)

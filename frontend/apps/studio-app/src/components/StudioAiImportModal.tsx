@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import type { SurveyNode } from '@flowform/builder'
+import type { QuestionNode, SurveyNode } from '@flowform/builder'
 import { Button, LargeInput, Modal } from '@flowform/ui'
 import { Sparkles } from 'lucide-react'
-import type { AiImportPreview } from '@/api/hooks/nodes'
 import './StudioAiImportModal.css'
 
 const GENERATING_STEPS = [
@@ -46,11 +45,18 @@ function AiGeneratingPanel() {
   )
 }
 
+// The existing node editor supplies this view model to the modal.
+type BuilderPreview = {
+  title: string
+  description: string | null
+  nodes: QuestionNode[]
+}
+
 type StudioAiImportModalProps = {
   open: boolean
   hasExistingNodes: boolean
   onClose: () => void
-  onGenerate: (prompt: string) => Promise<AiImportPreview>
+  onGenerate: (prompt: string) => Promise<BuilderPreview>
   onImport: (nodes: SurveyNode[]) => void
 }
 
@@ -62,7 +68,7 @@ export function StudioAiImportModal({
   onImport,
 }: StudioAiImportModalProps) {
   const [prompt, setPrompt] = useState('')
-  const [preview, setPreview] = useState<AiImportPreview | null>(null)
+  const [preview, setPreview] = useState<BuilderPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [confirmReplace, setConfirmReplace] = useState(false)
@@ -87,7 +93,7 @@ export function StudioAiImportModal({
       setConfirmReplace(true)
       return
     }
-    onImport(preview.nodes as SurveyNode[])
+    onImport(preview.nodes)
   }
 
   return (

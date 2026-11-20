@@ -19,9 +19,7 @@ from app.schema.orm.core import (
     Survey,
     SurveyLink,
     SurveyMembershipRole,
-    SurveyQuestion,
     SurveyRole,
-    SurveyScoringRule,
     SurveyVersion,
     User,
     project_role_permissions,
@@ -110,11 +108,6 @@ def test_survey_version_relationships() -> None:
     assert get_relationship(SurveyVersion, "created_by").mapper.class_ is User
 
 
-def test_survey_content_relationships() -> None:
-    assert get_relationship(SurveyQuestion, "survey_version").mapper.class_ is SurveyVersion
-    assert get_relationship(SurveyScoringRule, "survey_version").mapper.class_ is SurveyVersion
-
-
 def test_survey_role_relationships() -> None:
     assert get_relationship(SurveyRole, "permissions").secondary is survey_role_permissions
 
@@ -130,9 +123,7 @@ def test_submission_session_relationships() -> None:
     assert get_relationship(SubmissionSession, "survey_version").mapper.class_ is SurveyVersion
     assert get_relationship(SubmissionSession, "link").mapper.class_ is SurveyLink
     assert get_relationship(SubmissionEvent, "session").mapper.class_ is SubmissionSession
-    assert get_relationship(SubmissionEvent, "question").mapper.class_ is SurveyQuestion
     assert get_relationship(SubmissionAnswerSlot, "session").mapper.class_ is SubmissionSession
-    assert get_relationship(SubmissionAnswerSlot, "question").mapper.class_ is SurveyQuestion
 
 
 def test_response_relationships() -> None:
@@ -216,10 +207,6 @@ def test_user_unique_constraints() -> None:
 def test_survey_version_constraints() -> None:
     names = unique_constraint_names(SurveyVersion)
     assert "uq_survey_versions_survey_id_id" in names
-
-
-def test_survey_content_unique_constraints() -> None:
-    assert "uq_survey_questions_survey_version_id_id" in unique_constraint_names(SurveyQuestion)
 
 
 def test_survey_role_unique_constraints() -> None:

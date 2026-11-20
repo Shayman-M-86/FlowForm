@@ -48,7 +48,7 @@ def data():
     slot.id = uuid4()
     locator = AnswerLocator(b"a" * 32)
     row = ResponseAnswer(answer_locator=locator, envelope_id=uuid4(), ciphertext=b"encrypted", nonce=b"n" * 12)
-    version = SurveyVersion(survey_id=TypeAdapter(SurveyId).validate_python(1), version_number=1, definition=doc)
+    version = SurveyVersion(survey_id=TypeAdapter(SurveyId).validate_python(1), version_number=1, content=doc)
     version.id = version_id
     session = SubmissionSession(
         project_id=TypeAdapter(ProjectId).validate_python(1),

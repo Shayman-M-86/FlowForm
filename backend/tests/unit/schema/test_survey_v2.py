@@ -5,13 +5,16 @@ import json
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from app.schema.models.survey_document.answers import AnswerSubmission, SurveyCompletion
-from app.schema.models.survey_document.document import SurveyDefinition
+from app.schema.api.requests.submission_sessions import (
+    CompleteSubmissionSessionRequest,
+    SaveSubmissionSessionAnswerRequest,
+)
+from app.schema.models.survey_document.document import SurveyContent
 
 FIELD_UUID = "10000000-0000-4000-8000-000000000001"
 OPTION_UUID = "20000000-0000-4000-8000-000000000001"
 MUTATION_UUID = "60000000-0000-4000-8000-000000000001"
-ANSWERS = TypeAdapter(AnswerSubmission)
+ANSWERS = TypeAdapter(SaveSubmissionSessionAnswerRequest)
 
 
 def submission(spec, value):
@@ -71,7 +74,7 @@ def test_v2_invalid_answer_rejected(spec, value):
 
 
 def test_v2_clear_omits_value_and_allows_spec():
-    raw = {"field_uuid": FIELD_UUID, "client_mutation_id": MUTATION_UUID, "state": "cleared"}
+    raw: dict[str, object] = {"field_uuid": FIELD_UUID, "client_mutation_id": MUTATION_UUID, "state": "cleared"}
     assert ANSWERS.validate_json(json.dumps(raw)).model_dump(mode="json", exclude_unset=True) == raw
     raw["answer_spec"] = {"type": "integer", "required": True}
     ANSWERS.validate_json(json.dumps(raw))
@@ -89,41 +92,14 @@ def test_v2_answer_required_properties(missing):
 
 
 def test_v2_completion_contains_no_answers():
-    assert SurveyCompletion.model_validate_json('{"action":"complete"}').action == "complete"
+    assert CompleteSubmissionSessionRequest.model_validate_json('{"action":"complete"}').action == "complete"
     with pytest.raises(ValidationError):
-        SurveyCompletion.model_validate_json('{"action":"complete","answers":[]}')
+        CompleteSubmissionSessionRequest.model_validate_json('{"action":"complete","answers":[]}')
 
 
 def test_v2_survey_identity_structure_and_conditions():
     raw = {
-        "id": "screening",
-        "versionId": 1,
-        "revision": 1,
         "title": "Screening",
-        "projectName": "Research",
-        "status": "draft",
-        "document": {
-            "sections": [
-                {
-                    "id": "eligibility",
-                    "title": "Eligibility",
-                    "blocks": [
-                        {"id": "heading", "type": "heading", "content": {"text": "Welcome", "level": 1}},
-                        {
-                            "id": "age_input",
-                            "type": "input",
-                            "field": {
-                                "id": "age",
-                                "uuid": FIELD_UUID,
-                                "prompt": "How old are you?",
-                                "interaction": {"kind": "number", "suffix": "years"},
-                                "answerSpec": {"type": "integer", "required": True},
-                            },
-                        },
-                    ],
-                }
-            ]
-        },
         "workflow": {
             "rules": [
                 {
@@ -134,9 +110,29 @@ def test_v2_survey_identity_structure_and_conditions():
                 }
             ]
         },
+        "sections": [
+            {
+                "id": "eligibility",
+                "title": "Eligibility",
+                "blocks": [
+                    {"id": "heading", "type": "heading", "content": {"text": "Welcome", "level": 1}},
+                    {
+                        "id": "age_input",
+                        "type": "input",
+                        "field": {
+                            "id": "age",
+                            "uuid": FIELD_UUID,
+                            "prompt": "How old are you?",
+                            "interaction": {"kind": "number", "suffix": "years"},
+                            "answerSpec": {"type": "integer", "required": True},
+                        },
+                    },
+                ],
+            }
+        ],
     }
-    model = SurveyDefinition.model_validate_json(json.dumps(raw))
+    model = SurveyContent.model_validate_json(json.dumps(raw))
     assert model.model_dump(mode="json", exclude_unset=True) == raw
-    raw["document"]["sections"][0]["blocks"][1]["field"]["key"] = "legacy"
+    raw["sections"][0]["blocks"][1]["field"]["key"] = "legacy"
     with pytest.raises(ValidationError):
-        SurveyDefinition.model_validate_json(json.dumps(raw))
+        SurveyContent.model_validate_json(json.dumps(raw))

@@ -11,7 +11,7 @@ from app.schema.api.responses.survey_access_links import (
     ResolveSurveyAccessLinkResponse,
     SurveyAccessLinkResponse,
 )
-from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
+from app.schema.api.responses.surveys import RespondentSurveyVersionNestedModel, SurveyResponses
 
 
 @openapi_route(
@@ -34,11 +34,11 @@ def resolve_link():
 
     current_sub = auth.get_optional_current_user_sub()
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=current_sub) if current_sub is not None else None
-    result = survey_resolve_service.resolve_link(core_db, payload=payload, actor=user)
+    result = survey_resolve_service.resolve_link(core_db, token=payload.token, actor=user)
     response = ResolveSurveyAccessLinkResponse(
         link=SurveyAccessLinkResponse.model_validate(result.link),
         survey=SurveyResponses.model_validate(result.survey),
-        published_version=SurveyVersionResponses.model_validate(result.published_version),
+        published_version=RespondentSurveyVersionNestedModel.model_validate(result.published_version),
     )
 
     return response.model_dump(mode="json"), 200
@@ -64,7 +64,7 @@ def verify_authenticated_link_participant():
     user = users_service.get_user_by_sub(db=core_db, auth0_user_id=auth.get_current_user_sub())
     result = survey_resolve_service.verify_authenticated_link_participant(
         core_db,
-        payload=payload,
+        token=payload.token,
         actor=user,
         recognition_token=get_recognition_token(),
     )

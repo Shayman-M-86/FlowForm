@@ -63,7 +63,7 @@ class SessionTreeBuilder:
         slots = submission_answer_slots.list_by_session(db, submission_session_id=session.id)
         if not slots:
             return SessionTreeResult(session=session, answers=[], events=events)
-        fields = build_field_map(session.survey_version.definition)
+        fields = build_field_map(session.survey_version.content)
         resolved = resolve_and_decrypt_answers(
             db,
             response_db,

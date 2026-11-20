@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.crypto.answers import decrypt_answer_current
 from app.crypto.models import AnswerContext, LinkageKey, PlaintextSessionKey, SubmissionSessionContext
 from app.domain.errors import AnswerSaveError, FieldNotInVersionError, SessionInvalidError
-from app.schema.models.survey_document import SurveyDefinition
+from app.schema.models.survey_document import SurveyContent
 from app.schema.models.survey_document.answers import AnswerData
 from app.schema.orm.core.submission_answer_slot import SubmissionAnswerSlot
 from app.schema.orm.core.submission_session import SubmissionSession
@@ -40,35 +40,28 @@ def setup(monkeypatch):
     field_uuid = TypeAdapter(SurveyFieldUuid).validate_python(uuid4())
     version = SurveyVersion(survey_id=survey_id, version_number=1)
     version.id = version_id
-    version.definition = SurveyDefinition.model_validate(
+    version.content = SurveyContent.model_validate(
         {
-            "id": "survey",
-            "versionId": version_id,
-            "revision": 1,
             "title": "Survey",
-            "projectName": "Project",
-            "status": "published",
-            "document": {
-                "sections": [
-                    {
-                        "id": "section",
-                        "title": "Section",
-                        "blocks": [
-                            {
-                                "id": "age_block",
-                                "type": "input",
-                                "field": {
-                                    "id": "age",
-                                    "uuid": field_uuid,
-                                    "prompt": "Age?",
-                                    "interaction": {"kind": "number"},
-                                    "answerSpec": {"type": "integer", "required": True},
-                                },
-                            }
-                        ],
-                    }
-                ]
-            },
+            "sections": [
+                {
+                    "id": "section",
+                    "title": "Section",
+                    "blocks": [
+                        {
+                            "id": "age_block",
+                            "type": "input",
+                            "field": {
+                                "id": "age",
+                                "uuid": field_uuid,
+                                "prompt": "Age?",
+                                "interaction": {"kind": "number"},
+                                "answerSpec": {"type": "integer", "required": True},
+                            },
+                        }
+                    ],
+                }
+            ],
         }
     )
     session = SubmissionSession(
@@ -221,9 +214,9 @@ def test_stale_cached_version_cannot_bind_a_slot(setup):
 
 
 def test_duplicate_field_identity_is_not_resolved_arbitrarily(setup):
-    definition = setup.session.survey_version.definition
+    definition = setup.session.survey_version.content
     assert definition is not None
-    section = definition.document.sections[0]
+    section = definition.sections[0]
     section.blocks.append(section.blocks[0].model_copy(deep=True))
     with pytest.raises(FieldNotInVersionError):
         save(setup)

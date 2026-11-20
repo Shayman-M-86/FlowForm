@@ -18,42 +18,46 @@ from app.services.members import MembersService
 
 
 def _actor() -> User:
-    user = User()
+    user = User(
+        email="actor@example.com",
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python("auth0|actor"),
+    )
     user.id = TypeAdapter(UserId).validate_python(1)
-    user.email = "actor@example.com"
     user.platform_admin = True
     user.email_verified = True
-    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python("auth0|actor")
     return user
 
 
 def _role(*, role_id: int, project_id: int = 10, is_system_role: bool) -> ProjectRole:
-    role = ProjectRole()
+    role = ProjectRole(
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
+        name="Owner" if is_system_role else "Editor",
+    )
     role.id = TypeAdapter(ProjectRoleId).validate_python(role_id)
-    role.project_id = TypeAdapter(ProjectId).validate_python(project_id)
-    role.name = "Owner" if is_system_role else "Editor"
     role.is_system_role = is_system_role
     return role
 
 
 def _membership(*, role: ProjectRole, user_id: int = 2, project_id: int = 10) -> ProjectMembership:
-    membership = ProjectMembership()
+    membership = ProjectMembership(
+        user_id=TypeAdapter(UserId).validate_python(user_id),
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
+    )
     membership.id = TypeAdapter(ProjectMembershipId).validate_python(20)
-    membership.user_id = TypeAdapter(UserId).validate_python(user_id)
-    membership.project_id = TypeAdapter(ProjectId).validate_python(project_id)
     membership.role_id = role.id
     membership.role = role
     return membership
 
 
 def _invitation(*, role_id: int, project_id: int = 10) -> ProjectInvitation:
-    invitation = ProjectInvitation()
+    invitation = ProjectInvitation(
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
+        invited_email="invitee@example.com",
+        token_hash="fakehash",
+    )
     invitation.id = TypeAdapter(ProjectInvitationId).validate_python(30)
-    invitation.project_id = TypeAdapter(ProjectId).validate_python(project_id)
-    invitation.invited_email = "invitee@example.com"
     invitation.status = "pending"
     invitation.role_id = TypeAdapter(ProjectRoleId).validate_python(role_id)
-    invitation.token_hash = "fakehash"
     return invitation
 
 

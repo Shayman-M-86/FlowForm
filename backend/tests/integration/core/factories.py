@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import secrets
 from datetime import UTC, datetime
-from typing import Literal
+from uuid import uuid4
 
-from app.schema.orm.core.survey_content import SurveyQuestion, SurveyScoringRule
 from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
+from app.schema.enums import SurveyVersionStatus
+from app.schema.models.survey_document.document import SurveyContent
 from app.schema.orm.core.audit_log import AuditLog
 from app.schema.orm.core.project import Project, ProjectRole
 from app.schema.orm.core.project_participant import ProjectParticipant
 from app.schema.orm.core.project_subject import ProjectSubject, ProjectSubjectIdentity
 from app.schema.orm.core.response_store import ResponseStore
 from app.schema.orm.core.survey import Survey, SurveyVersion
-from app.schema.orm.core.survey_access import SurveyPublicLink, SurveyRole
+from app.schema.orm.core.survey_access import SurveyRole
 from app.schema.orm.core.user import User
 from app.schema.types import Auth0UserId, ProjectId, ResponseStoreId, SurveyId, UserId
 
@@ -28,18 +29,20 @@ def make_user(
     email: str = "u1@example.com",
     display_name: str | None = "U1",
 ) -> User:
-    user = User()
-    user.auth0_user_id = TypeAdapter(Auth0UserId).validate_python(auth0_user_id)
-    user.email = email
+    user = User(
+        auth0_user_id=TypeAdapter(Auth0UserId).validate_python(auth0_user_id),
+        email=email,
+    )
     user.display_name = display_name
     return user
 
 
-def make_project(user_id: int, name: str = "Test Project", slug: str = "test-project") -> Project:
-    project = Project()
-    project.name = name
-    project.slug = slug
-    project.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
+def make_project(user_id: int | None, name: str = "Test Project", slug: str = "test-project") -> Project:
+    project = Project(
+        name=name,
+        slug=slug,
+    )
+    project.created_by_user_id = TypeAdapter(UserId | None).validate_python(user_id)
     return project
 
 
@@ -49,34 +52,36 @@ def make_project_role(
     is_system_role: bool = True,
     description: str | None = None,
 ) -> ProjectRole:
-    role = ProjectRole()
-    role.project_id = TypeAdapter(ProjectId).validate_python(project_id)
-    role.name = name
+    role = ProjectRole(
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
+        name=name,
+    )
     role.is_system_role = is_system_role
     role.description = description
     return role
 
 
-def make_response_store(project_id: int, user_id: int, name: str = "main-store") -> ResponseStore:
-    store = ResponseStore()
-    store.project_id = TypeAdapter(ProjectId).validate_python(project_id)
-    store.name = name
-    store.store_type = "platform_postgres"
-    store.connection_reference = {"kind": "postgres"}
-    store.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
+def make_response_store(project_id: int, user_id: int | None, name: str = "main-store") -> ResponseStore:
+    store = ResponseStore(
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
+        name=name,
+        store_type="platform_postgres",
+        connection_reference={"kind": "postgres"},
+    )
+    store.created_by_user_id = TypeAdapter(UserId | None).validate_python(user_id)
     return store
 
 
-def make_survey(project_id: int, response_store_id: int, user_id: int, title: str = "Customer Survey") -> Survey:
-    survey = Survey()
-    survey.project_id = TypeAdapter(ProjectId).validate_python(project_id)
-    survey.title = title
-    survey.default_response_store_id = TypeAdapter(ResponseStoreId).validate_python(response_store_id)
+def make_survey(project_id: int, response_store_id: int | None, user_id: int, title: str = "Customer Survey") -> Survey:
+    survey = Survey(
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
+        title=title,
+    )
+    survey.default_response_store_id = (
+        TypeAdapter(ResponseStoreId).validate_python(response_store_id) if response_store_id is not None else None
+    )
     survey.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
     return survey
-
-
-SurveyVersionStatus = Literal["draft", "published", "archived"]
 
 
 def make_survey_version(
@@ -85,22 +90,56 @@ def make_survey_version(
     version_number: int = 1,
     status: SurveyVersionStatus = "draft",
 ) -> SurveyVersion:
-    version = SurveyVersion()
-    version.survey_id = TypeAdapter(SurveyId).validate_python(survey_id)
-    version.version_number = version_number
+    version = SurveyVersion(
+        survey_id=TypeAdapter(SurveyId).validate_python(survey_id),
+        version_number=version_number,
+    )
     version.status = status
     version.created_by_user_id = TypeAdapter(UserId).validate_python(user_id)
     return version
 
 
-def make_survey_public_link(project_id: int, survey_id: int, name: str = "test link") -> SurveyPublicLink:
-    link = SurveyPublicLink()
-    link.project_id = project_id
-    link.survey_id = survey_id
-    link.name = name
-    link.token = make_token()
-    link.assignment_source = "manual"
-    return link
+def define_version(
+    db: Session,
+    version: SurveyVersion,
+    *,
+    field_ids: tuple[str, ...] = (),
+) -> SurveyContent:
+    """Attach content to a version and mark its first revision."""
+    if version.id is None:
+        status = version.status
+        version.status = "draft"
+        db.add(version)
+        db.flush()
+        version.status = status
+    definition = SurveyContent.model_validate(
+        {
+            "title": "Test survey",
+            "sections": [
+                {
+                    "id": "main",
+                    "title": "Main",
+                    "blocks": [
+                        {
+                            "id": field_id,
+                            "type": "input",
+                            "field": {
+                                "id": field_id,
+                                "uuid": uuid4(),
+                                "prompt": field_id,
+                                "interaction": {"kind": "short_text"},
+                                "answerSpec": {"type": "string", "required": False},
+                            },
+                        }
+                        for field_id in field_ids
+                    ],
+                }
+            ],
+        }
+    )
+    version.content = definition
+    version.revision = 1
+    return definition
 
 
 def make_participant_chain(
@@ -121,6 +160,7 @@ def make_participant_chain(
     db_session.flush()
 
     if user_id is not None:
+        now = datetime.now(UTC)
         identity = ProjectSubjectIdentity(
             project_id=TypeAdapter(ProjectId).validate_python(project_id),
             project_subject_id=subject.id,
@@ -128,7 +168,8 @@ def make_participant_chain(
             user_id=TypeAdapter(UserId).validate_python(user_id),
             normalized_email=normalized_email,
             verification_status="verified",
-            verified_at=datetime.now(UTC),
+            verified_at=now,
+            attached_at=now,
         )
     else:
         identity = ProjectSubjectIdentity(
@@ -155,9 +196,10 @@ def make_survey_role(
     name: str = "reviewer",
     description: str | None = None,
 ) -> SurveyRole:
-    role = SurveyRole()
-    role.project_id = TypeAdapter(ProjectId).validate_python(project_id)
-    role.name = name
+    role = SurveyRole(
+        project_id=TypeAdapter(ProjectId).validate_python(project_id),
+        name=name,
+    )
     role.description = description
     return role
 
@@ -169,71 +211,12 @@ def make_audit_log(
     user_id: int | None = None,
     metadata: dict | None = None,
 ) -> AuditLog:
-    log = AuditLog()
-    log.action = action
-    log.entity_type = entity_type
+    log = AuditLog(
+        action=action,
+        entity_type=entity_type,
+    )
     log.entity_id = entity_id
-    log.user_id = TypeAdapter(UserId).validate_python(user_id)
+    log.user_id = TypeAdapter(UserId).validate_python(user_id) if user_id is not None else None
     if metadata is not None:
         log.log_metadata = metadata
     return log
-
-
-def make_survey_rule(
-    survey_version_id: int,
-    rule_key: str = "r1",
-    sort_key: int = 500000,
-    rule_schema: dict | None = None,
-) -> SurveyQuestion:
-    rule = SurveyQuestion()
-    rule.survey_version_id = survey_version_id
-    rule.question_key = rule_key
-    rule.sort_key = sort_key
-    rule.node_type = "rule"
-    rule.question_schema = rule_schema or {
-        "id": rule_key,
-        "if": {"match": "ALL", "conditions": []},
-        "then": {"set": []},
-    }
-    return rule
-
-
-def make_survey_scoring_rule(
-    survey_version_id: int,
-    scoring_key: str = "s1",
-    scoring_schema: dict | None = None,
-) -> SurveyScoringRule:
-    scoring_rule = SurveyScoringRule()
-    scoring_rule.survey_version_id = survey_version_id
-    scoring_rule.scoring_key = scoring_key
-    scoring_rule.scoring_schema = scoring_schema or {
-        "target": "q1",
-        "bucket": "total",
-        "strategy": "rating_direct",
-        "config": {},
-    }
-    return scoring_rule
-
-
-def make_survey_question(
-    survey_version_id: int,
-    question_key: str = "q1",
-    sort_key: int | None = None,
-    question_schema: dict | None = None,
-) -> SurveyQuestion:
-    # Derive a unique sort_key from the question_key so multiple questions
-    # in one version don't collide on the unique constraint.
-    if sort_key is None:
-        sort_key = abs(hash(question_key)) % 900000 + 100000
-    question = SurveyQuestion()
-    question.survey_version_id = survey_version_id
-    question.question_key = question_key
-    question.sort_key = sort_key
-    question.node_type = "question"
-    question.question_schema = question_schema or {
-        "id": question_key,
-        "family": "field",
-        "label": "Question",
-        "field": {"schema": {"field_type": "short_text"}, "ui": {}},
-    }
-    return question

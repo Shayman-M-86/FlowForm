@@ -10,33 +10,18 @@ from pydantic import TypeAdapter, ValidationError
 from app.schema.models.survey_document.answer_spec import AnswerSpec
 from app.schema.models.survey_document.answers import AnsweredAnswer
 from app.schema.models.survey_document.conditions import Condition
-from app.schema.models.survey_document.document import HeadingContent, NoticeContent, SurveyDefinition, SurveySection
+from app.schema.models.survey_document.document import HeadingContent, NoticeContent, SurveyContent, SurveySection
 from app.schema.models.survey_document.fields import Interaction, TextInteraction
 
 FIELD = "10000000-0000-4000-8000-000000000001"
 
 
-def definition():
-    return {
-        "id": "survey",
-        "versionId": 1,
-        "revision": 1,
-        "title": "Survey",
-        "projectName": "Research",
-        "status": "draft",
-        "document": {"sections": []},
-    }
-
-
-def test_document_version_is_the_shared_numeric_identity():
-    assert SurveyDefinition.model_validate(definition()).versionId == 1
-    for bad in ["version_001", 0, -1, 2**63]:
-        with pytest.raises(ValidationError):
-            SurveyDefinition.model_validate(definition() | {"versionId": bad})
-    document = SurveyDefinition.model_json_schema()
-    reference = document["properties"]["versionId"]["$ref"].split("/")[-1]
-    schema = document["$defs"][reference]
-    assert schema["type"] == "integer" and schema["minimum"] == 1
+@pytest.mark.parametrize("metadata", [{"versionId": 1}, {"revision": 1}, {"status": "draft"}, {"projectName": "P"}])
+def test_survey_content_rejects_version_metadata(metadata):
+    payload = {"title": "Survey", "sections": []}
+    assert SurveyContent.model_validate(payload).sections == []
+    with pytest.raises(ValidationError):
+        SurveyContent.model_validate(payload | metadata)
 
 
 @pytest.mark.parametrize("bad", [0, 7, True, "1"])
@@ -95,12 +80,16 @@ def test_conditions_are_operator_specific_and_recursive():
 def test_submitted_answers_reject_arbitrary_json_and_preserve_matching_shape():
     for bad in [{"anything": [1, {"nested": True}]}, [1, 2], None]:
         with pytest.raises(ValidationError):
-            AnsweredAnswer(state="answered", answer_spec={"type": "string", "required": True}, answer_value=bad)
+            AnsweredAnswer.model_validate(
+                {"state": "answered", "answer_spec": {"type": "string", "required": True}, "answer_value": bad}
+            )
     pair = {"prompt_uuid": FIELD, "match_uuid": "20000000-0000-4000-8000-000000000001"}
-    matching = AnsweredAnswer(
-        state="answered",
-        answer_spec={"type": "object", "required": True, "valueType": "matching"},
-        answer_value={"pairs": [pair]},
+    matching = AnsweredAnswer.model_validate(
+        {
+            "state": "answered",
+            "answer_spec": {"type": "object", "required": True, "valueType": "matching"},
+            "answer_value": {"pairs": [pair]},
+        }
     )
     assert matching.model_dump(mode="json")["answer_value"] == {"pairs": [pair]}
 

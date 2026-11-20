@@ -5,7 +5,7 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-11-18
+last_edited: 2026-11-20
 tags: [backend, frontend]
 related_code: []
 related_docs: []
@@ -26,16 +26,14 @@ The structure separates three concepts:
 ### Document hierarchy
 
 ```text
-Survey
-├── Metadata
-├── Document
-│   └── Sections[]
-│       └── Blocks[]
-│           ├── Content
-│           └── Field
-│               ├── Interaction
-│               ├── AnswerSpec
-│               └── Behaviour
+SurveyContent
+├── Sections[]
+│   └── Blocks[]
+│       ├── Content
+│       └── Field
+│           ├── Interaction
+│           ├── AnswerSpec
+│           └── Behaviour
 └── Workflow
     └── Rules[]
 ```
@@ -59,25 +57,18 @@ Field UUIDs uniquely identify questions regardless of their position in the docu
 
 ## 3. Survey structure
 
-### Survey
+### Survey content
 
-The root object contains metadata and the document itself.
+`SurveyContent` contains authored survey data.
 
 | Property | Type | Description |
 |---|---|---|
-| `id` | string | Survey identifier |
-| `versionId` | integer | Persisted survey version identity (`SurveyVersionId`) |
-| `revision` | integer | Document revision |
 | `title` | string | Survey title |
 | `description` | string? | Optional description |
-| `projectName` | string | Associated project |
-| `status` | enum | `draft`, `published`, `archived` |
-| `document` | object | Survey content |
+| `sections` | array | Ordered survey sections |
 | `workflow` | object? | Survey-level rules |
 
-### Document and sections
-
-A document contains an ordered array of sections.
+### Sections
 
 Each section contains:
 
@@ -222,72 +213,65 @@ The detailed execution semantics of workflow outcomes are defined separately.
 
 ```json
 {
-  "id": "health_screening",
-  "versionId": 1,
-  "revision": 1,
   "title": "Health Screening",
-  "projectName": "Health Research",
-  "status": "draft",
-  "document": {
-    "sections": [
-      {
-        "id": "eligibility",
-        "title": "Eligibility",
-        "blocks": [
-          {
-            "id": "age_input",
-            "type": "input",
-            "field": {
-              "id": "age",
-              "uuid": "10000000-0000-4000-8000-000000000001",
-              "prompt": "How old are you?",
-              "interaction": {
-                "kind": "number",
-                "suffix": "years"
-              },
-              "answerSpec": {
-                "type": "integer",
-                "required": true,
-                "constraints": {
-                  "min": 0,
-                  "max": 120
-                }
-              }
-            }
-          },
-          {
-            "id": "smoking_input",
-            "type": "input",
-            "field": {
-              "id": "smoking_status",
-              "uuid": "10000000-0000-4000-8000-000000000002",
-              "prompt": "Do you smoke?",
-              "interaction": {
-                "kind": "single_choice",
-                "presentation": "radio",
-                "options": [
-                  {
-                    "id": "yes",
-                    "uuid": "20000000-0000-4000-8000-000000000001",
-                    "label": "Yes"
-                  },
-                  {
-                    "id": "no",
-                    "uuid": "20000000-0000-4000-8000-000000000002",
-                    "label": "No"
-                  }
-                ]
-              },
-              "answerSpec": {
-                "type": "choice",
-                "required": true
+  "sections": [
+    {
+      "id": "eligibility",
+      "title": "Eligibility",
+      "blocks": [
+        {
+          "id": "age_input",
+          "type": "input",
+          "field": {
+            "id": "age",
+            "uuid": "10000000-0000-4000-8000-000000000001",
+            "prompt": "How old are you?",
+            "interaction": {
+              "kind": "number",
+              "suffix": "years"
+            },
+            "answerSpec": {
+              "type": "integer",
+              "required": true,
+              "constraints": {
+                "min": 0,
+                "max": 120
               }
             }
           }
-        ]
-      }
-    ]
-  },
+        },
+        {
+          "id": "smoking_input",
+          "type": "input",
+          "field": {
+            "id": "smoking_status",
+            "uuid": "10000000-0000-4000-8000-000000000002",
+            "prompt": "Do you smoke?",
+            "interaction": {
+              "kind": "single_choice",
+              "presentation": "radio",
+              "options": [
+                {
+                  "id": "yes",
+                  "uuid": "20000000-0000-4000-8000-000000000001",
+                  "label": "Yes"
+                },
+                {
+                  "id": "no",
+                  "uuid": "20000000-0000-4000-8000-000000000002",
+                  "label": "No"
+                }
+              ]
+            },
+            "answerSpec": {
+              "type": "choice",
+              "required": true
+            }
+          }
+        }
+      ]
+    }
+  ],
   "workflow": {
     "rules": [
       {
@@ -312,6 +296,6 @@ The detailed execution semantics of workflow outcomes are defined separately.
 3. Input presentation and accepted answer types remain separate.
 4. Conditional logic uses stable field references.
 5. Workflow rules are separate from the document's content.
-6. Survey definitions are versioned, with their content and ordering preserved within each version.
+6. Each version preserves the content and ordering of its sections and blocks.
 
 This definition establishes the structure of a FlowForm V2 survey without specifying API endpoints, database storage, compilation processes, or respondent response formats.

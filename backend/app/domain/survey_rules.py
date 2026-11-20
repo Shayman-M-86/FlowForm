@@ -10,16 +10,10 @@ from app.domain.errors import (
 )
 from app.schema.enums import SurveyVisibility
 from app.schema.models.common.survey_access import SurveyAccess
-from app.schema.models.survey_document import SurveyDefinition
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.types import ProjectId, ResponseStoreId, Slug, SurveyId
 
 _ACCESS = TypeAdapter(SurveyAccess)
-
-
-def validate_definition(value: object) -> SurveyDefinition:
-    """Validate a complete V2 document using its authoritative Pydantic model."""
-    return SurveyDefinition.model_validate(value)
 
 
 def ensure_is_published(

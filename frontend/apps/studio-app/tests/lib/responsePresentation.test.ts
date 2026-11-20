@@ -1,61 +1,95 @@
 import { describe, expect, it } from 'vitest'
 import type { AnswerSlot } from '@/api/hooks/results'
-import { orderAnswers, presentAnswer } from '@/lib/responsePresentation'
+import { presentAnswer } from '@/lib/responsePresentation'
 
-function answer(overrides: Partial<AnswerSlot>): AnswerSlot {
+const fieldUuid = '11111111-1111-4111-8111-111111111111'
+const optionUuid = '22222222-2222-4222-8222-222222222222'
+const choiceSpec = { type: 'choice', required: true } as const
+const choiceField: NonNullable<AnswerSlot['field']> = {
+  id: 'q1',
+  uuid: fieldUuid,
+  prompt: 'When do you drink coffee?',
+  description: null,
+  behaviour: null,
+  interaction: {
+    kind: 'single_choice',
+    presentation: 'radio',
+    options: [{ id: 'morning', uuid: optionUuid, label: 'In the morning' }],
+  },
+  answerSpec: choiceSpec,
+}
+
+function answer(overrides: Partial<AnswerSlot> = {}): AnswerSlot {
   return {
-    question_node_id: '11111111-1111-4111-8111-111111111111',
-    question_key: 'q1',
-    answer_family: 'choice',
+    field_uuid: fieldUuid,
+    field_id: choiceField.id,
     has_encrypted_answer: true,
     decrypted: true,
     state: 'answered',
-    answer_value: { selected: ['morning'] },
-    question_content: {
-      family: 'choice',
-      label: 'When do you drink coffee?',
-      definition: { min: 0, max: 1, options: [{ id: 'morning', label: 'In the morning' }] },
-    },
-    question_sort_key: 20,
+    answer_spec: choiceSpec,
+    answer_value: optionUuid,
+    field: choiceField,
     ...overrides,
   }
 }
 
 describe('response presentation', () => {
-  it('uses the recorded question and option labels instead of IDs', () => {
-    const presented = presentAnswer(answer({}))
+  it('uses the field prompt and option UUID labels from the pinned definition', () => {
+    const presented = presentAnswer(answer())
     expect(presented.question).toBe('When do you drink coffee?')
     expect(presented.lines).toEqual(['In the morning'])
+
+    const choiceSetSpec = { type: 'choice_set', required: true, constraints: null } as const
+    expect(presentAnswer(answer({
+      answer_spec: choiceSetSpec,
+      answer_value: [optionUuid],
+      field: {
+        ...choiceField,
+        answerSpec: choiceSetSpec,
+        interaction: {
+          kind: 'multiple_choice',
+          presentation: 'checkboxes',
+          options: [{ id: 'morning', uuid: optionUuid, label: 'In the morning' }],
+        },
+      },
+    })).lines).toEqual(['In the morning'])
   })
 
-  it('formats matching, rating, and field answers', () => {
+  it('formats matching pairs, rating bounds, and scalar values', () => {
     expect(presentAnswer(answer({
-      answer_family: 'matching',
-      answer_value: { pairs: [{ prompt_id: 'vic', match_id: 'au' }] },
-      question_content: {
-        family: 'matching', label: 'Match the state',
-        definition: { prompts: [{ id: 'vic', label: 'Victoria' }], matches: [{ id: 'au', label: 'Australia' }] },
-      },
-    })).lines).toEqual(['Victoria → Australia'])
+      field: null,
+      answer_spec: { type: 'object', valueType: 'matching', required: false },
+      answer_value: { pairs: [{ prompt_uuid: fieldUuid, match_uuid: optionUuid }] },
+    })).lines).toEqual([`${fieldUuid} → ${optionUuid}`])
 
+    const ratingSpec = { type: 'integer', required: true, constraints: { min: 1, max: 5 } } as const
     expect(presentAnswer(answer({
-      answer_family: 'rating',
-      answer_value: { variant: 'stars', number: 3 },
-      question_content: { family: 'rating', label: 'How rested?', definition: { variant: 'stars', stars: 5 } },
+      answer_spec: ratingSpec,
+      answer_value: 3,
+      field: {
+        ...choiceField,
+        prompt: 'How rested?',
+        interaction: { kind: 'rating', presentation: 'stars', prefix: null, suffix: null },
+        answerSpec: ratingSpec,
+      },
     })).lines).toEqual(['3 of 5 stars'])
 
     expect(presentAnswer(answer({
-      answer_family: 'field',
-      answer_value: { field_type: 'long_text', text: 'I sleep well.' },
-      question_content: { family: 'field', label: 'Tell us more', definition: { field_type: 'long_text' } },
+      field: null,
+      answer_spec: { type: 'boolean', required: false },
+      answer_value: false,
+    })).lines).toEqual(['No'])
+    expect(presentAnswer(answer({
+      field: null,
+      answer_spec: { type: 'string', required: false, constraints: null },
+      answer_value: 'I sleep well.',
     })).lines).toEqual(['I sleep well.'])
   })
 
-  it('shows a safe fallback and keeps historical question order', () => {
-    expect(presentAnswer(answer({ decrypted: false, answer_value: null })).lines).toEqual(['Answer unavailable'])
-    expect(orderAnswers([
-      answer({ question_sort_key: 20 }),
-      answer({ question_sort_key: 10 }),
-    ]).map((item) => item.question_sort_key)).toEqual([10, 20])
+  it('shows the saved states and falls back to the readable field ID when metadata is missing', () => {
+    const unavailable = presentAnswer(answer({ field: null, decrypted: false, answer_value: null }))
+    expect(unavailable.question).toBe('q1')
+    expect(unavailable.lines).toEqual(['Answer unavailable'])
+    expect(presentAnswer(answer({ state: 'cleared', answer_value: null })).lines).toEqual(['Answer cleared'])
   })
 })

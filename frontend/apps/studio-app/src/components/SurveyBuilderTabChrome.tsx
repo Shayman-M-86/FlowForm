@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Badge, Button, Card, DropdownMenu } from '@flowform/ui'
 import { Archive, ChevronDown, Copy, Eye, Rocket, RotateCcw, Sparkles } from 'lucide-react'
+import type { SurveyVersionOut } from '@/api/hooks/versions'
 
-export type SurveyVersionStatus = 'draft' | 'published' | 'archived'
-
-export type SurveyVersionView = {
-  id: number
-  version_number: number
-  status: SurveyVersionStatus
-  created_at: string
-}
+export type SurveyVersionStatus = SurveyVersionOut['status']
+export type SurveyVersionView = Pick<SurveyVersionOut, 'version_id' | 'version_number' | 'status' | 'created_at'>
 
 function noop() {}
 
@@ -39,7 +34,7 @@ function VersionSelector({
 
   const sections = [{
     actions: versions.map((version) => ({
-      key: String(version.id),
+      key: String(version.version_id),
       closeOnSelect: true,
       content: (
         <Button
@@ -47,7 +42,7 @@ function VersionSelector({
           variant="ghost"
           size="sm"
           className={`my-0.5 flex w-full items-center justify-start gap-2 px-2 ${
-            version.id === selectedVersion?.id ? 'bg-accent/20' : ''
+            version.version_id === selectedVersion?.version_id ? 'bg-accent/20' : ''
           }`}
         >
           <StatusBadge status={version.status} />
@@ -57,7 +52,7 @@ function VersionSelector({
           </span>
         </Button>
       ),
-      onSelect: () => onSelectVersion(version.id),
+      onSelect: () => onSelectVersion(version.version_id),
     })),
   }]
 

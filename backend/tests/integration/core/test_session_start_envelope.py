@@ -5,6 +5,7 @@ Verifies that:
 - Core session is rolled back when envelope creation fails before core commit
 - Core commit failure after envelope creation triggers orphan cleanup
 """
+
 from __future__ import annotations
 
 import os
@@ -32,6 +33,7 @@ from app.schema.orm.response.response_envelope import ResponseEnvelope
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
 from tests.conftest import DbSessions
 from tests.integration.core.factories import (
+    define_version,
     make_project,
     make_response_store,
     make_survey,
@@ -39,7 +41,6 @@ from tests.integration.core.factories import (
     make_user,
 )
 
-_SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
 _FAKE_SESSION_LOCATOR = SessionLocator(os.urandom(32))
 _FAKE_PLAINTEXT_DEK = PlaintextSessionKey(os.urandom(32))
 _FAKE_WRAPPED_DEK = WrappedSessionKey(b"\xbb" * 64)
@@ -69,7 +70,7 @@ def _seed_published_survey(db: Session, slug: str) -> int:
 
     version = make_survey_version(survey.id, user.id)
     version.status = "published"
-    version.compiled_schema = _SCHEMA
+    define_version(db, version)
     version.published_at = datetime.now(UTC)
     db.add(version)
     db.flush()
@@ -81,9 +82,7 @@ def _seed_published_survey(db: Session, slug: str) -> int:
 
 
 def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
-    return StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "public_slug", "public_slug": slug}}
-    )
+    return StartSubmissionSessionRequest.model_validate({"access": {"type": "public_slug", "public_slug": slug}})
 
 
 def _mock_crypto_for_start():
@@ -139,9 +138,7 @@ class TestSuccessfulSessionStart:
         assert browser_token, "browser token must be returned on success"
         assert response.status == "in_progress"
 
-        session = db_sessions.core.scalar(
-            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
-        )
+        session = db_sessions.core.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == survey_id))
         assert session is not None, "core session must exist"
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
@@ -162,7 +159,8 @@ class TestPreCommitEnvelopeFailureRollback:
             patch(
                 f"{_STARTER_MODULE}.derive_session_locator",
                 return_value=NewSessionLocator(
-                    linkage_key_version=1, session_locator=_FAKE_SESSION_LOCATOR,
+                    linkage_key_version=1,
+                    session_locator=_FAKE_SESSION_LOCATOR,
                 ),
             ),
             patch(
@@ -180,9 +178,7 @@ class TestPreCommitEnvelopeFailureRollback:
                 actor=None,
             )
 
-        session = db_sessions.core.scalar(
-            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
-        )
+        session = db_sessions.core.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == survey_id))
         assert session is None, "core session must be rolled back on KMS failure"
 
     def test_envelope_repo_failure_rolls_back_core_session(
@@ -206,9 +202,7 @@ class TestPreCommitEnvelopeFailureRollback:
                 actor=None,
             )
 
-        session = db_sessions.core.scalar(
-            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
-        )
+        session = db_sessions.core.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == survey_id))
         assert session is None, "core session must be rolled back on envelope repo failure"
 
     def test_response_commit_failure_rolls_back_core_session_and_envelope(
@@ -235,9 +229,7 @@ class TestPreCommitEnvelopeFailureRollback:
                 actor=None,
             )
 
-        session = db_sessions.core.scalar(
-            select(SubmissionSession).where(SubmissionSession.survey_id == survey_id)
-        )
+        session = db_sessions.core.scalar(select(SubmissionSession).where(SubmissionSession.survey_id == survey_id))
         assert session is None, "core session must be rolled back when response commit fails"
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))

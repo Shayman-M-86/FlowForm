@@ -5,17 +5,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.error_handling import flush_with_err_handle
-from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
-from app.schema.models.survey_document import SurveyDefinition
+from app.schema.enums import SurveyVisibility
+from app.schema.models.survey_document import SurveyContent
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.types import (
     Count,
+    DocumentRevision,
     PageNumber,
     PageSize,
     ProjectId,
     ResponseStoreId,
     Slug,
     SurveyId,
+    SurveyTitle,
+    SurveyVersionId,
     SurveyVersionNumber,
     UserId,
 )
@@ -36,16 +39,18 @@ def get_survey(db: Session, project_id: ProjectId, survey_id: SurveyId) -> Surve
 def create_survey(
     db: Session,
     project_id: ProjectId,
-    data: CreateSurveyRequest,
     *,
+    title: SurveyTitle,
+    visibility: SurveyVisibility,
+    public_slug: Slug | None,
     default_response_store_id: ResponseStoreId,
     created_by_user_id: UserId | None = None,
 ) -> Survey:
     survey = Survey(
         project_id=project_id,
-        title=data.title,
-        visibility=data.visibility,
-        public_slug=data.public_slug,
+        title=title,
+        visibility=visibility,
+        public_slug=public_slug,
         default_response_store_id=default_response_store_id,
         created_by_user_id=created_by_user_id,
     )
@@ -54,14 +59,17 @@ def create_survey(
     return survey
 
 
-def update_survey(db: Session, survey: Survey, data: UpdateSurveyRequest) -> Survey:
-    changed = data.model_fields_set
-    if "title" in changed and data.title is not None:
-        survey.title = data.title
-    if "visibility" in changed and data.visibility is not None:
-        survey.visibility = data.visibility
-    if "public_slug" in changed:
-        survey.public_slug = data.public_slug
+def update_survey(
+    db: Session,
+    survey: Survey,
+    *,
+    title: SurveyTitle,
+    visibility: SurveyVisibility,
+    public_slug: Slug | None,
+) -> Survey:
+    survey.title = title
+    survey.visibility = visibility
+    survey.public_slug = public_slug
     flush_with_err_handle(db, contexts=[survey])
     return survey
 
@@ -81,52 +89,79 @@ def list_versions(db: Session, survey_id: SurveyId) -> list[SurveyVersion]:
     )
 
 
-def get_version(
-    db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: SurveyVersionNumber
-) -> SurveyVersion | None:
-    return db.scalar(
+def _version_query(project_id: ProjectId, survey_id: SurveyId):
+    return (
         select(SurveyVersion)
         .join(Survey, Survey.id == SurveyVersion.survey_id)
         .where(
             Survey.project_id == project_id,
             SurveyVersion.survey_id == survey_id,
-            SurveyVersion.version_number == version_number,
             SurveyVersion.deleted_at.is_(None),
         )
     )
 
 
-def get_definition(
+def get_version(
+    db: Session,
+    project_id: ProjectId,
+    survey_id: SurveyId,
+    version_number: SurveyVersionNumber,
+    *,
+    for_update: bool = False,
+) -> SurveyVersion | None:
+    query = _version_query(project_id, survey_id).where(SurveyVersion.version_number == version_number)
+    if for_update:
+        query = query.with_for_update(of=SurveyVersion).execution_options(populate_existing=True)
+    return db.scalar(query)
+
+
+def lock_version_by_id(
+    db: Session, project_id: ProjectId, survey_id: SurveyId, version_id: SurveyVersionId
+) -> SurveyVersion | None:
+    """Lock the scoped version so concurrent saves see the latest revision."""
+    query = (
+        _version_query(project_id, survey_id)
+        .where(SurveyVersion.id == version_id)
+        .with_for_update(of=SurveyVersion)
+        .execution_options(populate_existing=True)
+    )
+    return db.scalar(query)
+
+
+def get_content(
     db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: SurveyVersionNumber
-) -> SurveyDefinition | None:
-    """Read a definition snapshot, or None for a missing version or empty draft."""
+) -> SurveyContent | None:
+    """Read independent content for a scoped version."""
     version = get_version(db, project_id, survey_id, version_number)
-    if version is None or version.definition is None:
+    if version is None or version.content is None:
         return None
-    return version.definition.model_copy(deep=True)
+    return version.content.model_copy(deep=True)
 
 
-def update_definition(db: Session, version: SurveyVersion, definition: SurveyDefinition) -> SurveyVersion:
-    """Replace and flush the complete definition; the caller owns the transaction.
-
-    Services own editability, document/version identity, revision policy, and
-    publication checks. Explicitly marking replacement also persists a document
-    whose nested values were edited in memory before this call.
-    """
-    version.definition = definition.model_copy(deep=True)
-    flag_modified(version, "definition")
+def update_content(db: Session, version: SurveyVersion, content: SurveyContent, revision: DocumentRevision) -> None:
+    """Replace the entire JSONB value and write the new revision together."""
+    version.content = content.model_copy(deep=True)
+    version.revision = revision
+    flag_modified(version, "content")
     flush_with_err_handle(db, contexts=[version])
-    return version
 
 
-def create_version(db: Session, survey_id: SurveyId, created_by_user_id: UserId | None = None, definition: SurveyDefinition | None = None) -> SurveyVersion:  # noqa: E501
+def create_version(
+    db: Session,
+    survey_id: SurveyId,
+    *,
+    created_by_user_id: UserId | None = None,
+    content: SurveyContent | None = None,
+    revision: DocumentRevision = 0,
+) -> SurveyVersion:
     max_num = db.scalar(select(func.max(SurveyVersion.version_number)).where(SurveyVersion.survey_id == survey_id)) or 0
     version = SurveyVersion(
         survey_id=survey_id,
         version_number=max_num + 1,
         status="draft",
         created_by_user_id=created_by_user_id,
-        definition=definition.model_copy(deep=True) if definition is not None else None,
+        content=content.model_copy(deep=True) if content is not None else None,
+        revision=revision,
     )
     db.add(version)
     flush_with_err_handle(db, contexts=[version])

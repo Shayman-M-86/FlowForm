@@ -454,22 +454,22 @@ SURVEY_VERSION_RULES: tuple[DbErrorRule, ...] = (
         extractor=_survey_version_ctx,
     ),
     message_rule(
-        "Cannot modify the definition of a non-draft survey version",
+        "Cannot modify the content or revision of a non-draft survey version",
         lambda _ctx, _exc: DbIntegrityError(
             409,
             "VERSION_NOT_EDITABLE",
-            "The survey definition can only be changed on a draft version.",
+            "Survey content and revision can only be changed on a draft version.",
         ),
         extractor=_survey_version_ctx,
     ),
-    # The service checks that the draft has a definition before publishing.
+    # The service checks that the draft has content before publishing.
     # This CHECK catches an inconsistent write at the database boundary.
     check_rule(
-        "ck_survey_versions_published_requires_definition_and_timestamp",
+        "ck_survey_versions_published_requires_content_and_timestamp",
         lambda _ctx, _exc: DbIntegrityError(
             500,
             "VERSION_PUBLISH_STATE_INVALID",
-            "A published survey version must have both a definition and a publication timestamp.",
+            "A published survey version must have both content and a publication timestamp.",
         ),
         extractor=_survey_version_ctx,
     ),

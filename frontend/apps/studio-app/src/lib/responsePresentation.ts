@@ -1,108 +1,75 @@
 import type { AnswerSlot } from '@/api/hooks/results'
 
-type JsonRecord = Record<string, unknown>
+type Interaction = NonNullable<AnswerSlot['field']>['interaction']
+type AnswerSpec = NonNullable<AnswerSlot['answer_spec']>
 
-export type PresentedAnswer = {
-  question: string
-  section: string | null
-  family: string | null
-  lines: string[]
-  hint: string | null
-}
-
-function record(value: unknown): JsonRecord | null {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : null
-}
-
-function text(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value : null
-}
-
-function number(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null
-}
-
-function labelById(items: unknown, id: unknown): string {
-  if (!Array.isArray(items)) return String(id)
-  const match = items.find((item) => record(item)?.id === id)
-  return text(record(match)?.label) ?? String(id)
-}
-
-function answerLines(answer: AnswerSlot, definition: JsonRecord | null): { lines: string[]; hint: string | null } {
-  if (answer.state === 'cleared') return { lines: ['Answer cleared'], hint: null }
-  if (!answer.decrypted) {
-    return { lines: [answer.has_encrypted_answer ? 'Answer unavailable' : 'No answer recorded'], hint: null }
-  }
-
-  const value = record(answer.answer_value)
-  if (!value) return { lines: ['No answer recorded'], hint: null }
-
-  if (answer.answer_family === 'choice' && Array.isArray(value.selected)) {
-    const labels = value.selected.map((id) => labelById(definition?.options, id))
-    return { lines: labels.length ? labels : ['No option selected'], hint: null }
-  }
-
-  if (answer.answer_family === 'field') {
-    const fieldType = text(value.field_type)
-    const fieldValue = fieldType ? value[fieldType === 'short_text' || fieldType === 'long_text' ? 'text' : fieldType] : null
-    if (typeof fieldValue === 'string' || typeof fieldValue === 'number') {
-      return { lines: [String(fieldValue)], hint: null }
-    }
-  }
-
-  if (answer.answer_family === 'matching' && Array.isArray(value.pairs)) {
-    const pairs = value.pairs.map((pair) => {
-      const ids = record(pair)
-      if (!ids) return null
-      return `${labelById(definition?.prompts, ids.prompt_id)} → ${labelById(definition?.matches, ids.match_id)}`
-    }).filter((pair): pair is string => pair !== null)
-    return { lines: pairs.length ? pairs : ['No matches recorded'], hint: null }
-  }
-
-  if (answer.answer_family === 'rating') {
-    const rating = number(value.number)
-    if (rating !== null) {
-      const variant = text(value.variant)
-      const stars = number(definition?.stars)
-      const range = record(definition?.range)
-      const ui = record(definition?.ui)
-      const left = text(ui?.left_label)
-      const right = text(ui?.right_label)
-      const hint = left && right ? `${left} → ${right}` : null
-      if (variant === 'stars') return { lines: [`${rating} of ${stars ?? 5} stars`], hint }
-      if (variant === 'slider' && number(range?.min) !== null && number(range?.max) !== null) {
-        return { lines: [`${rating} on a ${range?.min}–${range?.max} scale`], hint }
-      }
-      if (variant === 'emoji') return { lines: [`${rating} of 5`], hint }
-      return { lines: [String(rating)], hint }
-    }
-  }
-
-  return { lines: [JSON.stringify(value)], hint: 'Stored answer format could not be interpreted.' }
-}
-
-const FAMILY_LABELS: Record<string, string> = {
-  choice: 'Choice',
-  field: 'Text or field',
-  matching: 'Matching',
+const INTERACTION_LABELS: Record<Interaction['kind'], string> = {
+  short_text: 'Text',
+  long_text: 'Text',
+  number: 'Number',
   rating: 'Rating',
+  single_choice: 'Choice',
+  multiple_choice: 'Choice',
+  boolean: 'Yes or no',
+  date: 'Date',
 }
 
-export function presentAnswer(answer: AnswerSlot): PresentedAnswer {
-  const content = record(answer.question_content)
-  const definition = record(content?.definition)
-  const formatted = answerLines(answer, definition)
-  return {
-    question: text(content?.label) ?? 'Question wording unavailable',
-    section: text(content?.title),
-    family: answer.answer_family ? (FAMILY_LABELS[answer.answer_family] ?? answer.answer_family) : null,
-    lines: formatted.lines,
-    hint: formatted.hint,
+const SPEC_LABELS: Record<AnswerSpec['type'], string> = {
+  string: 'Text',
+  number: 'Number',
+  integer: 'Number',
+  boolean: 'Yes or no',
+  date: 'Date',
+  choice: 'Choice',
+  choice_set: 'Choice',
+  object: 'Matching',
+}
+
+function optionLabel(interaction: Interaction | undefined, uuid: string): string {
+  if (interaction?.kind !== 'single_choice' && interaction?.kind !== 'multiple_choice') return uuid
+  return interaction.options.find((option) => option.uuid === uuid)?.label ?? uuid
+}
+
+function answerLines(answer: AnswerSlot): string[] {
+  if (answer.state === 'cleared') return ['Answer cleared']
+  if (!answer.decrypted) {
+    return [answer.has_encrypted_answer ? 'Answer unavailable' : 'No answer recorded']
   }
+
+  const { answer_value: value } = answer
+  const interaction = answer.field?.interaction
+  const spec = answer.answer_spec ?? answer.field?.answerSpec
+  if (value === null) return ['No answer recorded']
+  if (Array.isArray(value)) {
+    return value.length ? value.map((uuid) => optionLabel(interaction, uuid)) : ['No option selected']
+  }
+  if (typeof value === 'object') {
+    return value.pairs.length
+      ? value.pairs.map(({ prompt_uuid, match_uuid }) => `${prompt_uuid} → ${match_uuid}`)
+      : ['No matches recorded']
+  }
+  if (typeof value === 'boolean') return [value ? 'Yes' : 'No']
+  if (typeof value === 'string' && spec?.type === 'choice') return [optionLabel(interaction, value)]
+  if (
+    typeof value === 'number' &&
+    interaction?.kind === 'rating' &&
+    (spec?.type === 'number' || spec?.type === 'integer')
+  ) {
+    const min = spec.constraints?.min
+    const max = spec.constraints?.max
+    if (interaction.presentation === 'stars' && max != null) return [`${value} of ${max} stars`]
+    if (min != null && max != null) return [`${value} on a ${min}–${max} scale`]
+  }
+  return [String(value)]
 }
 
-export function orderAnswers(answers: AnswerSlot[]): AnswerSlot[] {
-  return [...answers].sort((left, right) =>
-    (left.question_sort_key ?? Number.MAX_SAFE_INTEGER) - (right.question_sort_key ?? Number.MAX_SAFE_INTEGER),
-  )
+export function presentAnswer(answer: AnswerSlot) {
+  const field = answer.field
+  const spec = answer.answer_spec ?? field?.answerSpec
+  return {
+    question: field?.prompt ?? answer.field_id ?? 'Question wording unavailable',
+    description: field?.description ?? null,
+    family: field ? INTERACTION_LABELS[field.interaction.kind] : spec ? SPEC_LABELS[spec.type] : null,
+    lines: answerLines(answer),
+  }
 }

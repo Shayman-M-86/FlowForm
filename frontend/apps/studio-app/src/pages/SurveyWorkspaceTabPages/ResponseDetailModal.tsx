@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Badge, Card, Modal } from '@flowform/ui'
 import type { AnswerSlot, SessionTree } from '@/api/hooks/results'
-import { orderAnswers, presentAnswer } from '@/lib/responsePresentation'
+import { presentAnswer } from '@/lib/responsePresentation'
 
 type Props = {
   sessionTree: SessionTree | null
@@ -65,8 +65,8 @@ function AnswerCard({ answer, index }: { answer: AnswerSlot; index: number }) {
           )}
         </div>
       </div>
-      {presented.section && <p className="mt-2 text-xs text-muted-foreground">{presented.section}</p>}
       <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{presented.question}</p>
+      {presented.description && <p className="mt-1 text-xs text-muted-foreground">{presented.description}</p>}
       <div className="mt-3 rounded-md border border-border bg-background p-3">
         <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">Answer</p>
         {presented.lines.length === 1 ? (
@@ -76,7 +76,6 @@ function AnswerCard({ answer, index }: { answer: AnswerSlot; index: number }) {
             {presented.lines.map((line, lineIndex) => <li key={`${lineIndex}-${line}`}>{line}</li>)}
           </ul>
         )}
-        {presented.hint && <p className="mt-2 text-xs text-muted-foreground">{presented.hint}</p>}
       </div>
     </Card>
   )
@@ -84,10 +83,10 @@ function AnswerCard({ answer, index }: { answer: AnswerSlot; index: number }) {
 
 export function ResponseDetailModal({ sessionTree, onClose }: Props) {
   const session = sessionTree?.session
-  const answers = orderAnswers(sessionTree?.answers ?? [])
+  const answers = sessionTree?.answers ?? []
   const open = sessionTree != null
   const sessionId = session?.session_id ?? null
-  const answeredKey = answers.filter(isRecorded).map((answer) => answer.question_node_id).join('|')
+  const answeredKey = answers.filter(isRecorded).map((answer) => answer.field_uuid).join('|')
 
   const bodyRef = useRef<HTMLDivElement>(null)
   const lastUserScrollAt = useRef(Number.NEGATIVE_INFINITY)
@@ -183,7 +182,7 @@ export function ResponseDetailModal({ sessionTree, onClose }: Props) {
             ) : (
               <div className="grid gap-2">
                 {answers.map((answer, index) => (
-                  <div key={answer.question_node_id} data-answer-id={answer.question_node_id}>
+                  <div key={answer.field_uuid} data-answer-id={answer.field_uuid}>
                     <AnswerCard answer={answer} index={index} />
                   </div>
                 ))}

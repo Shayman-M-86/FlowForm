@@ -1188,6 +1188,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save survey content
+         * @description Save survey content
+         */
+        put: operations["saveSurveyContent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/studio/surveys/ai-import": {
         parameters: {
             query?: never;
@@ -1664,7 +1684,6 @@ export interface components {
              */
             type: "divider";
         };
-        DocumentRevision: number;
         /**
          * FieldBehaviour
          * @description Optional field visibility data.
@@ -1890,6 +1909,14 @@ export interface components {
             suffix: components["schemas"]["InputAffix"] | null;
         };
         ReadableId: string;
+        /**
+         * RespondentSurveyVersionNestedModel
+         * @description The version identity and content needed to display a survey.
+         */
+        RespondentSurveyVersionNestedModel: {
+            version_id: components["schemas"]["SurveyVersionId"];
+            content: components["schemas"]["SurveyContent"];
+        };
         /** @description Response store identity */
         ResponseStoreId: number;
         SectionTitle: string;
@@ -1967,32 +1994,16 @@ export interface components {
         };
         SurveyBlocks_Annotated_Union_HeadingBlock__ParagraphBlock__NoticeBlock__DividerBlock__InputBlock___FieldInfo_annotation_NoneType__required_True__title__SurveyBlock___discriminator__type____: (components["schemas"]["HeadingBlock"] | components["schemas"]["ParagraphBlock"] | components["schemas"]["NoticeBlock"] | components["schemas"]["DividerBlock"] | components["schemas"]["InputBlock"])[];
         /**
-         * SurveyDefinition
-         * @description Canonical FlowForm V2 survey definition.
+         * SurveyContent
+         * @description Portable authored survey content.
          */
-        SurveyDefinition: {
+        SurveyContent: {
             title: components["schemas"]["SurveyTitle"];
             /** @default null */
             description: components["schemas"]["LongString"] | null;
-            document: components["schemas"]["SurveyDocument"];
+            sections: components["schemas"]["LimitedList_SurveySection_"];
             /** @default null */
             workflow: components["schemas"]["SurveyWorkflow"] | null;
-            id: components["schemas"]["ReadableId"];
-            versionId: components["schemas"]["SurveyVersionId"];
-            revision: components["schemas"]["DocumentRevision"];
-            projectName: components["schemas"]["ProjectName"];
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "published" | "archived";
-        };
-        /**
-         * SurveyDocument
-         * @description Ordered survey sections.
-         */
-        SurveyDocument: {
-            sections: components["schemas"]["LimitedList_SurveySection_"];
         };
         /**
          * SurveyField
@@ -2057,27 +2068,6 @@ export interface components {
         SurveyTitle: string;
         /** @description Identity of a persisted survey version */
         SurveyVersionId: number;
-        /** @description Sequential version number within a survey */
-        SurveyVersionNumber: number;
-        /**
-         * SurveyVersionResponses
-         * @description API response shape for a survey version.
-         */
-        SurveyVersionResponses: {
-            id: components["schemas"]["SurveyVersionId"];
-            survey_id: components["schemas"]["SurveyId"];
-            version_number: components["schemas"]["SurveyVersionNumber"];
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "draft" | "published" | "archived";
-            definition: components["schemas"]["SurveyDefinition"];
-            published_at: components["schemas"]["Timestamp"] | null;
-            created_by_user_id: components["schemas"]["UserId"] | null;
-            created_at: components["schemas"]["Timestamp"];
-            updated_at: components["schemas"]["Timestamp"];
-        };
         /**
          * SurveyWorkflow
          * @description Survey-level rule collection.
@@ -2149,7 +2139,7 @@ export interface components {
             /** @default null */
             survey: components["schemas"]["SurveyResponses"] | null;
             /** @default null */
-            published_version: components["schemas"]["SurveyVersionResponses"] | null;
+            published_version: components["schemas"]["RespondentSurveyVersionNestedModel"] | null;
         };
         PageNumber: number;
         PageSize: number;
@@ -2182,7 +2172,7 @@ export interface components {
         PublicSurveyResponses: {
             survey: components["schemas"]["SurveyResponses"];
             /** @default null */
-            published_version: components["schemas"]["SurveyVersionResponses"] | null;
+            published_version: components["schemas"]["RespondentSurveyVersionNestedModel"] | null;
         };
         /**
          * LinkTokenAccessNestedModel
@@ -2246,7 +2236,7 @@ export interface components {
              */
             status: "in_progress" | "completed" | "abandoned";
             survey: components["schemas"]["SurveyResponses"];
-            published_version: components["schemas"]["SurveyVersionResponses"];
+            published_version: components["schemas"]["RespondentSurveyVersionNestedModel"];
         };
         /**
          * AnsweredSubmissionRequest
@@ -3010,6 +3000,97 @@ export interface components {
         MySurveyPermissionsResponses: {
             permissions: components["schemas"]["ProjectPermissionSet"];
         };
+        DocumentRevision: number;
+        /**
+         * SurveyVersionListItemResponse
+         * @description Version metadata used to select a version in Studio.
+         */
+        SurveyVersionListItemResponse: {
+            version_id: components["schemas"]["SurveyVersionId"];
+            version_number: components["schemas"]["SurveyVersionNumber"];
+            revision: components["schemas"]["DocumentRevision"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+            published_at: components["schemas"]["Timestamp"] | null;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @description Sequential version number within a survey */
+        SurveyVersionNumber: number;
+        /**
+         * CreateSurveyVersionResponse
+         * @description Identify the newly created empty draft.
+         */
+        CreateSurveyVersionResponse: {
+            version_id: components["schemas"]["SurveyVersionId"];
+            version_number: components["schemas"]["SurveyVersionNumber"];
+            revision: components["schemas"]["DocumentRevision"];
+        };
+        /**
+         * CopySurveyVersionResponse
+         * @description Identify the new draft that holds the copied content.
+         */
+        CopySurveyVersionResponse: {
+            version_id: components["schemas"]["SurveyVersionId"];
+            version_number: components["schemas"]["SurveyVersionNumber"];
+            revision: components["schemas"]["DocumentRevision"];
+        };
+        /**
+         * GetSurveyVersionResponse
+         * @description One version's current metadata and its saved content.
+         */
+        GetSurveyVersionResponse: {
+            version_id: components["schemas"]["SurveyVersionId"];
+            revision: components["schemas"]["DocumentRevision"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+            content: components["schemas"]["SurveyContent"] | null;
+        };
+        /**
+         * PublishSurveyResponse
+         * @description Identify the version that was published.
+         */
+        PublishSurveyResponse: {
+            version_id: components["schemas"]["SurveyVersionId"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+        };
+        /**
+         * ArchiveSurveyResponse
+         * @description Identify the version that was archived.
+         */
+        ArchiveSurveyResponse: {
+            version_id: components["schemas"]["SurveyVersionId"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+        };
+        /**
+         * SaveSurveyRequest
+         * @description Replace the content of the draft at the revision the editor read.
+         */
+        SaveSurveyRequest: {
+            expected_revision: components["schemas"]["DocumentRevision"];
+            content: components["schemas"]["SurveyContent"];
+        };
+        /**
+         * SaveSurveyResponse
+         * @description Acknowledge the newly saved revision.
+         */
+        SaveSurveyResponse: {
+            revision: components["schemas"]["DocumentRevision"];
+        };
         AIImportPrompt: string;
         /**
          * AIImportRequest
@@ -3019,23 +3100,11 @@ export interface components {
             prompt: components["schemas"]["AIImportPrompt"];
         };
         /**
-         * SurveyContent
-         * @description Authored survey content shared by draft generation and survey definitions.
-         */
-        SurveyContent: {
-            title: components["schemas"]["SurveyTitle"];
-            /** @default null */
-            description: components["schemas"]["LongString"] | null;
-            document: components["schemas"]["SurveyDocument"];
-            /** @default null */
-            workflow: components["schemas"]["SurveyWorkflow"] | null;
-        };
-        /**
          * AIImportResponse
          * @description Generated survey content before it is assigned to a persisted version.
          */
         AIImportResponse: {
-            definition: components["schemas"]["SurveyContent"];
+            content: components["schemas"]["SurveyContent"];
         };
     };
     responses: {
@@ -3223,7 +3292,6 @@ export type DateAnswerBounds = components['schemas']['DateAnswerBounds'];
 export type DateAnswerSpec = components['schemas']['DateAnswerSpec'];
 export type DateInteraction = components['schemas']['DateInteraction'];
 export type DividerBlock = components['schemas']['DividerBlock'];
-export type DocumentRevision = components['schemas']['DocumentRevision'];
 export type FieldBehaviour = components['schemas']['FieldBehaviour'];
 export type FieldPrompt = components['schemas']['FieldPrompt'];
 export type HeadingBlock = components['schemas']['HeadingBlock'];
@@ -3252,6 +3320,7 @@ export type ParagraphBlock = components['schemas']['ParagraphBlock'];
 export type ParticipantId = components['schemas']['ParticipantId'];
 export type RatingInteraction = components['schemas']['RatingInteraction'];
 export type ReadableId = components['schemas']['ReadableId'];
+export type RespondentSurveyVersionNestedModel = components['schemas']['RespondentSurveyVersionNestedModel'];
 export type ResponseStoreId = components['schemas']['ResponseStoreId'];
 export type SectionTitle = components['schemas']['SectionTitle'];
 export type SelectionAnswerBounds = components['schemas']['SelectionAnswerBounds'];
@@ -3260,8 +3329,7 @@ export type StringAnswerSpec = components['schemas']['StringAnswerSpec'];
 export type SurveyAccessLinkName = components['schemas']['SurveyAccessLinkName'];
 export type SurveyAccessLinkResponse = components['schemas']['SurveyAccessLinkResponse'];
 export type SurveyBlocksAnnotatedUnionHeadingBlockParagraphBlockNoticeBlockDividerBlockInputBlockFieldInfoAnnotationNoneTypeRequiredTrueTitleSurveyBlockDiscriminatorType = components['schemas']['SurveyBlocks_Annotated_Union_HeadingBlock__ParagraphBlock__NoticeBlock__DividerBlock__InputBlock___FieldInfo_annotation_NoneType__required_True__title__SurveyBlock___discriminator__type____'];
-export type SurveyDefinition = components['schemas']['SurveyDefinition'];
-export type SurveyDocument = components['schemas']['SurveyDocument'];
+export type SurveyContent = components['schemas']['SurveyContent'];
 export type SurveyField = components['schemas']['SurveyField'];
 export type SurveyFieldUuid = components['schemas']['SurveyFieldUuid'];
 export type SurveyId = components['schemas']['SurveyId'];
@@ -3270,8 +3338,6 @@ export type SurveyResponses = components['schemas']['SurveyResponses'];
 export type SurveySection = components['schemas']['SurveySection'];
 export type SurveyTitle = components['schemas']['SurveyTitle'];
 export type SurveyVersionId = components['schemas']['SurveyVersionId'];
-export type SurveyVersionNumber = components['schemas']['SurveyVersionNumber'];
-export type SurveyVersionResponses = components['schemas']['SurveyVersionResponses'];
 export type SurveyWorkflow = components['schemas']['SurveyWorkflow'];
 export type TextAnswerBounds = components['schemas']['TextAnswerBounds'];
 export type TextContent = components['schemas']['TextContent'];
@@ -3368,9 +3434,18 @@ export type PublicSurveyCreateRequest = components['schemas']['PublicSurveyCreat
 export type CreateSurveyRequest = components['schemas']['CreateSurveyRequest'];
 export type UpdateSurveyRequest = components['schemas']['UpdateSurveyRequest'];
 export type MySurveyPermissionsResponses = components['schemas']['MySurveyPermissionsResponses'];
+export type DocumentRevision = components['schemas']['DocumentRevision'];
+export type SurveyVersionListItemResponse = components['schemas']['SurveyVersionListItemResponse'];
+export type SurveyVersionNumber = components['schemas']['SurveyVersionNumber'];
+export type CreateSurveyVersionResponse = components['schemas']['CreateSurveyVersionResponse'];
+export type CopySurveyVersionResponse = components['schemas']['CopySurveyVersionResponse'];
+export type GetSurveyVersionResponse = components['schemas']['GetSurveyVersionResponse'];
+export type PublishSurveyResponse = components['schemas']['PublishSurveyResponse'];
+export type ArchiveSurveyResponse = components['schemas']['ArchiveSurveyResponse'];
+export type SaveSurveyRequest = components['schemas']['SaveSurveyRequest'];
+export type SaveSurveyResponse = components['schemas']['SaveSurveyResponse'];
 export type AiImportPrompt = components['schemas']['AIImportPrompt'];
 export type AiImportRequest = components['schemas']['AIImportRequest'];
-export type SurveyContent = components['schemas']['SurveyContent'];
 export type AiImportResponse = components['schemas']['AIImportResponse'];
 export type ResponseBadRequestError = components['responses']['BadRequestError'];
 export type ResponseUnauthorizedError = components['responses']['UnauthorizedError'];
@@ -5807,7 +5882,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionResponses"][];
+                    "application/json": components["schemas"]["SurveyVersionListItemResponse"][];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5841,7 +5916,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionResponses"];
+                    "application/json": components["schemas"]["CreateSurveyVersionResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5876,7 +5951,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionResponses"];
+                    "application/json": components["schemas"]["CopySurveyVersionResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5911,7 +5986,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionResponses"];
+                    "application/json": components["schemas"]["GetSurveyVersionResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5946,7 +6021,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionResponses"];
+                    "application/json": components["schemas"]["PublishSurveyResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];
@@ -5981,7 +6056,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyVersionResponses"];
+                    "application/json": components["schemas"]["ArchiveSurveyResponse"];
+                };
+            };
+            400: components["responses"]["BadRequestError"];
+            401: components["responses"]["UnauthorizedError"];
+            403: components["responses"]["ForbiddenError"];
+            404: components["responses"]["NotFoundError"];
+            405: components["responses"]["MethodNotAllowedError"];
+            409: components["responses"]["ConflictError"];
+            413: components["responses"]["RequestEntityTooLargeError"];
+            415: components["responses"]["UnsupportedMediaTypeError"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["RateLimitError"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    saveSurveyContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+                survey_id: number;
+                version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSurveyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveSurveyResponse"];
                 };
             };
             400: components["responses"]["BadRequestError"];

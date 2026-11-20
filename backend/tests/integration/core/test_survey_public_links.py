@@ -12,18 +12,17 @@ from app.schema.orm.core.survey_access import SurveyLink
 from tests.integration.core.factories import make_token
 
 
-def test_survey_public_link_can_be_created(
-    db_session: Session, survey: Survey
-) -> None:
+def test_survey_public_link_can_be_created(db_session: Session, survey: Survey) -> None:
     """All fields are persisted and server defaults populate is_active and created_at."""
     token = make_token()
 
-    link = SurveyLink()
-    link.project_id = survey.project_id
-    link.survey_id = survey.id
-    link.name = "test link"
-    link.token = token
-    link.assignment_source = "manual"
+    link = SurveyLink(
+        project_id=survey.project_id,
+        survey_id=survey.id,
+        name="test link",
+        token=token,
+        assignment_source="manual",
+    )
     db_session.add(link)
     db_session.flush()
 
@@ -42,27 +41,27 @@ def test_survey_public_link_can_be_created(
     assert saved.created_at is not None, "created_at was not set by the server default"
 
 
-def test_survey_public_link_unique_token(
-    db_session: Session, survey: Survey
-) -> None:
+def test_survey_public_link_unique_token(db_session: Session, survey: Survey) -> None:
     """token must be globally unique — two links cannot share the same token."""
     token = make_token()
 
-    link_a = SurveyLink()
-    link_a.project_id = survey.project_id
-    link_a.survey_id = survey.id
-    link_a.name = "link a"
-    link_a.token = token
-    link_a.assignment_source = "manual"
+    link_a = SurveyLink(
+        project_id=survey.project_id,
+        survey_id=survey.id,
+        name="link a",
+        token=token,
+        assignment_source="manual",
+    )
     db_session.add(link_a)
     db_session.flush()
 
-    link_b = SurveyLink()
-    link_b.project_id = survey.project_id
-    link_b.survey_id = survey.id
-    link_b.name = "link b"
-    link_b.token = token
-    link_b.assignment_source = "manual"
+    link_b = SurveyLink(
+        project_id=survey.project_id,
+        survey_id=survey.id,
+        name="link b",
+        token=token,
+        assignment_source="manual",
+    )
     db_session.add(link_b)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -71,23 +70,21 @@ def test_survey_public_link_unique_token(
     orig = cast(UniqueViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "uq_survey_links_token", (
-        f"Expected constraint 'uq_survey_links_token', got '{constraint}'\n"
-        f"DB error: {exc_info.value}"
+        f"Expected constraint 'uq_survey_links_token', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
-def test_survey_public_link_requires_token(
-    db_session: Session, survey: Survey
-) -> None:
+def test_survey_public_link_requires_token(db_session: Session, survey: Survey) -> None:
     """token is NOT NULL — omitting it raises an IntegrityError."""
-    link = SurveyLink()
-    link.project_id = survey.project_id
-    link.survey_id = survey.id
-    link.name = "test link"
-    link.token = None  # type: ignore[assignment]
-    link.assignment_source = "manual"
+    link = SurveyLink(
+        project_id=survey.project_id,
+        survey_id=survey.id,
+        name="test link",
+        token=None,  # type: ignore[arg-type]
+        assignment_source="manual",
+    )
     db_session.add(link)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -95,24 +92,20 @@ def test_survey_public_link_requires_token(
 
     orig = cast(NotNullViolation, exc_info.value.orig)
     column = orig.diag.column_name
-    assert column == "token", (
-        f"Expected NOT NULL violation on 'token', got '{column}'\n"
-        f"DB error: {exc_info.value}"
-    )
+    assert column == "token", f"Expected NOT NULL violation on 'token', got '{column}'\nDB error: {exc_info.value}"
 
     db_session.rollback()
 
 
-def test_survey_public_link_cascades_on_survey_delete(
-    db_session: Session, survey: Survey
-) -> None:
+def test_survey_public_link_cascades_on_survey_delete(db_session: Session, survey: Survey) -> None:
     """Deleting the survey removes all its public links."""
-    link = SurveyLink()
-    link.project_id = survey.project_id
-    link.survey_id = survey.id
-    link.name = "test link"
-    link.token = make_token()
-    link.assignment_source = "manual"
+    link = SurveyLink(
+        project_id=survey.project_id,
+        survey_id=survey.id,
+        name="test link",
+        token=make_token(),
+        assignment_source="manual",
+    )
     db_session.add(link)
     db_session.flush()
 

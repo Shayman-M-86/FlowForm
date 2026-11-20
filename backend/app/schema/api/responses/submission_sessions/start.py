@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import ConfigDict
 
 from app.schema.api.common.base import APIResponseModel
-from app.schema.api.responses.surveys import SurveyResponses, SurveyVersionResponses
+from app.schema.api.responses.surveys import RespondentSurveyVersionNestedModel, SurveyResponses
 from app.schema.enums import SubmissionSessionStatus
 from app.schema.types import SubjectCode, SurveyVersionId, Timestamp
 
@@ -29,4 +29,4 @@ class ResumeSubmissionSessionResponse(APIResponseModel):
 
     status: SubmissionSessionStatus
     survey: SurveyResponses
-    published_version: SurveyVersionResponses
+    published_version: RespondentSurveyVersionNestedModel

@@ -159,7 +159,7 @@ export function useSurveyBuilderController() {
   const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null)
   const selectedVersion = useMemo(() => {
     if (selectedVersionId != null) {
-      return versions.find((version) => version.id === selectedVersionId) ?? defaultVersion
+      return versions.find((version) => version.version_id === selectedVersionId) ?? defaultVersion
     }
     return defaultVersion
   }, [defaultVersion, selectedVersionId, versions])
@@ -190,7 +190,7 @@ export function useSurveyBuilderController() {
 
   const clearCurrentDraft = useCallback(() => {
     if (projectId == null || surveyId <= 0 || selectedVersion == null) return
-    clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.id)
+    clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.version_id)
   }, [projectId, selectedVersion, surveyId])
 
   const showToast = useCallback((variant: ToastVariant, message: string) => {
@@ -199,22 +199,22 @@ export function useSurveyBuilderController() {
 
   useEffect(() => {
     if (!selectedVersion || nodesQuery.isLoading) return
-    if (loadedVersionIdRef.current === selectedVersion.id) return
+    if (loadedVersionIdRef.current === selectedVersion.version_id) return
 
     const backend = toSurveyNodes(backendNodes)
     if (selectedVersion.status === 'draft' && projectId != null && surveyId > 0) {
-      const recovered = loadSurveyBuilderDraft(projectId, surveyId, selectedVersion.id)
+      const recovered = loadSurveyBuilderDraft(projectId, surveyId, selectedVersion.version_id)
       if (recovered && !isEqual(sortedNodes(recovered.nodes), sortedNodes(backend))) {
         setNodesState(recovered.nodes)
-        loadedVersionIdRef.current = selectedVersion.id
+        loadedVersionIdRef.current = selectedVersion.version_id
         showToast('warning', 'Recovered unsaved builder changes.')
         return
       }
-      clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.id)
+      clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.version_id)
     }
 
     setNodesState(backend)
-    loadedVersionIdRef.current = selectedVersion.id
+    loadedVersionIdRef.current = selectedVersion.version_id
   }, [backendNodes, nodesQuery.isLoading, projectId, selectedVersion, showToast, surveyId])
 
   const setNodes = useCallback((nextNodes: SurveyNode[]) => {
@@ -228,9 +228,9 @@ export function useSurveyBuilderController() {
 
     const backend = toSurveyNodes(backendNodes)
     if (isEqual(sortedNodes(nextNodes), sortedNodes(backend))) {
-      clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.id)
+      clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.version_id)
     } else {
-      saveSurveyBuilderDraft(projectId, surveyId, selectedVersion.id, nextNodes)
+      saveSurveyBuilderDraft(projectId, surveyId, selectedVersion.version_id, nextNodes)
     }
   }, [backendNodes, projectId, selectedVersion, surveyId])
 
@@ -285,15 +285,15 @@ export function useSurveyBuilderController() {
         savedNodes,
       )
 
-      clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.id)
+      clearSurveyBuilderDraft(projectId, surveyId, selectedVersion.version_id)
       setNodesState(toSurveyNodes(savedNodes))
-      loadedVersionIdRef.current = selectedVersion.id
+      loadedVersionIdRef.current = selectedVersion.version_id
       showToast('success', 'Draft saved.')
     } catch (error) {
       logBuilderFailure('Failed to save draft.', error, {
         projectId,
         surveyId,
-        versionId: selectedVersion.id,
+        versionId: selectedVersion.version_id,
         versionNumber: selectedVersion.version_number,
       })
       showToast('error', 'Failed to save draft.')
@@ -304,7 +304,7 @@ export function useSurveyBuilderController() {
   }, [backendNodes, createNode, deleteNode, nodes, projectId, queryClient, selectedVersion, showToast, surveyId, updateNode])
 
   const selectVersion = useCallback((versionId: number) => {
-    if (isDirty && selectedVersion?.status === 'draft' && versionId !== selectedVersion.id) {
+    if (isDirty && selectedVersion?.status === 'draft' && versionId !== selectedVersion.version_id) {
       setPendingSwitch({ versionId })
       return
     }
@@ -343,7 +343,7 @@ export function useSurveyBuilderController() {
         nodeKeys.list(projectId, surveyId, version.version_number),
         [],
       )
-      setSelectedVersionId(version.id)
+      setSelectedVersionId(version.version_id)
       loadedVersionIdRef.current = null
       showToast('success', 'New draft created.')
     } catch (error) {
@@ -357,7 +357,7 @@ export function useSurveyBuilderController() {
     if (versionNumber == null || projectId == null || surveyId <= 0) return
     try {
       const version = await copyVersion.mutateAsync(versionNumber)
-      setSelectedVersionId(version.id)
+      setSelectedVersionId(version.version_id)
       loadedVersionIdRef.current = null
       showToast('success', `v${versionNumber} duplicated to a new draft.`)
     } catch (error) {
@@ -415,7 +415,7 @@ export function useSurveyBuilderController() {
       logBuilderFailure('Failed to publish draft.', error, {
         projectId,
         surveyId,
-        versionId: selectedVersion.id,
+        versionId: selectedVersion.version_id,
         versionNumber: selectedVersion.version_number,
       })
       showToast('error', 'Failed to publish draft.')
@@ -433,7 +433,7 @@ export function useSurveyBuilderController() {
       logBuilderFailure('Failed to archive version.', error, {
         projectId,
         surveyId,
-        versionId: selectedVersion.id,
+        versionId: selectedVersion.version_id,
         versionNumber: selectedVersion.version_number,
       })
       showToast('error', 'Failed to archive version.')

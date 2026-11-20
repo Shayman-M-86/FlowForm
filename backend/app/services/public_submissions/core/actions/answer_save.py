@@ -31,12 +31,12 @@ def _field_for_session(
         ctx.survey_version_id,
     ):
         raise SessionInvalidError("Session context does not match its pinned survey version.")
-    definition = session.survey_version.definition
-    if definition is None:
+    content = session.survey_version.content
+    if content is None:
         raise FieldNotInVersionError()
     matches = [
         block.field
-        for section in definition.document.sections
+        for section in content.sections
         for block in section.blocks
         if isinstance(block, InputBlock) and block.field.uuid == field_uuid
     ]

@@ -4,23 +4,20 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from app.schema.enums import NoticeTone, SurveyVersionStatus
+from app.schema.enums import NoticeTone
 from app.schema.models.common.base import DataModel
 from app.schema.models.survey_document.conditions import SurveyWorkflow
 from app.schema.models.survey_document.fields import SurveyField
 from app.schema.types import (
     ContentText,
-    DocumentRevision,
     HeadingLevel,
     LimitedList,
     LongString,
     NoticeTitle,
-    ProjectName,
     ReadableId,
     SectionTitle,
     SurveyBlocks,
     SurveyTitle,
-    SurveyVersionId,
 )
 
 
@@ -99,26 +96,10 @@ class SurveySection(DataModel):
     blocks: SurveyBlocks[Block]
 
 
-class SurveyDocument(DataModel):
-    """Ordered survey sections."""
-
-    sections: LimitedList[SurveySection]
-
-
 class SurveyContent(DataModel):
-    """Authored survey content shared by draft generation and survey definitions."""
+    """Portable authored survey content."""
 
     title: SurveyTitle
     description: LongString | None = None
-    document: SurveyDocument
+    sections: LimitedList[SurveySection]
     workflow: SurveyWorkflow | None = None
-
-
-class SurveyDefinition(SurveyContent):
-    """Canonical FlowForm V2 survey definition."""
-
-    id: ReadableId
-    versionId: SurveyVersionId
-    revision: DocumentRevision
-    projectName: ProjectName
-    status: SurveyVersionStatus

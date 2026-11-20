@@ -10,9 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.db.error_handling import flush_with_err_handle
 from app.db.error_handling.errors import DbIntegrityError
-from app.schema.models.survey_document.document import SurveyDefinition, SurveyDocument
+from app.schema.models.survey_document.document import SurveyContent
 from app.schema.orm.core import Project, Survey, SurveyVersion
-from app.schema.types import SurveyVersionId
 
 
 @pytest.fixture
@@ -29,21 +28,9 @@ def draft(core_db_session: Session) -> SurveyVersion:
     return version
 
 
-def _definition(version_id: SurveyVersionId) -> SurveyDefinition:
-    return SurveyDefinition(
-        id="test-survey",
-        versionId=version_id,
-        revision=1,
-        title="Test survey",
-        projectName="Integrity tests",
-        status="published",
-        document=SurveyDocument(sections=[]),
-    )
-
-
 def test_empty_draft_stores_database_null(core_db_session: Session, draft: SurveyVersion) -> None:
     assert (
-        core_db_session.scalar(text("SELECT definition IS NULL FROM survey_versions WHERE id = :id"), {"id": draft.id})
+        core_db_session.scalar(text("SELECT content IS NULL FROM survey_versions WHERE id = :id"), {"id": draft.id})
         is True
     )
 
@@ -52,33 +39,33 @@ def test_empty_draft_stores_database_null(core_db_session: Session, draft: Surve
 def test_definition_rejects_non_object_json(core_db_session: Session, draft: SurveyVersion, value: str) -> None:
     with pytest.raises(IntegrityError) as error:
         core_db_session.execute(
-            text("UPDATE survey_versions SET definition = CAST(:value AS jsonb) WHERE id = :id"),
+            text("UPDATE survey_versions SET content = CAST(:value AS jsonb) WHERE id = :id"),
             {"value": value, "id": draft.id},
         )
 
     assert isinstance(error.value.orig, CheckViolation)
-    assert error.value.orig.diag.constraint_name == "ck_survey_versions_definition_is_object"
+    assert error.value.orig.diag.constraint_name == "ck_survey_versions_content_is_object"
 
 
-@pytest.mark.parametrize("missing", ["definition", "timestamp"])
+@pytest.mark.parametrize("missing", ["content", "timestamp"])
 def test_publish_requires_document_and_timestamp(core_db_session: Session, draft: SurveyVersion, missing: str) -> None:
     draft.status = "published"
-    if missing == "definition":
+    if missing == "content":
         draft.published_at = datetime.now(UTC)
     else:
-        draft.definition = _definition(draft.id)
+        draft.content = SurveyContent(title="Test survey", sections=[])
 
     with pytest.raises(DbIntegrityError) as error:
         flush_with_err_handle(core_db_session, contexts=[draft])
 
-    assert error.value.constraint_name == "ck_survey_versions_published_requires_definition_and_timestamp"
+    assert error.value.constraint_name == "ck_survey_versions_published_requires_content_and_timestamp"
     assert (error.value.status_code, error.value.code) == (500, "VERSION_PUBLISH_STATE_INVALID")
 
 
 @pytest.mark.parametrize("status", ["published", "archived"])
 def test_non_draft_definition_is_locked(core_db_session: Session, draft: SurveyVersion, status: str) -> None:
-    definition = _definition(draft.id)
-    draft.definition = definition
+    definition = SurveyContent(title="Test survey", sections=[])
+    draft.content = definition
     draft.published_at = datetime.now(UTC)
     draft.status = "published"
     core_db_session.flush()
@@ -86,7 +73,7 @@ def test_non_draft_definition_is_locked(core_db_session: Session, draft: SurveyV
         draft.status = "archived"
         core_db_session.flush()
 
-    draft.definition = definition.model_copy(update={"title": "Edited"})
+    draft.content = definition.model_copy(update={"title": "Edited"})
     with pytest.raises(DbIntegrityError) as error:
         flush_with_err_handle(core_db_session, contexts=[draft])
 

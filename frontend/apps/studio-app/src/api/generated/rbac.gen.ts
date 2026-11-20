@@ -79,6 +79,7 @@ export const operationPermissions: Record<string, FlowFormPermission | null> = {
   resumeSubmissionSession: null,
   revokeInvitation: "project:manage_members",
   saveSubmissionSessionAnswer: null,
+  saveSurveyContent: "survey:edit",
   sendInvitation: "project:manage_members",
   sendSurveyLinkEmail: "survey:edit",
   startSubmissionSession: null,
@@ -150,4 +151,5 @@ export const routePermissions: RoutePermissionEntry[] = [
   { method: "GET", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)$/, permission: "survey:view", paramNames: ["project_id","survey_id","version_number"] },
   { method: "POST", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/publish$/, permission: "survey:publish", paramNames: ["project_id","survey_id","version_number"] },
   { method: "POST", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_number>[^\/]+)\/archive$/, permission: "survey:archive", paramNames: ["project_id","survey_id","version_number"] },
+  { method: "PUT", pattern: /^\/api\/v1\/studio\/projects\/(?<project_id>[^\/]+)\/surveys\/(?<survey_id>[^\/]+)\/versions\/(?<version_id>[^\/]+)\/content$/, permission: "survey:edit", paramNames: ["project_id","survey_id","version_id"] },
 ];

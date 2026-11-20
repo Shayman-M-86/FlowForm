@@ -26,7 +26,7 @@ from app.domain.errors import LinkAssignmentMismatchError, LinkAuthRequiredError
 from app.repositories.core import project_subject_identities as sub_id
 from app.repositories.core import project_subject_tokens as sub_tok
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
-from app.schema.enums import SurveyVisibility
+from app.schema.enums import SurveyLinkType, SurveyVisibility
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.submission_session import SubmissionSession
 from app.schema.orm.core.survey import Survey, SurveyVersion
@@ -34,13 +34,11 @@ from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 from app.schema.types import ParticipantId, ProjectId
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
-from tests.integration.core.factories import make_participant_chain, make_token, make_user
+from tests.integration.core.factories import define_version, make_participant_chain, make_token, make_user
 
 # ---------------------------------------------------------------------------
 # Setup helpers
 # ---------------------------------------------------------------------------
-
-_SCHEMA = {"nodes": []}
 
 
 def _publish(
@@ -54,7 +52,7 @@ def _publish(
     survey.visibility = visibility
     survey.public_slug = slug if visibility == "public" else None
     survey_version.status = "published"
-    survey_version.compiled_schema = _SCHEMA
+    define_version(db, survey_version)
     survey_version.published_at = datetime.now(UTC)
     db.flush()
     survey.published_version_id = survey_version.id
@@ -65,7 +63,7 @@ def _make_link(
     db: Session,
     *,
     survey: Survey,
-    link_type: str = "general",
+    link_type: SurveyLinkType = "general",
     assigned_participant_id: object | None = None,
     slug_suffix: str = "",
 ) -> tuple[SurveyLink, str]:
@@ -77,7 +75,7 @@ def _make_link(
         token=raw_token,
         link_type=link_type,
         assignment_source="manual",
-        assigned_participant_id=TypeAdapter(ParticipantId).validate_python(assigned_participant_id),
+        assigned_participant_id=TypeAdapter(ParticipantId | None).validate_python(assigned_participant_id),
     )
     db.add(link)
     db.flush()

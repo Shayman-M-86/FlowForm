@@ -6,11 +6,13 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 
 from app.domain.errors import SessionExpiredError, SessionInvalidError, SessionNotFoundError
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
 from app.schema.orm.core.submission_session import SubmissionSession
+from app.schema.types import ProjectId, ResponseStoreId, SurveyId, SurveyLinkId, SurveyVersionId
 from app.services.public_submissions.api import session_management as module
 
 
@@ -23,11 +25,15 @@ def test_resume_session_scopes_status_to_requested_entry(
     session_state: str,
     matching_entry: bool,
 ) -> None:
-    link_id = uuid4() if entry_type == "link_token" else None
+    link_id = TypeAdapter(SurveyLinkId).validate_python(uuid4()) if entry_type == "link_token" else None
+    assert session_state in ("expired", "in_progress", "completed", "abandoned")
     session = SubmissionSession(
-        project_id=1,
-        survey_id=2,
-        survey_version_id=3,
+        project_id=TypeAdapter(ProjectId).validate_python(1),
+        survey_id=TypeAdapter(SurveyId).validate_python(2),
+        survey_version_id=TypeAdapter(SurveyVersionId).validate_python(3),
+        response_store_id=TypeAdapter(ResponseStoreId).validate_python(1),
+        browser_session_token_hash=b"test-token",
+        linkage_key_version=1,
         link_id=link_id,
         session_status="in_progress" if session_state == "expired" else session_state,
         expires_at=datetime.now(UTC) + timedelta(days=-1 if session_state == "expired" else 1),
@@ -43,9 +49,6 @@ def test_resume_session_scopes_status_to_requested_entry(
     version = SimpleNamespace(survey_id=2)
     db = Mock(spec=Session)
     db.get.return_value = version
-    monkeypatch.setattr(module.SurveyResponses, "model_validate", lambda _survey: "survey")
-    monkeypatch.setattr(module.SurveyVersionResponses, "model_validate", lambda _version: "version")
-    monkeypatch.setattr(module, "ResumeSubmissionSessionResponse", lambda **kwargs: SimpleNamespace(**kwargs))
 
     access = (
         {"type": "link_token", "token": "requested-link"}

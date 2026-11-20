@@ -55,6 +55,7 @@ from app.schema.orm.core import (
     User,
 )
 from tests.integration.core.factories import (
+    define_version,
     make_project,
     make_project_role,
     make_response_store,
@@ -67,7 +68,7 @@ _MEMBER_SUB = "auth0|e2e-member"
 
 # Permissions the survey-link routes require (view for list, edit for
 # create/update/delete).
-_GRANTED_PERMISSIONS = (PERMISSIONS.survey.view, PERMISSIONS.survey.edit)
+_GRANTED_PERMISSIONS = (PERMISSIONS.survey.view, PERMISSIONS.survey.edit, PERMISSIONS.survey.create)
 
 _E2E_SETTINGS_DEFAULTS = {
     "FLOWFORM_AWS_ACCESS_KEY_ID": "test-access-key",
@@ -202,9 +203,10 @@ def seed(core_db_session: Session) -> SeedData:
     core_db_session.add(role)
     core_db_session.flush()
 
-    membership = ProjectMembership()
-    membership.user_id = user.id
-    membership.project_id = project.id
+    membership = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     membership.role_id = role.id
     core_db_session.add(membership)
     core_db_session.flush()
@@ -220,8 +222,8 @@ def seed(core_db_session: Session) -> SeedData:
     core_db_session.flush()
 
     version = make_survey_version(survey.id, user.id, status="published")
-    # A published version requires a compiled schema and a publish timestamp.
-    version.compiled_schema = {"nodes": []}
+    # A published version requires content and a publication timestamp.
+    define_version(core_db_session, version)
     version.published_at = datetime.now(UTC)
     core_db_session.add(version)
     core_db_session.flush()

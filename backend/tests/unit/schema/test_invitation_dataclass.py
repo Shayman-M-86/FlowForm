@@ -64,12 +64,14 @@ def test_invitation_persistence_and_relationships_on_sqlite():
         metadata.create_all(engine)
         with Session(engine) as db:
             db.execute(
-                User.__table__.insert().values(
-                    id=1, auth0_user_id="auth0|pilot", email="person@example.com", public_id="abcdefgh"
-                )
+                metadata.tables["users"]
+                .insert()
+                .values(id=1, auth0_user_id="auth0|pilot", email="person@example.com", public_id="abcdefgh")
             )
-            db.execute(Project.__table__.insert().values(id=1, name="Pilot", slug="pilot", created_by_user_id=1))
-            db.execute(ProjectRole.__table__.insert().values(id=1, project_id=1, name="Pilot role"))
+            db.execute(
+                metadata.tables["projects"].insert().values(id=1, name="Pilot", slug="pilot", created_by_user_id=1)
+            )
+            db.execute(metadata.tables["project_roles"].insert().values(id=1, project_id=1, name="Pilot role"))
             invitation = ProjectInvitation(
                 project_id=TypeAdapter(ProjectId).validate_python(1),
                 invited_email="person@example.com",
@@ -81,14 +83,16 @@ def test_invitation_persistence_and_relationships_on_sqlite():
             db.flush()
             assert invitation.id is not None and invitation.created_at is not None
             assert invitation.role_id == 1
+            assert invitation.role is not None
             assert invitation.role.name == "Pilot role"
-            assert invitation.project.name == "Pilot" and invitation.invited_by.email == "person@example.com"
+            assert invitation.project.name == "Pilot"
+            assert invitation.invited_by is not None and invitation.invited_by.email == "person@example.com"
             invitation.status = "declined"
             identity = invitation.id
             db.commit()
         with Session(engine) as db:
             loaded = db.get(ProjectInvitation, identity)
             assert loaded is not None and loaded.status == "declined"
-            assert loaded.role_id is not None and loaded.role.name == "Pilot role"
+            assert loaded.role_id is not None and loaded.role is not None and loaded.role.name == "Pilot role"
     finally:
         engine.dispose()

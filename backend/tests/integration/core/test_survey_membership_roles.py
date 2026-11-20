@@ -14,13 +14,12 @@ from app.schema.orm.core.user import User
 from tests.integration.core.factories import make_project, make_survey, make_survey_role, make_user
 
 
-def _make_membership(
-    db_session: Session, user: User, project: Project
-) -> ProjectMembership:
+def _make_membership(db_session: Session, user: User, project: Project) -> ProjectMembership:
     """Helper: create and flush a ProjectMembership for the given user and project."""
-    membership = ProjectMembership()
-    membership.user_id = user.id
-    membership.project_id = project.id
+    membership = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     db_session.add(membership)
     db_session.flush()
     return membership
@@ -38,11 +37,12 @@ def test_survey_membership_role_can_be_created(
     db_session.add(role)
     db_session.flush()
 
-    smr = SurveyMembershipRole()
-    smr.project_id = project.id
-    smr.survey_id = survey.id
-    smr.membership_id = membership.id
-    smr.role_id = role.id
+    smr = SurveyMembershipRole(
+        project_id=project.id,
+        survey_id=survey.id,
+        membership_id=membership.id,
+        role_id=role.id,
+    )
     db_session.add(smr)
     db_session.flush()
 
@@ -69,6 +69,7 @@ def test_survey_membership_role_rejects_survey_from_different_project(
     db_session.flush()
 
     from tests.integration.core.factories import make_response_store
+
     other_store = make_response_store(other_project.id, other_user.id, name="smr-store-s")
     db_session.add(other_store)
     db_session.flush()
@@ -82,11 +83,12 @@ def test_survey_membership_role_rejects_survey_from_different_project(
     db_session.add(role)
     db_session.flush()
 
-    smr = SurveyMembershipRole()
-    smr.project_id = project.id          # project A
-    smr.survey_id = survey_in_other.id   # survey belongs to other_project — mismatch
-    smr.membership_id = membership.id
-    smr.role_id = role.id
+    smr = SurveyMembershipRole(
+        project_id=project.id,  # project A
+        survey_id=survey_in_other.id,  # survey belongs to other_project — mismatch
+        membership_id=membership.id,
+        role_id=role.id,
+    )
     db_session.add(smr)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -119,11 +121,12 @@ def test_survey_membership_role_rejects_membership_from_different_project(
     db_session.add(role)
     db_session.flush()
 
-    smr = SurveyMembershipRole()
-    smr.project_id = project.id
-    smr.survey_id = survey.id
-    smr.membership_id = membership_in_other.id  # membership belongs to other_project — mismatch
-    smr.role_id = role.id
+    smr = SurveyMembershipRole(
+        project_id=project.id,
+        survey_id=survey.id,
+        membership_id=membership_in_other.id,  # membership belongs to other_project — mismatch
+        role_id=role.id,
+    )
     db_session.add(smr)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -156,11 +159,12 @@ def test_survey_membership_role_rejects_role_from_different_project(
 
     membership = _make_membership(db_session, user, project)
 
-    smr = SurveyMembershipRole()
-    smr.project_id = project.id
-    smr.survey_id = survey.id
-    smr.membership_id = membership.id
-    smr.role_id = role_in_other.id  # role belongs to other_project — mismatch
+    smr = SurveyMembershipRole(
+        project_id=project.id,
+        survey_id=survey.id,
+        membership_id=membership.id,
+        role_id=role_in_other.id,  # role belongs to other_project — mismatch
+    )
     db_session.add(smr)
 
     with pytest.raises(IntegrityError) as exc_info:

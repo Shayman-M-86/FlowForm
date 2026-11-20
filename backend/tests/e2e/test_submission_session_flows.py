@@ -47,6 +47,7 @@ from sqlalchemy.orm import Session
 
 from app.core.extensions import auth, db_manager
 from app.repositories.core import project_subject_tokens as sub_tok
+from app.schema.enums import SurveyLinkType
 from app.schema.orm.core.project_subject import ProjectSubject
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.types import ParticipantId
@@ -124,7 +125,7 @@ def _make_link(
     db: Session,
     *,
     seed: SeedData,
-    link_type: str,
+    link_type: SurveyLinkType,
     assigned_participant_id: object | None = None,
     name_suffix: str = "",
 ) -> tuple[SurveyLink, str]:
@@ -136,7 +137,7 @@ def _make_link(
         token=raw,
         link_type=link_type,
         assignment_source="manual",
-        assigned_participant_id=TypeAdapter(ParticipantId).validate_python(assigned_participant_id),
+        assigned_participant_id=TypeAdapter(ParticipantId | None).validate_python(assigned_participant_id),
     )
     db.add(link)
     db.flush()

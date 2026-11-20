@@ -7,4 +7,4 @@ from app.schema.models.survey_document.document import SurveyContent
 class AIImportResponse(APIResponseModel):
     """Generated survey content before it is assigned to a persisted version."""
 
-    definition: SurveyContent
+    content: SurveyContent

@@ -84,6 +84,15 @@ class ListPublicSurveysResult:
 
 
 @dataclass(slots=True)
+class ResumeSubmissionSessionResult:
+    """The survey version pinned by a matching browser session."""
+
+    status: SubmissionSessionStatus
+    survey: Survey
+    published_version: SurveyVersion
+
+
+@dataclass(slots=True)
 class ResolveLinkResult:
     """Result of resolving a respondent survey access link token."""
 

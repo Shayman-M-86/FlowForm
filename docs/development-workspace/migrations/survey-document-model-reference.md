@@ -5,7 +5,7 @@ document_type: planning
 status: draft
 authority: working
 verified_evidence_digest: null
-last_edited: 2026-11-18
+last_edited: 2026-11-20
 tags: [backend, frontend]
 related_code: []
 related_docs: ["FlowForm V2 survey document definition", "FlowForm V2 answer data definition", "Survey document visual guide", "Survey document data structure comparison"]
@@ -26,8 +26,8 @@ short reading aid, not another contract or a definition of implementation.
 ## Survey shape
 
 ```text
-Survey: id, versionId, revision, title, description?, projectName, status
-├── document.sections[]
+SurveyContent: title, description?
+├── sections[]
 │   └── section: id, title, description?, blocks[]
 │       ├── content block: id, type, content
 │       └── input block: id, type, field
@@ -43,8 +43,6 @@ Survey: id, versionId, revision, title, description?, projectName, status
 | Input presentation | `interaction`; independent of accepted value type. |
 | Accepted value | `answerSpec.type`, `required`, optional `constraints`. |
 | Local condition | `fieldUuid`, `operator`, applicable comparison `value`. Choice values are option UUIDs. |
-| Document revision | Root `revision`; not a per-answer counter. |
-| Survey status | `draft`, `published`, `archived`. |
 
 Array positions express section/block order. `field.key`, `option.key`, typed
 ULIDs and the old field-level `response` property are not the new data shape.

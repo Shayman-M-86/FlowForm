@@ -120,9 +120,10 @@ def test_project_role_can_be_created(db_session: Session, project: Project) -> N
 
 def test_project_role_is_system_role_defaults_to_false(db_session: Session, project: Project) -> None:
     """is_system_role has a server default of false when not explicitly set."""
-    role = ProjectRole()
-    role.project_id = project.id
-    role.name = "guest"
+    role = ProjectRole(
+        project_id=project.id,
+        name="guest",
+    )
     db_session.add(role)
     db_session.flush()
 
@@ -168,9 +169,10 @@ def test_project_role_same_name_allowed_across_projects(db_session: Session, use
 
 def test_project_role_requires_name(db_session: Session, project: Project) -> None:
     """name is NOT NULL — omitting it raises an IntegrityError."""
-    role = ProjectRole()
-    role.project_id = project.id
-    role.name = None  # type: ignore[assignment]
+    role = ProjectRole(
+        project_id=project.id,
+        name=None,  # type: ignore[arg-type]
+    )
     db_session.add(role)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -183,9 +185,7 @@ def test_project_role_requires_name(db_session: Session, project: Project) -> No
     db_session.rollback()
 
 
-def test_project_role_description_is_persisted(
-    db_session: Session, project: Project
-) -> None:
+def test_project_role_description_is_persisted(db_session: Session, project: Project) -> None:
     """description is stored and round-trips correctly."""
     role = make_project_role(
         project.id,
@@ -203,9 +203,7 @@ def test_project_role_description_is_persisted(
     )
 
 
-def test_project_role_description_nullable(
-    db_session: Session, project: Project
-) -> None:
+def test_project_role_description_nullable(db_session: Session, project: Project) -> None:
     """description defaults to NULL when omitted."""
     role = make_project_role(project.id, name="no-desc-role", is_system_role=False)
     db_session.add(role)
@@ -213,14 +211,10 @@ def test_project_role_description_nullable(
 
     saved = db_session.get(ProjectRole, role.id)
     assert saved is not None
-    assert saved.description is None, (
-        f"Expected description=None, got {saved.description!r}"
-    )
+    assert saved.description is None, f"Expected description=None, got {saved.description!r}"
 
 
-def test_project_role_description_blank_rejected(
-    db_session: Session, project: Project
-) -> None:
+def test_project_role_description_blank_rejected(db_session: Session, project: Project) -> None:
     """Blank/whitespace-only description violates the CHECK constraint."""
     role = make_project_role(project.id, name="blank-desc-role", is_system_role=False, description="   ")
     db_session.add(role)
@@ -231,16 +225,13 @@ def test_project_role_description_blank_rejected(
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "ck_project_roles_description_len", (
-        f"Expected constraint 'ck_project_roles_description_len', got '{constraint}'\n"
-        f"DB error: {exc_info.value}"
+        f"Expected constraint 'ck_project_roles_description_len', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
 
 
-def test_project_role_description_too_long_rejected(
-    db_session: Session, project: Project
-) -> None:
+def test_project_role_description_too_long_rejected(db_session: Session, project: Project) -> None:
     """A description exceeding 500 characters violates the CHECK constraint."""
     role = make_project_role(project.id, name="long-desc-role", is_system_role=False, description="x" * 501)
     db_session.add(role)
@@ -251,8 +242,7 @@ def test_project_role_description_too_long_rejected(
     orig = cast(CheckViolation, exc_info.value.orig)
     constraint = orig.diag.constraint_name
     assert constraint == "ck_project_roles_description_len", (
-        f"Expected constraint 'ck_project_roles_description_len', got '{constraint}'\n"
-        f"DB error: {exc_info.value}"
+        f"Expected constraint 'ck_project_roles_description_len', got '{constraint}'\nDB error: {exc_info.value}"
     )
 
     db_session.rollback()
@@ -265,9 +255,10 @@ def test_project_role_description_too_long_rejected(
 
 def test_project_membership_can_be_created(db_session: Session, user: User, project: Project) -> None:
     """A membership with no role is persisted and created_at is set by the server."""
-    membership = ProjectMembership()
-    membership.user_id = user.id
-    membership.project_id = project.id
+    membership = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     db_session.add(membership)
     db_session.flush()
 
@@ -279,13 +270,12 @@ def test_project_membership_can_be_created(db_session: Session, user: User, proj
     assert saved.created_at is not None, "created_at was not set by the server default"
 
 
-def test_project_membership_status_defaults_to_active(
-    db_session: Session, user: User, project: Project
-) -> None:
+def test_project_membership_status_defaults_to_active(db_session: Session, user: User, project: Project) -> None:
     """status has a server default of 'active' when not explicitly set."""
-    membership = ProjectMembership()
-    membership.user_id = user.id
-    membership.project_id = project.id
+    membership = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     db_session.add(membership)
     db_session.flush()
 
@@ -297,9 +287,10 @@ def test_project_membership_can_have_role(
     db_session: Session, user: User, project: Project, project_role: ProjectRole
 ) -> None:
     """A membership can optionally reference a role within the same project."""
-    membership = ProjectMembership()
-    membership.user_id = user.id
-    membership.project_id = project.id
+    membership = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     membership.role_id = project_role.id
     db_session.add(membership)
     db_session.flush()
@@ -309,13 +300,12 @@ def test_project_membership_can_have_role(
     assert saved.role_id == project_role.id, f"role_id={saved.role_id!r}, expected {project_role.id!r}"
 
 
-def test_project_membership_rejects_invalid_status(
-    db_session: Session, user: User, project: Project
-) -> None:
+def test_project_membership_rejects_invalid_status(db_session: Session, user: User, project: Project) -> None:
     """status must be 'active' or 'suspended' — any other value is rejected."""
-    membership = ProjectMembership()
-    membership.user_id = user.id
-    membership.project_id = project.id
+    membership = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     membership.status = "bogus"  # type: ignore[assignment]  # intentionally invalid for the DB CHECK
     db_session.add(membership)
 
@@ -331,19 +321,19 @@ def test_project_membership_rejects_invalid_status(
     db_session.rollback()
 
 
-def test_project_membership_unique_user_project(
-    db_session: Session, user: User, project: Project
-) -> None:
+def test_project_membership_unique_user_project(db_session: Session, user: User, project: Project) -> None:
     """A user can only have one membership record per project."""
-    membership_a = ProjectMembership()
-    membership_a.user_id = user.id
-    membership_a.project_id = project.id
+    membership_a = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     db_session.add(membership_a)
     db_session.flush()
 
-    membership_b = ProjectMembership()
-    membership_b.user_id = user.id
-    membership_b.project_id = project.id
+    membership_b = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     db_session.add(membership_b)
 
     with pytest.raises(IntegrityError) as exc_info:
@@ -358,9 +348,7 @@ def test_project_membership_unique_user_project(
     db_session.rollback()
 
 
-def test_project_membership_role_must_belong_to_same_project(
-    db_session: Session, user: User, project: Project
-) -> None:
+def test_project_membership_role_must_belong_to_same_project(db_session: Session, user: User, project: Project) -> None:
     """A membership cannot reference a role that belongs to a different project."""
     other_project = make_project(user.id, name="Other", slug="other-project")
     db_session.add(other_project)
@@ -370,9 +358,10 @@ def test_project_membership_role_must_belong_to_same_project(
     db_session.add(role_on_other)
     db_session.flush()
 
-    membership = ProjectMembership()
-    membership.user_id = user.id
-    membership.project_id = project.id
+    membership = ProjectMembership(
+        user_id=user.id,
+        project_id=project.id,
+    )
     membership.role_id = role_on_other.id
     db_session.add(membership)
 

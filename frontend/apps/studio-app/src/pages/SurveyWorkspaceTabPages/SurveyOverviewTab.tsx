@@ -341,7 +341,7 @@ export function SurveyOverviewTab() {
             ) : (
               <ol className="relative grid gap-3 before:absolute before:bottom-2 before:left-[9px] before:top-2 before:w-px before:bg-border">
                 {[...versions].sort((a, b) => b.version_number - a.version_number).slice(0, 4).map((v) => (
-                  <li key={v.id} className="relative flex items-start gap-3">
+                  <li key={v.version_id} className="relative flex items-start gap-3">
                     <span className="relative z-10 mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border border-border bg-card text-[0.65rem] font-semibold text-muted-foreground">
                       {v.version_number}
                     </span>

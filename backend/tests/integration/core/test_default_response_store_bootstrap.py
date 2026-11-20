@@ -9,10 +9,9 @@ from app.repositories.response_stores_repo import (
     DEFAULT_PLATFORM_RESPONSE_STORE_NAME,
 )
 from app.schema.api.requests.projects import CreateProjectRequest
-from app.schema.api.requests.surveys import CreateSurveyRequest
 from app.schema.orm.core.response_store import ResponseStore
 from app.services.surveys import SurveyService
-from tests.integration.core.factories import make_project, make_survey, make_survey_question, make_survey_version
+from tests.integration.core.factories import define_version, make_project, make_survey, make_survey_version
 
 
 def test_create_project_bootstraps_platform_primary_response_store(
@@ -20,17 +19,13 @@ def test_create_project_bootstraps_platform_primary_response_store(
     user,
 ) -> None:
     project = projects_repo.create_project(
-        db_session, # type: ignore
+        db_session,  # type: ignore
         CreateProjectRequest(name="Bootstrap Project", slug="bootstrap-project"),
         created_by_user_id=user.id,
     )
     db_session.flush()
 
-    stores = list(
-        db_session.scalars(
-            select(ResponseStore).where(ResponseStore.project_id == project.id)
-        )
-    )
+    stores = list(db_session.scalars(select(ResponseStore).where(ResponseStore.project_id == project.id)))
     assert len(stores) == 1
 
     store = stores[0]
@@ -53,13 +48,13 @@ def test_create_survey_backfills_missing_project_response_store(
     survey = service.create_survey(
         db=db_session,  # type: ignore[arg-type]
         project_id=project.id,
-        data=CreateSurveyRequest(title="Survey Without Store"),
+        title="Survey Without Store",
+        visibility="private",
+        public_slug=None,
         actor=user,
     )
 
-    store = db_session.scalar(
-        select(ResponseStore).where(ResponseStore.project_id == project.id)
-    )
+    store = db_session.scalar(select(ResponseStore).where(ResponseStore.project_id == project.id))
     assert store is not None
     assert survey.default_response_store_id == store.id
     assert store.name == DEFAULT_PLATFORM_RESPONSE_STORE_NAME
@@ -73,7 +68,7 @@ def test_publish_version_backfills_missing_survey_response_store(
     db_session.add(project)
     db_session.flush()
 
-    survey = make_survey(project.id, response_store_id=0, user_id=user.id, title="Legacy Survey")
+    survey = make_survey(project.id, response_store_id=None, user_id=user.id, title="Legacy Survey")
     survey.default_response_store_id = None
     db_session.add(survey)
     db_session.flush()
@@ -82,13 +77,12 @@ def test_publish_version_backfills_missing_survey_response_store(
     db_session.add(version)
     db_session.flush()
 
-    question = make_survey_question(version.id, question_key="q1")
-    db_session.add(question)
+    define_version(db_session, version, field_ids=("q1",))
     db_session.flush()
 
     service = SurveyService()
     published = service.publish_version(
-        db=db_session, # type: ignore[arg-type]
+        db=db_session,  # type: ignore[arg-type]
         project_id=project.id,
         survey_id=survey.id,
         version_number=1,
@@ -98,9 +92,7 @@ def test_publish_version_backfills_missing_survey_response_store(
     db_session.refresh(survey)
     db_session.refresh(published)
 
-    store = db_session.scalar(
-        select(ResponseStore).where(ResponseStore.project_id == project.id)
-    )
+    store = db_session.scalar(select(ResponseStore).where(ResponseStore.project_id == project.id))
     assert store is not None
     assert survey.default_response_store_id == store.id
     assert published.status == "published"

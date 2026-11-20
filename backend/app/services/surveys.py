@@ -17,10 +17,10 @@ from app.repositories import (
 from app.repositories import (
     surveys_repo as sr,
 )
-from app.schema.api.requests.surveys import CreateSurveyRequest, UpdateSurveyRequest
+from app.schema.enums import SurveyVisibility
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.user import User
-from app.schema.types import ProjectId, ResponseStoreId, SurveyId, UserId
+from app.schema.types import ProjectId, ResponseStoreId, Slug, SurveyId, SurveyTitle, SurveyVersionNumber, UserId
 
 
 class SurveyService:
@@ -61,7 +61,17 @@ class SurveyService:
     def list_surveys(self, db: Session, *, project_id: ProjectId, actor: User) -> list[Survey]:  # noqa: ARG002
         return sr.list_surveys(db, project_id)
 
-    def create_survey(self, db: Session, *, project_id: ProjectId, data: CreateSurveyRequest, actor: User) -> Survey:
+    def create_survey(
+        self,
+        db: Session,
+        *,
+        project_id: ProjectId,
+        title: SurveyTitle,
+        visibility: SurveyVisibility,
+        public_slug: Slug | None,
+        actor: User,
+    ) -> Survey:
+        survey_rules.ensure_visibility_slug_coherent(visibility=visibility, public_slug=public_slug)
         default_response_store_id = self._ensure_project_default_response_store_id(
             db,
             project_id=project_id,
@@ -70,7 +80,9 @@ class SurveyService:
         survey = sr.create_survey(
             db,
             project_id,
-            data,
+            title=title,
+            visibility=visibility,
+            public_slug=public_slug,
             default_response_store_id=default_response_store_id,
             created_by_user_id=actor.id,
         )
@@ -92,24 +104,29 @@ class SurveyService:
     def update_survey(
         self,
         db: Session,
+        *,
         project_id: ProjectId,
         survey_id: SurveyId,
-        data: UpdateSurveyRequest,
         actor: User,  # noqa: ARG002
+        title: SurveyTitle | None,
+        visibility: SurveyVisibility | None,
+        public_slug: Slug | None,
+        update_public_slug: bool,
     ) -> Survey:
         survey = self._get_survey(db, project_id, survey_id)
-
-        changed = data.model_fields_set
-        merged_visibility = (
-            data.visibility if "visibility" in changed and data.visibility is not None else survey.visibility
-        )
-        merged_public_slug = data.public_slug if "public_slug" in changed else survey.public_slug
+        merged_visibility = visibility if visibility is not None else survey.visibility
+        merged_public_slug = public_slug if update_public_slug else survey.public_slug
         survey_rules.ensure_visibility_slug_coherent(
             visibility=merged_visibility,
             public_slug=merged_public_slug,
         )
-
-        updated = sr.update_survey(db, survey, data)
+        updated = sr.update_survey(
+            db,
+            survey,
+            title=title if title is not None else survey.title,
+            visibility=merged_visibility,
+            public_slug=merged_public_slug,
+        )
         commit_with_err_handle(db, contexts=[updated])
         return updated
 
@@ -121,10 +138,16 @@ class SurveyService:
     # ── Survey versions ───────────────────────────────────────────────────────
 
     def _get_version(
-        self, db: Session, project_id: ProjectId, survey_id: SurveyId, version_number: int
+        self,
+        db: Session,
+        project_id: ProjectId,
+        survey_id: SurveyId,
+        version_number: SurveyVersionNumber,
+        *,
+        for_update: bool = False,
     ) -> SurveyVersion:
         version = ensure_present(
-            sr.get_version(db, project_id, survey_id, version_number),
+            sr.get_version(db, project_id, survey_id, version_number, for_update=for_update),
             error=VersionNotFoundError(survey_id=survey_id, version_number=version_number),
         )
         return version
@@ -144,15 +167,15 @@ class SurveyService:
         db: Session,
         project_id: ProjectId,
         survey_id: SurveyId,
-        version_number: int,
+        version_number: SurveyVersionNumber,
         actor: User,  # noqa: ARG002
     ) -> SurveyVersion:
         self._get_survey(db, project_id, survey_id)
         return self._get_version(db, project_id, survey_id, version_number)
 
-    def create_version(self, db: Session, project_id: ProjectId, survey_id: SurveyId, actor: User) -> SurveyVersion:  # noqa: ARG002
+    def create_version(self, db: Session, project_id: ProjectId, survey_id: SurveyId, actor: User) -> SurveyVersion:
         self._get_survey(db, project_id, survey_id)
-        version = sr.create_version(db, survey_id)
+        version = sr.create_version(db, survey_id, created_by_user_id=actor.id)
         commit_with_err_handle(db, contexts=[version])
         return version
 
@@ -161,13 +184,19 @@ class SurveyService:
         db: Session,
         project_id: ProjectId,
         survey_id: SurveyId,
-        version_number: int,
+        version_number: SurveyVersionNumber,
         actor: User,
     ) -> SurveyVersion:
         self._get_survey(db, project_id, survey_id)
-        source_version = self._get_version(db, project_id, survey_id, version_number)
+        source_version = self._get_version(db, project_id, survey_id, version_number, for_update=True)
 
-        draft = sr.create_version(db, survey_id, created_by_user_id=actor.id, definition=source_version.definition)
+        draft = sr.create_version(
+            db,
+            survey_id,
+            created_by_user_id=actor.id,
+            content=source_version.content,
+            revision=1 if source_version.content is not None else 0,
+        )
 
         commit_with_err_handle(db, contexts=[draft])
         return draft
@@ -178,15 +207,15 @@ class SurveyService:
         db: Session,
         project_id: ProjectId,
         survey_id: SurveyId,
-        version_number: int,
+        version_number: SurveyVersionNumber,
         actor: User,
     ) -> SurveyVersion:
         survey = self._get_survey(db, project_id, survey_id)
-        version = self._get_version(db, project_id, survey_id, version_number)
+        version = self._get_version(db, project_id, survey_id, version_number, for_update=True)
 
         version_rules.ensure_is_draft(version=version)
 
-        version_rules.ensure_has_survey_definition(version=version)
+        version_rules.ensure_publishable(version=version)
 
         self._ensure_survey_default_response_store(
             db,
@@ -229,11 +258,11 @@ class SurveyService:
         db: Session,
         project_id: ProjectId,
         survey_id: SurveyId,
-        version_number: int,
+        version_number: SurveyVersionNumber,
         actor: User,  # noqa: ARG002
     ) -> SurveyVersion:
         survey = self._get_survey(db, project_id, survey_id)
-        version = self._get_version(db, project_id, survey_id, version_number)
+        version = self._get_version(db, project_id, survey_id, version_number, for_update=True)
         version_rules.ensure_can_archive(version=version)
         if survey.published_version_id == version.id:
             version_rules.ensure_is_published(version=version)

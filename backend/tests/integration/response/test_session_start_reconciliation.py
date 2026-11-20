@@ -40,6 +40,7 @@ from app.services.public_submissions.core.reconciliation import (
 )
 from app.services.public_submissions.core.session_loader import load_current_session
 from tests.integration.core.factories import (
+    define_version,
     make_project,
     make_response_store,
     make_survey,
@@ -50,7 +51,6 @@ from tests.integration.core.factories import (
 if TYPE_CHECKING:
     from tests.conftest import DbSessions
 
-_SCHEMA = {"nodes": [{"id": "q1", "type": "short_text"}]}
 _LINKAGE_SECRET = b"\xcc" * 32
 _FAKE_LINKAGE_KEY = LinkageKey(version=1, secret=_LINKAGE_SECRET, aws_version_id="test-version")
 _FAKE_SESSION_LOCATOR = SessionLocator(os.urandom(32))
@@ -82,7 +82,7 @@ def _seed_published_survey(db: Session, slug: str) -> int:
 
     version = make_survey_version(survey.id, user.id)
     version.status = "published"
-    version.compiled_schema = _SCHEMA
+    define_version(db, version)
     version.published_at = datetime.now(UTC)
     db.add(version)
     db.flush()
@@ -123,8 +123,10 @@ class TestReconciliation:
         with patches[0], patches[1], patches[2], patches[3]:
             starter = SessionStarter()
             starter.start(
-                db_sessions.core, db_sessions.response,
-                payload=_slug_payload("recon-orphan"), actor=None,
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("recon-orphan"),
+                actor=None,
             )
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
@@ -153,8 +155,10 @@ class TestReconciliation:
         with patches[0], patches[1], patches[2], patches[3]:
             starter = SessionStarter()
             starter.start(
-                db_sessions.core, db_sessions.response,
-                payload=_slug_payload("recon-ok"), actor=None,
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("recon-ok"),
+                actor=None,
             )
 
         with patch(
@@ -173,8 +177,10 @@ class TestReconciliation:
         with patches[0], patches[1], patches[2], patches[3]:
             starter = SessionStarter()
             _, resume_token, _ = starter.start(
-                db_sessions.core, db_sessions.response,
-                payload=_slug_payload("recon-reject"), actor=None,
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("recon-reject"),
+                actor=None,
             )
 
         envelope = db_sessions.response.scalar(select(ResponseEnvelope))
@@ -210,7 +216,8 @@ class TestReconciliation:
             patch(
                 f"{_STARTER_MODULE}.derive_session_locator",
                 return_value=NewSessionLocator(
-                    linkage_key_version=1, session_locator=_FAKE_SESSION_LOCATOR,
+                    linkage_key_version=1,
+                    session_locator=_FAKE_SESSION_LOCATOR,
                 ),
             ),
             patch(
@@ -222,8 +229,10 @@ class TestReconciliation:
         ):
             starter = SessionStarter()
             starter.start(
-                db_sessions.core, db_sessions.response,
-                payload=_slug_payload("recon-kms"), actor=None,
+                db_sessions.core,
+                db_sessions.response,
+                payload=_slug_payload("recon-kms"),
+                actor=None,
             )
 
         session = db_sessions.core.scalar(

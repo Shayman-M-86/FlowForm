@@ -12,12 +12,12 @@ from app.domain.errors import (
     SurveyNotPublishedError,
 )
 from app.schema.api.requests.submission_sessions import StartSubmissionSessionRequest
-from app.schema.enums import SurveyVisibility
+from app.schema.enums import SurveyLinkType, SurveyVisibility
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.orm.core.user import User
 from app.services.public_submissions.core.resolution.access_resolver import AccessResolver
-from tests.integration.core.factories import make_participant_chain, make_token
+from tests.integration.core.factories import define_version, make_participant_chain, make_token
 
 
 def _publish_survey(
@@ -31,7 +31,7 @@ def _publish_survey(
     survey.visibility = visibility
     survey.public_slug = slug
     survey_version.status = "published"
-    survey_version.compiled_schema = {"nodes": []}
+    define_version(db_session, survey_version)
     survey_version.published_at = datetime.now(UTC)
     db_session.flush()
     survey.published_version_id = survey_version.id
@@ -39,15 +39,11 @@ def _publish_survey(
 
 
 def _slug_payload(slug: str) -> StartSubmissionSessionRequest:
-    return StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "public_slug", "public_slug": slug}}
-    )
+    return StartSubmissionSessionRequest.model_validate({"access": {"type": "public_slug", "public_slug": slug}})
 
 
 def _token_payload(token: str) -> StartSubmissionSessionRequest:
-    return StartSubmissionSessionRequest.model_validate(
-        {"access": {"type": "link_token", "token": token}}
-    )
+    return StartSubmissionSessionRequest.model_validate({"access": {"type": "link_token", "token": token}})
 
 
 def _make_link(
@@ -55,7 +51,7 @@ def _make_link(
     *,
     survey: Survey,
     name: str,
-    link_type: str = "general",
+    link_type: SurveyLinkType = "general",
     assigned_participant_id=None,
 ) -> tuple[SurveyLink, str]:
     raw_token = make_token()
@@ -80,9 +76,7 @@ def test_public_slug_grant_carries_explicit_access_context(
 ) -> None:
     _publish_survey(db_session, survey=survey, survey_version=survey_version)
 
-    grant = AccessResolver().resolve(
-        db_session, payload=_slug_payload("customer-intake"), actor=None
-    )
+    grant = AccessResolver().resolve(db_session, payload=_slug_payload("customer-intake"), actor=None)
 
     assert grant.access_method == "public_slug"
     assert grant.project_id == survey.project_id
@@ -111,9 +105,7 @@ def test_general_link_grant_carries_reusable_link_context(
     )
     link, raw_token = _make_link(db_session, survey=survey, name="General link")
 
-    grant = AccessResolver().resolve(
-        db_session, payload=_token_payload(raw_token), actor=None
-    )
+    grant = AccessResolver().resolve(db_session, payload=_token_payload(raw_token), actor=None)
 
     assert grant.access_method == "general_link"
     assert grant.project_id == survey.project_id
@@ -132,9 +124,7 @@ def test_private_link_grant_carries_assigned_subject_candidate(
     survey_version: SurveyVersion,
 ) -> None:
     _publish_survey(db_session, survey=survey, survey_version=survey_version)
-    participant = make_participant_chain(
-        db_session, project_id=survey.project_id, subject_code="private-subject"
-    )
+    participant = make_participant_chain(db_session, project_id=survey.project_id, subject_code="private-subject")
     link, raw_token = _make_link(
         db_session,
         survey=survey,
@@ -143,9 +133,7 @@ def test_private_link_grant_carries_assigned_subject_candidate(
         assigned_participant_id=participant.id,
     )
 
-    grant = AccessResolver().resolve(
-        db_session, payload=_token_payload(raw_token), actor=None
-    )
+    grant = AccessResolver().resolve(db_session, payload=_token_payload(raw_token), actor=None)
 
     assert grant.access_method == "private_link"
     assert grant.link_id == link.id
@@ -176,9 +164,7 @@ def test_authenticated_link_grant_carries_auth_requirement(
         assigned_participant_id=participant.id,
     )
 
-    grant = AccessResolver().resolve(
-        db_session, payload=_token_payload(raw_token), actor=user
-    )
+    grant = AccessResolver().resolve(db_session, payload=_token_payload(raw_token), actor=user)
 
     assert grant.access_method == "authenticated_assigned_link"
     assert grant.link_id == link.id

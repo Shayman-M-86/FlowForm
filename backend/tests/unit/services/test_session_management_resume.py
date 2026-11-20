@@ -35,7 +35,7 @@ def _version() -> SimpleNamespace:
         survey_id=20,
         version_number=1,
         status="published",
-        compiled_schema={"nodes": []},
+        content={"title": "Example survey", "sections": []},
         published_at=now,
         created_by_user_id=None,
         created_at=now,
@@ -59,6 +59,10 @@ def test_resume_matches_consumed_link_without_revalidating_link_state() -> None:
     payload = StartSubmissionSessionRequest.model_validate({"access": {"type": "link_token", "token": "consumed-link"}})
 
     with (
+        patch(
+            "app.services.public_submissions.api.session_management.ssr.get_by_token_hash",
+            return_value=session,
+        ),
         patch(
             "app.services.public_submissions.api.session_management.load_current_session_record",
             return_value=session,
@@ -94,6 +98,10 @@ def test_resume_rejects_cookie_from_another_link() -> None:
     payload = StartSubmissionSessionRequest.model_validate({"access": {"type": "link_token", "token": "another-link"}})
 
     with (
+        patch(
+            "app.services.public_submissions.api.session_management.ssr.get_by_token_hash",
+            return_value=session,
+        ),
         patch(
             "app.services.public_submissions.api.session_management.load_current_session_record",
             return_value=session,

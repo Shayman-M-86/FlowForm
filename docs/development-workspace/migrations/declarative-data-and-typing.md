@@ -101,7 +101,7 @@ the API creation variants inherit those shared access models, and merged survey
 updates use the same Pydantic union. The legacy domain answer validator is
 removed. Answer request models already invoke the shared Pydantic validators
 for their self-describing specification and value, without a second family-based
-inspection pass. Definition validation delegates to `SurveyDefinition`.
+inspection pass. Authored document validation uses `SurveyContent`.
 Publication/access state, draft editability, and response-store configuration
 still require domain guards. Submitted answer specifications do not establish
 provenance against the published document.
@@ -193,32 +193,16 @@ persistence smoke tests on adapted SQLite schemas, and OpenAPI builder/error
 formatting cases. PostgreSQL DDL was compared across all 27 tables. These checks
 do not establish a live PostgreSQL deployment or full application correctness.
 
-Known runtime migration gaps include legacy node-model imports blocking full
-route export and remaining legacy routes/lifecycle consumers. The
-core event repository now accepts `field_uuid: SurveyFieldUuid` and constructs
-the mapped field correctly; old node identities are not converted implicitly.
-The obsolete `repositories/content_repo.py` is removed: document persistence
-belongs to survey versions, rather than individual node or scoring-rule tables.
-Some former editing and cloning/publication callers still require document-based
-replacements. Answer saving and field-view events now
-resolve fields directly from the pinned version document. Do not restore that repository
-as a compatibility layer for removed tables.
-Whole-document reads and replacement live in `surveys_repo.get_definition` and
-`update_definition`. Reads return independent `SurveyDefinition` snapshots;
-replacement flushes without committing. `SurveyDefinitionJSONB` serializes
-typed definitions to JSON and reconstructs the model when loading JSONB. The
-column's nullable annotation reflects empty drafts. Services still own document
-identity, revision/editability/publication policy, and individual field lookup.
-`ContentService.update_definition` is the whole-document edit operation: it
-looks up the scoped version, applies the existing draft-editability guard,
-delegates replacement to the survey repository, and commits. AI import is a
-separate prompt-to-`SurveyContent` operation. The app initializes the generator
-at startup, and Studio can request a preview before selecting a project, survey,
-or version. The node and scoring-rule routes have been removed. The bootstrap
-schema stores whole definitions, locks non-draft definitions, and uses field
-UUIDs for answer slots and events. Integrity translation matches those
-PostgreSQL constraints. This bootstrap change applies to fresh databases.
-These repository functions do not finish the legacy workflow migration.
+The node and scoring routes and tables have been removed. Field-based events and
+answers resolve their field from the pinned version's content.
+
+`SurveyContent` owns the authored JSONB shape. `SurveyVersion` owns the version
+ID, sequential version number, revision and status. The draft save route uses
+the version ID in its URL, checks the expected revision under a row lock in
+`ContentService.save_content`, and returns the new revision. Version reads and
+lifecycle responses have their own HTTP models. AI import returns authored
+content for preview before selecting a version. The SQL changes apply to fresh
+databases.
 The field-save path now sends `field_uuid` and `field_id` to the slot repository,
 retains one stable slot/locator for answered and cleared states, and encrypts
 self-describing shared answer data in plaintext format version 2. Its response

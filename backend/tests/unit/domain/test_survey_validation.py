@@ -3,34 +3,23 @@
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from app.domain import survey_rules
+from app.domain import survey_rules, version_rules
 from app.domain.errors import (
     SurveyNoResponseStoreError,
     SurveyNotAccessibleError,
     SurveyNotPublishedError,
+    SurveyPublishError,
     SurveyVisibilityMismatchError,
 )
 from app.schema.api.requests.submission_sessions import SaveSubmissionSessionAnswerRequest
 from app.schema.api.requests.surveys import CreateSurveyRequest
 from app.schema.models.common.survey_access import NonPublicSurveyAccess, PublicSurveyAccess
-from app.schema.models.survey_document import SurveyDefinition
+from app.schema.models.survey_document import SurveyContent
 from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.types import ProjectId, ResponseStoreId, SurveyId
 
 ANSWER = TypeAdapter(SaveSubmissionSessionAnswerRequest)
 CREATE = TypeAdapter(CreateSurveyRequest)
-
-
-def definition():
-    return {
-        "id": "survey",
-        "versionId": 11,
-        "revision": 1,
-        "title": "Survey",
-        "projectName": "Research",
-        "status": "draft",
-        "document": {"sections": []},
-    }
 
 
 def answer():
@@ -47,12 +36,29 @@ def survey():
     return Survey(project_id=TypeAdapter(ProjectId).validate_python(1), title="Survey")
 
 
-def test_definition_validation_uses_canonical_model():
-    assert isinstance(survey_rules.validate_definition(definition()), SurveyDefinition)
-    with pytest.raises(ValidationError):
-        survey_rules.validate_definition(definition() | {"revision": 0})
-    with pytest.raises(ValidationError):
-        survey_rules.validate_definition({"nodes": []})
+def test_publish_rejects_missing_content_and_dangling_workflow_fields():
+    version = SurveyVersion(survey_id=TypeAdapter(SurveyId).validate_python(1), version_number=1)
+    with pytest.raises(SurveyPublishError):
+        version_rules.ensure_publishable(version=version)
+
+    version.content = SurveyContent.model_validate(
+        {
+            "title": "Survey",
+            "sections": [],
+            "workflow": {
+                "rules": [
+                    {
+                        "id": "missing",
+                        "enabled": True,
+                        "when": {"not": {"fieldUuid": answer()["field_uuid"], "operator": "is_answered"}},
+                        "outcome": "missing",
+                    }
+                ]
+            },
+        }
+    )
+    with pytest.raises(SurveyPublishError):
+        version_rules.ensure_publishable(version=version)
 
 
 def test_answer_request_validates_specification_and_value_together():

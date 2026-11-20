@@ -64,9 +64,13 @@ def test_nested_long_content_and_survey_block_exception():
     TextContent(text="x" * 10000)
     with pytest.raises(ValidationError):
         TextContent(text="x" * 10001)
-    SurveySection(id="section", title="Section", blocks=[{"id": str(i), "type": "divider"} for i in range(1000)])
+    SurveySection.model_validate(
+        {"id": "section", "title": "Section", "blocks": [{"id": str(i), "type": "divider"} for i in range(1000)]}
+    )
     with pytest.raises(ValidationError):
-        SurveySection(id="section", title="Section", blocks=[{"id": str(i), "type": "divider"} for i in range(1001)])
+        SurveySection.model_validate(
+            {"id": "section", "title": "Section", "blocks": [{"id": str(i), "type": "divider"} for i in range(1001)]}
+        )
 
 
 def test_long_answer_limit_and_submitted_constraints_both_apply():

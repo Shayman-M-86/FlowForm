@@ -33,7 +33,14 @@ def list_surveys(project_id: ProjectId):
 @require_project_permission(PERMISSIONS.survey.create)
 def create_survey(project_id: ProjectId):
     payload = parse(CreateSurveyRequest, request)
-    survey = survey_service.create_survey(db=get_core_db(), project_id=project_id, data=payload, actor=g.actor)
+    survey = survey_service.create_survey(
+        db=get_core_db(),
+        project_id=project_id,
+        title=payload.title,
+        visibility=payload.visibility,
+        public_slug=payload.public_slug,
+        actor=g.actor,
+    )
     return SurveyResponses.model_validate(survey).model_dump(mode="json"), 201
 
 
@@ -58,7 +65,14 @@ def get_survey(project_id: ProjectId, survey_id: SurveyId):
 def update_survey(project_id: ProjectId, survey_id: SurveyId):
     payload = parse(UpdateSurveyRequest, request)
     survey = survey_service.update_survey(
-        db=get_core_db(), project_id=project_id, survey_id=survey_id, data=payload, actor=g.actor
+        db=get_core_db(),
+        project_id=project_id,
+        survey_id=survey_id,
+        actor=g.actor,
+        title=payload.title,
+        visibility=payload.visibility,
+        public_slug=payload.public_slug,
+        update_public_slug="public_slug" in payload.model_fields_set,
     )
     return SurveyResponses.model_validate(survey).model_dump(mode="json"), 200
 

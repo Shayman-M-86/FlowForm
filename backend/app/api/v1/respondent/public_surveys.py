@@ -8,8 +8,8 @@ from app.schema.api.requests.surveys import ListPublicSurveysRequest
 from app.schema.api.responses.surveys import (
     PaginatedPublicSurveysResponses,
     PublicSurveyResponses,
+    RespondentSurveyVersionNestedModel,
     SurveyResponses,
-    SurveyVersionResponses,
 )
 
 
@@ -49,7 +49,9 @@ def get_public_survey(public_slug: str):
     response = PublicSurveyResponses(
         survey=SurveyResponses.model_validate(result.survey),
         published_version=(
-            SurveyVersionResponses.model_validate(result.published_version) if result.published_version else None
+            RespondentSurveyVersionNestedModel.model_validate(result.published_version)
+            if result.published_version
+            else None
         ),
     )
     return response.model_dump(mode="json"), 200

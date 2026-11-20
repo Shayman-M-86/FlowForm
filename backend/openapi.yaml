@@ -3517,7 +3517,7 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/SurveyVersionResponses'
+                  $ref: '#/components/schemas/SurveyVersionListItemResponse'
                 type: array
         '400':
           $ref: '#/components/responses/BadRequestError'
@@ -3570,7 +3570,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionResponses'
+                $ref: '#/components/schemas/CreateSurveyVersionResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3630,7 +3630,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionResponses'
+                $ref: '#/components/schemas/CopySurveyVersionResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3690,7 +3690,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionResponses'
+                $ref: '#/components/schemas/GetSurveyVersionResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3750,7 +3750,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionResponses'
+                $ref: '#/components/schemas/PublishSurveyResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -3810,7 +3810,73 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SurveyVersionResponses'
+                $ref: '#/components/schemas/ArchiveSurveyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '413':
+          $ref: '#/components/responses/RequestEntityTooLargeError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaTypeError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/studio/projects/{project_id}/surveys/{survey_id}/versions/{version_id}/content:
+    put:
+      operationId: saveSurveyContent
+      summary: Save survey content
+      description: Save survey content
+      tags:
+      - Survey Versions
+      x-flowform-rbac:
+        permission: survey:edit
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9223372036854775807
+      - name: survey_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9223372036854775807
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9223372036854775807
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSurveyRequest'
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveSurveyResponse'
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -4682,9 +4748,6 @@ components:
       - type
       title: DividerBlock
       type: object
-    DocumentRevision:
-      minimum: 1
-      type: integer
     FieldBehaviour:
       additionalProperties: false
       description: Optional field visibility data.
@@ -5063,6 +5126,18 @@ components:
       maxLength: 128
       minLength: 1
       type: string
+    RespondentSurveyVersionNestedModel:
+      description: The version identity and content needed to display a survey.
+      properties:
+        version_id:
+          $ref: '#/components/schemas/SurveyVersionId'
+        content:
+          $ref: '#/components/schemas/SurveyContent'
+      required:
+      - version_id
+      - content
+      title: RespondentSurveyVersionNestedModel
+      type: object
     ResponseStoreId:
       description: Response store identity
       maximum: 9223372036854775807
@@ -5223,9 +5298,9 @@ components:
         title: SurveyBlock
       maxItems: 1000
       type: array
-    SurveyDefinition:
+    SurveyContent:
       additionalProperties: false
-      description: Canonical FlowForm V2 survey definition.
+      description: Portable authored survey content.
       properties:
         title:
           $ref: '#/components/schemas/SurveyTitle'
@@ -5234,47 +5309,17 @@ components:
           - $ref: '#/components/schemas/LongString'
           - type: 'null'
           default: null
-        document:
-          $ref: '#/components/schemas/SurveyDocument'
+        sections:
+          $ref: '#/components/schemas/LimitedList_SurveySection_'
         workflow:
           anyOf:
           - $ref: '#/components/schemas/SurveyWorkflow'
           - type: 'null'
           default: null
-        id:
-          $ref: '#/components/schemas/ReadableId'
-        versionId:
-          $ref: '#/components/schemas/SurveyVersionId'
-        revision:
-          $ref: '#/components/schemas/DocumentRevision'
-        projectName:
-          $ref: '#/components/schemas/ProjectName'
-        status:
-          enum:
-          - draft
-          - published
-          - archived
-          title: Status
-          type: string
       required:
       - title
-      - document
-      - id
-      - versionId
-      - revision
-      - projectName
-      - status
-      title: SurveyDefinition
-      type: object
-    SurveyDocument:
-      additionalProperties: false
-      description: Ordered survey sections.
-      properties:
-        sections:
-          $ref: '#/components/schemas/LimitedList_SurveySection_'
-      required:
       - sections
-      title: SurveyDocument
+      title: SurveyContent
       type: object
     SurveyField:
       additionalProperties: false
@@ -5438,52 +5483,6 @@ components:
       maximum: 9223372036854775807
       minimum: 1
       type: integer
-    SurveyVersionNumber:
-      description: Sequential version number within a survey
-      minimum: 1
-      type: integer
-    SurveyVersionResponses:
-      description: API response shape for a survey version.
-      properties:
-        id:
-          $ref: '#/components/schemas/SurveyVersionId'
-        survey_id:
-          $ref: '#/components/schemas/SurveyId'
-        version_number:
-          $ref: '#/components/schemas/SurveyVersionNumber'
-        status:
-          enum:
-          - draft
-          - published
-          - archived
-          title: Status
-          type: string
-        definition:
-          $ref: '#/components/schemas/SurveyDefinition'
-        published_at:
-          anyOf:
-          - $ref: '#/components/schemas/Timestamp'
-          - type: 'null'
-        created_by_user_id:
-          anyOf:
-          - $ref: '#/components/schemas/UserId'
-          - type: 'null'
-        created_at:
-          $ref: '#/components/schemas/Timestamp'
-        updated_at:
-          $ref: '#/components/schemas/Timestamp'
-      required:
-      - id
-      - survey_id
-      - version_number
-      - status
-      - definition
-      - published_at
-      - created_by_user_id
-      - created_at
-      - updated_at
-      title: SurveyVersionResponses
-      type: object
     SurveyWorkflow:
       additionalProperties: false
       description: Survey-level rule collection.
@@ -5610,7 +5609,7 @@ components:
           default: null
         published_version:
           anyOf:
-          - $ref: '#/components/schemas/SurveyVersionResponses'
+          - $ref: '#/components/schemas/RespondentSurveyVersionNestedModel'
           - type: 'null'
           default: null
       required:
@@ -5669,7 +5668,7 @@ components:
           $ref: '#/components/schemas/SurveyResponses'
         published_version:
           anyOf:
-          - $ref: '#/components/schemas/SurveyVersionResponses'
+          - $ref: '#/components/schemas/RespondentSurveyVersionNestedModel'
           - type: 'null'
           default: null
       required:
@@ -5772,7 +5771,7 @@ components:
         survey:
           $ref: '#/components/schemas/SurveyResponses'
         published_version:
-          $ref: '#/components/schemas/SurveyVersionResponses'
+          $ref: '#/components/schemas/RespondentSurveyVersionNestedModel'
       required:
       - status
       - survey
@@ -7162,6 +7161,159 @@ components:
       - permissions
       title: MySurveyPermissionsResponses
       type: object
+    DocumentRevision:
+      maximum: 2147483647
+      minimum: 0
+      type: integer
+    SurveyVersionListItemResponse:
+      description: Version metadata used to select a version in Studio.
+      properties:
+        version_id:
+          $ref: '#/components/schemas/SurveyVersionId'
+        version_number:
+          $ref: '#/components/schemas/SurveyVersionNumber'
+        revision:
+          $ref: '#/components/schemas/DocumentRevision'
+        status:
+          enum:
+          - draft
+          - published
+          - archived
+          title: Status
+          type: string
+        published_at:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+      required:
+      - version_id
+      - version_number
+      - revision
+      - status
+      - published_at
+      - created_at
+      - updated_at
+      title: SurveyVersionListItemResponse
+      type: object
+    SurveyVersionNumber:
+      description: Sequential version number within a survey
+      minimum: 1
+      type: integer
+    CreateSurveyVersionResponse:
+      description: Identify the newly created empty draft.
+      properties:
+        version_id:
+          $ref: '#/components/schemas/SurveyVersionId'
+        version_number:
+          $ref: '#/components/schemas/SurveyVersionNumber'
+        revision:
+          $ref: '#/components/schemas/DocumentRevision'
+      required:
+      - version_id
+      - version_number
+      - revision
+      title: CreateSurveyVersionResponse
+      type: object
+    CopySurveyVersionResponse:
+      description: Identify the new draft that holds the copied content.
+      properties:
+        version_id:
+          $ref: '#/components/schemas/SurveyVersionId'
+        version_number:
+          $ref: '#/components/schemas/SurveyVersionNumber'
+        revision:
+          $ref: '#/components/schemas/DocumentRevision'
+      required:
+      - version_id
+      - version_number
+      - revision
+      title: CopySurveyVersionResponse
+      type: object
+    GetSurveyVersionResponse:
+      description: One version's current metadata and its saved content.
+      properties:
+        version_id:
+          $ref: '#/components/schemas/SurveyVersionId'
+        revision:
+          $ref: '#/components/schemas/DocumentRevision'
+        status:
+          enum:
+          - draft
+          - published
+          - archived
+          title: Status
+          type: string
+        content:
+          anyOf:
+          - $ref: '#/components/schemas/SurveyContent'
+          - type: 'null'
+      required:
+      - version_id
+      - revision
+      - status
+      - content
+      title: GetSurveyVersionResponse
+      type: object
+    PublishSurveyResponse:
+      description: Identify the version that was published.
+      properties:
+        version_id:
+          $ref: '#/components/schemas/SurveyVersionId'
+        status:
+          enum:
+          - draft
+          - published
+          - archived
+          title: Status
+          type: string
+      required:
+      - version_id
+      - status
+      title: PublishSurveyResponse
+      type: object
+    ArchiveSurveyResponse:
+      description: Identify the version that was archived.
+      properties:
+        version_id:
+          $ref: '#/components/schemas/SurveyVersionId'
+        status:
+          enum:
+          - draft
+          - published
+          - archived
+          title: Status
+          type: string
+      required:
+      - version_id
+      - status
+      title: ArchiveSurveyResponse
+      type: object
+    SaveSurveyRequest:
+      additionalProperties: false
+      description: Replace the content of the draft at the revision the editor read.
+      properties:
+        expected_revision:
+          $ref: '#/components/schemas/DocumentRevision'
+        content:
+          $ref: '#/components/schemas/SurveyContent'
+      required:
+      - expected_revision
+      - content
+      title: SaveSurveyRequest
+      type: object
+    SaveSurveyResponse:
+      description: Acknowledge the newly saved revision.
+      properties:
+        revision:
+          $ref: '#/components/schemas/DocumentRevision'
+      required:
+      - revision
+      title: SaveSurveyResponse
+      type: object
     AIImportPrompt:
       maxLength: 4000
       minLength: 1
@@ -7176,36 +7328,13 @@ components:
       - prompt
       title: AIImportRequest
       type: object
-    SurveyContent:
-      additionalProperties: false
-      description: Authored survey content shared by draft generation and survey definitions.
-      properties:
-        title:
-          $ref: '#/components/schemas/SurveyTitle'
-        description:
-          anyOf:
-          - $ref: '#/components/schemas/LongString'
-          - type: 'null'
-          default: null
-        document:
-          $ref: '#/components/schemas/SurveyDocument'
-        workflow:
-          anyOf:
-          - $ref: '#/components/schemas/SurveyWorkflow'
-          - type: 'null'
-          default: null
-      required:
-      - title
-      - document
-      title: SurveyContent
-      type: object
     AIImportResponse:
       description: Generated survey content before it is assigned to a persisted version.
       properties:
-        definition:
+        content:
           $ref: '#/components/schemas/SurveyContent'
       required:
-      - definition
+      - content
       title: AIImportResponse
       type: object
   responses:

@@ -50,16 +50,22 @@ def test_participant_persists_generated_values_and_retains_identity_foreign_keys
         metadata.create_all(engine)
         with Session(engine) as db:
             db.execute(
-                User.__table__.insert().values(
-                    id=1, auth0_user_id="auth0|test", email="a@example.com", public_id="abcdefgh"
-                )
-            )
-            db.execute(Project.__table__.insert().values(id=1, name="Test", slug="test", created_by_user_id=1))
-            db.execute(
-                ProjectSubject.__table__.insert().values(id=subject_id, project_id=1, subject_code="participant")
+                metadata.tables["users"]
+                .insert()
+                .values(id=1, auth0_user_id="auth0|test", email="a@example.com", public_id="abcdefgh")
             )
             db.execute(
-                ProjectSubjectIdentity.__table__.insert().values(
+                metadata.tables["projects"].insert().values(id=1, name="Test", slug="test", created_by_user_id=1)
+            )
+            db.execute(
+                metadata.tables["project_subjects"]
+                .insert()
+                .values(id=subject_id, project_id=1, subject_code="participant")
+            )
+            db.execute(
+                metadata.tables["project_subject_identities"]
+                .insert()
+                .values(
                     id=identity_id,
                     project_id=1,
                     project_subject_id=subject_id,

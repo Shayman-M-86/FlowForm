@@ -80,10 +80,12 @@ def test_constructor_covers_mapped_fields_without_catch_all(mapper):
                 assert parameter.default == field.default
             else:
                 assert parameter.default is not inspect.Parameter.empty
-    instance = model(**kwargs)
+    assert isinstance(model, type)
+    constructor = cast(Any, model)
+    instance = constructor(**kwargs)
     assert isinstance(instance, model)
     with pytest.raises(TypeError, match="unexpected keyword"):
-        model(**kwargs, unknown_property="typo")
+        constructor(**kwargs, unknown_property="typo")
 
 
 def test_answer_slot_rejects_legacy_constructor_names():

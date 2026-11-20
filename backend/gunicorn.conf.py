@@ -8,7 +8,15 @@ cleanly, instead of every worker crash-looping and the arbiter dumping a
 ``HaltServer`` traceback once all workers fail to boot.
 """
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from flask import Flask
+    from gunicorn.arbiter import Arbiter
+    from gunicorn.workers.base import Worker
 
 # The application is preloaded in the master, but the tracing SDK's batch
 # processor owns a background thread that must be created after each fork. This
@@ -26,8 +34,8 @@ timeout = int(os.getenv("TIMEOUT", "60"))
 preload_app = True
 
 
-def post_fork(server, worker):  # noqa: ARG001
-    """Dispose inherited DB connection pools in each freshly forked worker.
+def post_fork(server: Arbiter, worker: Worker) -> None:  # noqa: ARG001
+    """Reset inherited DB pools and start tracing in the forked worker.
 
     With ``preload_app`` the application factory runs in the master, and seed
     work (``init_seed_data``) opens real database connections there. Those
@@ -36,20 +44,18 @@ def post_fork(server, worker):  # noqa: ARG001
     the pools post-fork forces each worker to open its own connections lazily.
     """
     from app.core.extensions import db_manager
-    from app.tracing import initialize_tracing_provider
-    from wsgi import app
+    from app.tracing.provider import initialize_tracing_provider
 
     db_manager.dispose()
     # require_deferred asserts the preload handshake: configure_tracing must
     # have instrumented the app and marked the provider deferred. If that
     # contract ever breaks, fail here loudly rather than run workers that
     # silently export no spans.
-    initialize_tracing_provider(app, require_deferred=True)
+    initialize_tracing_provider(cast("Flask", worker.app.wsgi()), require_deferred=True)
 
 
-def worker_exit(server, worker):  # noqa: ARG001
+def worker_exit(server: Arbiter, worker: Worker) -> None:  # noqa: ARG001
     """Flush pending spans before a worker exits."""
-    from app.tracing import shutdown_tracing
-    from wsgi import app
+    from app.tracing.provider import shutdown_tracing
 
-    shutdown_tracing(app)
+    shutdown_tracing(cast("Flask", worker.app.wsgi()))

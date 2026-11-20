@@ -53,35 +53,30 @@ entry and answer persistence are separate boundaries. The service, repository,
 ORM, SQL, and lifecycle-test paths in the front matter identify the source to
 check before promoting this draft.
 
-## Definition persistence during migration
+## Survey content and version metadata
 
-The survey-version document is a `SurveyDefinition`, stored as JSONB through
-`SurveyDefinitionJSONB`. The conversion serializes JSON-compatible values on
-write and reconstructs the model on load. Empty drafts may have no definition.
-The fresh database schema requires a JSON object and a timestamp for publication,
-and a trigger prevents replacing a definition after the version leaves draft.
-Database violations use the integrity rules for `SurveyVersion`.
+A `SurveyVersion` row owns the database ID, survey ID, version number, revision,
+and lifecycle state. Its nullable `content` JSONB column holds `SurveyContent`,
+with title, optional description, ordered sections and optional workflow. Empty
+drafts start at revision zero. Copying content into a new draft starts that
+draft at revision one and preserves field UUIDs.
 
-`surveys_repo.get_definition` scopes retrieval to project, survey, and version
-number, excludes soft-deleted versions, and returns an independent snapshot.
-`update_definition` replaces the complete document and flushes without committing;
-the calling service owns the transaction. Explicit replacement also persists
-nested model edits, which SQLAlchemy does not otherwise track automatically.
+Studio selects versions from a metadata list and reads a specific version by
+version number. To save content it sends `PUT /versions/{version_id}/content`
+under the survey resource with the expected revision and the complete content.
+The service locks the scoped version row, checks draft status and revision,
+then updates the content and revision together. The response returns the new
+revision. A stale save returns 409.
 
-Services own authorization, draft editability, document/version identity,
-revision policy, and publication validation. A field is resolved from the pinned
-version document. PostgreSQL enforces the session/version reference and one
-answer slot per session and field UUID. Saved-answer retrieval remains a
-response-repository operation.
-
-`ContentService.update_definition` now provides the draft-editability guard and
-transaction for a whole-document update. It obtains the project/survey-scoped
-version, rejects non-drafts, saves through the repository, and commits. Survey
-permission enforcement belongs to its caller.
+Publication locks the version while validating that its content exists, field
+UUIDs are unique, and conditions reference fields in the same version. SQL
+requires content and a timestamp for publication and locks the content and
+revision after the version leaves draft. Respondent discovery returns the
+published version ID and content. Field lookup uses the pinned version's content.
 
 Studio's authenticated `POST /api/v1/studio/surveys/ai-import` accepts a prompt
 and returns a draft as `SurveyContent`. It includes the title, optional
-description, document and optional workflow shared by saved definitions. A
+description, sections and optional workflow shared by saved definitions. A
 caller can use it before a survey or project has been selected. Version metadata
 belongs to the separate save flow. The common error handler returns 503 when
 generation is disabled and 502 when an upstream call yields no usable draft.

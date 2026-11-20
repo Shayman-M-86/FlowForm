@@ -1,11 +1,10 @@
 """Field-based slot creation and concurrent unique-conflict recovery."""
 
-from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
-from psycopg.errors import UniqueViolation
+from psycopg.errors import Diagnostic, UniqueViolation
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -16,8 +15,8 @@ from app.schema.orm.core.submission_answer_slot import ANSWER_SLOT_IDENTITY_CONS
 
 class DuplicateSlot(UniqueViolation):
     @property
-    def diag(self):
-        return SimpleNamespace(constraint_name=ANSWER_SLOT_IDENTITY_CONSTRAINT)
+    def diag(self) -> Diagnostic:
+        return Mock(spec=Diagnostic, constraint_name=ANSWER_SLOT_IDENTITY_CONSTRAINT)
 
 
 def inputs():

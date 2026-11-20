@@ -4,7 +4,7 @@ import { usePolicyQuery } from '@/lib/query/usePolicyQuery'
 import { QUERY_POLICIES } from '@/lib/query/queryPolicy'
 import type { components } from '@/api/generated/schema'
 
-export type SurveyVersionOut = components['schemas']['SurveyVersionResponses']
+export type SurveyVersionOut = components['schemas']['SurveyVersionListItemResponse']
 
 const versionKeys = {
   list: (projectId: number, surveyId: number) =>
@@ -38,12 +38,7 @@ export function useCreateSurveyVersion(projectId: number, surveyId: number) {
       if (error) throw error
       return data
     },
-    onSuccess: (newVersion) => {
-      queryClient.setQueryData<SurveyVersionOut[]>(
-        versionKeys.list(projectId, surveyId),
-        (prev) => [...(prev ?? []), newVersion],
-      )
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: versionKeys.list(projectId, surveyId) }),
   })
 }
 
@@ -92,14 +87,6 @@ export function useCopyVersionToDraft(projectId: number, surveyId: number) {
       if (error) throw error
       return data
     },
-    onSuccess: (newVersion) => {
-      queryClient.setQueryData<SurveyVersionOut[]>(
-        versionKeys.list(projectId, surveyId),
-        (previous) => previous?.some((version) => version.id === newVersion.id)
-          ? previous
-          : [...(previous ?? []), newVersion],
-      )
-      void queryClient.invalidateQueries({ queryKey: versionKeys.list(projectId, surveyId) })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: versionKeys.list(projectId, surveyId) }),
   })
 }

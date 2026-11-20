@@ -1,8 +1,9 @@
-import { act } from 'react'
+import { act, type ComponentProps } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { AiImportPreview } from '@/api/hooks/nodes'
 import { StudioAiImportModal } from '@/components/StudioAiImportModal'
+
+type Preview = Awaited<ReturnType<ComponentProps<typeof StudioAiImportModal>['onGenerate']>>
 
 const mounted: Array<() => void> = []
 
@@ -19,8 +20,8 @@ describe('studio AI import modal', () => {
       act(() => root.unmount())
       host.remove()
     })
-    let resolve: (preview: AiImportPreview) => void = () => undefined
-    const pending = new Promise<AiImportPreview>((done) => { resolve = done })
+    let resolve: (preview: Preview) => void = () => undefined
+    const pending = new Promise<Preview>((done) => { resolve = done })
 
     await act(async () => {
       root.render(
@@ -47,7 +48,7 @@ describe('studio AI import modal', () => {
     expect(document.querySelector('[aria-busy="true"]')).not.toBeNull()
     expect(document.querySelector('.ai-gen-shell')).not.toBeNull()
 
-    await act(async () => resolve({ title: 'Sleep', description: '', nodes: [] } as unknown as AiImportPreview))
+    await act(async () => resolve({ title: 'Sleep', description: '', nodes: [] }))
 
     expect(document.body.textContent).not.toContain('Generating your survey')
     expect(document.querySelector('.ai-gen-shell')).toBeNull()

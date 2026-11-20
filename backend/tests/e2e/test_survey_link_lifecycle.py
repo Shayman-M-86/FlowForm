@@ -65,7 +65,7 @@ def test_link_lifecycle_create_list_resolve_update_delete(authed_client: FlaskCl
     assert resolve.status_code == 200, resolve.get_data(as_text=True)
     resolved = resolve.get_json()
     assert resolved["survey"]["id"] == seed.survey.id
-    assert resolved["published_version"]["id"] == seed.published_version.id
+    assert resolved["published_version"]["version_id"] == seed.published_version.id
 
     # --- update: deactivate and rename ---
     update = authed_client.patch(

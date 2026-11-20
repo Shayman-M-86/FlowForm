@@ -20,7 +20,7 @@ from app.schema.orm.core.survey import Survey, SurveyVersion
 from app.schema.orm.core.survey_access import SurveyLink
 from app.schema.types import ParticipantId
 from app.services.public_submissions.core.actions.session_starter import SessionStarter
-from tests.integration.core.factories import make_participant_chain, make_token
+from tests.integration.core.factories import define_version, make_participant_chain, make_token
 
 
 def _publish_survey(
@@ -32,7 +32,7 @@ def _publish_survey(
     survey.visibility = "public"
     survey.public_slug = "tx-test-survey"
     survey_version.status = "published"
-    survey_version.compiled_schema = {"nodes": []}
+    define_version(db_session, survey_version)
     survey_version.published_at = datetime.now(UTC)
     db_session.flush()
     survey.published_version_id = survey_version.id

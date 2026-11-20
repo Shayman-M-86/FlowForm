@@ -1,6 +1,6 @@
 """Index existing field models from the response's pinned survey document."""
 
-from app.schema.models.survey_document import SurveyDefinition
+from app.schema.models.survey_document import SurveyContent
 from app.schema.models.survey_document.document import InputBlock
 from app.schema.models.survey_document.fields import SurveyField
 from app.schema.types import SurveyFieldUuid
@@ -8,12 +8,12 @@ from app.schema.types import SurveyFieldUuid
 type FieldMap = dict[SurveyFieldUuid, SurveyField]
 
 
-def build_field_map(definition: SurveyDefinition | None) -> FieldMap:
+def build_field_map(content: SurveyContent | None) -> FieldMap:
     """Keep document field metadata without reconstructing a second shape."""
     fields: FieldMap = {}
-    if definition is None:
+    if content is None:
         return fields
-    for section in definition.document.sections:
+    for section in content.sections:
         for block in section.blocks:
             if isinstance(block, InputBlock):
                 field = block.field

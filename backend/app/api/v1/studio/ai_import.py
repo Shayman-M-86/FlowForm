@@ -24,5 +24,5 @@ studio_ai_import_bp = Blueprint("studio_ai_import_v1", __name__)
 @auth.require_auth()
 def generate_ai_import():
     payload = parse(AIImportRequest, request)
-    definition = get_openai_service().generate(payload.prompt)
-    return serialize(AIImportResponse, AIImportResponse(definition=definition)), 200
+    content = get_openai_service().generate(payload.prompt)
+    return serialize(AIImportResponse, AIImportResponse(content=content)), 200

@@ -71,7 +71,7 @@ literals do not require artificial wrapper types.
 - Use bounded title/text types and explicit presentation/tone vocabularies.
 - Use model validators for relationships that types cannot express, such as ordered bounds.
   Prefer discriminated models when one field selects a different valid object shape.
-- Validate definitions with `SurveyDefinition` and answers with `AnswerData` or
+- Validate authored documents with `SurveyContent` and answers with `AnswerData` or
   its request subclasses. Their Pydantic validators own specification/value
   consistency; do not repeat those checks in domain family-dispatch loops.
   Stored publication/access state and response-store availability remain domain
@@ -112,14 +112,14 @@ literals do not require artificial wrapper types.
   need not acquire API-oriented types.
 - JSONB containing a serialized document remains stored JSON, not an instance
   of a Pydantic model unless an explicit conversion layer exists.
-- Survey definitions use `db/json_types.py:SurveyDefinitionJSONB` as that explicit
-  boundary: typed models serialize to JSON on write and stored JSON becomes a
-  `SurveyDefinition` on load. SQL storage remains JSONB; empty drafts may have
-  no definition. There is no Pydantic validation on ordinary ORM assignment.
-- `surveys_repo.get_definition` returns an independent document snapshot scoped
-  to project, survey, and version number. `update_definition` replaces the whole
-  document, marks it modified, and flushes without committing. Services own
-  authorization, editability, revision policy, document identity, and field lookup.
+- `SurveyContentJSONB` serializes and validates the shared content model. The
+  `SurveyVersion` row owns version identity, revision and lifecycle state. Empty
+  drafts may have no content.
+- `surveys_repo.get_content` returns an independent snapshot.
+  `update_content` writes the complete content and its new revision, then flushes.
+  The service checks editability and the expected revision under a row lock.
+  Routes assemble their request and response shapes separately.
+
 
 ## Typed ORM construction
 

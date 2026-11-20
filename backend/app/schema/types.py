@@ -205,7 +205,7 @@ type InputPlaceholder = Annotated[Text, StringConstraints(max_length=200)]
 
 type InputAffix = Annotated[Text, StringConstraints(max_length=128)]
 
-type DocumentRevision = Annotated[StrictInt, Field(ge=1)]
+type DocumentRevision = Annotated[StrictInt, Field(ge=0, le=2**31 - 1)]
 
 type HeadingLevel = Annotated[StrictInt, Field(ge=1, le=6)]
 

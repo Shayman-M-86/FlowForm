@@ -8,7 +8,7 @@
 -- - uses explicit UUIDs for submission_sessions so the response DB seed can
 --   derive matching session_locator values
 --
--- - Survey versions contain V2 definitions with stable field UUIDs.
+-- - Survey versions contain V2 content with stable field UUIDs.
 --
 -- Safe to run on an empty schema.
 
@@ -124,7 +124,7 @@ INSERT INTO surveys (id, project_id, title, visibility, public_slug, default_res
 -- =========================================
 -- SURVEY VERSIONS
 -- =========================================
--- Insert the versions as drafts before loading definitions and publishing.
+-- Insert the versions as drafts before loading content and publishing.
 
 INSERT INTO survey_versions (id, survey_id, version_number, status, published_at, created_by_user_id, created_at, updated_at, deleted_at) VALUES
     (1, 1, 1, 'draft', NULL, 2, NOW() - INTERVAL '27 days', NOW() - INTERVAL '27 days', NULL),
@@ -134,71 +134,46 @@ INSERT INTO survey_versions (id, survey_id, version_number, status, published_at
     (5, 3, 2, 'draft', NULL, 5, NOW() - INTERVAL '3 days',  NOW() - INTERVAL '3 days',  NULL);
 
 UPDATE survey_versions AS v
-SET definition = fixture.definition
+SET content = fixture.content, revision = 1
 FROM (VALUES
     (1, $json${
-        "id": "employee-engagement",
-        "versionId": 1,
-        "revision": 1,
         "title": "Employee Engagement Pulse",
-        "projectName": "Acme Employee Feedback",
-        "status": "draft",
-        "document": {"sections": [{"id": "main", "title": "Employee Engagement Pulse", "blocks": [
+        "sections": [{"id": "main", "title": "Employee Engagement Pulse", "blocks": [
             {"id": "engagement_score", "type": "input", "field": {"id": "engagement_score", "uuid": "00000000-0000-0000-0000-000000000001", "prompt": "How engaged do you feel at work?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
             {"id": "team_support", "type": "input", "field": {"id": "team_support", "uuid": "00000000-0000-0000-0000-000000000002", "prompt": "How supported do you feel by your team?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "very_supported", "uuid": "ec1d5ef8-756b-5a36-9f9c-98cf6c2585b8", "label": "Very supported"}, {"id": "somewhat_supported", "uuid": "c6e7cd3c-21c6-5dfb-b648-396f814e6862", "label": "Somewhat supported"}, {"id": "not_supported", "uuid": "f65dde98-5297-5c40-b88f-1d26209a5a9f", "label": "Not supported"}]}, "answerSpec": {"type": "choice", "required": true}}}
-        ]}]}
+        ]}]
     }$json$::jsonb),
     (2, $json${
-        "id": "employee-engagement",
-        "versionId": 2,
-        "revision": 1,
         "title": "Employee Engagement Pulse",
-        "projectName": "Acme Employee Feedback",
-        "status": "published",
-        "document": {"sections": [{"id": "main", "title": "Employee Engagement Pulse", "blocks": [
+        "sections": [{"id": "main", "title": "Employee Engagement Pulse", "blocks": [
             {"id": "engagement_score", "type": "input", "field": {"id": "engagement_score", "uuid": "00000000-0000-0000-0000-000000000003", "prompt": "How engaged do you feel at work?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
             {"id": "team_support", "type": "input", "field": {"id": "team_support", "uuid": "00000000-0000-0000-0000-000000000004", "prompt": "How supported do you feel by your team?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "very_supported", "uuid": "7d319775-c118-5ca2-83a9-3ecd50bb6bf3", "label": "Very supported"}, {"id": "somewhat_supported", "uuid": "097ada5d-4eec-51a7-97e4-f7bbe7efa336", "label": "Somewhat supported"}, {"id": "not_supported", "uuid": "bb61b09a-4cbf-5cc4-bf28-00fcdb1a8655", "label": "Not supported"}]}, "answerSpec": {"type": "choice", "required": true}}},
             {"id": "manager_feedback", "type": "input", "field": {"id": "manager_feedback", "uuid": "00000000-0000-0000-0000-000000000005", "prompt": "What is one thing your manager could do better?", "interaction": {"kind": "long_text", "placeholder": "Share one practical improvement"}, "answerSpec": {"type": "string", "required": true}, "behaviour": {"visibility": {"mode": "conditional", "condition": {"fieldUuid": "00000000-0000-0000-0000-000000000003", "operator": "less_than", "value": 7}}}}}
-        ]}]}
+        ]}]
     }$json$::jsonb),
     (3, $json${
-        "id": "manager-effectiveness",
-        "versionId": 3,
-        "revision": 1,
         "title": "Manager Effectiveness Review",
-        "projectName": "Acme Employee Feedback",
-        "status": "draft",
-        "document": {"sections": [{"id": "main", "title": "Manager Effectiveness Review", "blocks": [
+        "sections": [{"id": "main", "title": "Manager Effectiveness Review", "blocks": [
             {"id": "clarity_rating", "type": "input", "field": {"id": "clarity_rating", "uuid": "00000000-0000-0000-0000-000000000007", "prompt": "My manager sets clear expectations.", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 5}, "required": true}}},
             {"id": "coaching_examples", "type": "input", "field": {"id": "coaching_examples", "uuid": "00000000-0000-0000-0000-000000000008", "prompt": "Share an example of good coaching.", "interaction": {"kind": "long_text", "placeholder": "Describe a specific example"}, "answerSpec": {"type": "string", "required": false}}}
-        ]}]}
+        ]}]
     }$json$::jsonb),
     (4, $json${
-        "id": "beta-signup",
-        "versionId": 4,
-        "revision": 1,
         "title": "Beta Signup Experience",
-        "projectName": "Beta Product Research",
-        "status": "draft",
-        "document": {"sections": [{"id": "main", "title": "Beta Signup Experience", "blocks": [
+        "sections": [{"id": "main", "title": "Beta Signup Experience", "blocks": [
             {"id": "signup_ease", "type": "input", "field": {"id": "signup_ease", "uuid": "00000000-0000-0000-0000-000000000009", "prompt": "How easy was signup?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
             {"id": "feature_interest", "type": "input", "field": {"id": "feature_interest", "uuid": "00000000-0000-0000-0000-000000000010", "prompt": "Which feature interested you most?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "automation", "uuid": "4bf83e1a-7b04-5cd7-a7bc-fc9158082033", "label": "Automation"}, {"id": "analytics", "uuid": "27f562dc-9a37-5819-9870-8ed6b3ddd40a", "label": "Analytics"}]}, "answerSpec": {"type": "choice", "required": true}}}
-        ]}]}
+        ]}]
     }$json$::jsonb),
     (5, $json${
-        "id": "beta-signup",
-        "versionId": 5,
-        "revision": 1,
         "title": "Beta Signup Experience",
-        "projectName": "Beta Product Research",
-        "status": "published",
-        "document": {"sections": [{"id": "main", "title": "Beta Signup Experience", "blocks": [
+        "sections": [{"id": "main", "title": "Beta Signup Experience", "blocks": [
             {"id": "signup_ease", "type": "input", "field": {"id": "signup_ease", "uuid": "00000000-0000-0000-0000-000000000011", "prompt": "How easy was signup?", "interaction": {"kind": "rating", "presentation": "slider"}, "answerSpec": {"type": "integer", "constraints": {"min": 1, "max": 10}, "required": true}}},
             {"id": "feature_interest", "type": "input", "field": {"id": "feature_interest", "uuid": "00000000-0000-0000-0000-000000000012", "prompt": "Which feature interested you most?", "interaction": {"kind": "single_choice", "presentation": "radio", "options": [{"id": "automation", "uuid": "c7198ca4-e18d-5595-8541-7888c31f5e0b", "label": "Automation"}, {"id": "analytics", "uuid": "3a1d8028-21ec-55fe-aeef-57402bacf866", "label": "Analytics"}]}, "answerSpec": {"type": "choice", "required": true}}},
             {"id": "followup_email", "type": "input", "field": {"id": "followup_email", "uuid": "00000000-0000-0000-0000-000000000013", "prompt": "Leave your email if you want follow-up.", "interaction": {"kind": "short_text", "placeholder": "name@example.com"}, "answerSpec": {"type": "string", "required": false}, "behaviour": {"visibility": {"mode": "conditional", "condition": {"fieldUuid": "00000000-0000-0000-0000-000000000011", "operator": "greater_than", "value": 7}}}}}
-        ]}]}
+        ]}]
     }$json$::jsonb)
-) AS fixture(version_id, definition)
+) AS fixture(version_id, content)
 WHERE v.id = fixture.version_id;
 
 -- =========================================

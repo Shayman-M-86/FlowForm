@@ -8,10 +8,9 @@ from werkzeug.routing import Map
 from werkzeug.routing import ValidationError as RoutingValidationError
 
 from app.middleware.url_converters import BoundedIntegerConverter
-from app.schema.types import PageSize
 from app.schema.api.common.types import PageItems, ProjectPermission, ProjectPermissionSet
 from app.schema.api.responses.survey_results import SurveySessionTreeResponses
-from app.schema.types import DatabaseIdentity, LimitedList
+from app.schema.types import DatabaseIdentity, LimitedList, PageSize
 
 
 def test_url_ids_and_shared_ids_have_the_same_storage_range():
@@ -57,6 +56,7 @@ def test_complete_session_results_are_not_capped_at_fifty_or_one_hundred():
         }
     )
     assert len(result.answers) == 201
+    assert result.events is not None
     assert len(result.events) == 201
 
 
