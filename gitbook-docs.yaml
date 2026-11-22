@@ -1,0 +1,12 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+
+site:
+  title: FlowForm Docs
+  structure:
+    - type: space
+      key: engineering-documentation
+      title: Engineering Documentation
+      path: documentation
+      default: true
+      content:
+        directory: ./documentation
